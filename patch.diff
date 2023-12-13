@@ -1,0 +1,2009 @@
+From 7b4fcb296bcabb009fbca1ffcd6affc0f047bb81 Mon Sep 17 00:00:00 2001
+From: slims <slims@fittingmonster.com>
+Date: Fri, 16 Dec 2022 17:02:13 +0900
+Subject: [PATCH] =?UTF-8?q?=ED=8F=AC=EC=9D=B8=ED=8A=B8=20=EA=B4=80?=
+ =?UTF-8?q?=EB=A6=AC?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../model/PointConfigPO.java                  |   2 +-
+ .../model/PointConfigSO.java                  |   2 +-
+ .../model/PointConfigVO.java                  |   2 +-
+ .../model/SavedMoneyConfigPO.java             |   2 +-
+ .../model/SavedMoneyConfigSO.java             |   2 +-
+ .../model/SavedMoneyConfigVO.java             |   2 +-
+ .../app/operation/model/SavedmnPointVO.java   |   1 +
+ .../service/SavedMnPointService.java          |  73 ++++++++
+ .../service/SavedMnPointServiceImpl.java      |  96 ++++++++++-
+ .../service/ExhibitionServiceImpl.java        |   2 -
+ .../point/service/PointConfigService.java     |  50 ------
+ .../point/service/PointConfigServiceImpl.java |  76 --------
+ .../service/SavedMoneyConfigService.java      |  50 ------
+ .../service/SavedMoneyConfigServiceImpl.java  |  76 --------
+ .../config/mybatis/myBatisConfig.xml          |  12 +-
+ .../oracle/app/operation/savedMnPoint.xml     | 162 ++++++++++++++++--
+ .../mapper/oracle/app/setup/pointConfig.xml   |  66 -------
+ .../oracle/app/setup/savedMoneyConfig.xml     |  87 ----------
+ .../controller/SavedMnPointController.java    | 139 +++++++++++++++
+ .../controller/PointConfigController.java     | 112 ------------
+ .../SavedMoneyConfigController.java           | 112 ------------
+ .../views/admin/goods/KeywordGoodsManage.jsp  |  15 --
+ .../savedMnPoint/SavemoneyHistory.jsp         |  62 ++++---
+ .../savedMnPoint}/pointConfig.jsp             |  51 ++----
+ .../savedMnPoint}/savedMoneyConfig.jsp        |  57 +++---
+ .../promotion/viewAttendanceCheckInsert.jsp   |   4 +-
+ .../promotion/viewAttendanceCheckUpdate.jsp   |   4 +-
+ 27 files changed, 537 insertions(+), 782 deletions(-)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/point => operation}/model/PointConfigPO.java (94%)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/point => operation}/model/PointConfigSO.java (87%)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/point => operation}/model/PointConfigVO.java (93%)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/savedmoney => operation}/model/SavedMoneyConfigPO.java (97%)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/savedmoney => operation}/model/SavedMoneyConfigSO.java (87%)
+ rename src/modules/business/src/main/java/net/danvi/dmall/biz/app/{setup/savedmoney => operation}/model/SavedMoneyConfigVO.java (97%)
+ delete mode 100644 src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigService.java
+ delete mode 100644 src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigServiceImpl.java
+ delete mode 100644 src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigService.java
+ delete mode 100644 src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigServiceImpl.java
+ delete mode 100644 src/modules/business/src/main/resources/mapper/oracle/app/setup/pointConfig.xml
+ delete mode 100644 src/modules/business/src/main/resources/mapper/oracle/app/setup/savedMoneyConfig.xml
+ delete mode 100644 src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/PointConfigController.java
+ delete mode 100644 src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/SavedMoneyConfigController.java
+ rename src/services/admin/src/main/webapp/WEB-INF/views/admin/{setup => operation/savedMnPoint}/pointConfig.jsp (80%)
+ rename src/services/admin/src/main/webapp/WEB-INF/views/admin/{setup => operation/savedMnPoint}/savedMoneyConfig.jsp (88%)
+
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigPO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigPO.java
+similarity index 94%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigPO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigPO.java
+index 095858f..eb5c645 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigPO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigPO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.point.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import net.danvi.dmall.biz.system.validation.UpdateGroup;
+ import org.hibernate.validator.constraints.NotEmpty;
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigSO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigSO.java
+similarity index 87%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigSO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigSO.java
+index 16dc6fa..85afdb0 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigSO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigSO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.point.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import lombok.Data;
+ import lombok.EqualsAndHashCode;
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigVO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigVO.java
+similarity index 93%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigVO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigVO.java
+index c8d795d..3995652 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/model/PointConfigVO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/PointConfigVO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.point.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import lombok.Data;
+ import lombok.EqualsAndHashCode;
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigPO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigPO.java
+similarity index 97%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigPO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigPO.java
+index f976b04..d5bf6d1 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigPO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigPO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.savedmoney.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import org.hibernate.validator.constraints.NotEmpty;
+ 
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigSO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigSO.java
+similarity index 87%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigSO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigSO.java
+index 5c527b2..d6791dd 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigSO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigSO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.savedmoney.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import lombok.Data;
+ import lombok.EqualsAndHashCode;
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigVO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigVO.java
+similarity index 97%
+rename from src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigVO.java
+rename to src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigVO.java
+index 5e707fb..495978a 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/model/SavedMoneyConfigVO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedMoneyConfigVO.java
+@@ -1,4 +1,4 @@
+-package net.danvi.dmall.biz.app.setup.savedmoney.model;
++package net.danvi.dmall.biz.app.operation.model;
+ 
+ import lombok.Data;
+ import lombok.EqualsAndHashCode;
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedmnPointVO.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedmnPointVO.java
+index 9247fc0..1ffb5c2 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedmnPointVO.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/model/SavedmnPointVO.java
+@@ -56,6 +56,7 @@ public class SavedmnPointVO extends BaseModel<SavedmnPointVO> {
+     // 회원 명
+     @Encrypt(type = CryptoUtil.CHIPER, algorithm = CryptoUtil.CHIPER_AES)
+     private String memberNm;
++    private String memberGradeNm; // 멤버 등급 이름
+     // 내용
+     private String content;
+     // 포인트 구분 명(지급,차감)
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointService.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointService.java
+index d3fc26f..07225c1 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointService.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointService.java
+@@ -9,6 +9,12 @@ import java.util.List;
+ 
+ import dmall.framework.common.model.ResultListModel;
+ import dmall.framework.common.model.ResultModel;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigPO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigSO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigVO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigPO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigSO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigVO;
+ 
+ /**
+  * <pre>
+@@ -19,6 +25,40 @@ import dmall.framework.common.model.ResultModel;
+  * </pre>
+  */
+ public interface SavedMnPointService {
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 5. 23.
++     * 작성자 : dong
++     * 설명   : 사이트에 설정된 마켓포인트 설정 정보를 조회한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 5. 23. dong - 최초생성
++     * </pre>
++     *
++     * @param siteNo
++     * @return
++     */
++    public ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so);
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 5. 23.
++     * 작성자 : dong
++     * 설명   : 사이트에 설정된 마켓포인트 설정 정보 값을 수정한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 5. 23. dong - 최초생성
++     * </pre>
++     *
++     * @param po
++     * @return
++     * @throws Exception
++     */
++    public ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(SavedMoneyConfigPO po) throws Exception;
++
+     /**
+      * <pre>
+      * 작성일 : 2016. 5. 4.
+@@ -166,4 +206,37 @@ public interface SavedMnPointService {
+      * @return
+      */
+     public List<SavedmnPointVO> selectOfflineCouponList();
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 5. 23.
++     * 작성자 : dong
++     * 설명   : 사이트에 설정된 포인트 설정 정보를 조회한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 5. 23. dong - 최초생성
++     * </pre>
++     *
++     * @param siteNo
++     * @return
++     */
++    public ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so);
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 5. 23.
++     * 작성자 : dong
++     * 설명   : 사이트에 설정된 포인트 설정 정보 값을 수정한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 5. 23. dong - 최초생성
++     * </pre>
++     *
++     * @param po
++     * @return
++     * @throws Exception
++     */
++    public ResultModel<PointConfigPO> updatePointConfig(PointConfigPO po) throws Exception;
+ }
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointServiceImpl.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointServiceImpl.java
+index c99d478..4863a4f 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointServiceImpl.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/operation/service/SavedMnPointServiceImpl.java
+@@ -1,18 +1,25 @@
+ package net.danvi.dmall.biz.app.operation.service;
+ 
+-import java.util.ArrayList;
+-import java.util.HashMap;
+ import java.util.List;
+-import java.util.Map;
+ 
+ import javax.annotation.Resource;
++import javax.servlet.http.HttpServletRequest;
+ 
++import dmall.framework.common.util.HttpUtil;
++import dmall.framework.common.util.MessageUtil;
+ import net.danvi.dmall.biz.app.member.manage.model.MemberManagePO;
+ import net.danvi.dmall.biz.app.operation.model.SavedmnPointPO;
+ import net.danvi.dmall.biz.app.operation.model.SavedmnPointSO;
+ import net.danvi.dmall.biz.app.operation.model.SavedmnPointVO;
+ import net.danvi.dmall.biz.app.order.manage.model.OrderGoodsPO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigPO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigSO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigVO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigPO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigSO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigVO;
+ import net.danvi.dmall.biz.common.service.BizService;
++import net.danvi.dmall.biz.system.remote.AdminRemotingService;
+ import net.danvi.dmall.biz.system.security.SessionDetailHelper;
+ import org.springframework.dao.DuplicateKeyException;
+ import org.springframework.stereotype.Service;
+@@ -42,6 +49,48 @@ public class SavedMnPointServiceImpl extends BaseService implements SavedMnPoint
+     @Resource(name = "bizService")
+     private BizService bizService;
+ 
++    @Resource(name = "adminRemotingService")
++    private AdminRemotingService adminRemotingService;
++
++    /** 마켓포인트 설정 정보 조회 서비스 **/
++    /*
++     * (non-Javadoc)
++     *
++     * @see net.danvi.dmall.biz.app.setup.savedmoney.service.
++     * SavedMoneyConfigService#selectSavedMoneyConfig(net.danvi.dmall.biz.app.
++     * setup.savedmoney.model.SavedMoneyConfigSO)
++     */
++    @Override
++    @Transactional(readOnly = true)
++    public ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so) {
++        SavedMoneyConfigVO resultVO = proxyDao.selectOne(MapperConstants.SAVEDMN_POINT + "selectSavedMoneyConfig", so);
++        ResultModel<SavedMoneyConfigVO> result = new ResultModel<>(resultVO);
++        return result;
++    }
++
++    /** 마켓포인트 설정 정보 수정 서비스 **/
++    /*
++     * (non-Javadoc)
++     *
++     * @see net.danvi.dmall.biz.app.setup.savedmoney.service.
++     * SavedMoneyConfigService#updateSavedMoneyConfig(net.danvi.dmall.biz.app.
++     * setup.savedmoney.model.SavedMoneyConfigPO)
++     */
++    @Override
++    public ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(SavedMoneyConfigPO po) throws Exception {
++        ResultModel<SavedMoneyConfigPO> resultModel = new ResultModel<>();
++        po.setUpdrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
++        po.setRegrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
++        proxyDao.update(MapperConstants.SAVEDMN_POINT + "updateSavedMoneyConfig", po);
++
++        // 프론트 사이트 정보 갱신
++        HttpServletRequest request = HttpUtil.getHttpServletRequest();
++        adminRemotingService.refreshSiteInfoCache(po.getSiteNo(), request.getServerName());
++
++        resultModel.setMessage(MessageUtil.getMessage("biz.common.update"));
++        return resultModel;
++    }
++
+     @Override
+     public ResultListModel<SavedmnPointVO> selectSavedmnGetPaging(SavedmnPointSO so) {
+         if (so.getSidx().length() == 0) {
+@@ -49,12 +98,13 @@ public class SavedMnPointServiceImpl extends BaseService implements SavedMnPoint
+             so.setSord("ASC");
+             so.setSiteNo(SessionDetailHelper.getDetails().getSiteNo());
+         }
+-
++        log.info("selectSavedmnGetPaging before so = "+so);
+         if (so.getSearchKind() != null && so.getSearchKind() != "") {
+             if (("searchMemberNm").equals(so.getSearchKind())) {
+                 so.setMemberNm(so.getSearchVal());
+             }
+         }
++        log.info("selectSavedmnGetPaging after so = "+so);
+         // 적립글 리스트 조회
+         ResultListModel<SavedmnPointVO> list = proxyDao.selectListPage(MapperConstants.SAVEDMN_POINT + "selectSavedmnGetPaging", so);
+ 
+@@ -313,4 +363,42 @@ public class SavedMnPointServiceImpl extends BaseService implements SavedMnPoint
+ 
+ 	}
+ 
++    /** 포인트 설정 정보 조회 서비스 **/
++    /*
++     * (non-Javadoc)
++     *
++     * @see PointConfigService#
++     * selectPointConfig(net.danvi.dmall.biz.app.setup.point.model.
++     * PointConfigSO)
++     */
++    @Override
++    @Transactional(readOnly = true)
++    public ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so) {
++        PointConfigVO resultVO = proxyDao.selectOne(MapperConstants.SAVEDMN_POINT + "selectPointConfig", so);
++        ResultModel<PointConfigVO> result = new ResultModel<>(resultVO);
++        return result;
++    }
++
++    /** 포인트 설정 정보 수정 서비스 **/
++    /*
++     * (non-Javadoc)
++     *
++     * @see PointConfigService#
++     * updatePointConfig(net.danvi.dmall.biz.app.setup.point.model.
++     * PointConfigPO)
++     */
++    @Override
++    public ResultModel<PointConfigPO> updatePointConfig(PointConfigPO po) throws Exception {
++        ResultModel<PointConfigPO> resultModel = new ResultModel<>();
++        po.setUpdrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
++        po.setRegrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
++        proxyDao.update(MapperConstants.SAVEDMN_POINT + "updatePointConfig", po);
++
++        // 프론트 사이트 정보 갱신
++        HttpServletRequest request = HttpUtil.getHttpServletRequest();
++        adminRemotingService.refreshSiteInfoCache(po.getSiteNo(), request.getServerName());
++
++        resultModel.setMessage(MessageUtil.getMessage("biz.common.update"));
++        return resultModel;
++    }
+ }
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/promotion/exhibition/service/ExhibitionServiceImpl.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/promotion/exhibition/service/ExhibitionServiceImpl.java
+index 72eda71..1a33fa9 100644
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/promotion/exhibition/service/ExhibitionServiceImpl.java
++++ b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/promotion/exhibition/service/ExhibitionServiceImpl.java
+@@ -295,8 +295,6 @@ public class ExhibitionServiceImpl extends BaseService implements ExhibitionServ
+                     }
+                 }
+             }*/
+-
+-
+         } catch (DuplicateKeyException e) {
+             throw new CustomException("biz.exception.common.exist", new Object[] { "코드그룹" }, e);
+         } catch (Exception e) {
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigService.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigService.java
+deleted file mode 100644
+index 77bc18f..0000000
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigService.java
++++ /dev/null
+@@ -1,50 +0,0 @@
+-package net.danvi.dmall.biz.app.setup.point.service;
+-
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigPO;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigSO;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigVO;
+-import dmall.framework.common.model.ResultModel;
+-
+-/**
+- * <pre>
+- * 프로젝트명 : 03.business
+- * 작성일     : 2016. 5. 4.
+- * 작성자     : dong
+- * 설명       :
+- * </pre>
+- */
+-public interface PointConfigService {
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 5. 23.
+-     * 작성자 : dong
+-     * 설명   : 사이트에 설정된 포인트 설정 정보를 조회한다. 
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 5. 23. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param siteNo
+-     * @return
+-     */
+-    public ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so);
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 5. 23.
+-     * 작성자 : dong
+-     * 설명   : 사이트에 설정된 포인트 설정 정보 값을 수정한다.  
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 5. 23. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param po
+-     * @return
+-     * @throws Exception
+-     */
+-    public ResultModel<PointConfigPO> updatePointConfig(PointConfigPO po) throws Exception;
+-}
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigServiceImpl.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigServiceImpl.java
+deleted file mode 100644
+index 738be40..0000000
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/point/service/PointConfigServiceImpl.java
++++ /dev/null
+@@ -1,76 +0,0 @@
+-package net.danvi.dmall.biz.app.setup.point.service;
+-
+-import javax.annotation.Resource;
+-import javax.servlet.http.HttpServletRequest;
+-
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigVO;
+-import org.springframework.stereotype.Service;
+-import org.springframework.transaction.annotation.Transactional;
+-
+-import lombok.extern.slf4j.Slf4j;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigPO;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigSO;
+-import net.danvi.dmall.biz.system.remote.AdminRemotingService;
+-import net.danvi.dmall.biz.system.security.SessionDetailHelper;
+-import dmall.framework.common.BaseService;
+-import dmall.framework.common.constants.MapperConstants;
+-import dmall.framework.common.model.ResultModel;
+-import dmall.framework.common.util.HttpUtil;
+-import dmall.framework.common.util.MessageUtil;
+-
+-/**
+- * <pre>
+- * 프로젝트명 : 03.business
+- * 작성일     : 2016. 5. 4.
+- * 작성자     : dong
+- * 설명       :
+- * </pre>
+- */
+-@Slf4j
+-@Service("pointConfigService")
+-@Transactional(rollbackFor = Exception.class)
+-public class PointConfigServiceImpl extends BaseService implements PointConfigService {
+-
+-    @Resource(name = "adminRemotingService")
+-    private AdminRemotingService adminRemotingService;
+-
+-    /** 포인트 설정 정보 조회 서비스 **/
+-    /*
+-     * (non-Javadoc)
+-     * 
+-     * @see PointConfigService#
+-     * selectPointConfig(net.danvi.dmall.biz.app.setup.point.model.
+-     * PointConfigSO)
+-     */
+-    @Override
+-    @Transactional(readOnly = true)
+-    public ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so) {
+-        PointConfigVO resultVO = proxyDao.selectOne(MapperConstants.SETUP_POINT_CONFIG + "selectPointConfig", so);
+-        ResultModel<PointConfigVO> result = new ResultModel<>(resultVO);
+-        return result;
+-    }
+-
+-    /** 포인트 설정 정보 수정 서비스 **/
+-    /*
+-     * (non-Javadoc)
+-     * 
+-     * @see PointConfigService#
+-     * updatePointConfig(net.danvi.dmall.biz.app.setup.point.model.
+-     * PointConfigPO)
+-     */
+-    @Override
+-    public ResultModel<PointConfigPO> updatePointConfig(PointConfigPO po) throws Exception {
+-        ResultModel<PointConfigPO> resultModel = new ResultModel<>();
+-        po.setUpdrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
+-        po.setRegrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
+-        proxyDao.update(MapperConstants.SETUP_POINT_CONFIG + "updatePointConfig", po);
+-
+-        // 프론트 사이트 정보 갱신
+-        HttpServletRequest request = HttpUtil.getHttpServletRequest();
+-        adminRemotingService.refreshSiteInfoCache(po.getSiteNo(), request.getServerName());
+-
+-        resultModel.setMessage(MessageUtil.getMessage("biz.common.update"));
+-        return resultModel;
+-    }
+-
+-}
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigService.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigService.java
+deleted file mode 100644
+index dbfe075..0000000
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigService.java
++++ /dev/null
+@@ -1,50 +0,0 @@
+-package net.danvi.dmall.biz.app.setup.savedmoney.service;
+-
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigPO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigSO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigVO;
+-import dmall.framework.common.model.ResultModel;
+-
+-/**
+- * <pre>
+- * 프로젝트명 : 03.business
+- * 작성일     : 2016. 5. 4.
+- * 작성자     : dong
+- * 설명       :
+- * </pre>
+- */
+-public interface SavedMoneyConfigService {
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 5. 23.
+-     * 작성자 : dong
+-     * 설명   : 사이트에 설정된 마켓포인트 설정 정보를 조회한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 5. 23. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param siteNo
+-     * @return
+-     */
+-    public ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so);
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 5. 23.
+-     * 작성자 : dong
+-     * 설명   : 사이트에 설정된 마켓포인트 설정 정보 값을 수정한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 5. 23. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param po
+-     * @return
+-     * @throws Exception
+-     */
+-    public ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(SavedMoneyConfigPO po) throws Exception;
+-}
+diff --git a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigServiceImpl.java b/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigServiceImpl.java
+deleted file mode 100644
+index 20128c9..0000000
+--- a/src/modules/business/src/main/java/net/danvi/dmall/biz/app/setup/savedmoney/service/SavedMoneyConfigServiceImpl.java
++++ /dev/null
+@@ -1,76 +0,0 @@
+-package net.danvi.dmall.biz.app.setup.savedmoney.service;
+-
+-import javax.annotation.Resource;
+-import javax.servlet.http.HttpServletRequest;
+-
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigPO;
+-import org.springframework.stereotype.Service;
+-import org.springframework.transaction.annotation.Transactional;
+-
+-import lombok.extern.slf4j.Slf4j;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigSO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigVO;
+-import net.danvi.dmall.biz.system.remote.AdminRemotingService;
+-import net.danvi.dmall.biz.system.security.SessionDetailHelper;
+-import dmall.framework.common.BaseService;
+-import dmall.framework.common.constants.MapperConstants;
+-import dmall.framework.common.model.ResultModel;
+-import dmall.framework.common.util.HttpUtil;
+-import dmall.framework.common.util.MessageUtil;
+-
+-/**
+- * <pre>
+- * 프로젝트명 : 03.business
+- * 작성일     : 2016. 5. 4.
+- * 작성자     : dong
+- * 설명       :
+- * </pre>
+- */
+-@Slf4j
+-@Service("savedMoneyConfigService")
+-@Transactional(rollbackFor = Exception.class)
+-public class SavedMoneyConfigServiceImpl extends BaseService implements SavedMoneyConfigService {
+-
+-    @Resource(name = "adminRemotingService")
+-    private AdminRemotingService adminRemotingService;
+-
+-    /** 마켓포인트 설정 정보 조회 서비스 **/
+-    /*
+-     * (non-Javadoc)
+-     * 
+-     * @see net.danvi.dmall.biz.app.setup.savedmoney.service.
+-     * SavedMoneyConfigService#selectSavedMoneyConfig(net.danvi.dmall.biz.app.
+-     * setup.savedmoney.model.SavedMoneyConfigSO)
+-     */
+-    @Override
+-    @Transactional(readOnly = true)
+-    public ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so) {
+-        SavedMoneyConfigVO resultVO = proxyDao.selectOne(MapperConstants.SETUP_SAVED_MONEY_CONFIG + "selectSavedMoneyConfig", so);
+-        ResultModel<SavedMoneyConfigVO> result = new ResultModel<>(resultVO);
+-        return result;
+-    }
+-
+-    /** 마켓포인트 설정 정보 수정 서비스 **/
+-    /*
+-     * (non-Javadoc)
+-     * 
+-     * @see net.danvi.dmall.biz.app.setup.savedmoney.service.
+-     * SavedMoneyConfigService#updateSavedMoneyConfig(net.danvi.dmall.biz.app.
+-     * setup.savedmoney.model.SavedMoneyConfigPO)
+-     */
+-    @Override
+-    public ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(SavedMoneyConfigPO po) throws Exception {
+-        ResultModel<SavedMoneyConfigPO> resultModel = new ResultModel<>();
+-        po.setUpdrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
+-        po.setRegrNo(SessionDetailHelper.getDetails().getSession().getMemberNo());
+-        proxyDao.update(MapperConstants.SETUP_SAVED_MONEY_CONFIG + "updateSavedMoneyConfig", po);
+-
+-        // 프론트 사이트 정보 갱신
+-        HttpServletRequest request = HttpUtil.getHttpServletRequest();
+-        adminRemotingService.refreshSiteInfoCache(po.getSiteNo(), request.getServerName());
+-
+-        resultModel.setMessage(MessageUtil.getMessage("biz.common.update"));
+-        return resultModel;
+-    }
+-
+-}
+diff --git a/src/modules/business/src/main/resources/config/mybatis/myBatisConfig.xml b/src/modules/business/src/main/resources/config/mybatis/myBatisConfig.xml
+index e57b019..a2f46ab 100644
+--- a/src/modules/business/src/main/resources/config/mybatis/myBatisConfig.xml
++++ b/src/modules/business/src/main/resources/config/mybatis/myBatisConfig.xml
+@@ -150,12 +150,12 @@
+         <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigSO" alias="termConfigSO" />
+         <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigVO" alias="termConfigVO" />
+         <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigPO" alias="termConfigPO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigSO" alias="savedMoneyConfigSO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigVO" alias="savedMoneyConfigVO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigPO" alias="savedMoneyConfigPO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.point.model.PointConfigSO" alias="pointConfigSO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.point.model.PointConfigVO" alias="pointConfigVO" />
+-        <typeAlias type="net.danvi.dmall.biz.app.setup.point.model.PointConfigPO" alias="pointConfigPO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigSO" alias="savedMoneyConfigSO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigVO" alias="savedMoneyConfigVO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigPO" alias="savedMoneyConfigPO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigSO" alias="pointConfigSO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigVO" alias="pointConfigVO" />
++        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigPO" alias="pointConfigPO" />
+         <typeAlias type="net.danvi.dmall.biz.app.setup.taxbill.model.TaxBillConfigVO" alias="taxBillConfigVO" />
+         <typeAlias type="net.danvi.dmall.biz.app.setup.taxbill.model.TaxBillConfigPO" alias="taxBillConfigPO" />
+         <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsNotifySO" alias="goodsNotifySO" />
+diff --git a/src/modules/business/src/main/resources/mapper/oracle/app/operation/savedMnPoint.xml b/src/modules/business/src/main/resources/mapper/oracle/app/operation/savedMnPoint.xml
+index f0e67a5..fe3d509 100644
+--- a/src/modules/business/src/main/resources/mapper/oracle/app/operation/savedMnPoint.xml
++++ b/src/modules/business/src/main/resources/mapper/oracle/app/operation/savedMnPoint.xml
+@@ -9,9 +9,6 @@
+            <if test="siteNo != null and siteNo != ''">
+                AND A.SITE_NO = #{siteNo}
+            </if>
+-           <if test="memberNoSelect != null and memberNoSelect != ''">
+-               AND MEMBER_NO = #{memberNoSelect}
+-           </if>
+            <if test="searchVal != null and searchVal != ''">
+                <if test='searchKind eq "searchMemberNm"'>
+ 		           AND A.MEMBER_NM = #{memberNm}
+@@ -30,7 +27,6 @@
+ 	              AND REG_DTTM < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+ 	              ]]>
+ 	          </if>
+-
+ 	          <if test="pointGbCd != null and pointGbCd != ''">
+ 	              <choose>
+ 	                  <when test='pointGbCd eq "10"' >
+@@ -215,21 +211,17 @@
+ 					FROM
+ 					(
+ 			        	SELECT B.*
+-				        	<!-- 모바일 잔여마켓포인트 추가 20160817 -->
+ 				        	, SUM(NVL(B.PLU_PRC_AMT,0)- NVL(B.MIN_PRC_AMT,0)) OVER() AS REST_AMT
+-					        <!-- //모바일 잔여마켓포인트 추가 -->
+ 					        ,(SELECT PAYMENT_AMT FROM TO_ORD WHERE ORD_NO = B.ORD_NO) PAYMENT_AMT
+ 						FROM
+ 						(
+ 			                SELECT A.*
+-			                <!-- 모바일 잔여마켓포인트 추가 20160817 -->
+ 					             , CASE WHEN A.SVMN_TYPE_NM='적립' THEN
+ 					                NVL(A.PRC_AMT,0)
+ 					              END AS PLU_PRC_AMT
+ 					              ,CASE WHEN A.SVMN_TYPE_NM='차감' THEN
+ 					                NVL(A.PRC_AMT,0)
+ 					              END AS MIN_PRC_AMT
+-					        <!-- //모바일 잔여마켓포인트 추가 -->
+ 			                  FROM (
+ 							        SELECT PVD.MEMBER_NO,
+ 							               CASE SVMN_TYPE_CD WHEN 'M' THEN '수동'
+@@ -245,6 +237,7 @@
+ 							               MEMBER.SITE_NO,
+ 							               MEMBER.LOGIN_ID,
+ 			                               MEMBER.MEMBER_NM,
++                                           NVL(fn_getMemberGradeNm(#{siteNo}, PVD.MEMBER_NO), '') MEMBER_GRADE_NM,
+ 			                               '적립' AS  SVMN_TYPE_NM,
+ 			                               concat(CASE SVMN_REASON_CD WHEN '05' THEN '직접입력('||PVD.ETC_REASON||')' ELSE fn_getCodeNm('SVMN_REASON_CD', SVMN_REASON_CD) END,
+ 			                                      CASE when PVD.ORD_NO IS NULL then NULL else ' ('||NVL(PVD.ORD_NO,'')|| ')' end
+@@ -253,9 +246,7 @@
+ 							        FROM TC_MEMBER_SVMN_PVD PVD	INNER JOIN TC_MEMBER MEMBER ON PVD.MEMBER_NO = MEMBER.MEMBER_NO and MEMBER.MEMBER_STATUS_CD = '01'
+ 							        WHERE SVMN_USE_PSB_YN = 'Y'
+ 							         AND MEMBER_STATUS_CD != '03'
+-
+ 							        UNION ALL
+-
+ 							        SELECT SVMN_USE.MEMBER_NO,
+ 							               CASE SVMN_TYPE_CD WHEN 'M' THEN '수동'
+ 							                                 WHEN 'A' THEN '자동' END TYPE_NM,
+@@ -272,6 +263,7 @@
+ 							               MEMBER.SITE_NO,
+ 							               MEMBER.LOGIN_ID,
+ 			                               MEMBER.MEMBER_NM,
++                                           NVL(fn_getMemberGradeNm(#{siteNo}, SVMN_USE.MEMBER_NO), '') MEMBER_GRADE_NM,
+ 			                               (CASE WHEN SVMN_USE.DEDUCT_GB_CD = '01' THEN '차감' ELSE '적립' END) AS  SVMN_TYPE_NM,
+ 			                               concat(CASE SVMN_REASON_CD WHEN '05' THEN '직접입력('||SVMN_USE.ETC_REASON||')' ELSE fn_getCodeNm('SVMN_REASON_CD', SVMN_REASON_CD) END,
+ 			                                      CASE when SVMN_USE.ORD_NO IS NULL then NULL else ' ('||NVL(SVMN_USE.ORD_NO,'')|| ')' end
+@@ -281,9 +273,7 @@
+ 							       WHERE SVMN_REASON_CD IS NOT NULL
+ 							         AND MEMBER_STATUS_CD = '01'
+ 							        ) A
+-
+ 							        WHERE 1=1
+-
+ 							        <include refid="selectSavedmnListWhere" />
+ 							        <include refid="common.sortSql" />
+ 						) B
+@@ -314,7 +304,7 @@
+          <include refid="selectSavedmnListWhere" />
+     </select>
+ 
+-    <select id="selectSavedmnGetPagingCount" resultType="Integer">
++    <select id="selectSavedmnGetPagingCount" parameterType="savedmnPointSO" resultType="Integer">
+         /* operation.savedMnPoint.selectSavedmnGetPagingCount */
+         SELECT COUNT(*)
+           FROM (
+@@ -341,9 +331,7 @@
+                         FROM TC_MEMBER_SVMN_PVD PVD INNER JOIN TC_MEMBER MEMBER ON PVD.MEMBER_NO = MEMBER.MEMBER_NO
+                         WHERE SVMN_USE_PSB_YN = 'Y'
+                           AND MEMBER_STATUS_CD = '01'
+-
+                         UNION ALL
+-
+                         SELECT SVMN_USE.MEMBER_NO,
+                                CASE SVMN_TYPE_CD WHEN 'M' THEN '수동'
+                                                  WHEN 'A' THEN '자동' END TYPE_NM,
+@@ -399,7 +387,6 @@
+                         WHERE SVMN_USE_PSB_YN = 'Y'
+ 				          AND MEMBER_STATUS_CD = '01'
+                         UNION ALL
+-
+                         SELECT SVMN_USE.MEMBER_NO,
+                                CASE SVMN_TYPE_CD WHEN 'M' THEN '수동'
+                                                  WHEN 'A' THEN '자동' END TYPE_NM,
+@@ -776,4 +763,147 @@
+ 		ORDER BY COUPON_BNF_DC_AMT ASC
+ 		
+ 	</select>
++
++    <select id="selectSavedMoneyConfig" parameterType="savedMoneyConfigSO" resultType="savedMoneyConfigVO">
++        /* operation.savedMnPoint.selectSavedMoneyConfig - 마켓포인트 설정정보 조회 */
++        SELECT
++            ts.SVMN_PVD_YN
++             , ts.SVMN_PVD_STNDRD_CD
++             , ts.SVMN_PVD_RATE
++             , ts.SVMN_TRUNC_STNDRD_CD
++             , ts.SVMN_USE_PSB_POSS_AMT
++             , ts.SVMN_MIN_USE_AMT
++             , ts.SVMN_MAX_USE_AMT
++             , ts.SVMN_USE_UNIT_CD
++             , ts.SVMN_CP_DUPLT_APPLY_YN
++             , ts.SVMN_AUTO_EXTINCTION_YN
++             , ts.SVMN_USE_LIMITDAY
++             , ts.RECOM_PVD_RATE
++             , ts.SVMN_MAX_USE_GB_CD
++        FROM    TS_SITE ts
++        WHERE   ts.SITE_NO = #{siteNo}
++    </select>
++
++    <!-- 마켓포인트 설정정보 수정 -->
++    <update id="updateSavedMoneyConfig">
++        /* operation.savedMnPoint.selectSavedMoneyConfig - 마켓포인트 설정정보 수정 */
++        MERGE INTO TS_SITE
++            USING DUAL
++            ON (SITE_NO = #{siteNo})
++            WHEN MATCHED THEN
++                UPDATE SET
++                    SVMN_PVD_YN = #{svmnPvdYn}
++                    , SVMN_PVD_STNDRD_CD = #{svmnPvdStndrdCd}
++                    , SVMN_PVD_RATE = #{svmnPvdRate}
++                    , RECOM_PVD_RATE = #{recomPvdRate}
++                    , SVMN_TRUNC_STNDRD_CD = #{svmnTruncStndrdCd}
++                    , SVMN_USE_PSB_POSS_AMT = #{svmnUsePsbPossAmt}
++                    , SVMN_MIN_USE_AMT = #{svmnMinUseAmt}
++                    , SVMN_MAX_USE_AMT = #{svmnMaxUseAmt}
++                    , SVMN_MAX_USE_GB_CD = #{svmnMaxUseGbCd}
++                    , SVMN_USE_UNIT_CD = #{svmnUseUnitCd}
++                    , SVMN_CP_DUPLT_APPLY_YN = #{svmnCpDupltApplyYn}
++                    , SVMN_AUTO_EXTINCTION_YN = #{svmnAutoExtinctionYn}
++                    , SVMN_USE_LIMITDAY = #{svmnUseLimitday}
++                    , UPDR_NO = #{updrNo}
++                    , UPD_DTTM = sysdate
++            WHEN NOT MATCHED THEN
++                INSERT (
++                        SITE_NO
++                        , SVMN_PVD_YN
++                        , SVMN_PVD_STNDRD_CD
++                        , SVMN_PVD_RATE
++                        , RECOM_PVD_RATE
++                        , SVMN_TRUNC_STNDRD_CD
++                        , SVMN_USE_PSB_POSS_AMT
++                        , SVMN_MIN_USE_AMT
++                        , SVMN_MAX_USE_AMT
++                        , SVMN_MAX_USE_GB_CD
++                        , SVMN_USE_UNIT_CD
++                        , SVMN_CP_DUPLT_APPLY_YN
++                        , SVMN_AUTO_EXTINCTION_YN
++                        , SVMN_USE_LIMITDAY
++                        , REGR_NO
++                        , REG_DTTM
++                        ) VALUES (
++                                 #{siteNo}
++                             , #{svmnPvdYn}
++                             , #{svmnPvdStndrdCd}
++                             , #{svmnPvdRate}
++                             , #{recomPvdRate}
++                             , #{svmnTruncStndrdCd}
++                             , #{svmnUsePsbPossAmt}
++                             , #{svmnMinUseAmt}
++                             , #{svmnMaxUseAmt}
++                             , #{svmnMaxUseGbCd}
++                             , #{svmnUseUnitCd}
++                             , #{svmnCpDupltApplyYn}
++                             , #{svmnAutoExtinctionYn}
++                             , #{svmnUseLimitday}
++                             , #{regrNo}
++                             , sysdate
++                             )
++    </update>
++
++    <!-- 포인트 설정정보 조회 -->
++    <select id="selectPointConfig" parameterType="pointConfigSO" resultType="pointConfigVO">
++        /* operation.savedMnPoint.selectPointConfig */
++        SELECT
++            ts.POINT_PVD_YN
++             , ts.POINT_TRUNC_STNDRD_CD
++             , ts.BUY_EPLG_WRITE_POINT
++             , ts.BUY_EPLG_WRITE_PM_POINT
++             , ts.POINT_ACCU_VALID_PERIOD
++        FROM    TS_SITE ts
++        WHERE   ts.SITE_NO = #{siteNo}
++    </select>
++
++    <!-- 포인트 설정정보 수정 -->
++    <update id="updatePointConfig">
++        /* operation.savedMnPoint.updatePointConfig */
++        MERGE INTO TS_SITE
++        USING DUAL
++        ON (SITE_NO = #{siteNo})
++        WHEN MATCHED THEN
++        UPDATE SET
++        POINT_PVD_YN = #{pointPvdYn}
++        , POINT_TRUNC_STNDRD_CD = #{pointTruncStndrdCd}
++        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
++            , BUY_EPLG_WRITE_POINT = #{buyEplgWritePoint}
++        </if>
++        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
++            , BUY_EPLG_WRITE_PM_POINT = #{buyEplgWritePmPoint}
++        </if>
++        , POINT_ACCU_VALID_PERIOD = #{pointAccuValidPeriod}
++        , UPDR_NO = #{updrNo}
++        , UPD_DTTM = sysdate
++        WHEN NOT MATCHED THEN
++        INSERT (
++        SITE_NO
++        , POINT_PVD_YN
++        , POINT_TRUNC_STNDRD_CD
++        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
++            , BUY_EPLG_WRITE_POINT
++        </if>
++        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
++            , BUY_EPLG_WRITE_PM_POINT
++        </if>
++        , POINT_ACCU_VALID_PERIOD
++        , REGR_NO
++        , REG_DTTM
++        ) VALUES (
++        #{siteNo}
++        , #{pointPvdYn}
++        , #{pointTruncStndrdCd}
++        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
++            , #{buyEplgWritePoint}
++        </if>
++        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
++            , #{buyEplgWritePmPoint}
++        </if>
++        , #{pointAccuValidPeriod}
++        , #{regrNo}
++        , sysdate
++        )
++    </update>
+ </mapper>
+\ No newline at end of file
+diff --git a/src/modules/business/src/main/resources/mapper/oracle/app/setup/pointConfig.xml b/src/modules/business/src/main/resources/mapper/oracle/app/setup/pointConfig.xml
+deleted file mode 100644
+index a1b8ede..0000000
+--- a/src/modules/business/src/main/resources/mapper/oracle/app/setup/pointConfig.xml
++++ /dev/null
+@@ -1,66 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8" ?>
+-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+-
+-<mapper namespace="setup.point.config">
+-    <!-- 포인트 설정정보 조회 -->
+-    <select id="selectPointConfig" parameterType="pointConfigSO" resultType="pointConfigVO">
+-        /* setup.Point.config.selectPointConfig */
+-            SELECT
+-                  ts.POINT_PVD_YN
+-                , ts.POINT_TRUNC_STNDRD_CD
+-                , ts.BUY_EPLG_WRITE_POINT
+-                , ts.BUY_EPLG_WRITE_PM_POINT
+-                , ts.POINT_ACCU_VALID_PERIOD
+-            FROM    TS_SITE ts
+-            WHERE   ts.SITE_NO = #{siteNo}
+-    </select>
+-
+-    <!-- 포인트 설정정보 수정 -->
+-    <update id="updatePointConfig">
+-    	MERGE INTO TS_SITE
+-		USING DUAL
+-		ON (SITE_NO = #{siteNo})
+-		WHEN MATCHED THEN
+-			UPDATE SET
+-		          POINT_PVD_YN = #{pointPvdYn}
+-		        , POINT_TRUNC_STNDRD_CD = #{pointTruncStndrdCd}
+-		        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+-		        , BUY_EPLG_WRITE_POINT = #{buyEplgWritePoint}
+-		        </if>
+-		        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+-		        , BUY_EPLG_WRITE_PM_POINT = #{buyEplgWritePmPoint}
+-		        </if>
+-		        , POINT_ACCU_VALID_PERIOD = #{pointAccuValidPeriod}
+-		        , UPDR_NO = #{updrNo}
+-		        , UPD_DTTM = sysdate
+-		WHEN NOT MATCHED THEN
+-		    INSERT (
+-		          SITE_NO
+-		        , POINT_PVD_YN
+-		        , POINT_TRUNC_STNDRD_CD
+-		        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+-		        , BUY_EPLG_WRITE_POINT
+-		        </if>
+-		        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+-		        , BUY_EPLG_WRITE_PM_POINT
+-		        </if>
+-		        , POINT_ACCU_VALID_PERIOD
+-		        , REGR_NO
+-		        , REG_DTTM
+-		    ) VALUES (
+-		          #{siteNo}
+-		        , #{pointPvdYn}
+-		        , #{pointTruncStndrdCd}
+-		        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+-		        , #{buyEplgWritePoint}
+-		        </if>
+-		        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+-		        , #{buyEplgWritePmPoint}
+-		        </if>
+-		        , #{pointAccuValidPeriod}
+-		        , #{regrNo}
+-		        , sysdate
+-		    )
+-    </update>
+-
+-</mapper>
+diff --git a/src/modules/business/src/main/resources/mapper/oracle/app/setup/savedMoneyConfig.xml b/src/modules/business/src/main/resources/mapper/oracle/app/setup/savedMoneyConfig.xml
+deleted file mode 100644
+index e173221..0000000
+--- a/src/modules/business/src/main/resources/mapper/oracle/app/setup/savedMoneyConfig.xml
++++ /dev/null
+@@ -1,87 +0,0 @@
+-<?xml version="1.0" encoding="UTF-8" ?>
+-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+-
+-<mapper namespace="setup.savedmoney.config">
+-    <!-- 마켓포인트 설정정보 조회 -->
+-    <select id="selectSavedMoneyConfig" parameterType="savedMoneyConfigSO" resultType="savedMoneyConfigVO">
+-        /* setup.savedmoney.config.selectSavedMoneyConfig - 마켓포인트 설정정보 조회 */
+-	        SELECT
+-				  ts.SVMN_PVD_YN
+-				, ts.SVMN_PVD_STNDRD_CD
+-				, ts.SVMN_PVD_RATE
+-				, ts.SVMN_TRUNC_STNDRD_CD
+-				, ts.SVMN_USE_PSB_POSS_AMT
+-				, ts.SVMN_MIN_USE_AMT
+-				, ts.SVMN_MAX_USE_AMT
+-				, ts.SVMN_USE_UNIT_CD
+-				, ts.SVMN_CP_DUPLT_APPLY_YN
+-				, ts.SVMN_AUTO_EXTINCTION_YN
+-				, ts.SVMN_USE_LIMITDAY
+-				, ts.RECOM_PVD_RATE
+-				, ts.SVMN_MAX_USE_GB_CD
+-	        FROM    TS_SITE ts
+-	        WHERE   ts.SITE_NO = #{siteNo}
+-    </select>
+-
+-    <!-- 마켓포인트 설정정보 수정 -->
+-    <update id="updateSavedMoneyConfig">
+-    	/* setup.savedmoney.config.selectSavedMoneyConfig - 마켓포인트 설정정보 수정 */
+-    	MERGE INTO TS_SITE
+-		USING DUAL
+-		ON (SITE_NO = #{siteNo})
+-		WHEN MATCHED THEN
+-			UPDATE SET
+-				  SVMN_PVD_YN = #{svmnPvdYn}
+-				, SVMN_PVD_STNDRD_CD = #{svmnPvdStndrdCd}
+-				, SVMN_PVD_RATE = #{svmnPvdRate}
+-				, RECOM_PVD_RATE = #{recomPvdRate}
+-				, SVMN_TRUNC_STNDRD_CD = #{svmnTruncStndrdCd}
+-				, SVMN_USE_PSB_POSS_AMT = #{svmnUsePsbPossAmt}
+-				, SVMN_MIN_USE_AMT = #{svmnMinUseAmt}
+-				, SVMN_MAX_USE_AMT = #{svmnMaxUseAmt}
+-				, SVMN_MAX_USE_GB_CD = #{svmnMaxUseGbCd}
+-				, SVMN_USE_UNIT_CD = #{svmnUseUnitCd}
+-				, SVMN_CP_DUPLT_APPLY_YN = #{svmnCpDupltApplyYn}
+-				, SVMN_AUTO_EXTINCTION_YN = #{svmnAutoExtinctionYn}
+-				, SVMN_USE_LIMITDAY = #{svmnUseLimitday}
+-				, UPDR_NO = #{updrNo}
+-				, UPD_DTTM = sysdate
+-		WHEN NOT MATCHED THEN
+-		    INSERT (
+-		          SITE_NO
+-				, SVMN_PVD_YN
+-				, SVMN_PVD_STNDRD_CD
+-				, SVMN_PVD_RATE
+-				, RECOM_PVD_RATE
+-				, SVMN_TRUNC_STNDRD_CD
+-				, SVMN_USE_PSB_POSS_AMT
+-				, SVMN_MIN_USE_AMT
+-				, SVMN_MAX_USE_AMT
+-				, SVMN_MAX_USE_GB_CD
+-				, SVMN_USE_UNIT_CD
+-				, SVMN_CP_DUPLT_APPLY_YN
+-				, SVMN_AUTO_EXTINCTION_YN
+-				, SVMN_USE_LIMITDAY
+-		        , REGR_NO
+-		        , REG_DTTM
+-		    ) VALUES (
+-		          #{siteNo}
+-				, #{svmnPvdYn}
+-				, #{svmnPvdStndrdCd}
+-				, #{svmnPvdRate}
+-				, #{recomPvdRate}
+-				, #{svmnTruncStndrdCd}
+-				, #{svmnUsePsbPossAmt}
+-				, #{svmnMinUseAmt}
+-				, #{svmnMaxUseAmt}
+-				, #{svmnMaxUseGbCd}
+-				, #{svmnUseUnitCd}
+-				, #{svmnCpDupltApplyYn}
+-				, #{svmnAutoExtinctionYn}
+-				, #{svmnUseLimitday}
+-		        , #{regrNo}
+-		        , sysdate
+-		    )
+-    </update>
+-
+-</mapper>
+diff --git a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/operation/controller/SavedMnPointController.java b/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/operation/controller/SavedMnPointController.java
+index 06c4ff8..87606bc 100644
+--- a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/operation/controller/SavedMnPointController.java
++++ b/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/operation/controller/SavedMnPointController.java
+@@ -5,6 +5,13 @@ import java.util.Calendar;
+ import javax.annotation.Resource;
+ import javax.servlet.http.HttpServletRequest;
+ 
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigPO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigSO;
++import net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigVO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigPO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigSO;
++import net.danvi.dmall.biz.app.operation.model.PointConfigVO;
++import net.danvi.dmall.biz.system.validation.UpdateGroup;
+ import org.springframework.stereotype.Controller;
+ import org.springframework.validation.BindingResult;
+ import org.springframework.validation.annotation.Validated;
+@@ -57,6 +64,71 @@ public class SavedMnPointController {
+         return new ModelAndView("/admin/operation/savedMnPoint/SavemoneyHistory");
+     }
+ 
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 마켓포인트 설정 화면(/admin/setup/savedMoneyConfig)을 반환한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @return
++     */
++    @RequestMapping("/savemoney-config")
++    public ModelAndView viewSavedMoneyConfig() {
++        ModelAndView mav = new ModelAndView("/admin/operation/savedMnPoint/savedMoneyConfig");//
++        return mav;
++    }
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 마켓포인트 관련 설정 정보를 취득하여 반환한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @param so
++     * @return
++     */
++    @RequestMapping("/savedmoney-config")
++    public @ResponseBody ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so) {
++        ResultModel<SavedMoneyConfigVO> result = savedMnPointService.selectSavedMoneyConfig(so);
++        return result;
++    }
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 마켓포인트 설정 정보를 등록 및 수정한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @param po
++     * @param bindingResult
++     * @return
++     * @throws Exception
++     */
++    @RequestMapping("/savedmoney-config-update")
++    public @ResponseBody ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(
++            @Validated(UpdateGroup.class) SavedMoneyConfigPO po, BindingResult bindingResult) throws Exception {
++        if (bindingResult.hasErrors()) {
++            log.debug("ERROR : {}", bindingResult.getAllErrors().toString());
++            throw new JsonValidationException(bindingResult);
++        }
++        ResultModel<SavedMoneyConfigPO> result = savedMnPointService.updateSavedMoneyConfig(po);
++        return result;
++    }
+     /**
+      * <pre>
+      * 작성일 : 2016. 5. 18.
+@@ -172,6 +244,7 @@ public class SavedMnPointController {
+             throw new JsonValidationException(bindingResult);
+         }
+ 
++        log.info("so = "+so);
+         ResultListModel<SavedmnPointVO> result = savedMnPointService.selectSavedmnGetPaging(so);
+ 
+         return result;
+@@ -307,4 +380,70 @@ public class SavedMnPointController {
+ 
+         return result;
+     }
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 포인트 설정 화면(/admin/setup/pointConfig)을 반환한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @return
++     */
++    @RequestMapping("/point-config")
++    public ModelAndView viewPointConfig() {
++        ModelAndView mav = new ModelAndView("admin/operation/savedMnPoint/pointConfig");//
++        return mav;
++    }
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 포인트 설정 정보를 취득하여 반환한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @param so
++     * @return
++     */
++    @RequestMapping("/point-config-info")
++    public @ResponseBody ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so) {
++        ResultModel<PointConfigVO> result = savedMnPointService.selectPointConfig(so);
++        return result;
++    }
++
++    /**
++     * <pre>
++     * 작성일 : 2016. 9. 27.
++     * 작성자 : dong
++     * 설명   : 포인트 설정 정보를 수정 후 결과를 반환한다.
++     *
++     * 수정내역(수정일 수정자 - 수정내용)
++     * -------------------------------------------------------------------------
++     * 2016. 9. 27. dong - 최초생성
++     * </pre>
++     *
++     * @param po
++     * @param bindingResult
++     * @return
++     * @throws Exception
++     */
++    @RequestMapping("/point-config-update")
++    public @ResponseBody ResultModel<PointConfigPO> updatePointConfig(@Validated(UpdateGroup.class) PointConfigPO po,
++                                                                      BindingResult bindingResult) throws Exception {
++        if (bindingResult.hasErrors()) {
++            log.debug("ERROR : {}", bindingResult.getAllErrors().toString());
++            throw new JsonValidationException(bindingResult);
++        }
++        ResultModel<PointConfigPO> result = savedMnPointService.updatePointConfig(po);
++        return result;
++    }
+ }
+diff --git a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/PointConfigController.java b/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/PointConfigController.java
+deleted file mode 100644
+index 103c7f8..0000000
+--- a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/PointConfigController.java
++++ /dev/null
+@@ -1,112 +0,0 @@
+-package net.danvi.dmall.admin.web.view.setup.controller;
+-
+-import javax.annotation.Resource;
+-
+-import org.springframework.stereotype.Controller;
+-import org.springframework.validation.BindingResult;
+-import org.springframework.validation.annotation.Validated;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-import org.springframework.web.bind.annotation.ResponseBody;
+-import org.springframework.web.servlet.ModelAndView;
+-
+-import lombok.extern.slf4j.Slf4j;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigPO;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigSO;
+-import net.danvi.dmall.biz.app.setup.point.model.PointConfigVO;
+-import net.danvi.dmall.biz.app.setup.point.service.PointConfigService;
+-import net.danvi.dmall.biz.system.validation.UpdateGroup;
+-import dmall.framework.common.exception.JsonValidationException;
+-import dmall.framework.common.model.ResultModel;
+-
+-/**
+- * 포인트 적립 설정 정보 Controller
+- * 
+- * @author dong
+- * @since 2016.05.04
+- */
+-/**
+- * 네이밍 룰
+- * View 화면
+- * Grid 그리드
+- * Tree 트리
+- * Ajax Ajax
+- * Insert 입력
+- * Update 수정
+- * Delete 삭제
+- * Save 입력 / 수정
+- */
+-@Slf4j
+-@Controller
+-@RequestMapping("/admin/setup/config/point")
+-public class PointConfigController {
+-
+-    @Resource(name = "pointConfigService")
+-    private PointConfigService pointConfigService;
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 포인트 설정 화면(/admin/setup/pointConfig)을 반환한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @return
+-     */
+-    @RequestMapping("/point-config")
+-    public ModelAndView viewPointConfig() {
+-        ModelAndView mav = new ModelAndView("/admin/setup/pointConfig");//
+-        return mav;
+-    }
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 포인트 설정 정보를 취득하여 반환한다. 
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param so
+-     * @return
+-     */
+-    @RequestMapping("/point-config-info")
+-    public @ResponseBody ResultModel<PointConfigVO> selectPointConfig(PointConfigSO so) {
+-        ResultModel<PointConfigVO> result = pointConfigService.selectPointConfig(so);
+-        return result;
+-    }
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 포인트 설정 정보를 수정 후 결과를 반환한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param po
+-     * @param bindingResult
+-     * @return
+-     * @throws Exception
+-     */
+-    @RequestMapping("/point-config-update")
+-    public @ResponseBody ResultModel<PointConfigPO> updatePointConfig(@Validated(UpdateGroup.class) PointConfigPO po,
+-            BindingResult bindingResult) throws Exception {
+-        if (bindingResult.hasErrors()) {
+-            log.debug("ERROR : {}", bindingResult.getAllErrors().toString());
+-            throw new JsonValidationException(bindingResult);
+-        }
+-        ResultModel<PointConfigPO> result = pointConfigService.updatePointConfig(po);
+-        return result;
+-    }
+-
+-}
+\ No newline at end of file
+diff --git a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/SavedMoneyConfigController.java b/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/SavedMoneyConfigController.java
+deleted file mode 100644
+index a3a2f72..0000000
+--- a/src/services/admin/src/main/java/net/danvi/dmall/admin/web/view/setup/controller/SavedMoneyConfigController.java
++++ /dev/null
+@@ -1,112 +0,0 @@
+-package net.danvi.dmall.admin.web.view.setup.controller;
+-
+-import javax.annotation.Resource;
+-
+-import org.springframework.stereotype.Controller;
+-import org.springframework.validation.BindingResult;
+-import org.springframework.validation.annotation.Validated;
+-import org.springframework.web.bind.annotation.RequestMapping;
+-import org.springframework.web.bind.annotation.ResponseBody;
+-import org.springframework.web.servlet.ModelAndView;
+-
+-import lombok.extern.slf4j.Slf4j;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigPO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigSO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.model.SavedMoneyConfigVO;
+-import net.danvi.dmall.biz.app.setup.savedmoney.service.SavedMoneyConfigService;
+-import net.danvi.dmall.biz.system.validation.UpdateGroup;
+-import dmall.framework.common.exception.JsonValidationException;
+-import dmall.framework.common.model.ResultModel;
+-
+-/**
+- * 마켓포인트 적립 설정 정보 Controller
+- * 
+- * @author dong
+- * @since 2016.05.04
+- */
+-/**
+- * 네이밍 룰
+- * View 화면
+- * Grid 그리드
+- * Tree 트리
+- * Ajax Ajax
+- * Insert 입력
+- * Update 수정
+- * Delete 삭제
+- * Save 입력 / 수정
+- */
+-@Slf4j
+-@Controller
+-@RequestMapping("/admin/setup/config/savedmoney")
+-public class SavedMoneyConfigController {
+-
+-    @Resource(name = "savedMoneyConfigService")
+-    private SavedMoneyConfigService savedMoneyConfigService;
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 마켓포인트 설정 화면(/admin/setup/savedMoneyConfig)을 반환한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @return
+-     */
+-    @RequestMapping("/savemoney-config")
+-    public ModelAndView viewSavedMoneyConfig() {
+-        ModelAndView mav = new ModelAndView("/admin/setup/savedMoneyConfig");//
+-        return mav;
+-    }
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 마켓포인트 관련 설정 정보를 취득하여 반환한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param so
+-     * @return
+-     */
+-    @RequestMapping("/savedmoney-config")
+-    public @ResponseBody ResultModel<SavedMoneyConfigVO> selectSavedMoneyConfig(SavedMoneyConfigSO so) {
+-        ResultModel<SavedMoneyConfigVO> result = savedMoneyConfigService.selectSavedMoneyConfig(so);
+-        return result;
+-    }
+-
+-    /**
+-     * <pre>
+-     * 작성일 : 2016. 9. 27.
+-     * 작성자 : dong
+-     * 설명   : 마켓포인트 설정 정보를 등록 및 수정한다.
+-     * 
+-     * 수정내역(수정일 수정자 - 수정내용)
+-     * -------------------------------------------------------------------------
+-     * 2016. 9. 27. dong - 최초생성
+-     * </pre>
+-     *
+-     * @param po
+-     * @param bindingResult
+-     * @return
+-     * @throws Exception
+-     */
+-    @RequestMapping("/savedmoney-config-update")
+-    public @ResponseBody ResultModel<SavedMoneyConfigPO> updateSavedMoneyConfig(
+-            @Validated(UpdateGroup.class) SavedMoneyConfigPO po, BindingResult bindingResult) throws Exception {
+-        if (bindingResult.hasErrors()) {
+-            log.debug("ERROR : {}", bindingResult.getAllErrors().toString());
+-            throw new JsonValidationException(bindingResult);
+-        }
+-        ResultModel<SavedMoneyConfigPO> result = savedMoneyConfigService.updateSavedMoneyConfig(po);
+-        return result;
+-    }
+-
+-}
+\ No newline at end of file
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/goods/KeywordGoodsManage.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/goods/KeywordGoodsManage.jsp
+index 8891944..3c08519 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/goods/KeywordGoodsManage.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/goods/KeywordGoodsManage.jsp
+@@ -426,8 +426,6 @@
+                 $("#keywordNm").val(result.data.keywordNm);
+                 $("#mainMngKeywordNm").text('['+result.data.keywordNm+'] Keyword 페이지 메인 비주얼 설정');
+ 
+-//                 $("input:radio[name='keywordDispTypeCd']:radio[value='" + result.data.keywordDispTypeCd + "']").attr('checked',true);
+-                
+                 Dmall.common.comma();
+                 
+ 
+@@ -436,19 +434,6 @@
+                 $inputs.parents('label').removeClass('on');
+                 $input.parents().parents('label').addClass('on');
+ 
+-                /*if(result.data.keywordType=='S'){
+-                    $("#keywordSlideTr").show();
+-                    $('#keywordSlideMin').val(result.data.keywordSlideMin);
+-                    $('#keywordSlideMax').val(result.data.keywordSlideMax);
+-
+-                    $("#keywordImgTr").hide();
+-                }else{
+-                    $("#keywordSlideTr").hide();
+-                    $('#keywordSlideMin').val("");
+-                    $('#keywordSlideMax').val("");
+-
+-                    $("#keywordImgTr").show();
+-                }*/
+                 fn_apply_keyword_goods(result.data.keywordNo);
+             }
+ 
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/SavemoneyHistory.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/SavemoneyHistory.jsp
+index 8ae9642..a277d80 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/SavemoneyHistory.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/SavemoneyHistory.jsp
+@@ -51,10 +51,11 @@
+                     var url = '/admin/operation/savedMnPoint/savedmoney',dfd = jQuery.Deferred();
+                     var param = jQuery('#form_id_search').serialize();
+ 
++                    console.log("param = ", param);
+                     Dmall.AjaxUtil.getJSON(url, param, function(result) {
+                         var template = 
+                             '<tr data-bbs-id = "{{memberNo}}" data-bbs-nm="{{loginId}}">'+
+-                            '<td>{{rowNum}}</td><td>{{memberNm}}</td><td>{{loginId}}</td><td>{{content}}</td>' +
++                            '<td>{{rowNum}}</td><td>{{memberNm}}</td><td>{{memberGradeNm}}</td><td>{{loginId}}</td><td>{{content}}</td>' +
+                             '<td><span class="{{classNm}}">{{svmnType}}</span><span class="comma">{{prcAmt}}</span></td><td>{{regDttm}}</td><td>{{svmnTypeNm}}</td>';
+                             managerGroup = new Dmall.Template(template),
+                                 tr = '';
+@@ -72,9 +73,8 @@
+                         
+                         Dmall.GridUtil.appendPaging('form_id_search', 'div_id_paging', result, 'paging_id_saveMn', saveMnSet.getSaveMnList);
+                         
+-                        $("#a").text(result.filterdRows);
+-                        $("#b").text(result.totalRows);
+-                        
++                        $("#cnt_total").text(result.filterdRows);
++
+                         Dmall.common.comma();
+                     });
+ 
+@@ -82,8 +82,8 @@
+                     var param = jQuery('#form_id_search').serialize();
+                     
+                     Dmall.AjaxUtil.getJSON(url, param, function(result) {
+-                        jQuery('#totalSvmnPvd').text(result.data.totalSvmnPvd+'원');
+-                        jQuery('#totalSvmnUse').text(result.data.totalSvmnUse+'원');
++                        jQuery('#totalSvmnPvd').text(Dmall.common.numberWithCommas(result.data.totalSvmnPvd));
++                        jQuery('#totalSvmnUse').text(Dmall.common.numberWithCommas(result.data.totalSvmnUse));
+                     });
+                     
+                     return dfd.promise();
+@@ -94,7 +94,10 @@
+     <t:putAttribute name="content">
+         <div class="sec01_box">
+             <div class="tlt_box">
+-                <h2 class="tlth2">마켓포인트 관리</h2>
++                <div class="tlt_head">
++                    운영설정<span class="step_bar"></span>  포인트<span class="step_bar"></span>  포인트관리 <span class="step_bar"></span>
++                </div>
++                <h2 class="tlth2">포인트-포인트관리</h2>
+             </div>
+             <!-- search_box -->
+             <form id="form_id_search" >
+@@ -149,7 +152,7 @@
+                  <!-- line_box -->
+                  <div class="line_box">
+                      <!-- tblw -->
+-                     <div class="tblw tblmany2">
++                     <%--<div class="tblw tblmany2">
+                          <table summary="이표는 마켓포인트 관리 리스트 표 입니다. 구성은 총 마켓포인트, 총 사용액  입니다.">
+                              <caption>마켓포인트 관리 리스트</caption>
+                              <colgroup>
+@@ -167,28 +170,19 @@
+                                  </tr>
+                              </tbody>
+                          </table>
+-                     </div>
++                     </div>--%>
+                      <!-- //tblw -->
+                               
+                      <div class="top_lay">
+-                        <div class="search_txt">
+-                            검색 <strong class="be" id = "a"></strong>개 /
+-                            총 <strong class="all" id = "b"></strong>개
+-                        </div>
+-                        <div class="select_btn">
+-                            <span class="select">
+-                                <label for="sel_sord"></label>
+-                                <select name="selSord" id="sel_sord">
+-                                    <tags:option codeStr="A.REG_DTTM ASC:최근 등록일 순▽;A.REG_DTTM DESC:나중 등록일 순△" />
+-                                </select>
+-                            </span>
+-                            <span class="select">
+-                               <label for="select1"></label>
+-                               <select name="rows" id="sel_rows">
+-                                   <tags:option codeStr="10:10개 출력;20:20개 출력;50:50개 출력" />
+-                               </select>
+-                            </span>
+-                        </div>
++                         <div class="select_btn_left">
++                             <div class="search_txt">
++                                총 <strong class="be" id="cnt_total">120</strong>개의 포인트 내역이  검색되었습니다.
++                             </div>
++                         </div>
++                         <div class="select_btn_right">
++                             <div> 현재 포인트 : <span id="totalSvmnPvd"> 1,771,470</span>원</div>
++                             <div>총 사용 포인트 :<span id="totalSvmnUse"> 87,517,910</span>원</div>
++                         </div>
+                      </div>
+      
+                      <!-- tblh -->
+@@ -198,8 +192,9 @@
+                              <colgroup>
+                                  <col width="6%">
+                                  <col width="8%">
+-                                 <col width="10%">
+-                                 <col width="46%">
++                                 <col width="7%">
++                                 <col width="13%">
++                                 <col width="36%">
+                                  <col width="10%">
+                                  <col width="10%">
+                                  <col width="10%">
+@@ -207,10 +202,11 @@
+                              <thead>
+                                  <tr>
+                                      <th>번호</th>
+-                                     <th>회원명</th>
+-                                     <th>회원아이디</th>
+-                                     <th>내용(주문번호)</th>
+-                                     <th>마켓포인트</th>
++                                     <th>이름</th>
++                                     <th>회원등급</th>
++                                     <th>아이디</th>
++                                     <th>내용</th>
++                                     <th>포인트</th>
+                                      <th>발생일</th>
+                                      <th>상태</th>
+                                  </tr>
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/pointConfig.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/pointConfig.jsp
+similarity index 80%
+rename from src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/pointConfig.jsp
+rename to src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/pointConfig.jsp
+index 18af4f8..82af775 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/pointConfig.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/pointConfig.jsp
+@@ -36,7 +36,7 @@
+         }
+         // 사이트 포인트 적립 설정 정보 조회 
+         function fn_get_Info() {
+-            var url = '/admin/setup/config/point/point-config-info',
++            var url = '/admin/operation/point-config-info',
+             param = '',
+             dfd = jQuery.Deferred();
+             
+@@ -65,7 +65,7 @@
+                     $("#hd_buyEplgWritePmPoint").val(parseInt(buyEplgWritePmPoint.replaceAll(",", "")));
+                 }
+                 // 저장 실행
+-                var url = '/admin/setup/config/point/point-config-update',
++                var url = '/admin/operation/point-config-update',
+                 param = jQuery('#form_point_config').serialize();
+                 
+                 Dmall.AjaxUtil.getJSON(url, param, function(result) {
+@@ -99,10 +99,10 @@
+     <t:putAttribute name="content">
+     <div class="sec01_box">
+         <div class="tlt_box">
+-            <h2 class="tlth2">마켓포인트 추가 설정</h2>
+-            <!-- <div class="btn_box right">
+-                <a href="#none" class="btn blue shot" id="btn_save">저장하기</a>
+-            </div> -->
++            <div class="tlt_head">
++                운영설정<span class="step_bar"></span>  포인트<span class="step_bar"></span>  포인트 추가 설정 <span class="step_bar"></span>
++            </div>
++            <h2 class="tlth2">포인트-포인트 추가 설정</h2>
+         </div>
+         
+         <form:form id="form_point_config">
+@@ -120,7 +120,7 @@
+                     </colgroup>
+                     <tbody>
+                         <tr>
+-                            <th>마켓포인트 지급 여부</th>
++                            <th>지급 여부</th>
+                             <td id="td_pointPvdYn" data-find="point_config" data-bind-value="pointPvdYn" data-bind-type="labelcheckbox">
+                                 <label for="rdo_pointPvdYn_Y" class="radio mr20"><span class="ico_comm">
+                                     <input type="radio" name="pointPvdYn" value="Y" id="rdo_pointPvdYn_Y">>
+@@ -131,9 +131,9 @@
+                             </td>
+                         </tr>
+                         <tr>
+-                            <th rowspan="2">마켓포인트 적립 방법</th>
++                            <th rowspan="2">적립 방법</th>
+                             <td>
+-                                [일반] 구매후기 작성 후 포인트 적립함 (<span class="intxt shot">
++                                [일반] 상품 후기 작성 후 포인트 적립함 (<span class="intxt shot5">
+                                     <input type="text" name="buyEplgWritePoint_" class="comma" id="txt_buyEplgWritePoint" maxlength="10" data-find="point_config" data-bind-type="textcomma" data-bind-value="buyEplgWritePoint"  data-validation-engine="validate[maxSize[10]]">
+                                     <input type="hidden" id="hd_buyEplgWritePoint" name="buyEplgWritePoint" />
+                                 </span> 점)
+@@ -141,31 +141,12 @@
+                         </tr>
+                         <tr>
+                             <td>
+-                                [프리미엄] 구매후기 작성 후 포인트 적립함 (<span class="intxt shot">
++                                [프리미엄] 상품 후기 작성 후 포인트 적립함 (<span class="intxt shot5">
+                                     <input type="text" name="buyEplgWritePmPoint_" class="comma" id="txt_buyEplgWritePmPoint" maxlength="10" data-find="point_config" data-bind-type="textcomma" data-bind-value="buyEplgWritePmPoint"  data-validation-engine="validate[maxSize[10]]">
+                                     <input type="hidden" id="hd_buyEplgWritePmPoint" name="buyEplgWritePmPoint" />
+                                 </span> 점)
+                             </td>
+                         </tr>
+-                        <%--
+-                        <tr>
+-                            <th>마켓포인트 절사 기준 설정</th>
+-                            <td>
+-                                포인트를 %단위로 적립하는 경우에 
+-                                <span class="select">
+-                                    <label for="sel_pointTruncStndrdCd">1000원단위 절사</label>
+-                                    <select name="pointTruncStndrdCd" id="sel_pointTruncStndrdCd" data-find="point_config" data-bind-value="pointTruncStndrdCd" data-bind-type="labelselect">
+-                                        <code:option codeGrp="POINT_TRUNC_UNIT_CD" />
+-                                    </select>
+-                                </span>
+-                                계산하여 지금
+-                            </td>
+-                        </tr>
+-                         --%>
+-                        <tr>
+-                            <th>출석체크포인트</th>
+-                            <td>출석체크 이벤트에 참여 시 마켓포인트 적립함</td>
+-                        </tr>
+                     </tbody>
+                 </table>
+             </div>
+@@ -181,7 +162,7 @@
+                     </colgroup>
+                     <tbody>
+                         <tr>
+-                            <th>마켓포인트 사용기한</th>
++                            <th>포인트 사용기한</th>
+                             <td>
+                                 <span class="mr20">
+                                     적립일로부터
+@@ -191,7 +172,7 @@
+                                             <tags:option codeStr="1:1;2:2;3:3;4:4;5:5;6:6;12:12;24:24" />
+                                         </select>
+                                     </span>
+-                                    개월 유효(사용기한 초과 마켓포인트 자동 소멸)
++                                    개월 유효(사용기한 초과 포인트 자동 소멸)
+                                 </span>
+                             </td>
+                         </tr>
+@@ -204,9 +185,11 @@
+ 
+         </form:form>
+ 
+-		<div class="btn_box txtc">
+-                <a href="#none" class="btn blue shot" id="btn_save">저장하기</a>
+-		</div>
++        <div class="bottom_box">
++            <div class="right">
++                <button class="btn--blue-round" id="btn_save">저장</button>
++            </div>
++        </div>
+     </div>
+ 
+         
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/savedMoneyConfig.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/savedMoneyConfig.jsp
+similarity index 88%
+rename from src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/savedMoneyConfig.jsp
+rename to src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/savedMoneyConfig.jsp
+index f9945a9..9475722 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/setup/savedMoneyConfig.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/operation/savedMnPoint/savedMoneyConfig.jsp
+@@ -18,7 +18,7 @@
+             fn_get_Info();
+             
+             // 저장버튼 이벤트 설정
+-            jQuery('#btn_save').off('click').on('click', function(e) {
++            jQuery('#btn_save').on('click', function(e) {
+                 Dmall.EventUtil.stopAnchorAction(e);
+                 fn_save();
+             });
+@@ -83,7 +83,7 @@
+         }
+         // 사이트 마켓포인트 설정 정보 조회
+         function fn_get_Info() {
+-            var url = '/admin/setup/config/savedmoney/savedmoney-config',
++            var url = '/admin/operation/savedmoney-config',
+             param = '',
+             dfd = jQuery.Deferred();
+             
+@@ -126,7 +126,7 @@
+                 }
+                 
+                 // 저장 실행
+-                var url = '/admin/setup/config/savedmoney/savedmoney-config-update',
++                var url = '/admin/operation/savedmoney-config-update',
+                 param = jQuery('#form_saved_money_config').serialize();
+ 
+                 Dmall.AjaxUtil.getJSON(url, param, function(result) {
+@@ -148,10 +148,10 @@
+     <t:putAttribute name="content">
+     <div class="sec01_box">
+         <div class="tlt_box">
+-            <h2 class="tlth2">마켓포인트 기본 설정</h2>
+-            <!-- <div class="btn_box right">
+-                <a href="#none" class="btn blue shot" id="btn_save">저장하기</a>
+-            </div> -->
++            <div class="tlt_head">
++                운영설정<span class="step_bar"></span>  포인트<span class="step_bar"></span>  포인트 설정 <span class="step_bar"></span>
++            </div>
++            <h2 class="tlth2">포인트-포인트 설정</h2>
+         </div>
+         
+         <form:form id="form_saved_money_config">
+@@ -170,34 +170,23 @@
+                     </colgroup>
+                     <tbody>
+                         <tr>
+-                            <th>마켓포인트 지급 여부</th>
++                            <th>지급 여부</th>
+                             <td id="td_svmnPvdYn" data-find="saved_money_config" data-bind-value="svmnPvdYn" data-bind-type="labelcheckbox">
+                                 <label for="rdo_svmnPvdYn_Y" class="radio mr20"><span class="ico_comm">
+                                     <input type="radio" name="svmnPvdYn" value="Y" id="rdo_svmnPvdYn_Y">
+                                 </span> 사용</label>
+                                 <label for="rdo_svmnPvdYn_N" class="radio mr20"><span class="ico_comm">
+                                     <input type="radio" name="svmnPvdYn" value="N" id="rdo_svmnPvdYn_N">
+-                                </span> 사용안함</label>
++                                </span> 미사용</label>
+                             </td>
+                         </tr>
+                         <tr>
+-                            <th>마켓포인트 지급 기준</th>
++                            <th>지급 기준</th>
+                             <td>
+-                                상품구매금액의 
+-                                <%--                                
+-                                <span class="select">
+-                                    <label for="sel_svmnPvdStndrdCd"></label>
+-
+-                                    <select name="svmnPvdStndrdCd" id="sel_svmnPvdStndrdCd" data-find="saved_money_config" data-bind-value="svmnPvdStndrdCd" data-bind-type="labelselect">
+-                                        <code:option codeGrp="SVMN_PVD_STNDRD_CD" />
+-                                    </select>
+-
+-                                </span>
+-                                --%>
+-                                할인 판매가를 기준으로 설정합니다.
++                                상품구매금액의 할인 판매가를 기준으로 설정합니다.
+                             </td>
+                         </tr>
+-                        <tr>
++                        <%--<tr>
+                             <th>마켓포인트 지급 방법</th>
+                             <td>
+                                 주문금액의
+@@ -235,7 +224,7 @@
+                                 <span class="br"></span>
+                                 <span class="point_c3">* 카테고리/판매자/상품별  마켓포인트를 입력할 수도 있습니다.</span>
+                             </td>
+-                        </tr>
++                        </tr>--%>
+                     </tbody>
+                 </table>
+             </div>
+@@ -251,15 +240,15 @@
+                     </colgroup>
+                     <tbody>
+                         <tr>
+-                            <th>사용가능 보유 마켓포인트 기준</th>
+-                            <td>보유 마켓포인트 <span class="intxt shot">
++                            <th>보유 포인트 기준</th>
++                            <td>보유 포인트 <span class="intxt shot5">
+                                 <input type="text" name="svmnUsePsbPossAmt_" id="txt_svmnUsePsbPossAmt" class="comma" maxlength="10" data-find="saved_money_config" data-bind-type="textcomma" data-bind-value="svmnUsePsbPossAmt"  data-validation-engine="validate[required, maxSize[10]]" >
+                                 <input type="hidden" id="hd_svmnUsePsbPossAmt" name="svmnUsePsbPossAmt" />
+                             </span>원 이상 일 때 사용가능</td>
+                         </tr>
+                         <tr>
+-                            <th>마켓포인트 최소 사용금액</th>
+-                            <td>최소 <span class="intxt shot">
++                            <th>최소 사용금액</th>
++                            <td>최소 <span class="intxt shot5">
+                                 <input type="text" name="svmnMinUseAmt_" id="txt_svmnMinUseAmt" class="comma" maxlength="10" data-find="saved_money_config" data-bind-type="textcomma" data-bind-value="svmnMinUseAmt"  data-validation-engine="validate[required, maxSize[10]]" >
+                                 <input type="hidden" id="hd_svmnMinUseAmt" name="svmnMinUseAmt" />
+                             </span>원 이상 일 때 사용가능</td>
+@@ -275,7 +264,7 @@
+                             </span> 까지 사용가능</td>
+                         </tr>
+                         <tr>
+-                            <th>마켓포인트 사용단위</th>
++                            <th>사용단위</th>
+                             <td>
+                                 <span class="select one">
+                                     <label for="sel_svmnUseUnitCd">원</label>
+@@ -286,7 +275,7 @@
+                             </td>
+                         </tr>
+                         <tr>
+-                            <th>마켓포인트/쿠폰 중복사용 설정</th>
++                            <th>포인트/쿠폰 중복사용</th>
+                             <td id="td_svmnCpDupltApplyYn" data-find="saved_money_config" data-bind-value="svmnCpDupltApplyYn" data-bind-type="labelcheckbox">
+                                 <label for="rdo_svmnCpDupltApplyYn_Y" class="radio mr20"><span class="ico_comm">
+                                     <input type="radio" name="svmnCpDupltApplyYn" value="Y" id="rdo_svmnCpDupltApplyYn_Y">
+@@ -297,7 +286,7 @@
+                             </td>
+                         </tr>
+                         <tr>
+-                            <th>마켓포인트 사용기한</th>
++                            <th>사용기한</th>
+                             <td id="td_svmnAutoExtinctionYn">
+                                 <span class="mr20">
+                                     적립일로부터
+@@ -322,8 +311,10 @@
+         </form:form>
+ 
+ 
+-		<div class="btn_box txtc">
+-			<a href="#none" class="btn blue shot" id="btn_save">저장하기</a>
++		<div class="bottom_box">
++            <div class="right">
++                <button class="btn--blue-round" id="btn_save">저장</button>
++            </div>
+ 		</div>
+     </div>
+ 
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckInsert.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckInsert.jsp
+index c378247..a4c08ca 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckInsert.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckInsert.jsp
+@@ -110,13 +110,13 @@
+             };
+             
+             function pointUseYn(){
+-                var url = '/admin/setup/config/point/point-config-info';
++                var url = '/admin/operation/point-config-info';
+                 var param = '';
+ //                 dfd = jQuery.Deferred();
+                 Dmall.AjaxUtil.getJSON(url, param, function(result) {
+                     if( result.data.pointPvdYn == 'N' ){
+                         Dmall.LayerUtil.confirm("설정 > 포인트서비스 > 포인트 지급 여부에 사용안함이 체크되어 있습니다. 출석체크이벤트로 포인트를 제공하시려면 사용으로 바꾸셔야 합니다. 해당페이지로 이동하시겠습니까?", function(){
+-                                   location.href = "/admin/setup/config/point/point-config";
++                                   location.href = "/admin/operation/point-config";
+                         });
+                     }
+                 });
+diff --git a/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckUpdate.jsp b/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckUpdate.jsp
+index a5b5acd..ee9427b 100644
+--- a/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckUpdate.jsp
++++ b/src/services/admin/src/main/webapp/WEB-INF/views/admin/promotion/viewAttendanceCheckUpdate.jsp
+@@ -122,12 +122,12 @@
+             }
+ 
+             function pointUseYn(){
+-                var url = '/admin/setup/config/point/point-config-info';
++                var url = '/admin/operation/point-config-info';
+                 var param = '';
+                 Dmall.AjaxUtil.getJSON(url, param, function(result) {
+                 	if( result.data.pointPvdYn == 'N' ){
+                 		Dmall.LayerUtil.confirm("설정 > 포인트서비스 > 포인트 지급 여부에 사용안함이 체크되어 있습니다. 출석체크이벤트로 포인트를 제공하시려면 사용으로 바꾸셔야 합니다. 해당페이지로 이동하시겠습니까?", function(){
+-                			location.href = "/admin/setup/config/point/point-config";
++                			location.href = "/admin/operation/point-config";
+                         });
+                     }
+                 });
+-- 
+2.36.0.windows.1
+

@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="order.exchange">
+    <!-- 주문 번호별 교환 정보  -->
+    <select id="selectOrdDtlExchange" resultType="claimGoodsVO">
+      /* order.exchange.selectOrdDtlExchange - 주문 번호별 교환 정보 */
+      <choose>
+          <when test='refundType!=null and refundType!="" and refundType!="V"'>
+             /* 관리자 반품신청 */
+              SELECT
+                  B.ORD_NO,
+                  B.ORD_DTL_SEQ,
+                  B.GOODS_NM,
+                  B.ITEM_NO,
+                  B.ITEM_NM,
+                  B.GOODS_NO,
+                  fn_getGoodsImgPath(B.GOODS_NO, '02') AS IMG_PATH,
+                  B.ADD_OPT_NM,
+                  #{claimQtt} AS CLAIM_QTT,
+                  '' RETURN_CD,
+                  '' CLAIM_CD,
+                  ''  RETURN_NM,
+                  '' CLAIM_NM,
+                  B.ORD_DTL_STATUS_CD,
+                  fn_getCodeNm('ORD_DTL_STATUS_CD', B.ORD_DTL_STATUS_CD) ORD_DTL_STATUS_NM,
+                  '' CLAIM_REASON_CD,
+                  '' CLAIM_REASON_NM,
+                  '' CLAIM_ACCEPT_DTTM,
+                  '' CLAIM_CMPLT_DTTM,
+                  '' CLAIM_CANCEL_DTTM,
+                  '' CLAIM_MEMO,
+                  '' CLAIM_DTL_REASON,
+                  '' CLAIM_CONTENT_CHK,
+                  NVL(ROUND((SELECT REAL_DLVR_AMT FROM TO_DLVR WHERE ORD_NO = B.ORD_NO AND ORD_DTL_SEQ = B.ORD_DTL_SEQ and rownum = 1) ,0),0) AS REAL_DLVR_AMT
+              FROM
+              TO_ORD A, TO_ORD_DTL B
+              WHERE
+              A.ORD_NO = B.ORD_NO
+              AND B.ADD_OPT_YN = 'N'
+          </when>
+          <otherwise>
+            /* 반품/환불 처리 */
+              SELECT
+                  B.CLAIM_NO,
+                  B.ORD_NO,
+                  B.ORD_DTL_SEQ,
+                  C.GOODS_NM,
+                  C.ITEM_NO,
+                  C.ITEM_NM,
+                  C.GOODS_NO,
+                  fn_getGoodsImgPath(C.GOODS_NO, '02') AS IMG_PATH,
+                  C.ADD_OPT_NM,
+                  B.CLAIM_QTT AS CLAIM_QTT,
+                  B.RETURN_CD,
+                  B.CLAIM_CD,
+                  fn_getCodeNm('RETURN_CD', B.RETURN_CD) RETURN_NM,
+                  fn_getCodeNm('CLAIM_CD', B.CLAIM_CD) CLAIM_NM,
+                  C.ORD_DTL_STATUS_CD,
+                  fn_getCodeNm('ORD_DTL_STATUS_CD', C.ORD_DTL_STATUS_CD) ORD_DTL_STATUS_NM,
+                  (case when B.CLAIM_REASON_CD='10' then '20'
+                        when B.CLAIM_REASON_CD='20' then B.CLAIM_REASON_CD
+                        when B.CLAIM_REASON_CD='30' then '50'
+                        when B.CLAIM_REASON_CD='40' then '50'
+                        when B.CLAIM_REASON_CD='50' then B.CLAIM_REASON_CD
+                        when B.CLAIM_REASON_CD='60' then B.CLAIM_REASON_CD
+                        when B.CLAIM_REASON_CD='70' then B.CLAIM_REASON_CD
+                        when B.CLAIM_REASON_CD='90' then '70'
+                        when B.CLAIM_REASON_CD='99' then '50'
+                        when B.CLAIM_REASON_CD='' then '20'end) as CLAIM_REASON_CD,
+                  (case when B.CLAIM_REASON_CD='10' then '상품불량'
+                        when B.CLAIM_REASON_CD='20' then fn_getCodeNm('CLAIM_REASON_CD', B.CLAIM_REASON_CD)
+                        when B.CLAIM_REASON_CD='30' then '단순변심'
+                        when B.CLAIM_REASON_CD='40' then '단순변심'
+                        when B.CLAIM_REASON_CD='50' then fn_getCodeNm('CLAIM_REASON_CD', B.CLAIM_REASON_CD)
+                        when B.CLAIM_REASON_CD='60' then fn_getCodeNm('CLAIM_REASON_CD', B.CLAIM_REASON_CD)
+                        when B.CLAIM_REASON_CD='70' then fn_getCodeNm('CLAIM_REASON_CD', B.CLAIM_REASON_CD)
+                        when B.CLAIM_REASON_CD='90' then '직접입력'
+                        when B.CLAIM_REASON_CD='99' then '단순변심'
+                        when B.CLAIM_REASON_CD='' then '상품불량'end) as CLAIM_REASON_NM,
+                  B.CLAIM_ACCEPT_DTTM,
+                  B.CLAIM_CMPLT_DTTM,
+                  B.CLAIM_CANCEL_DTTM,
+                  B.CLAIM_MEMO,
+                  B.CLAIM_DTL_REASON,
+                  B.CLAIM_CONTENT_CHK,
+                  NVL(ROUND((SELECT REAL_DLVR_AMT FROM TO_DLVR WHERE ORD_NO = B.ORD_NO AND ORD_DTL_SEQ = B.ORD_DTL_SEQ and rownum = 1) ,0),0) AS REAL_DLVR_AMT
+              FROM
+              TO_ORD A, TO_CLAIM B ,TO_ORD_DTL C
+              WHERE
+              A.ORD_NO = B.ORD_NO
+              AND B.ORD_NO=C.ORD_NO
+              AND B.ORD_DTL_SEQ=C.ORD_DTL_SEQ
+              AND C.ADD_OPT_YN = 'N'
+              <choose>
+                  <when test='exchangeType != null and exchangeType != "" and exchangeType != ""'>
+                    AND B.CLAIM_CD IN ('21','22')
+                  </when>
+                  <otherwise>
+                      <choose>
+                        <when test='cancelSearchType != null and cancelSearchType!=""'>
+                            AND B.CLAIM_CD IN ('31','32')
+                        </when>
+                        <otherwise>
+                            AND B.CLAIM_CD IN ('11','12')
+                        </otherwise>
+                      </choose>
+                  </otherwise>
+              </choose>
+          </otherwise>
+      </choose>
+
+            AND B.ORD_NO = #{ordNo}
+            AND B.ORD_DTL_SEQ = #{ordDtlSeq}
+            <if test="sellerNo != null and sellerNo != ''">
+                AND EXISTS (SELECT 1 FROM TG_GOODS TG
+                WHERE TG.GOODS_NO = B.GOODS_NO
+                AND SELLER_NO = #{sellerNo})
+            </if>
+        <choose>
+            <when test='refundType!=null and refundType!="" and refundType!="V"'>
+                <if test="claimGoodsNo != null and claimGoodsNo != ''">
+                    AND B.GOODS_NO = #{claimGoodsNo}
+                </if>
+            </when>
+            <otherwise>
+                <if test="claimGoodsNo != null and claimGoodsNo != ''">
+                    AND C.GOODS_NO = #{claimGoodsNo}
+                </if>
+            </otherwise>
+        </choose>
+            ORDER BY CLAIM_ACCEPT_DTTM ASC
+    </select>
+
+    <!-- 클레임 교환 정보 수정 -->
+    <update id="updateClaimExchange" parameterType="claimGoodsPO">
+        /* order.exchange.updateClaimExchange - 클레임 교환 정보 수정 */
+        UPDATE TO_CLAIM
+            SET
+            RETURN_CD = #{returnCd},
+            CLAIM_CD = #{claimCd},
+            CLAIM_ACCEPT_DTTM = NVL(CLAIM_ACCEPT_DTTM, sysdate),
+            <if test="claimCd eq '22' or claimCd eq '32' or claimCd eq '12' "  >
+                /*교환완료(22) , 결제취소(32), 환불완료(12)  */
+                CLAIM_CMPLT_DTTM = sysdate,
+            </if>
+            CLAIM_REASON_CD = #{claimReasonCd},
+            CLAIM_DTL_REASON = #{claimDtlReason},
+            CLAIM_MEMO = #{claimMemo},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE ORD_NO = #{ordNo}
+            AND ORD_DTL_SEQ = #{ordDtlSeq}
+            AND CLAIM_NO=#{claimNo}
+            <if test="claimCd eq '12'">
+                /*환불완료(12)  */
+                AND CLAIM_CD = '11'
+            </if>
+            <if test="claimCd eq '22'">
+                /*교환완료(22)  */
+                AND CLAIM_CD = '21'
+            </if>
+            <if test="claimCd eq '32'">
+                /* 결제취소완료(32) */
+                AND CLAIM_CD = '31'
+            </if>
+
+    </update>
+
+    <update id="insertClaimExchange" parameterType="claimGoodsPO">
+        /* order.exchange.insertClaimExchange - 클레임 교환 정보 등록 */
+        INSERT INTO TO_CLAIM
+        (
+        CLAIM_NO
+        ,ORD_NO
+        ,ORD_DTL_SEQ
+        ,RETURN_CD
+        ,CLAIM_QTT
+        ,CLAIM_CD
+        ,CLAIM_ACCEPT_DTTM
+        ,CLAIM_REASON_CD
+        ,CLAIM_DTL_REASON
+        ,CLAIM_MEMO
+        ,REGR_NO
+        ,REG_DTTM
+        )
+        VALUES
+        (
+        fn_getSeq(#{siteNo}, 'CLAIM_NO')
+        ,#{ordNo}
+        ,#{ordDtlSeq}
+        ,#{returnCd}
+        ,#{claimQtt}
+        ,#{claimCd}
+        ,sysdate
+        ,#{claimReasonCd}
+        ,#{claimDtlReason}
+        ,#{claimMemo}
+        ,#{regrNo}
+        ,sysdate
+        )
+    </update>
+
+    <!-- 페이징 조회 검색 조건-->
+    <sql id="selectExchangeListWhere">
+            <choose>
+                <when test="dayTypeCd == '01' ">
+                    <if test="refundDayS != null and refundDayS != ''">
+                        <![CDATA[
+                        AND C.CLAIM_ACCEPT_DTTM >= TO_DATE(#{refundDayS}, 'YYYY-MM-DD')
+                        ]]>
+                    </if>
+                    <if test="refundDayE != null and refundDayE != ''">
+                        <![CDATA[
+                        AND C.CLAIM_ACCEPT_DTTM < TO_DATE(#{refundDayE}, 'YYYY-MM-DD') + 1
+                        ]]>
+                    </if>
+                </when>
+            </choose>
+            <if test="returnCd != null and returnCd != '' and returnCd.length > 0">
+                AND C.RETURN_CD IN <foreach collection="returnCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="claimCd != null and claimCd != '' and claimCd.length > 0">
+                AND C.CLAIM_CD IN <foreach collection="claimCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="searchSeller != null and searchSeller != ''">
+                AND SELLER_NO= #{searchSeller}
+            </if>
+            <if test="searchCd != null and searchCd != '' and searchWord != null and searchWord !=''">
+                AND
+                <choose>
+                    <when test="searchCd eq 'all'">
+                        (
+                        C.CLAIM_NO LIKE '%'||#{searchWord}||'%' OR
+                        C.ORD_NO LIKE '%'||#{searchWord}||'%' OR
+                        A.LOGIN_ID LIKE '%'||#{searchWord}||'%' OR
+                        A.ORDR_NM = #{searchWordEncrypt} OR
+                        D.ADRS_NM = #{searchWordEncrypt} OR
+                        B.GOODS_NM LIKE '%'||#{searchWord}||'%' OR
+                        B.GOODS_NO LIKE '%'||#{searchWord}||'%'
+                        )
+                    </when>
+                    <when test="searchCd eq '01'">
+                        C.CLAIM_NO LIKE '%'||#{searchWord}||'%'
+                    </when>
+                    <when test="searchCd eq '02'">
+                        C.ORD_NO LIKE '%'||#{searchWord}||'%'
+                    </when>
+                    <when test="searchCd eq '03'">
+                        A.LOGIN_ID LIKE '%'||#{searchWord}||'%'
+                    </when>
+                    <when test="searchCd eq '04'">
+                        A.ORDR_NM = #{searchWord}
+                    </when>
+                    <when test="searchCd eq '05'">
+                        D.ADRS_NM = #{searchWord}
+                    </when>
+                    <when test="searchCd eq '06'">
+                        B.GOODS_NM LIKE '%'||#{searchWord}||'%'
+                    </when>
+                    <when test="searchCd eq '07'">
+                        B.GOODS_NO LIKE '%'||#{searchWord}||'%'
+                    </when>
+                </choose>
+            </if>
+    </sql>
+
+    <!-- 교환 목록  -->
+    <select id="selectExchangeListPaging" resultType="claimGoodsVO">
+        /* order.exchange.selectExchangeListPaging - 교환 목록 */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+		            SELECT
+		                C.CLAIM_NO,
+                        C.CLAIM_ACCEPT_DTTM,
+                        C.ORD_NO,
+                        C.ORD_DTL_SEQ,
+		                A.LOGIN_ID,
+		                E.SELLER_NO,
+		                (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO =E.SELLER_NO) AS SELLER_NM,
+		                A.ORDR_NM,
+		                NVL(fn_getMemberGradeNm(#{siteNo}, A.MEMBER_NO), '') MEMBER_GRADE_NM,
+		                pay.PAYMENT_WAY_NM,
+		                B.ORD_QTT,
+		                <![CDATA[(SELECT NVL(SUM(CLAIM_QTT),0) FROM TO_CLAIM TC WHERE A.ORD_NO=TC.ORD_NO AND C.ORD_DTL_SEQ = TC.ORD_DTL_SEQ AND TC.RETURN_CD <> '13' AND TC.CLAIM_CD <>'13') AS CLAIM_QTT,]]>
+		                fn_getAdminName(#{siteNo}, B.UPDR_NO) REGR_NM,
+		                B.CLAIM_CMPLT_DTTM,
+		                fn_getCodeNm('RETURN_CD', C.RETURN_CD) RETURN_NM,
+		                fn_getCodeNm('CLAIM_CD', C.CLAIM_CD) CLAIM_NM,
+                        C.RETURN_CD,
+                        C.CLAIM_CD,
+		                B.ORD_DTL_STATUS_CD,
+		                A.SALE_CHANNEL_CD,
+		                A.REG_DTTM,
+		                A.UPD_DTTM
+		            FROM
+		                TO_ORD A
+		                LEFT JOIN (
+		                    SELECT A.ORD_NO
+		                    ,utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PAYMENT_WAY_CD', A.PAYMENT_WAY_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS PAYMENT_WAY_NM
+		                    , SUM(A.PAYMENT_AMT) PAYMENT_AMT
+		                    FROM
+		                    TO_PAYMENT A,
+		                    (
+		                        SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+		                        FROM TO_PAYMENT
+		                        WHERE SITE_NO = #{siteNo}
+		                        GROUP BY ORD_NO
+		                    ) B
+		                    WHERE A.ORD_NO = B.ORD_NO
+		                        AND A.PAYMENT_TURN = B.PAYMENT_TURN
+		                        GROUP BY A.ORD_NO
+		                ) pay ON (pay.ORD_NO = A.ORD_NO OR pay.ORD_NO = A.ORG_ORD_NO)
+		                ,TO_ORD_DTL B
+		                    LEFT JOIN TG_GOODS E
+		                    ON B.GOODS_NO = E.GOODS_NO
+                        ,TO_CLAIM C
+                        ,TO_ORD_DELIVERY D
+		            WHERE
+		                A.SITE_NO = #{siteNo}
+		                AND A.ORD_NO = B.ORD_NO
+		                AND B.ADD_OPT_YN = 'N'
+                        AND A.ORD_NO = C.ORD_NO
+                        AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+		                AND A.ORD_NO = D.ORD_NO
+                        AND C.CLAIM_CD IN ('21','22')
+                        <if test="sellerNo != null and sellerNo != ''">
+                            AND EXISTS (SELECT 1 FROM TG_GOODS TG
+                            WHERE B.GOODS_NO = TG.GOODS_NO
+                            AND SELLER_NO = #{sellerNo})
+                        </if>
+			            <include refid="selectExchangeListWhere" />
+			            <include refid="common.sortSql" />
+			    ) A
+			) AA
+	     )
+	     <include refid="common.pageSql" />
+	 </select>
+
+    <!-- 목록 페이징 조회를 위한 카운트 -->
+    <select id="selectExchangeListPagingCount" resultType="Integer">
+        /* biz.app.order.exchange.selectExchangeListPagingCount - 목록 페이징 조회를 위한 카운트*/
+        SELECT
+        count(*)
+        FROM
+        TO_ORD A
+        LEFT JOIN (
+        SELECT A.ORD_NO
+        ,utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PAYMENT_WAY_CD', A.PAYMENT_WAY_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS PAYMENT_WAY_NM
+        , SUM(A.PAYMENT_AMT) PAYMENT_AMT
+        FROM
+        TO_PAYMENT A,
+        (
+        SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+        FROM TO_PAYMENT
+        WHERE SITE_NO = #{siteNo}
+        GROUP BY ORD_NO
+        ) B
+        WHERE A.ORD_NO = B.ORD_NO
+        AND A.PAYMENT_TURN = B.PAYMENT_TURN
+        GROUP BY A.ORD_NO
+        ) pay ON (pay.ORD_NO = A.ORD_NO OR pay.ORD_NO = A.ORG_ORD_NO)
+        <if test="searchCd eq '04'">
+            LEFT JOIN (
+            SELECT MEMBER_NO, MEMBER_NM
+            FROM TC_MEMBER
+            WHERE SITE_NO = #{siteNo}
+            ) mem ON (mem.MEMBER_NO = A.MEMBER_NO)
+        </if>
+        , TO_CLAIM C
+        , TO_ORD_DTL B
+        LEFT JOIN TG_GOODS E
+        ON E.GOODS_NO = B.GOODS_NO
+        , TO_ORD_DELIVERY D
+        WHERE
+        A.ORD_NO = B.ORD_NO
+        AND A.SITE_NO = #{siteNo}
+        AND B.ADD_OPT_YN = 'N'
+        AND A.ORD_NO = C.ORD_NO
+        AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+        AND A.ORD_NO = D.ORD_NO
+        AND C.CLAIM_CD IN ('21','22')
+        <if test="sellerNo != null and sellerNo != ''">
+            AND EXISTS (SELECT 1 FROM TG_GOODS TG
+            WHERE TG.GOODS_NO = B.GOODS_NO
+            AND SELLER_NO = #{sellerNo})
+        </if>
+        <include refid="selectExchangeListWhere" />
+    </select>
+
+    <select id="selectExchangeListPagingTotalCount" resultType="Integer">
+        /* biz.app.order.exchange.selectExchangeListPagingTotalCount */
+        SELECT
+        count(*)
+        FROM
+        TO_ORD A
+        LEFT JOIN (
+        SELECT A.ORD_NO
+        ,utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PAYMENT_WAY_CD', A.PAYMENT_WAY_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS PAYMENT_WAY_NM
+        , SUM(A.PAYMENT_AMT) PAYMENT_AMT
+        FROM
+        TO_PAYMENT A,
+        (
+        SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+        FROM TO_PAYMENT
+        WHERE SITE_NO = #{siteNo}
+        GROUP BY ORD_NO
+        ) B
+        WHERE A.ORD_NO = B.ORD_NO
+        AND A.PAYMENT_TURN = B.PAYMENT_TURN
+        GROUP BY A.ORD_NO
+        ) pay ON (pay.ORD_NO = A.ORD_NO OR pay.ORD_NO = A.ORG_ORD_NO)
+        <if test="searchCd eq '04'">
+            LEFT JOIN (
+            SELECT MEMBER_NO, MEMBER_NM
+            FROM TC_MEMBER
+            WHERE SITE_NO = #{siteNo}
+            ) mem ON (mem.MEMBER_NO = A.MEMBER_NO)
+        </if>
+        , TO_CLAIM C
+        , TO_ORD_DTL B
+        LEFT JOIN TG_GOODS E
+        ON E.GOODS_NO = B.GOODS_NO
+        , TO_ORD_DELIVERY D
+        WHERE
+        A.ORD_NO = B.ORD_NO
+        AND A.SITE_NO = #{siteNo}
+        AND B.ADD_OPT_YN = 'N'
+        AND A.ORD_NO = C.ORD_NO
+        AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+        AND A.ORD_NO = D.ORD_NO
+        AND C.CLAIM_CD IN ('21','22')
+        <if test="sellerNo != null and sellerNo != ''">
+            AND EXISTS (SELECT 1 FROM TG_GOODS TG
+            WHERE TG.GOODS_NO = B.GOODS_NO
+            AND SELLER_NO = #{sellerNo})
+        </if>
+    </select>
+
+    <!-- 재주문 정보 주문테이블 등록 -->
+    <insert id="insertReOrderInfo" parameterType="hashmap">
+        /* biz.app.order.exchange.insertReOrderInfo - 재주문 정보 주문테이블 등록*/
+        INSERT INTO TO_ORD
+        (
+            ORD_NO,
+            SITE_NO,
+            ORG_ORD_NO,
+            ORD_STATUS_CD,
+            ORD_MEDIA_CD,
+            SALE_CHANNEL_CD,
+            MEMBER_ORD_YN,
+            MEMBER_NO,
+            LOGIN_ID,
+            MEMBER_GRADE_NO,
+            ORD_SECT_NO,
+            ORDR_NM,
+            ORDR_EMAIL,
+            ORDR_TEL,
+            ORDR_MOBILE,
+            ORDR_IP,
+            ORD_ACCEPT_DTTM,
+            ORD_CMPLT_DTTM,
+            PAYMENT_CMPLT_DTTM,
+            SMS_RECV_YN,
+            EMAIL_RECV_YN,
+            PVD_SVMN,
+            MANUAL_ORD_YN,
+            PAYMENT_AMT,
+            SALE_AMT,
+            DC_AMT,
+            REGR_NO,
+            REG_DTTM
+        )
+        SELECT
+            #{newOrdNo},
+            SITE_NO,
+            NVL(ORG_ORD_NO, #{ordNo}),
+            '20', /** 결제 완료 **/
+            ORD_MEDIA_CD,
+            SALE_CHANNEL_CD,
+            MEMBER_ORD_YN,
+            MEMBER_NO,
+            LOGIN_ID,
+            MEMBER_GRADE_NO,
+            ORD_SECT_NO,
+            ORDR_NM,
+            ORDR_EMAIL,
+            ORDR_TEL,
+            ORDR_MOBILE,
+            ORDR_IP,
+            sysdate,
+            sysdate,
+            PAYMENT_CMPLT_DTTM,
+            SMS_RECV_YN,
+            EMAIL_RECV_YN,
+            PVD_SVMN,
+            MANUAL_ORD_YN,
+            PAYMENT_AMT,
+            SALE_AMT,
+            DC_AMT,
+            #{regrNo},
+            sysdate
+        FROM TO_ORD
+        WHERE ORD_NO = #{ordNo}
+    </insert>
+    <!-- 재주문 정보 주문 상세 테이블 등록 -->
+    <insert id="insertReOrderDtl" parameterType="hashmap">
+        /* biz.app.order.exchange.insertReOrderDtl - 재주문 정보 주문 상세 테이블 등록*/
+        INSERT INTO TO_ORD_DTL
+        (
+            ORD_NO,
+            ORD_DTL_SEQ,
+            ORD_DTL_STATUS_CD,
+            GOODS_NO,
+            ITEM_NO,
+            GOODS_NM,
+            ITEM_NM,
+            ORD_QTT,
+            CUSTOMER_AMT,
+            SALE_AMT,
+            DC_AMT,
+            ADD_OPT_YN,
+            ADD_OPT_NO,
+            ADD_OPT_NM,
+            ADD_OPT_DTL_SEQ,
+            REGR_NO,
+            REG_DTTM
+        )
+        SELECT
+            #{newOrdNo},
+            ORD_DTL_SEQ,
+            '20', /** 결제 완료 **/
+            GOODS_NO,
+            #{itemNo},
+            /*ITEM_NO,*/
+            GOODS_NM,
+            /*ITEM_NM,*/
+            fn_getItemOptAttrNm( #{itemNo}, (SELECT MAX(ATTR_VER) FROM TG_ITEM_ATTR WHERE ITEM_NO= #{itemNo}),':',',') AS ITEM_NM,
+            #{reOrdQtt},
+            CUSTOMER_AMT,
+            SALE_AMT,
+            DC_AMT,
+            ADD_OPT_YN,
+            ADD_OPT_NO,
+            ADD_OPT_NM,
+            ADD_OPT_DTL_SEQ,
+            REGR_NO,
+            sysdate
+        FROM TO_ORD_DTL A
+        WHERE ORD_NO = #{ordNo}
+            AND
+                (ORD_DTL_SEQ
+                   IN (
+		                (SELECT ORD_DTL_SEQ
+		                FROM TO_ORD_DTL B
+		                WHERE B.ORD_NO = #{ordNo}
+		                    AND B.ADD_OPT_YN = 'Y'
+		                    AND B.ITEM_NO IN (SELECT ITEM_NO FROM TO_ORD_DTL WHERE ORD_NO = #{ordNo} AND ORD_DTL_SEQ = #{ordDtlSeq})
+		                )
+	                )
+	             OR (ORD_DTL_SEQ = #{ordDtlSeq})
+	             )
+    </insert>
+
+    <!-- 재주문 정보 주문 배송지 등록 -->
+    <insert id="insertReOrdDelivery" parameterType="hashmap">
+        /* biz.app.order.exchange.insertReOrdDelivery - 재주문 정보 주문 배송지 등록 */
+        INSERT INTO TO_ORD_DELIVERY (
+			ORD_NO,
+			MEMBER_NO,
+			AREA_DLVR_SET_NO,
+			SITE_NO,
+			DELIVERY_NM,
+			ADRS_NM,
+			ADRS_TEL,
+			ADRS_MOBILE,
+			POST_NO,
+			ROADNM_ADDR,
+			NUM_ADDR,
+			DTL_ADDR,
+			DLVR_MSG,
+			MEMBER_GB_CD,
+			FRG_ADDR_COUNTRY,
+			FRG_ADDR_CITY,
+			FRG_ADDR_STATE,
+			FRG_ADDR_ZIP_CODE,
+			FRG_ADDR_DTL1,
+			FRG_ADDR_DTL2,
+			REGR_NO,
+			REG_DTTM
+        )
+        SELECT
+            #{newOrdNo},
+            A.MEMBER_NO,
+            A.AREA_DLVR_SET_NO,
+            A.SITE_NO,
+            A.DELIVERY_NM,
+            A.ADRS_NM,
+            A.ADRS_TEL,
+            A.ADRS_MOBILE,
+            A.POST_NO,
+            A.ROADNM_ADDR,
+            A.NUM_ADDR,
+            A.DTL_ADDR,
+            A.DLVR_MSG,
+            A.MEMBER_GB_CD,
+            A.FRG_ADDR_COUNTRY,
+            A.FRG_ADDR_CITY,
+            A.FRG_ADDR_STATE,
+            A.FRG_ADDR_ZIP_CODE,
+            A.FRG_ADDR_DTL1,
+            A.FRG_ADDR_DTL2,
+            #{regrNo},
+            sysdate
+        FROM TO_ORD_DELIVERY A, TO_ORD B
+        WHERE A.ORD_NO = B.ORD_NO
+            AND B.ORD_NO = #{ordNo}
+    </insert>
+
+    <!-- 재주문 정보 주문 배송 등록 -->
+    <insert id="insertReOrdDlvr" parameterType="hashmap">
+        /* biz.app.order.exchange.insertReOrdDlvr - 재주문 정보 주문 배송 등록 */
+        INSERT INTO TO_DLVR (
+			DLVR_NO,
+			ORD_NO,
+			ORD_DTL_SEQ,
+			DLVR_PRC_TYPE_CD,
+			DLVRC_PAYMENT_CD,
+			DLVR_QTT,
+			DLVR_MSG,
+			SITE_NO,
+			AREA_DLVR_SET_NO,
+			ORG_DLVR_AMT,
+			REAL_DLVR_AMT,
+			AREA_ADD_DLVRC,
+			REGR_NO,
+			REG_DTTM
+        )SELECT
+            (SELECT fn_getSeq(0,'TO_DLVR_NO') FROM DUAL),
+            #{newOrdNo},
+            A.ORD_DTL_SEQ,
+            A.DLVR_PRC_TYPE_CD,
+            A.DLVRC_PAYMENT_CD,
+            #{reOrdQtt},
+            A.DLVR_MSG,
+            A.SITE_NO,
+            A.AREA_DLVR_SET_NO,
+            A.ORG_DLVR_AMT,
+            A.REAL_DLVR_AMT,
+            A.AREA_ADD_DLVRC,
+            #{regrNo},
+            sysdate
+        FROM
+        (
+				SELECT *
+				FROM
+				(
+					SELECT A.*, RANK() OVER(PARTITION BY A.ORD_NO, A.ORD_DTL_SEQ ORDER BY A.DLVR_NO DESC) AS RANK
+					FROM TO_DLVR A,
+					(
+						SELECT MAX(DLVR_NO) DLVR_NO
+						FROM TO_DLVR A, TO_ORD_DTL B
+						WHERE A.ORD_NO = B.ORD_NO
+						AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+						GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+					) B
+					WHERE A.DLVR_NO = B.DLVR_NO
+				)
+				WHERE RANK = 1
+            ) A, TO_ORD_DTL B
+        WHERE A.ORD_NO = B.ORD_NO
+            AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+            AND B.ORD_NO = #{ordNo}
+            AND B.ORD_DTL_SEQ = #{ordDtlSeq}
+    </insert>
+
+    <!-- 재주문 사은품 정보 등록 -->
+    <insert id="insertFreebie" parameterType="hashmap">
+        /* biz.app.order.exchange.insertFreebie - 재주문 사은품 정보 등록*/
+        INSERT INTO TO_ORD_FREEBIE
+        (
+            ORD_FREEBIE_SEQ,
+            FREEBIE_NO,
+            ORD_NO,
+            ORD_DTL_SEQ,
+            REGR_NO,
+            REG_DTTM
+        )
+        SELECT fn_getSeq(0,'TO_ORD_FREEBIE_SEQ'),
+            FREEBIE_NO,
+            ORD_NO,
+            ORD_DTL_SEQ,
+            REGR_NO,
+            sysdate
+        FROM TO_ORD_FREEBIE
+        WHERE ORD_NO = #{newOrdNo}
+        AND ORD_DTL_SEQ = #{ordDtlSeq}
+    </insert>
+</mapper>

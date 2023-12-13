@@ -1,0 +1,94 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.Enumeration" %>
+<%@ page import="java.util.Date" %>
+<%@ page trimDirectiveWhitespaces="true" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="t" uri="http://tiles.apache.org/tags-tiles"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="tags" tagdir="/WEB-INF/tags" %>
+<%@ taglib prefix="grid" tagdir="/WEB-INF/tags/grid" %>
+<%@ taglib prefix="code" tagdir="/WEB-INF/tags/code" %>
+<%
+    String RsessionId = request.getRequestedSessionId();
+    String sessionId = session.getId();
+    boolean isNew = session.isNew();
+    long creationTime = session.getCreationTime();
+    long lastAccessedTime = session.getLastAccessedTime();
+    int maxInactiveInterval = session.getMaxInactiveInterval();
+    Enumeration e = session.getAttributeNames();
+%>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=EUC-KR">
+        <title>Session Test</title>
+    </head>
+    <body>
+        <table border=1 bordercolor="gray" cellspacing=1 cellpadding=0 width="100%">
+            <tr bgcolor="gray">
+                <td colspan=2 align="center"><font color="white"><b>Session Info</b></font></td>
+            </tr>
+            <tr>
+                <td>Server HostName</td>
+                <td><%=java.net.InetAddress.getLocalHost().getHostName()%></td>
+            </tr>
+            <tr>
+                <td>Server IP</td>
+                <td><%=java.net.InetAddress.getLocalHost().getHostAddress()%></td>
+            </tr>
+            <tr>
+                <td>Request SessionID</td>
+                <td><%=RsessionId%></td>
+            </tr>
+            <tr>
+                <td>SessionID</td>
+                <td><%=sessionId%></td>
+            </tr>
+            <tr>
+                <td>isNew</td>
+                <td><%=isNew%></td>
+            </tr>
+            <tr>
+                <td>Creation Time</td>
+                <td><%=new Date(creationTime)%></td>
+            </tr>
+            <tr>
+                <td>Last Accessed Time</td>
+                <td><%=new Date(lastAccessedTime)%></td>
+            </tr>
+            <tr>
+                <td>Max Inactive Interval (second)</td>
+                <td><%=maxInactiveInterval%></td>
+            </tr>
+            <tr bgcolor="cyan">
+                <td colspan=2 align="center"><b>Session Value List</b></td>
+            </tr>
+            <tr>
+                <td align="center">NAME</td>
+                <td align="center">VAULE</td>
+            </tr>
+            <%
+                String name = null;
+                while (e.hasMoreElements()) {
+                    name = (String) e.nextElement();
+            %>
+            <tr>
+                <td align="left"><%=name%></td>
+                <td align="left"><%=session.getAttribute(name)%></td>
+            </tr>
+            <%
+                }
+            %>
+        </table>
+        <%
+            int count = 0;
+            if(session.getAttribute("count") != null)
+                count = (Integer) session.getAttribute("count");
+            count += 1;
+            session.setAttribute("count", count);
+            out.println(session.getId() + " : " + count);
+        %>
+    </body>
+</html>

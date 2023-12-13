@@ -1,0 +1,563 @@
+@charset "utf-8";
+
+/* === member === */
+.member_head {
+	color: #333;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    height: 50px;
+    line-height: 50px;
+    background: #fff;
+    border-bottom: 1px solid #ccc;
+    position: relative;
+}
+.member_head .btn_go_prev {
+	position: absolute;
+    top: 50%;
+    margin-top: -18px;
+    left: 2.5%;
+    width: 38px;
+    height: 36px;
+    border: 1px solid #ccc;
+    background: #fff;
+}
+.icon_go_prev {
+	display:inline-block;
+	width:9px;
+	height:36px;
+	background:url(../img/common/icon_go_prev.png) no-repeat left 8px;
+	background-size:10px
+}
+
+h2.member_stit {
+	padding:15px 3%;
+	color:#000;
+	font-size:15px;
+	font-weight:700;
+	border-top:1px solid #d8d9da;
+	border-bottom:1px solid #d8d9da;
+	background:#f2f2f2;
+	position:relative
+}
+h2.member_stit span {
+	display:inline-block;
+	padding-left:10px;
+	background:url(../img/common/bul_dot.png) no-repeat left 6px;
+	background-size:5px
+}
+
+/* === 비회원 === */
+.nonmember_privacy_policies {
+	padding:15px 3%;
+	border-bottom:1px solid #d8d9da;
+	font-size:13px;
+	line-height:20px;
+	min-height:300px
+}
+.nonmember_order_check_form {
+	width:80%;
+	margin:60px auto 30px
+}
+.nonmember_order_check_form li {
+	margin-bottom:8px
+}
+.nonmember_order_check_form li input[type="text"] {
+	width:calc(100% - 14px);
+	height:22px
+}
+.btn_nonmember_order {
+	color: #363636;
+    width: 100%;
+    height: 44px;
+    font-weight: 700;
+    font-size: 14px;
+	border:1px solid #000;
+    background: #fff
+}
+.btn_join {
+	color: #fff;
+    width: 100%;
+    height: 44px;
+    font-weight: 700;
+    font-size: 14px;
+    background: #7e8083;
+}
+
+/* === 회원 로그인 === */
+.login_menu {
+	overflow:hidden;
+	border-bottom:1px solid #cccdce
+}
+.login_menu li {
+	float:left;
+	width:29.6%;
+	margin:15px 1% 15px 2%;
+	padding:10px 0;
+	border:1px solid #cccdce;
+	text-align:center;
+	font-size:14px;
+	color:#515151;
+	border-radius:4px;
+	cursor:pointer
+}
+.login_menu li.active {
+	border:1px solid #000
+}
+.login_content {
+	min-height:300px;
+	border-bottom:1px solid #e9e9e9;
+}
+.member_login_form {
+	width:80%;
+	margin:40px auto 10px
+}
+.member_login_form li {
+	margin-bottom:8px
+}
+.member_login_form li input[type="text"],
+.member_login_form li input[type="password"] {
+	width:calc(100% - 14px);
+	height:38px;
+}
+.btn_member_login {
+	width: 100%;
+    height: 50px;
+    color: #fff;
+    font-size: .95rem;
+    border: 1px solid #4d4f52;
+    background: #1f59ff;
+}
+.btn_nonmember_checkout {
+	color: #363636;
+    width: 100%;
+    height: 44px;
+    line-height: 44px;
+    font-weight: 700;
+    font-size: 14px;
+	border:1px solid #000;
+    background: #fff
+}
+.btn_reload {
+	width: 70px;
+    height: 36px;
+    line-height: normal;
+    border: 1px solid #cacaca;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    background: #fff;
+	margin-top:0px;
+	vertical-align:top;
+}
+.member_login_form li.id_save_check {
+	padding:8px 0
+}
+.member_login_form li.id_save_check > .checkbox {
+	display:inline-block;
+	margin-right:20px
+}
+.member_login_form li.login_smenu {
+	text-align:center;
+	margin-top:10px;
+}
+.member_login_form li.login_smenu a {
+	display:inline-block;
+	padding:10px 17px 10px 7.5px;
+	color:#737373;
+	font-size:13px;
+	font-weight:700;
+	letter-spacing:-1px;
+	background:url(../img/member/bar_login_menu.png) no-repeat right 13px
+}
+.member_login_form li.login_smenu a:last-child {
+	background:none
+}
+.age_warning_area {	
+	border-top:1px solid #d8d9da;
+	border-bottom:1px solid #d8d9da;
+	padding:15px 10%;
+}
+.warning_19 {
+	padding-left:62px;	
+	color:#797979;
+	font-size:12px;
+	letter-spacing:-1px;
+	background:url(../img/member/icon_19.png) no-repeat left top;
+	background-size:55px
+}
+.warning_19 span.title {
+	display:block;
+	font-size:14px;
+	font-weight:700;
+	color:#000;
+	margin-bottom:10px
+}
+.warning_19  span.title em {
+	color:#ff0000;
+	font-weight:700
+}
+.warning_19_bottom {
+	margin-top:10px;
+	color:#000;
+	font-size:12px;
+	line-height:18px
+}
+.warning_19_check {
+	padding:30px 0;
+	text-align:center;
+	color:#ff0000;
+	font-size:14px;
+	font-weight:700
+}
+.icon_19 {
+	display:block;
+	height:70px;
+	background:url(../img/member/icon_19.png) no-repeat center top;
+	background-size:56px
+}
+.login_content .btn_go_home {
+	color: #fff;
+    width: 80%;
+	margin:30px auto;
+    height: 42px;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 0px;
+    background: #7e8083;
+}
+.sns_btn_area {
+	margin:30px auto
+}
+.sns_login_info {
+	padding:40px 3%;
+	font-size:12px;
+	color:#787878;
+	text-align:center
+}
+.sns_login_info button {
+	margin:0 3%
+}
+.btn_login_sns {
+	width:25%;
+	max-width:100px
+}
+.btn_login_sns img {
+	width:100%
+}
+
+/* === ID 찾기 === */
+.auth_id {
+	overflow:hidden;
+	border-bottom:1px solid #d8d9da
+}
+.auth_id li {
+	width:33.3%;
+	float:left;
+	padding:30px 0;
+	text-align:center;
+	margin-left:-1px;
+	border-right:1px solid #d8d9da
+}
+.icon_mobile {
+	display:block;
+	height:62px;
+	background:url(../img/member/icon_mobile.png) no-repeat center top;
+	background-size:30px
+}
+.icon_gpin {
+	display:block;
+	height:62px;
+	background:url(../img/member/icon_gpin.png) no-repeat center 7px;
+	background-size:54px
+}
+.id_btn_area {
+	margin:30px 0;
+	text-align:center
+}
+.id_btn_area span {
+	display:block;
+	font-size:13px;
+	letter-spacing:-1px;
+	margin-top:8px
+}
+.btn_auth_go {
+	width:80%;
+	height:44px;
+	line-height:44px;
+	color:#fff;
+	font-size:14px;
+	font-weight:700;
+	background:#7e8083
+}
+.id_search_result {
+	padding:60px 0;
+	font-size:13px;
+	text-align:center;
+	border-bottom:1px solid #d8d9da
+}
+.id_search_result span.id_view {
+	display:block;
+	font-weight:700;
+	margin-top:20px
+}
+span.join_date {
+	display:block;
+	color:#828282;
+	font-size:12px
+}
+.result_btn_area {
+	margin:10px 0;
+	text-align:center
+}
+.btn_pw_search {
+	width:130px;
+	height:44px;
+	line-height:44px;
+	color:#474747;
+	font-size:14px;
+	font-weight:700;
+	border:1px solid #000000;
+	background:#fff
+}
+.btn_login02 {
+	width:130px;
+	height:44px;
+	line-height:44px;
+	color:#fff;
+	font-size:14px;
+	font-weight:700;
+	background:#7e8083
+}
+/* === PW 찾기 === */
+.auth_pw {
+	overflow:hidden;
+	border-bottom:1px solid #d8d9da
+}
+.auth_pw li {
+	width:33.3%;
+	float:left;
+	padding:30px 0;
+	text-align:center;
+	margin-left:-1px;
+	border-right:1px solid #d8d9da
+}
+.auth_pw li:last-child {
+	border-right:none
+}
+.icon_email {
+	display:block;
+	height:62px;
+	background:url(../img/member/icon_email.png) no-repeat center 7px;
+	background-size:46px
+}
+#div_id_stap2 .pw_auth_form {
+	width:80%;
+	margin:0px auto 0px
+}
+#div_id_stap2 .pw_auth_form li {
+	margin-bottom:8px
+}
+#div_id_stap2 .pw_auth_form li:last-child {
+	margin-bottom:0px
+}
+#div_id_stap2 .pw_auth_form li input[type="text"],
+#div_id_stap2 .pw_auth_form li input[type="password"] {
+	width:calc(100% - 14px);
+	height:38px
+}
+#div_id_stap2 .pw_auth_success {
+	padding:30px 0 20px;
+	font-size:16px;
+	line-height:20px;
+	text-align:center
+}
+
+/* === 휴면계좌 === */
+.inactivity_text {
+	padding:10px 3%;
+	line-height:20px;
+	font-size:13px;
+	color:#000
+}
+.inactivity_text span {
+	margin-top:10px;
+	display:block;
+	font-size:13px;
+	color:#898989
+}
+
+ /* === 비밀번호 변경 === */
+.password_change_text01 {
+	padding:20px 3%;
+	text-align:center;
+	line-height:22px;	
+	font-size:16px;
+	color:#000
+}
+.password_change_text02 {
+	margin:0px 3% 10px;
+    padding:10px;
+    line-height: 1.3rem;
+    color: #333;
+    text-align: center;
+    background: #eee;
+    word-break: keep-all;
+}
+.password_change_text01 em {
+	color:#ff0000;
+	font-weight:700
+}
+.password_change_text03 {
+	padding:10px 3% 0;
+	color:#666;
+	text-align: center;
+	font-weight:300
+}
+.password_text span {
+	margin:10px 0;
+	display:block;
+	letter-spacing:-1px;
+	font-size:13px;	
+	color:#898989
+}
+.btn_change_area {
+	text-align:center;
+	margin:10px 3% 30px
+}
+.btn_change_area .btn_pw_change {
+	color:#fff !important;
+    width:48%;
+    height:42px;
+    line-height:38px;
+    font-weight:700;
+    font-size:14px;
+    background:#0080cc;
+	border-color:#006cfe !important;
+}
+.btn_change_area .btn_pw_change_next {
+	color:#fff;
+    width:48%;
+    height:42px;
+    line-height:38px;
+    font-weight:700;
+    font-size:14px;
+    background:#515151;
+}
+.password_text_s {
+	font-size:12px;
+	letter-spacing:-1px;
+	color:#6e6e6e
+}
+.point_red {
+	color:#e34000;
+	font-weight:600
+}
+/* === 에러페이지 === */
+h2.error_logo {
+	width:120px;
+	padding:3%
+}
+h2.error_logo img {
+	width:100%
+}
+.error_title {
+	margin-top:30px;
+	padding-top:85px;
+	font-size:24px;
+	font-weight:700;
+	letter-spacing:-1.2px;
+	line-height:1em;
+	text-align:center;
+	background:url(../img/member/icon_error.png) no-repeat center;
+	background-size:40px
+}
+.error_text01 {
+	color:#949494;
+	font-size:13px;
+	line-height:22px;
+	padding:10px 3%;
+	text-align:center
+}
+.error_text02 {
+	color:#000;
+	font-size:13px;
+	line-height:22px;
+	padding:10px 3%;
+	text-align:center
+}
+.error_footer {
+	color:#949494;
+	font-size:13px;
+	line-height:22px;
+	padding:5px 3%;
+	text-align:center
+}
+.error_btn_area {
+	text-align:center;
+	padding:10px 3%
+}
+.btn_error_go {
+	color: #fff;
+    width: 48%;
+    height: 42px;
+    line-height: 42px;
+    font-size: 14px;
+    border-radius: 0px;
+    background: #373737;
+}
+.btn_error_go_main {
+	color: #fff;
+    width: 48%;
+    height: 42px;
+    line-height: 42px;
+    font-size: 14px;
+    border-radius: 0px;
+    background: #646464;
+}
+
+.btn_id_duplicate_check {
+    width:68px;
+    height:30px;
+    line-height:30px;
+    font-size:12px;
+    color:#fff;
+    letter-spacing:-1px;
+    background:#646464
+}
+.btn_id_duplicate_check:active {
+    background:#373737
+}
+
+.id_duplicate_check_info {
+    margin:25px 0 0px;
+    color:#0e0e0e;
+    font-size:12px;
+    letter-spacing:-1px;
+    text-align:center
+}
+
+.btn_popup_login {
+    color:#fff;
+    font-size:12px;
+    width:100px;
+    height:32px;
+    line-height:32px;
+    background:#373737
+}
+
+.pw_search_info {
+    width:560px; margin:0 auto; text-align:center;
+    color:#0e0e0e;
+    font-size:13px;
+    line-height:21px;
+    padding-bottom:40px;
+}/*160608 수정*/
+
+.icon_popup_close {
+    display:inline-block;
+    width:20px;
+    height:20px;
+    background:url(../img/cart/icon_popup_close.png) no-repeat left top;
+    background-size:20px;
+}

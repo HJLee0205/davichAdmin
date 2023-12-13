@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html> 
+<head> 
+<title>Test rnoti</title> 
+<meta http-equiv="Expires" content="0"/> 
+<meta name="Author" content="yw0399"/> 
+<meta http-equiv="Content-Type" content="text/html; charset=euc-kr"/> 
+<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+<style type="text/css">
+<!--
+body  {font-family:malgun gothic, 맑은 고딕, 굴림;}
+table {font-family:malgun gothic, 맑은 고딕, 굴림;}
+p     {font-family:malgun gothic, 맑은 고딕, 굴림;}
+h3    {font-family:malgun gothic, 맑은 고딕, 굴림;}
+-->
+</style>
+<script language="javascript"> 
+	function on_load() { 
+		myform = document.test; 
+	/**************************************************************************** 
+	OID(상점주문번호)를 랜덤하게 생성시키는 루틴
+	상점에서 각 거래건마다 부여하는 고유의 주문번호가 있다면 이 루틴은 필요없고, 
+	해당 값을 P_OID에 세팅해서 사용하면 된다.
+	****************************************************************************/ 
+		curr_date = new Date(); 
+		year = curr_date.getYear(); 
+		month = curr_date.getMonth(); 
+		day = curr_date.getDay(); 
+		hours = curr_date.getHours(); 
+		mins = curr_date.getMinutes(); 
+		secs = curr_date.getSeconds(); 
+		myform.P_OID.value = year.toString() + month.toString() + day.toString() + hours.toString() + mins.toString() + secs.toString();
+		} 
+
+
+		
+</script> 
+</head> 
+
+
+
+<body onload="on_load()" > 
+<form name=test method=post action=mx_rnoti.jsp>
+<input name=P_TID type=text value=INIpayTestINIpayTest00000000001111111111><br>
+<input name=P_MID type=text value=INIpayTest><br>
+<input name=P_AUTH_DT type=text value=20101101120000><br>
+<input name=P_STATUS type=text value=01><br>
+<input name=P_TYPE type=text value=Card><br>
+<input name=P_OID type=text value=><br>
+<input name=P_FN_CD1 type=text value=AAAA><br>
+<input name=P_FN_CD2 type=text value=BBBB><br>
+<input name=P_FN_NM type=text value=CCCC><br>
+<input name=P_UNAME type=text value=Tester><br>
+<input name=P_AMT type=text value=1004><br>
+<input name=P_RMESG1 type=text value=DDDD><br>
+<input name=P_RMESG2 type=text value=EEEE><br>
+<input name=P_NOTI type=text value=FFFF><br>
+<input name=P_AUTH_NO type=text value=10002000><br>
+<input name=P_CARD_ISSUER_CODE type=text value=01><br>
+<input name=P_CARD_NUM type=text value=1234567890123456><br>
+<input name=submit type=submit value="submit">
+</form>
+
+
+create table mx(
+	no_id int(10) not null auto_increment primary key,
+	dt_input date,
+	tm_input time,
+	P_TID char(40) ,
+	P_MID char(10) ,
+	P_AUTH_DT char(14), 
+	P_STATUS char(4),    
+	P_TYPE varchar(10),      
+	P_OID varchar(100),	
+	P_FN_CD1 varchar(4),
+	P_FN_CD2 varchar(10),
+	P_FN_NM varchar(50),
+	P_UNAME varchar(30),
+	P_AMT varchar(8),    
+	P_RMESG1 varchar(500),
+	P_RMESG2 varchar(500),
+	P_NOTI varchar(1024),	
+	P_AUTH_NO varchar(30),
+	P_CARD_ISSUER_CODE varchar(4),
+	P_CARD_NUM varchar(16)
+
+
+	</body>
+	</html>

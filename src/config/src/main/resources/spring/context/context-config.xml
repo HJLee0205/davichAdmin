@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress ALL -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:util="http://www.springframework.org/schema/util"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="
+		   http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		   http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+		   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+">
+
+	<bean id="config" class="dmall.framework.spring.yamlProperties.YamlPropertiesBean">
+		<property name="resources">
+			<list>
+				<value>classpath:config/properties/system.yml</value>
+				<value>classpath:config/properties/encryption.yml</value>
+				<value>classpath:config/properties/cache.yml</value>
+				<value>classpath:config/properties/datasource.yml</value>
+				<value>classpath:config/properties/application.yml</value>
+			</list>
+		</property>
+	</bean>
+	<context:property-placeholder properties-ref="config"/>
+
+	<util:properties id="system">
+		<prop key="system.solution.conf.rootpath">${system.path.solution.conf}</prop>
+		<prop key="system.solution.log.rootpath">${system.path.solution.log}</prop>
+	</util:properties>
+
+	<util:properties id="marketConfig">
+		<prop key="system.upload.file.size">${system.upload.file.size}</prop>
+		<prop key="system.review.file.size">${system.review.file.size}</prop>
+		<prop key="system.profile">${system.profile}</prop>
+		<prop key="system.url.homepage">${system.url.homepage}</prop>
+	</util:properties>
+
+
+	<util:properties id="core" location="classpath:config/properties/core.xml"/>
+</beans>

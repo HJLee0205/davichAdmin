@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 시스템/공통 관련 프로퍼티 -->
+<properties>
+    <entry key="system.server">product</entry>
+    <entry key="system.domain">www.davichmarket.com</entry>
+    <entry key="system.image.domain">image.davichmarket.com</entry>
+    <entry key="system.charset">UTF-8</entry>
+    <entry key="system.quota.script">/app/solution/quota/usequota.sh</entry>
+    <entry key="system.chown.script">/app/solution/quota/chquota.sh</entry>
+    <entry key="system.copy.script">/app/solution/quota/cpquota.sh</entry>
+
+    <!-- 사이트 루트 패스 -->
+    <entry key="system.site.root.path">/Users/data/O4OPJT/front/ROOT/WEB-INF/views/site</entry>
+
+    <!-- HTML 에디터 루트 경로 삭제 예정 -->
+    <entry key="system.html.editor.path">/Users/data/O4OPJT/front/ROOT/WEB-INF/views/site</entry>
+
+    <!-- 원본 스킨 경로 -->
+    <entry key="system.origin.skin.path">Y:\skins\orgSkin</entry>
+
+    <!-- 통합전자결제설정 안전구매 이미지 디렉토리 경로, 고정값 -->
+    <entry key="system.upload.payment.safebuy.file.path">/Users/data/O4OPJT/upload/safebuy/image</entry>
+
+    <entry key="system.upload.goods.file.size">6291456</entry><!-- 업로드 파일 용량 6MB -->
+
+    <!-- 업로드 디렉토리 경로 -->
+    <entry key="system.upload.path">/Users/data/O4OPJT/upload</entry>
+    <entry key="system.upload.file.size">6291456</entry><!-- 업로드 파일 용량 6MB -->
+
+    <!-- 각종 설정파일 경로 -->
+    <entry key="system.solution.conf.rootpath">/Users/data/O4OPJT/ext_conf</entry>
+    <entry key="system.solution.log.rootpath">/Users/data/O4OPJT/ext_log</entry>
+
+    <entry key="system.solution.payment.realserviceyn">N</entry><!-- PG전체 실서비스여부 : false.테스트서버, true. 실서버-->
+
+
+    <!-- 모바일 20160811 -->
+    <entry key="m.system.server">product</entry>
+    <entry key="m.system.domain">www.davichmarket.com</entry>
+    <!--<entry key="m.system.login.cookie.name">DMALL_AUTH</entry>
+    <entry key="m.system.encryption.aes.key">kis_aes_crypto12</entry>
+    <entry key="m.system.encryption.des.key"></entry>
+    <entry key="m.system.encryption.desede.key"></entry>-->
+
+    <!-- 사이트 루트 패스 -->
+    <entry key="m.system.site.root.path">/Users/data/O4OPJT/mfront/m/WEB-INF/views/site</entry>
+
+    <!-- HTML 에디터 루트 경로 -->
+    <entry key="m.system.html.editor.path">/Users/data/O4OPJT/mfront/m/WEB-INF/views/site</entry>
+    <entry key="m.system.html.origin.skin.path">/Users/data/O4OPJT/upload/orgskin/site</entry>
+
+    <!-- 통합전자결제설정 안전구매 이미지 디렉토리 경로, 고정값 -->
+    <entry key="m.system.upload.payment.safebuy.file.path">/Users/data/O4OPJT/upload/safebuy/image</entry>
+
+    <entry key="m.system.upload.goods.file.size">5242880</entry><!-- 업로드 파일 용량 5MB -->
+
+    <!-- 업로드 디렉토리 경로 -->
+    <entry key="m.system.upload.path">/Users/data/O4OPJT/upload</entry>
+    <entry key="m.system.upload.file.size">6291456</entry><!-- 업로드 파일 용량 6MB -->
+
+    <!-- 각종 설정파일 경로 -->
+    <entry key="m.system.solution.conf.rootpath">/Users/data/O4OPJT/ext_conf</entry>
+    <entry key="m.system.solution.log.rootpath">/Users/data/O4OPJT/ext_log</entry>
+
+    <entry key="m.system.solution.payment.realserviceyn">N</entry><!-- PG전체 실서비스여부 : false.테스트서버, true. 실서버-->
+
+    <!-- 스킨 루트 경로(뷰) -->
+    <entry key="m.system.skin.root.path">/Users/data/O4OPJT/mfront/m/WEB-INF/views</entry>
+
+
+
+    <!-- 이메일 SMTP IP 설정 -->
+    <entry key="system.email.smtp.ip">smtps.hiworks.com</entry>
+    <entry key="system.email.smtp.username">davich000@davichmarket.com</entry>
+    <entry key="system.email.smtp.password">davi13579!</entry>
+
+    <!-- 허용하지 않는 사이트 ID 접두어, admin01 같이 해당 단어로 시작하는 ID는 생성 불가 -->
+    <entry key="system.id.not.allowed.prefix">
+        admin,
+        master,
+        manager
+    </entry>
+
+    <!-- 허용하지 않는 사이트ID 단어 -->
+    <entry key="system.id.not.allowed.word">
+        tomcat,
+        was,
+        root,
+        hacluster,
+        unbound,
+        sshd,
+        postfix,
+        nobody,
+        ftp,
+        games,
+        operator,
+        mail,
+        halt,
+        shutdown,
+        sync,
+        lp,
+        adm,
+        daemon,
+        apache,
+        mysql,
+        center,
+        shop,
+        bin,
+        webadmin,
+        saslauth,
+        utmp,
+        avahi-autoipd,
+        passwd,
+        user,
+        su,
+        www,
+        send,
+        mailnull,
+        sudo,
+        input,
+        stapdev,
+        stapusr,
+        ssh_keys,
+        audio,
+        tss,
+        stapsys,
+        polkitd,
+        users,
+        dbus,
+        utempter,
+        kftel,
+        parcel,
+        postdrop,
+        systemd-journal,
+        avahi-autoipd,
+        systemd-bus-proxy,
+        systemd-network,
+        rpc,
+        video,
+        lock,
+        tape,
+        ebdesign,
+        demo,
+        wheel,
+        sys,
+        tty,
+        disk,
+        mem,
+        cdrom,
+        man,
+        kmem,
+        floppy,
+        dialout,
+        help,
+        m,
+        design
+    </entry>
+</properties>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+
+    <comment>스프링 Validator 메시지</comment>
+    <!-- 메시지에 매핑할 값의 순서는 로그의 DefaultMessageCodesResolver 의 arguments 부분 참고... -->
+    <!-- 공통 -->
+    <entry key="typeMismatch">잘못된 데이터 타입입니다.</entry>
+    <entry key="net.danvi.dmall.validation.constraints.NullOrLength.message">빈 값이거나 최소 {min}자 이상, {max}자 이하여야합니다.</entry>
+    <entry key="NotNull.exampleVo.id">아이디는 필수 입력 항목입니다.</entry>
+
+</properties>

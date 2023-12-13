@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xmlns="http://java.sun.com/xml/ns/javaee"
+		 xmlns:web="http://java.sun.com/xml/ns/javaee"
+		 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+						http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+		 id="WebApp_ID" version="3.0">
+
+	<display-name>Frame BackOffice</display-name>
+
+	<!-- ==================================== -->
+	<!--             Listeners                -->
+	<!-- ==================================== -->
+	<listener>
+		<listener-class>org.springframework.web.util.WebAppRootListener</listener-class>
+	</listener>
+
+	<!-- Creates the Spring Container shared by all Servlets and Filters -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+
+	<listener>
+		<listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+	</listener>
+
+	<!-- ==================================== -->
+	<!--       Context Parameters             -->
+	<!-- ==================================== -->
+
+	<!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>
+			classpath:spring/context/context-application.xml
+			classpath:spring/context/context-datasource.xml
+			classpath:spring/context/context-scheduler.xml
+			classpath:spring/context/context-batch.xml
+		</param-value>
+	</context-param>
+
+	<!--  ==================================== -->
+	<!--          Servlet Configuration        -->
+	<!--  ==================================== -->
+	<servlet>
+		<servlet-name>appServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>classpath:spring/servlet/context-servlet.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>appServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+	<!-- ==================================== -->
+	<!--         Servlet Filters              -->
+	<!-- ==================================== -->
+	<filter>
+		<filter-name>encodingFilter</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>encodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<!-- ==================================== -->
+	<!--         Session Timeout              -->
+	<!-- ==================================== -->
+	<session-config>
+		<session-timeout>360</session-timeout>
+	</session-config>
+
+	<!-- ==================================== -->
+	<!--         welcome file                 -->
+	<!-- ==================================== -->
+	<welcome-file-list>
+		<welcome-file>index.html</welcome-file>
+	</welcome-file-list>
+
+	<!-- ==================================== -->
+	<!--         error page                   -->
+	<!-- ==================================== -->
+	<!--
+	<error-page>
+		<error-code>401</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>403</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>404</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>500</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>501</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>502</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	<error-page>
+		<error-code>503</error-code>
+		<location>/WEB-INF/views/error/error.jsp</location>
+	</error-page>
+	-->
+	
+	<!-- 톰캣 클러스터링  -->
+	<distributable/>
+</web-app>

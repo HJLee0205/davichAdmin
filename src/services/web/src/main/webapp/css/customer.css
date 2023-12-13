@@ -1,0 +1,516 @@
+@charset "utf-8";
+
+/* === 고객센터 === */
+#customer_location {
+    width:1200px;
+    margin:0 auto 32px;
+    font-weight:700;
+    letter-spacing:-1px;
+    padding-left:7px;
+    background:url(../img/category/bul_h3.png) no-repeat left 5px
+}
+#customer_location > span.location_bar {
+    display:inline-block;
+    width:2px;
+    height:11px;
+    margin:0 14px;
+    background:url(../img/customer/location_bar.png) no-repeat left 2px
+}
+#customer_location > span  {
+    margin:0 11px;
+    font-weight:100
+}
+.customer {
+    overflow:hidden;
+}
+/* === 고객센터 왼쪽 메뉴 === */
+.customer_side_area {
+    float:left;
+    width:200px;
+    height:100%;
+}
+.customer_side {
+    margin-bottom:46px
+}
+.customer_side li {
+    line-height:43px;
+}
+.customer_side li a {
+    padding-top:9px;
+    color:#7b7b7b;
+    font-size:14px;
+    height:39px;
+    font-weight:700;
+    background:url(../img/customer/side_menu_bar.gif) no-repeat left top
+}
+.customer_side li a:hover,
+.customer_side li a.selected {
+    color:#000000;
+}
+.customer_side_info {
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left top;
+}
+.customer_side_info li {
+    font-size:11px;
+    line-height:16px;
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left bottom;
+    padding:11px 0 17px
+}
+.side_info_tit {
+    display:block;
+    font-size:10px;
+    font-weight:700;
+}
+.side_info_tel {
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:14px
+}
+
+/* === 고객센터 오른쪽 컨텐츠 === */
+.customer_content {
+    float:right;
+    width:730px;
+    padding-left:39px;
+    border-left:1px solid #e5e5e5
+}
+.customer_search_area {
+    height:40px;
+    width:100%;
+    overflow:hidden;
+    margin:19px 0 40px;
+}/*160923*/
+.customer_search_area label {
+    display:inline-block;
+    font-size:18px;
+    height:29px;
+    line-height:29px;
+    font-weight:700;
+    width:131px;
+    padding-left:45px;
+    background:url(../img/customer/icon_customer_search.png) no-repeat left top
+}
+.customer_search_area > input {
+    font-size:14px;
+    width:452px;
+    height:40px;
+    line-height:34px;
+    padding:0 13px;
+    border:1px solid #e5e5e5;
+     -moz-box-sizing:border-box; -webkit-box-sizing:border-box; box-sizing:border-box;
+}/*160923*/
+.customer_search_area > button {
+    font-size:14px;
+    color:#fff;
+    width:101px;
+    height:40px;
+    background:#505050
+}
+.customer_main_list {
+    overflow:hidden;
+}
+.customer_main_list > li {
+    float:left;
+    width:49%;
+    height:260px;
+    padding:30px 17px 12px 21px;
+    border:1px solid #e5e5e5;
+     -moz-box-sizing:border-box;
+     -webkit-box-sizing:border-box;
+    box-sizing:border-box;
+} /*160923*/
+.customer_main_list > li:first-child {
+    margin-right:2%
+}
+h3.customer_main_list_tit {
+    position:relative;
+    font-size:16px;
+    color:#2b2b2b;
+    font-weight:700;
+    margin-bottom:20px
+}
+h3.customer_main_list_tit > button {
+    position:absolute;
+    right:0;
+    top:0
+}
+.customer_main_slist li {
+    margin:11px 0;
+    height:25px;
+    vertical-align:top;
+}/*160923*/
+.customer_main_slist li a {
+    width:90%;
+    height:25px;
+    line-height:25px;
+    overflow:hidden;
+    display:inline-block;
+    }/*160923*/
+.customer_main_slist li span.no {
+    float:left;
+    padding:0px 8px;
+    height:23px;
+    line-height:23px;
+    font-size:10px;
+    color:#2e2d2d;
+    margin-right:8px;
+    border:1px solid #ddd
+}/*160923*/
+.customer_notice_slist li {
+    margin:11px 0;
+    height:25px
+}
+.customer_notice_slist li a {
+    padding-left:7px;
+    background:url(../img/customer/bul_notice.gif) no-repeat left 9px;
+    width:75%;
+    height:18px;
+    line-height:18px;
+    overflow:hidden;
+    display:inline-block;
+}/*160923*/
+.customer_notice_slist li span {
+    float:right
+}
+.customer_bottom_menu {
+    margin:15px 0;
+    overflow:hidden
+}
+.customer_bottom_menu li {
+    float:left;
+    width:170px;
+    height:99px;
+    margin-left:14px;
+    border:1px solid #383838;
+}
+.customer_bottom_menu li:first-child {
+    margin-left:0
+}
+.customer_bottom_menu li a {
+    display:inline-block;
+    width:142px;
+    padding:30px 15px 0 17px;
+    color:#000000;
+    font-size:16px;
+    font-weight:700;
+    line-height:24px;
+    position:relative
+}
+.customer_bottom_menu li a.customer_bottom_menu01 {
+    background:url(../img/customer/icon_bottom_menu01.png) no-repeat 122px 14px
+}
+.customer_bottom_menu li a.customer_bottom_menu02 {
+    background:url(../img/customer/icon_bottom_menu02.png) no-repeat 122px 14px
+}
+.customer_bottom_menu li a.customer_bottom_menu03 {
+    background:url(../img/customer/icon_bottom_menu03.png) no-repeat 122px 14px
+}
+.customer_bottom_menu li a.customer_bottom_menu04 {
+    background:url(../img/customer/icon_bottom_menu04.png) no-repeat 122px 14px
+}
+.customer_bottom_menu li a button {
+    position:absolute;
+    width:13px;
+    height:20px;
+    right:15px;
+    bottom:-10px;
+}
+
+/* === 자주묻는 질문 메뉴 === */
+ul.faq_tabs {
+    width: 730px;
+    margin-bottom:20px;
+    z-index:0;
+    border-left: 1px solid #e5e5e5;
+    border-right: 1px solid #e5e5e5;
+    overflow:hidden;
+}/*160923*/
+ul.faq_tabs li {
+    float: left;
+    text-align:center;
+    cursor: pointer;
+    width:14.28%;
+    height: 44px;
+    color:#373737;
+    font-size:14px;
+    line-height: 42px;
+    border-top: 1px solid #e5e5e5;
+    border-right: 1px solid #e5e5e5;
+    border-bottom:1px solid #e5e5e5;
+    border-left: none;
+    font-weight: 700;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+     -moz-box-sizing:border-box; -webkit-box-sizing:border-box; box-sizing:border-box;
+}/*160923*/
+ul.faq_tabs li:nth-child(n+5){}/*160923*/
+ul.faq_tabs li.active {
+    height: 44px;
+    background: #f9f9f9;
+    border-bottom:3px solid #505050;
+     -moz-box-sizing:border-box; -webkit-box-sizing:border-box; box-sizing:border-box;
+}/*160923*/
+.faq_tabs_content {
+    display: none;
+}
+h3.customer_con_tit {
+    margin-top:14px;
+    font-size:16px;
+    color:#373737;
+    padding-left:17px;
+    background:url(../img/customer/bul_h3_tit.png) no-repeat left 2px
+}
+h3.customer_con_tit span {
+    display:block;
+    margin-left:-17px;
+    margin-top:11px;
+    font-size:12px;
+    font-weight:100;
+    color:#acacac
+}
+
+/* === 자주묻는 질문 테이블 === */
+.faq_title {
+    font-size:13px;
+    font-weight:700;
+    color:#2e2d2d;
+    padding:16px 0;
+    background:#f9f9f9;
+    border-top:1px solid #e5e5e5 ;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.faq_title span.faq_no {
+    display:inline-block;
+    width:8%;
+    text-align:center;
+}
+.faq_title span.faq_sort {
+    display:inline-block;
+    width:18%;
+    text-align:center;
+}
+.faq_title span.faq_tit {
+    display:inline-block;
+    width:73%;
+    text-align:center
+}/*160923*/
+.accordion-section-title {
+    display:block;
+    border-bottom:1px solid #e5e5e5;
+    text-align:center;
+    font-weight:700;
+    letter-spacing:-1px;
+    font-size:13px;
+    padding:14px 0;
+    overflow:hidden;
+    cursor: pointer;
+}/*160923*/
+span.faq_no {
+    display:inline-block;
+    width:8%;
+    vertical-align:top;
+    text-align:center;
+}
+span.faq_sort {
+    display:inline-block;
+    width:18%;
+    text-align:center;
+    vertical-align:top
+}
+span.faq_tit {
+    display:inline-block;
+    width:65%;
+    vertical-align:top;
+    text-align:left
+}/*160923*/
+span.icon_q {
+    display:inline-block;
+    font-weight:700;
+    width:4%;
+}
+span.btn_faq_arrow {
+    float:right;
+    display:inline-block;
+    width:3%;
+    height:7px;
+    margin-top:2px;
+    background:url(../img/customer/icon_faq.png) no-repeat left top
+}
+.accordion-section-title.active span.btn_faq_arrow {
+    background:url(../img/customer/icon_faq.png) no-repeat left bottom
+}
+
+/* === 자주묻는질문 Content === */
+.accordion-section-content {
+    display:none;
+    padding:20px;
+    margin-top:-1px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5;
+    background:#fafafa url(../img/customer/customer_side_info_dotline.png) repeat-x left top;
+}
+.accordion-section-content div {
+    margin-left:176px
+}
+.accordion-section-content div span.icon_a {
+    display:inline-block;
+    font-weight:700;
+    vertical-align:top;
+    width:32px;
+}
+.accordion-section-content div p {
+    display:inline-block;
+    line-height:20px;
+    font-size:13px;
+    text-align:left;
+    line-height:20px;
+    vertical-align:top;
+}
+.customer_content .table_top {
+    text-align:right;
+    height:30px;
+    margin-bottom:5px
+}
+.customer_content .table_top select {
+    height:28px
+}
+.customer_content .table_top > input[type="text"] {
+    border:1px solid #e5e5e5;
+    border-right:none;
+    width:154px;
+    height:16px;
+    padding:5px 0 5px 5px;
+    font-size:12px;
+    letter-spacing:-1px;
+}
+.customer_content .table_top > button {
+    width:26px;
+    height:28px;
+    border:1px solid #e5e5e5;
+    border-left:none;
+    background:url(../img/common/icon_search.png) no-repeat 5px 6px
+}
+
+/* === 공지사항 === */
+.tNotice_Board {
+    width:100%;
+    border-top:1px solid #e5e5e5 ;
+}
+.tNotice_Board th {
+    font-size:13px;
+    color:#2e2d2d;
+    padding:16px;
+    background:#f9f9f9;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tNotice_Board td {
+    font-size:13px;
+    text-align:left;
+    padding:14px 20px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tNotice_Board td.textC {
+    text-align:center
+}
+.tNotice_Board td a {
+    color:#2e2d2d
+}
+.label_red {
+    color:#ff0000
+}
+
+/* === 공지사항 상세페이지 === */
+.tNotice_View {
+    width:100%;
+    border-top:1px solid #e5e5e5
+}
+.tNotice_View th {
+    font-size:13px;
+    color:#2e2d2d;
+    padding:15px;
+    background:#f9f9f9;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tNotice_View td {
+    font-size:13px;
+    text-align:left;
+    padding:15px 20px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tNotice_View td.view {
+    padding:45px 50px;
+    line-height:22px
+}
+.tNotice_View td a {
+    color:#2e2d2d
+}
+.btn_notice_list {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    line-height:32px;
+    color:#fff;
+    background:#373737
+}
+.btn_notice_list:active {
+    background:#000
+}
+
+/* === 1:1문의 게시판 === */
+.tQna_Insert {
+    width:100%;
+    border-top:1px solid #e5e5e5
+}
+.tQna_Insert th {
+    font-size:13px;
+    font-weight:700;
+    background:#f9f9f9;
+    padding:7px 0px;
+    border-bottom:1px solid #e5e5e5
+}
+.tQna_Insert td {
+    font-size:13px;
+    text-align:left;
+    padding:7px 16px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tQna_Insert td input[type="text"],
+.tQna_Insert td input[type="password"] {
+    border:1px solid #e5e5e5;
+    padding:5px;
+    font-size:12px;
+    letter-spacing:-1px;
+    height:16px
+}
+.tQna_Insert td.insert  {
+    padding:7px 0 7px 16px ;
+}
+.tQna_Insert td.insert textarea {
+    border:1px solid #e5e5e5;
+    padding:20px;
+    font-size:12px;
+    line-height:20px;
+    resize:none;
+    overflow-y:auto;
+    height:253px
+}
+.btn_qna_insert {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    line-height:32px;
+    color:#fff;
+    background:#373737
+}
+.btn_qna_insert:active {
+    background:#000
+}
+.btn_customer_area {
+    margin:20px 0;
+    text-align:center
+}

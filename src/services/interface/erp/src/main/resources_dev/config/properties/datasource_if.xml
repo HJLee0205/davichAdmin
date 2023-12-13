@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+	
+	<entry key="erp.database.type">oracle</entry>
+	<entry key="erp.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="erp.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.4.136:1521:davich</entry>
+	<entry key="erp.jdbc.user">davich</entry>
+	<entry key="erp.jdbc.password">davich</entry>
+	<entry key="erp.database.charset">euc-kr</entry>
+</properties>

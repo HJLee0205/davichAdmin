@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="statistics.loginCurrentStatusAnls">
+    <sql id="loginCurrentStatusListWhere">
+        and tlca.SITE_NO = #{siteNo}
+        <if test="eqpmGbCd != null and eqpmGbCd != ''">
+            and tlca.EQPM_GB_CD = #{eqpmGbCd}
+        </if>
+        <if test="searchFrom != null and searchFrom != ''">
+            <![CDATA[
+            and to_date(#{searchFrom}, 'YYYY-MM-DD') < to_date(to_char(tlca.YR||tlca.MM||tlca.DT, 'YYYY-MM-DD'), 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+            <![CDATA[
+            and to_date(#{searchTo}, 'YYYY-MM-DD') > to_date(to_char(tlca.YR||tlca.MM||tlca.DT, 'YYYY-MM-DD'), 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+    </sql>
+
+    <select id="selectLoginCurrentStatusList" resultType="loginCurrentStatusVO">
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, rownum AS RANK, A.*
+                FROM
+                    (
+                        SELECT tlca.SITE_NO ,
+                               tlca.EQPM_GB_CD ,
+                               tlca.LOGIN_ID ,
+                               tlca.MEMBER_NM ,
+                               max(tlca.LAST_LOGIN) AS LAST_LOGIN_DTTM ,
+                               sum(tlca.LOGIN_CNT) AS TOT_LOGIN_CNT ,
+                               sum(tlca.PAGE_VW) AS PAGE_VW
+                        FROM TT_LOGIN_CURSTATUS_ANLS tlca
+                        WHERE 1=1
+                        <include refid="loginCurrentStatusListWhere"/>
+                        GROUP BY tlca.SITE_NO, tlca.EQPM_GB_CD , tlca.LOGIN_ID , tlca.MEMBER_NM
+                        ORDER BY TOT_LOGIN_CNT DESC
+                    ) A
+            ) AA
+        <include refid="common.pageSql"/>
+    </select>
+    <select id="selectLoginCurrentStatusListCount" resultType="Integer">
+        SELECT count(*)
+        FROM
+            (
+                SELECT tlca.SITE_NO ,
+                       tlca.EQPM_GB_CD ,
+                       tlca.LOGIN_ID ,
+                       tlca.MEMBER_NM ,
+                       max(tlca.LAST_LOGIN) AS LAST_LOGIN_DTTM ,
+                       sum(tlca.LOGIN_CNT) AS TOT_LOGIN_CNT ,
+                       sum(tlca.PAGE_VW) AS PAGE_VW
+                FROM TT_LOGIN_CURSTATUS_ANLS tlca
+                WHERE 1=1
+                <include refid="loginCurrentStatusListWhere"/>
+                GROUP BY tlca.SITE_NO, tlca.EQPM_GB_CD , tlca.LOGIN_ID , tlca.MEMBER_NM
+                ORDER BY TOT_LOGIN_CNT DESC
+            ) A
+    </select>
+    <select id="selectLoginCurrentStatusListTotalCount" resultType="Integer">
+        SELECT count(*)
+        FROM
+            (
+                SELECT tlca.SITE_NO ,
+                       tlca.EQPM_GB_CD ,
+                       tlca.LOGIN_ID ,
+                       tlca.MEMBER_NM ,
+                       max(tlca.LAST_LOGIN) AS LAST_LOGIN_DTTM ,
+                       sum(tlca.LOGIN_CNT) AS TOT_LOGIN_CNT ,
+                       sum(tlca.PAGE_VW) AS PAGE_VW
+                FROM TT_LOGIN_CURSTATUS_ANLS tlca
+                WHERE 1=1
+                GROUP BY tlca.SITE_NO, tlca.EQPM_GB_CD , tlca.LOGIN_ID , tlca.MEMBER_NM
+                ORDER BY TOT_LOGIN_CNT DESC
+            ) A
+    </select>
+</mapper>

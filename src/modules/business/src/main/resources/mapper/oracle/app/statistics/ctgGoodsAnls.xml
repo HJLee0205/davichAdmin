@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   카테고리 상품 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.ctgGoodsAnls">
+    <sql id="selectCtgGoodsListWhere">
+		AND SITE_NO = #{siteNo}
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+   		GROUP BY SITE_NO, YR, MM, LARGE_CLSF, LARGE_CLSF_NM, MEDIUM_CLSF, MEDIUM_CLSF_NM
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+   		GROUP BY SITE_NO, YR, LARGE_CLSF, LARGE_CLSF_NM, MEDIUM_CLSF, MEDIUM_CLSF_NM
+        </if>
+    </sql>
+    
+    <sql id="selectCtgGoodsListCountWhere">
+		AND SITE_NO = #{siteNo}
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+       GROUP BY LARGE_CLSF, MEDIUM_CLSF
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+       GROUP BY LARGE_CLSF, MEDIUM_CLSF
+        </if>
+    </sql>
+    
+
+    <!-- 카테고리 상품 분석 전체조회 -->
+    <select id="selectCtgGoodsList" parameterType="ctgGoodsSO" resultType="ctgGoodsVO">
+        /* statistics.ctgGoodsAnls.selectCtgGoodsList */
+		SELECT *
+		FROM
+		(
+	        select ROWNUM AS PAGING_NUM, ROWNUM, ROWNUM AS RANK
+	              , A.*
+	          FROM (
+	                   SELECT NVL(A.LARGE_CLSF_NM, '  ') AS LARGE_CLSF_NM
+	                        , NVL(A.MEDIUM_CLSF_NM, '  ') AS MEDIUM_CLSF_NM
+	                        , ROUND(A.ALL_SALE_QTT,0) AS ALL_SALE_QTT
+	                        , ROUND(A.ALL_SALE_AMT,0) AS ALL_SALE_AMT
+	                        , ROUND(A.REVIEW_CNT,0) AS REVIEW_CNT
+	                        , ROUND(A.PC_SALE_QTT,0) AS PC_SALE_QTT
+	                        , ROUND(A.PC_SALE_AMT,0) AS PC_SALE_AMT
+	                        , ROUND(A.MOBILE_SALE_QTT,0) AS MOBILE_SALE_QTT
+	                        , ROUND(A.MOBILE_SALE_AMT,0) AS MOBILE_SALE_AMT
+	                     FROM (
+	                              SELECT LARGE_CLSF
+	                                   , LARGE_CLSF_NM
+							        <if test=' periodGb == "D" ' >
+							        	,SITE_NO, YR, MM
+									</if>	                                   
+							        <if test=' periodGb == "M" ' >
+							        	,SITE_NO, YR
+									</if>
+	                                   , MEDIUM_CLSF
+	                                   , MEDIUM_CLSF_NM
+	                                   , NVL(SUM(PC_SALE_QTT),0) + NVL(SUM(MOBILE_SALE_QTT),0) AS ALL_SALE_QTT
+	                                   , NVL(SUM(PC_SALE_AMT),0) + NVL(SUM(MOBILE_SALE_AMT),0) AS ALL_SALE_AMT
+	                                   , NVL(SUM(REVIEW_CNT),0) AS REVIEW_CNT
+	                                   , NVL(SUM(PC_SALE_QTT),0) AS PC_SALE_QTT
+	                                   , NVL(SUM(PC_SALE_AMT),0) AS PC_SALE_AMT
+	                                   , NVL(SUM(MOBILE_SALE_QTT),0) AS MOBILE_SALE_QTT
+	                                   , NVL(SUM(MOBILE_SALE_AMT),0) AS MOBILE_SALE_AMT
+	                                FROM (
+	                                         SELECT A.SITE_NO
+	                                              , A.YR
+	                                              , A.MM
+	                                              , A.DT
+	                                              , A.LARGE_CLSF
+	                                              , A.LARGE_CLSF_NM
+	                                              , A.MEDIUM_CLSF
+	                                              , B.CTG_NM AS MEDIUM_CLSF_NM
+	                                              , A.REVIEW_CNT
+	                                              , A.PC_SALE_QTT
+	                                              , A.PC_SALE_AMT
+	                                              , A.MOBILE_SALE_QTT
+	                                              , A.MOBILE_SALE_AMT
+	                                           FROM (
+	                                                    SELECT A.SITE_NO
+	                                                         , A.YR
+	                                                         , A.MM
+	                                                         , A.DT
+	                                                         , A.LARGE_CLSF
+	                                                         , B.CTG_NM AS LARGE_CLSF_NM
+	                                                         , A.MEDIUM_CLSF
+	                                                         , A.REVIEW_CNT
+	                                                         , A.PC_SALE_QTT
+	                                                         , A.PC_SALE_AMT
+	                                                         , A.MOBILE_SALE_QTT
+	                                                         , A.MOBILE_SALE_AMT
+	                                                      FROM TT_CTG_GOODS_ANLS A
+	                                                         , ( SELECT SITE_NO, CTG_NO, CTG_NM
+	                                                               FROM TG_CTG
+	                                                              WHERE CTG_LVL = '1'
+	                                                           ) B
+	                                                     WHERE A.SITE_NO = B.SITE_NO
+	                                                       AND A.LARGE_CLSF = B.CTG_NO
+	                                                )A
+	                                                , ( SELECT SITE_NO, CTG_NO, CTG_NM
+	                                                      FROM TG_CTG
+	                                                     WHERE CTG_LVL = '2'
+	                                                ) B
+	                                         WHERE A.SITE_NO = B.SITE_NO
+	                                           AND A.MEDIUM_CLSF = B.CTG_NO
+	                                     ) A
+	                               WHERE 1 = 1
+	                               <include refid="selectCtgGoodsListWhere" />
+	                            ) A
+	                           <include refid="common.sortSql" />
+	               ) A
+         )
+         <include refid="common.pageSql" />
+    </select>
+    <!-- 카테고리 상품 분석 총건수 조회 -->
+    <select id="selectCtgGoodsListTotalCount" parameterType="ctgGoodsSO" resultType="Integer">
+        /* statistics.ctgGoodsAnls.selectCtgGoodsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT LARGE_CLSF
+                      , MEDIUM_CLSF
+                      , NVL(SUM(PC_SALE_QTT),0) AS PC_SALE_QTT
+                      , NVL(SUM(PC_SALE_AMT),0) AS PC_SALE_AMT
+                      , NVL(SUM(MOBILE_SALE_QTT),0) AS MOBILE_SALE_QTT
+                      , NVL(SUM(MOBILE_SALE_AMT),0) AS MOBILE_SALE_AMT
+                   FROM TT_CTG_GOODS_ANLS
+                  WHERE 1 = 1
+                ) TCNT
+    </select>
+    <!-- 카테고리 상품 분석 조건적용 총건수 조회 -->
+    <select id="selectCtgGoodsListCount" parameterType="ctgGoodsSO" resultType="Integer">
+        /* statistics.ctgGoodsAnls.selectCtgGoodsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT LARGE_CLSF
+                      , MEDIUM_CLSF
+                      , NVL(SUM(PC_SALE_QTT),0) AS PC_SALE_QTT
+                      , NVL(SUM(PC_SALE_AMT),0) AS PC_SALE_AMT
+                      , NVL(SUM(MOBILE_SALE_QTT),0) AS MOBILE_SALE_QTT
+                      , NVL(SUM(MOBILE_SALE_AMT),0) AS MOBILE_SALE_AMT
+                   FROM TT_CTG_GOODS_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectCtgGoodsListCountWhere" />
+                ) PGCNT
+    </select>
+</mapper>

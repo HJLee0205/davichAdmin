@@ -1,0 +1,166 @@
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<div class="wrap" align="center" style="width:650px;margin:0 auto;border:1px solid #dddddd;">
+<table class="header" style="width:590px;border-collapse:collapse;margin:0 auto;">
+<tbody><tr>
+    <th class="h_logo" style="padding:20px 0 10px;font-size:12px;text-align:left;border-bottom:1px solid #dddddd;">
+        <h1 style="margin:0;padding:0;"><img src="//#[dlgtDomain]/front/img/common/logo/logo.png" style="border:0;"></h1>
+    </th>
+</tr>
+</tbody></table>
+<table class="content" style="width:590px;border-collapse:collapse;margin:0 auto;">
+<tbody><tr>
+    <td class="con_tlt" style="text-align:center;">
+        <h2 style="margin:0;padding:40px 0;font-size:24px;">주문하신 상품은 배송 준비중입니다.</h2>
+    </td>
+</tr>
+<tr>
+    <td class="con_desc" style="padding:0 0 40px;font-size:14px;color:#787878;">
+         안녕하세요 #[shopName] 입니다. <br>
+         고객님의 상품은 배송 준비중입니다. <br>
+         배송 상태는 ‘my page&gt; 나의쇼핑’에서 조회하실 수 있습니다.
+    </td>
+</tr>
+<tr>
+    <th class="con_h3" style="text-align:left;">
+        <h3 style="margin:0;padding:0 0 20px;font-size:16px;">
+        <img src="//#[dlgtDomain]/front/img/email/bul_tlt.png" alt="" style="border:0;vertical-align:middle;"> 주문자정보</h3>
+    </th>
+</tr>
+<tr>
+    <td>
+        <table class="basic" style="width:100%;border-collapse:collapse;margin-bottom:30px;font-size:12px;border-top:1px solid #dddddd;">
+        <tbody><tr>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                주문자명
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><p>
+                #[memberNm]</p></td>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                이메일
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;">
+                #[ordEmail]</td>
+        </tr>
+        <tr>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                핸드폰
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;">
+                #[ordMobile]</td>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                전화번호
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;">
+                #[ordTel]</td>
+        </tr>
+        </tbody></table>
+    </td>
+</tr>
+<tr>
+    <th class="con_h3" style="text-align:left;">
+        <h3 style="margin:0;padding:0 0 20px;font-size:16px;">
+        <img src="//#[dlgtDomain]/front/img/email/bul_tlt.png" alt="" style="border:0;vertical-align:middle;"> 주문상품정보</h3>
+    </th>
+</tr>
+<tr>
+    <td>
+        #[orderItemList]
+    </td>
+</tr>
+<tr>
+    <th class="con_h3" style="text-align:left;">
+        <h3 style="margin:0;padding:0 0 20px;font-size:16px;">
+        <img src="//#[dlgtDomain]/front/img/email/bul_tlt.png" alt="" style="border:0;vertical-align:middle;"> 결제정보</h3>
+    </th>
+</tr>
+<tr>
+    <td>
+        <table style="margin-bottom:30px;border-top:1px solid #dddddd;border-bottom:1px solid #dddddd;width:100%;border-collapse:collapse;">
+        <tbody><tr>
+            <td style="width:15%;padding:20px 0;text-align:center;">
+                <div style="height:80px;">
+                    <p style="margin:25px 0 0;font-weight:bold;">
+                        총 상품금액
+                    </p>
+                     #[ordSaleAmt]원
+                </div>
+            </td>
+            <td style="width:5%;text-align:center;">
+                <img src="//#[dlgtDomain]/front/img/email/icon_pay_minus.png" alt="-" style="border:0;">
+            </td>
+            <td style="width:15%;padding:20px 0;text-align:center;">
+                <div style="height:80px;">
+                    <p style="margin:25px 0 0;font-weight:bold;">
+                        총 할인금액
+                    </p>
+<p>#[ordDcAmt]원
+                </p></div>
+            </td>
+            <td style="width:5%;text-align:center;">
+                <img src="//#[dlgtDomain]/front/img/email/icon_pay_minus.png" alt="-" style="border:0;">
+            </td>
+            <td style="width:15%;padding:20px 0;text-align:center;">
+                <div style="height:80px;">
+                    <p style="margin:25px 0 0;font-weight:bold;">
+                        시용 마켓포인트액
+                    </p>
+                     #[ordSvmnAmt]원
+                </div>
+            </td>
+            <td style="width:5%;text-align:center;">
+                <img src="//#[dlgtDomain]/front/img/email/icon_pay_plus.png" alt="+" style="border:0;">
+            </td>
+            <td style="width:15%;padding:20px 0;text-align:center;">
+                <div style="height:80px;">
+                    <p style="margin:25px 0 0;font-weight:bold;">
+                        배송비 합계
+                    </p>
+                     #[ordDlvrAmt]원
+                </div>
+            </td>
+            <td style="width:5%;text-align:center;">
+                <img src="//#[dlgtDomain]/front/img/email/icon_pay_total.png" alt="=" style="border:0;">
+            </td>
+            <td style="width:20%;text-align:right;">
+                <div>
+                    <p style="margin:0;">
+                        최종 결제 금액<br> / 결제수단
+                    </p>
+                    <p style="margin:0;">
+                        <strong style="color:red;font-size:16px;font-weight:bold;">#[ordPayAmt]</strong>원
+                    </p>
+                    <p style="margin:0;color:#999;">
+                        (#[ordPaymentWayNm])
+                    </p>
+                </div>
+            </td>
+        </tr>
+        </tbody></table>
+    </td>
+</tr>
+<tr>
+    <td class="btn_con" style="text-align:center;">
+        <a href="http://#[dlgtDomain]/front/main-view" class="btn1" style="display:inline-block;height:36px;padding:0 20px;line-height:36px;text-decoration:none;font-size:12px;color:#ffffff;background-color:#373737;">#[shopName] 바로가기</a>
+    </td>
+</tr>
+<tr>
+    <td class="f_desc" style="padding-top:30px;font-size:12px;color:#666;">
+        본 메일은 발신전용입니다. 궁금하신 점이나 불편한 사항은 고객센터를 통해 문의해주시기 바랍니다.
+    </td>
+</tr>
+</tbody></table>
+<table class="footer" style="width:100%;border-collapse:collapse;margin-top:20px;font-size:11px;background-color:#444444;">
+<tbody><tr>
+    <th class="f_logo" style="width:20%;">
+
+    </th>
+    <td style="width:80%;padding:20px 0;">
+        <p class="info_txt" style="font-size: 13.3333px; color: rgb(153, 153, 153);"><span style="color: rgb(119, 119, 119); font-size: 10pt;">copyright ⓒ #[shopName]. All rights Reserved.&nbsp;</span><br></p>
+<p class="copy_txt" style="font-size: 13.3333px;"><span style="color: rgb(119, 119, 119);">고객센터 무료전화&nbsp;<span style="color: rgb(255, 255, 255);">#[custCtTelNo]</span>&nbsp;문의 메일&nbsp;</span><font color="#ffffff">#[custCtEmail]</font></p>
+    </td>
+</tr>
+</tbody></table>
+</div><p><br></p>

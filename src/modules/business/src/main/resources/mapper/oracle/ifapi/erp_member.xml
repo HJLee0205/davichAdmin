@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="erp.member">
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineMemberSO" id="offlineMemSO"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineShopMemberVO" id="offlineShopMemberVO"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OnlineMemSearchReqDTO" id="onMemSearchDto"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointSearchReqDTO" id="offPointSearchDto"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointHistorySearchReqDTO" id="pointHistSearchDto"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffStampSearchReqDTO" id="offStampSearchDto"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffStampHistorySearchReqDTO" id="stampHistSearchDto"/>
+
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineMemberVO" id="offlineMemberVO" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineShopMemberVO" id="offlineShopMemberVO" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OnlineMemSearchResDTO$OnlineMemInfo" id="onMemResultDto" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointHistorySearchResDTO$PointHistoryDTO" id="pointHistDto" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.StampHistoryDto" id="stampHistDto" autoMapping="true"/>
+    <!-- 오 프라인 회원 목록 조회 -->
+    <select id="selectOfflineMemberList" parameterMap="offlineMemSO" resultMap="offlineMemberVO">
+        select cd_cust as cdCust
+        , nm_cust as nmCust
+        , lvl as lvl
+        , no_card as offlineCardNo
+        , nvl(mall_yn, 'N') as combineYn
+        , (select str_name from am010tbl@DAVISION where str_code = a.man_code) as recentStrName
+        from eaa07@DAVISION a
+        where cd_gubun = '0'
+        <if test="custName != null and custName != ''">
+            and nm_cust = #{custName}
+        </if>
+        <if test="hp != null and hp != ''">
+            and hand_phone = #{hp}
+        </if>
+        <if test="strCode != null and strCode != ''">
+            and man_code = #{strCode}
+        </if>
+        <if test="mallNoCard != null and mallNoCard != ''">
+            and MALL_NO_CARD = #{mallNoCard}
+        </if>
+    </select>
+
+    <select id="selectShopMemberInfo" parameterMap="offlineShopMemberVO" resultMap="offlineShopMemberVO">
+        SELECT LOGIN_ID, PSWRD, STR_CODE, HAND_PHONE
+        FROM am030tbl@DAVISION
+        WHERE USE_FLG = '1'
+        <if test="loginId != null and loginId != ''">
+            AND LOGIN_ID = #{loginId}
+        </if>
+        <if test="pswrd != null and pswrd != ''">
+            AND PSWRD = #{pswrd}
+        </if>
+
+    </select>
+
+    <!-- 온라인 회원 목록 카드번호로 조회 -->
+    <select id="selectOnlineMemberCardList" parameterMap="onMemSearchDto" resultMap="onMemResultDto">
+        select
+        A.member_no as memNo
+        , A.member_nm as memName
+        , A.login_id as mallUserId
+        , A.mobile as hp
+        , A.tel as tel
+        , A.gender_gb_cd as gender
+        , A.birth as birthDay
+        , A.new_post_no as postNo
+        , A.road_addr as address1
+        , A.dtl_addr as address2
+        , A.member_card_no as onlineCardNo
+        , case A.INTEGRATION_MEMBER_GB_CD when '03' then 'Y' else 'N' end as combineYn
+        , B.ERP_MEMBER_NO as cdCust
+        from TC_MEMBER A LEFT OUTER JOIN TI_ERP_MEM_MAPPING B ON A.member_no = B.MALL_MEMBER_NO and B.DEL_YN='N'
+        where A.member_status_cd = '01'
+        and A.member_no > 1000
+        <if test="onlineCardNo != null and onlineCardNo != ''">
+            and A.member_card_no = #{onlineCardNo}
+        </if>
+
+    </select>
+
+    <!-- 온라인 회원 목록 조회 -->
+    <select id="selectOnlineMemberList" parameterMap="onMemSearchDto" resultMap="onMemResultDto">
+        select
+        A.member_no as memNo
+        , A.member_nm as memName
+        , A.login_id as mallUserId
+        , A.mobile as hp
+        , A.tel as tel
+        , A.gender_gb_cd as gender
+        , A.birth as birthDay
+        , A.new_post_no as postNo
+        , A.road_addr as address1
+        , A.dtl_addr as address2
+        , A.member_card_no as onlineCardNo
+        , case A.INTEGRATION_MEMBER_GB_CD when '03' then 'Y' else 'N' end as combineYn
+        , B.ERP_MEMBER_NO as cdCust
+        from TC_MEMBER A LEFT OUTER JOIN TI_ERP_MEM_MAPPING B ON A.member_no = B.MALL_MEMBER_NO and B.DEL_YN='N'
+        where A.member_status_cd = '01'
+        and A.member_no > 1000
+        <if test="custName != null and custName != ''">
+            and A.member_nm = #{custName}
+        </if>
+        <if test="hp != null and hp != ''">
+            and A.mobile_smr = #{hp}
+        </if>
+        <if test="fullHp != null and fullHp != ''">
+            and A.mobile = #{fullHp}
+        </if>
+        <if test="onlineCardNo != null and onlineCardNo != ''">
+            and A.member_card_no = #{onlineCardNo}
+        </if>
+        <if test="combineYn != null and combineYn eq 'Y'.toString()">
+            and A.INTEGRATION_MEMBER_GB_CD = '03'
+        </if>
+        <if test="combineYn != null and combineYn eq 'N'.toString()">
+            and A.INTEGRATION_MEMBER_GB_CD != '03'
+        </if>
+
+    </select>
+
+    <!-- ERP 회원등급을 회원 정보에 갱신 -->
+    <update id="updateMemberLvl">
+        MERGE INTO TI_ERP_MEM_MAPPING T
+            USING (
+                SELECT CD_CUST,LVL FROM EAA07_MALL_YN@DAVISION
+            ) C
+            ON (
+                        T.ERP_MEMBER_NO = C.CD_CUST
+                    AND T.DEL_YN = 'N'
+                )
+            WHEN MATCHED THEN
+                UPDATE SET
+                    T.ERP_MEMBER_LVL = C.lvl
+                    , T.UPD_DTTM = sysdate
+    </update>
+
+    <!-- 매장에서 가입 여부를 Y로 설정 -->
+    <update id="updateStoreJoinYnToY" parameterType="string">
+        update  tc_member
+        set store_join_yn = 'Y'
+        where member_no = #{memberNo}
+    </update>
+
+    <!-- 보유 포인트 조회 (ERP) -->
+    <select id="selectOfflineAvailPoint" parameterMap="offPointSearchDto" resultType="int">
+        select nvl(max(mt_point1), 0)
+        from eaa07@DAVISION
+        where cd_cust = #{cdCust}
+    </select>
+
+    <!-- 포인트 증감내역 조회(ERP) -->
+    <select id="selectOfflinePointHistory" parameterMap="pointHistSearchDto" resultMap="pointHistDto">
+        SELECT * FROM (
+        SELECT to_char(DATES, 'YYYY-MM-DD') as dealDate
+        , FNC_STR_NAME(STR_CODE) as strName
+        , CANC_TYPE as cancType
+        , IN_FLAG as inFlag
+        , SAL_AMT as salAmt
+        , SAL_POINT as salPoint
+        , USE_POINT as usePoint
+        , SUM(SAL_POINT - USE_POINT) OVER (PARTITION BY CD_CUST ORDER BY DATES, CD_CUST, SEQ_NO) AS curPoint
+        , ROWNUM AS RN
+        FROM (
+        SELECT A.DATES
+        , A.STR_CODE
+        , A.CANC_TYPE
+        , A.IN_FLAG
+        , A.SAL_AMT
+        , DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT
+        , DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT
+        , A.MEMBER_NO AS CD_CUST
+        , A.SEQ_NO
+        FROM GT040TBL A
+        WHERE A.MEMBER_NO = #{cdCust}
+        <if test="searchFrom != null and searchFrom != ''">
+            AND A.DATES >= to_date(#{searchFrom}, 'YYYYMMDD')
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+            AND A.DATES &lt; to_date(#{searchTo}, 'YYYYMMDD') + 1
+        </if>
+        ORDER BY DATES DESC, SEQ_NO DESC
+        )
+        )
+        WHERE RN > #{pageNo} * #{cntPerPage}
+        AND RN &lt;= (#{pageNo} + 1) * #{cntPerPage}
+        ORDER BY RN
+    </select>
+
+    <!-- 보유 스탬프 조회 (ERP) -->
+    <select id="selectStampQty" parameterMap="offStampSearchDto" resultType="int">
+        SELECT sum( CASE WHEN canc_type = '0' THEN decode(in_flag,'0', sla_stamp, sla_stamp * -1)
+                        WHEN canc_type = '2' THEN  decode(in_flag,'0', sla_stamp * -1, sla_stamp)
+                    end
+                   ) as qty
+        FROM eaa07_stamp@DAVISION
+        WHERE service = '0'
+          AND member_no = #{cdCust}
+    </select>
+
+    <!-- 스탬프 증감내역 조회(ERP) -->
+    <select id="selectStampHistPaging"  resultMap="stampHistDto">
+        SELECT * FROM (
+            SELECT to_char(DATES, 'YYYYMMDD') as dealDate
+            , str_name as storeName
+            , canc_type as cancType
+            , in_flag as inFlag
+            , qty as qty
+            , itm_name as content
+            , member_no as memberNo
+            , ROWNUM AS RN
+            FROM (
+            select a.dates                  as dates,
+            a.member_no              as member_no,
+            b.nm_cust                as nm_cust,
+            a.seq_no                 as seq_no,
+            a.in_flag                as in_flag,
+            a.str_code               as str_code,
+            fnc_str_name@DAVISION(a.str_code) as str_name,
+            a.pos_no                 as pos_no,
+            a.trxn_no                as trxn_no,
+            a.canc_type              as canc_type,
+            case when a.canc_type = '0' then decode(a.in_flag,'0', a.sla_stamp, a.sla_stamp * -1)
+            when a.canc_type = '2' then decode(a.in_flag,'0', a.sla_stamp * -1, a.sla_stamp)
+            end as qty,
+            a.itm_code               as itm_code,
+            c.itm_name               as itm_name,
+            c.sph                    as sph,
+            c.cyl                    as cyl,
+            c.axis                   as axis,
+            a.in_date                as in_date
+            from eaa07_stamp@DAVISION a, eaa07@DAVISION b, am070tbl@DAVISION c
+            where a.member_no = #{cdCust}
+            and a.member_no = b.cd_cust
+            and a.itm_code = c.itm_code
+            <if test="searchFrom != null and searchFrom != ''">
+                and a.dates >= to_date(#{searchFrom}, 'YYYYMMDD')
+            </if>
+            <if test="searchTo != null and searchTo != ''">
+                and a.dates &lt; to_date(#{searchTo}, 'YYYYMMDD') + 1
+            </if>
+            order by dates DESC, seq_no DESC
+            )
+        )
+        WHERE RN > #{pageNo} * #{cntPerPage}
+        AND RN &lt;= (#{pageNo} + 1) * #{cntPerPage}
+        ORDER BY RN
+    </select>
+
+    <select id="selectStampHistPagingTotalCount"  resultType="Integer">
+        select count(*)
+        from eaa07_stamp@DAVISION a, eaa07@DAVISION b, am070tbl@DAVISION c
+        where a.member_no = #{cdCust}
+        and a.member_no = b.cd_cust
+        and a.itm_code = c.itm_code
+        <if test="searchFrom != null and searchFrom != ''">
+            and a.dates >= to_date(#{searchFrom}, 'YYYYMMDD')
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+            and a.dates &lt; to_date(#{searchTo}, 'YYYYMMDD') + 1
+        </if>
+    </select>
+
+    <select id="selectStampHistPagingCount" resultType="Integer">
+        select count(*)
+        from eaa07_stamp@DAVISION a, eaa07@DAVISION b, am070tbl@DAVISION c
+        where a.member_no = #{cdCust}
+        and a.member_no = b.cd_cust
+        and a.itm_code = c.itm_code
+    </select>
+
+    <resultMap id="PRO_INS_DATA" type="hashmap" />
+    <select id="procedureMemberIntergrated"  parameterType="hashmap" statementType="CALLABLE">
+        <![CDATA[
+            { call  DAVICH.EAA07_IU_PRC@DAVISION (
+                    #{a_MEMBER_NM},
+                    #{a_MOBILE},
+                    #{a_MALL_NO_CARD},
+                    #{o_RETURN, mode=OUT, jdbcType=VARCHAR, javaType=string},
+                    #{o_MESSAGE, mode=OUT, jdbcType=VARCHAR, javaType=string}
+                )}
+        ]]>
+    </select>
+    <!-- 탈퇴 회원 디비에서 seq 조회 -->
+    <select id="selectOfflineLeaveMemberSeq" parameterType="hashmap" resultType="Integer">
+        SELECT MAX(SEQ)
+        FROM EAA20@DAVISION
+        WHERE REQUEST_YMD = #{ls_ymd}
+        AND STR_CODE = #{ls_str_code}
+    </select>
+    <insert id="insertOfflineLeaveMember" parameterType="hashmap">
+        INSERT INTO EAA20@DAVISION
+        (REQUEST_YMD,
+         STR_CODE,
+         SEQ,
+         REQUEST_EMP,
+         CD_CUST,
+         COMPLETE_YMD,
+         COMMENTS,
+         CHECK_FLG,
+         MALL_BACK_OUT,
+         POINT_DEL,
+         IN_TYPE
+        )
+        VALUES(#{ls_ymd},  /*입력일*/
+               #{ls_str_code},  /*A/S  매장*/
+               #{ll_seq},  /*max + 1*/
+               #{ls_emp}, /*등록자*/
+               #{ls_cd_cust},  /*다비젼 고객번호*/
+               NULL,
+               #{ls_comments}, /*탈퇴 사유*/
+               #{ls_check_flg}, /* "0" */
+               #{ls_pop_ret} /* 마켓 탈퇴 YN */
+               ,#{ls_point_del} /*포인트 설명 YN*/
+               ,#{is_in_type}
+              )
+    </insert>
+
+    <!--
+    2023-05-28 210 통합포인트 사용
+     a_dates         date,       /* 영업일자 */
+     a_cd_cust       varchar2,   /* 회원번호 */
+     a_in_flag       varchar2,   /* 입력구분 0:적립,1:통합,2:소멸,3:변경,4:사용 */
+     a_pdate         date,       /* 적용일자 */
+     a_str_code      varchar2,       /* 가맹점코드 */
+     a_canc_type     varchar2,       /* 0:정상/2:반품 */
+     a_sal_amt       number,     /* 구매총금액 */
+     a_payamt01      number,     /* [현금]정산금액 */
+     a_payamt02      number,     /* [카드]정산금액 */
+     a_payamt03      number,     /* 포인트사용 금액 */
+     a_sal_point     number,     /* 발생포인트*/
+     a_cd_no         number,     /* 카드번호 */
+     a_str_code_to   varchar2    /* 포인트 사용 체인점 코드 */
+     exec davich_point( '20230523','13244225',  '0',   '20230523',  '8888',  '0',  50000,   0,     50000,   0,    5000,   '12312344', '8888'  );
+    -->
+    <!--TO_DATE(#{a_dates}, 'YYYY-MM-DD HH24:MI:SS'),-->
+    <!--TO_DATE(#{a_pdate}, 'YYYY-MM-DD HH24:MI:SS'),-->
+    <select id="ErpMemberDPoint"  parameterType="hashmap" statementType="CALLABLE">
+        <![CDATA[
+        { call  DAVICH.davich_point@DAVISION (
+            SYSDATE,
+            #{a_cd_cust},
+            #{a_in_flag},
+            SYSDATE,
+            #{a_str_code},
+            #{a_canc_type},
+            #{a_sal_amt},
+            #{a_payamt01},
+            #{a_payamt02},
+            #{a_payamt03},
+            #{a_sal_point},
+            #{a_cd_no},
+            #{a_str_code_to}
+            )}
+        ]]>
+    </select>
+    <!--2023-05-28 210 erp 쪽데이터 뿐아니라 마켓쪽에서 로그를 쌓아서 이중 추적-->
+    <insert id="insertMallDPointLog" parameterType="hashmap">
+        INSERT INTO TC_MEMBER_DPOINT_LOG
+        (
+            DTYPE
+            ,DATES
+            ,CD_CUST
+            ,IN_FLAG
+            ,PDATE
+            ,STR_CODE
+            ,CANC_TYPE
+            ,SAL_AMT
+            ,PAYAMT01
+            ,PAYAMT02
+            ,PAYAMT03
+            ,SAL_POINT
+            ,CD_NO
+            ,STR_CODE_TO
+            ,REG_DTTM
+        )
+        VALUES(
+                  #{dtype},
+                    SYSDATE, <!--TO_DATE(#{a_dates}, 'YYYY-MM-DD HH24:MI:SS'),-->
+                  #{a_cd_cust},
+                  #{a_in_flag},
+                    SYSDATE,  <!--TO_DATE(#{a_pdate}, 'YYYY-MM-DD HH24:MI:SS'),-->
+                  #{a_str_code},
+                  #{a_canc_type},
+                  #{a_sal_amt},
+                  #{a_payamt01},
+                  #{a_payamt02},
+                  #{a_payamt03},
+                  #{a_sal_point},
+                  #{a_cd_no},
+                  #{a_str_code_to},
+                    SYSDATE
+              )
+    </insert>
+</mapper>

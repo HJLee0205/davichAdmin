@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+        "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+
+<tiles-definitions>
+
+	<!-- 기본 레이아웃 -->
+	<definition name="defaultLayout" template="/WEB-INF/tiles/defaultLayout.jsp" >
+		<put-attribute name="defaultCss" value="/WEB-INF/views/include/defaultCss.jsp" />
+		<put-attribute name="common" value="/WEB-INF/views/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/views/include/jsVar.jsp" />
+		<put-attribute name="meta" value="/WEB-INF/views/include/meta.jsp" />
+	</definition>
+
+	<!-- 기본 상품 -->
+	<definition name="goodsLayout" extends="defaultLayout" >
+		<put-attribute name="meta" value="/WEB-INF/views/include/goodsMeta.jsp" />
+	</definition>
+
+	<!-- 미리보기 레이아웃 -->
+	<definition name="previewLayout" template="/WEB-INF/tiles/previewLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/views/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/views/include/jsVar.jsp" />
+		<put-attribute name="meta" value="/WEB-INF/views/include/goodsMeta.jsp" />
+	</definition>
+
+	<!-- 레이아웃 추가시 jsVar 도 반드시 추가할것. 공통 자바스크립트 변수가 정의되어 있음 -->
+
+	<!-- 팝업 레이아웃 -->
+	<definition name="popupLayout" template="/WEB-INF/tiles/popupLayout.jsp" >
+		<put-attribute name="jsVar" value="/WEB-INF/views/include/jsVar.jsp" />
+		<put-attribute name="common" value="/WEB-INF/views/include/common.jsp" />
+	</definition>
+
+	<!-- 다비치마켓 레이아웃 -->
+	<definition name="davichLayout" template="/WEB-INF/tiles/davichLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/views/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/views/include/jsVar.jsp" />
+		<put-attribute name="meta" value="/WEB-INF/views/include/meta.jsp" />
+	</definition>
+
+	<!-- 다비치마켓 상품 레이아웃 -->
+	<definition name="goodsDavichLayout" extends="davichLayout" >
+		<put-attribute name="meta" value="/WEB-INF/views/include/goodsMeta.jsp" />
+	</definition>
+
+
+
+</tiles-definitions>

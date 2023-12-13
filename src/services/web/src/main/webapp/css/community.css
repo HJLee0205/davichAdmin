@@ -1,0 +1,679 @@
+@charset "utf-8";
+
+/* === 커뮤니티 === */
+#community_location {
+    width:970px;
+    margin:0 auto 32px;
+    font-weight:700;
+    letter-spacing:-1px;
+    padding-left:7px;
+    background:url(../img/category/bul_h3.png) no-repeat left 5px
+}
+#community_location > span.location_bar {
+    display:inline-block;
+    width:2px;
+    height:11px;
+    margin:0 14px;
+    background:url(../img/customer/location_bar.png) no-repeat left 2px
+}
+#community_location > span  {
+    margin:0 11px;
+    font-weight:100
+}
+.community {
+    overflow:hidden;
+}
+
+/* === 커뮤니티 왼쪽 메뉴 === */
+.community_side_area {
+    float:left;
+    width:200px;
+    height:100%;
+}
+.community_side {
+    margin-bottom:46px
+}
+.community_side li {
+    line-height:43px;
+}
+.community_side li a {
+    padding-top:9px;
+    color:#7b7b7b;
+    font-size:14px;
+    height:39px;
+    font-weight:700;
+    background:url(../img/customer/side_menu_bar.gif) no-repeat left top
+}
+.community_side li a:hover,
+.community_side li a.selected {
+    color:#000000;
+}
+.community_side_info {
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left top;
+}
+.community_side_info li {
+    font-size:11px;
+    line-height:16px;
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left bottom;
+    padding:11px 0 17px
+}
+.side_info_tit {
+    display:block;
+    font-size:10px;
+    font-weight:700;
+}
+.side_info_tel {
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:14px
+}
+
+/* === 커뮤니티 오른쪽 컨텐츠 === */
+.community_content {
+    float:right;
+    width:730px;
+    padding-left:39px;
+    border-left:1px solid #e5e5e5
+}
+h3.community_con_tit {
+    margin-top:14px;
+    font-size:16px;
+    color:#373737;
+    padding-left:17px;
+    background:url(../img/customer/bul_h3_tit.png) no-repeat left 2px
+}
+h3.community_con_tit span {
+    display:block;
+    margin-left:-17px;
+    margin-top:11px;
+    font-size:12px;
+    font-weight:100;
+    color:#acacac
+}
+.community_content .table_top {
+    text-align:right;
+    height:30px;
+    margin-bottom:5px
+}
+.community_content .table_top select {
+    height:28px
+}
+.community_content .table_top > input[type="text"] {
+    border:1px solid #e5e5e5;
+    border-right:none;
+    width:154px;
+    height:16px;
+    padding:5px 0 5px 5px;
+    font-size:12px;
+    letter-spacing:-1px;
+}
+.community_content .table_top > button {
+    width:26px;
+    height:28px;
+    border:1px solid #e5e5e5;
+    border-left:none;
+    background:url(../img/common/icon_search.png) no-repeat 5px 6px
+}
+
+/* === 자유게시판 === */
+.tFree_Board {
+    width:100%;
+    border-top:1px solid #e5e5e5 ;
+}
+.tFree_Board th {
+    font-size:13px;
+    color:#2e2d2d;
+    padding:16px 0;
+    background:#f9f9f9;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tFree_Board td {
+    font-size:13px;
+    text-align:left;
+    padding:14px 20px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tFree_Board td.textC {
+    text-align:center;
+    padding:14px 0;
+}
+.tFree_Board td a {
+    color:#2e2d2d
+}
+.tFree_Board .free_check {
+}
+.tFree_Board .free_check label {
+    height:11px;
+    line-height:11px
+}
+.tFree_Board .free_check label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.tFree_Board .free_check label span {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+    background: url("../img/common/input_checkbox03.gif");
+}
+.tFree_Board .free_check label input:checked + span {
+    background: url("../img/common/input_checkbox_checked03.gif");
+}
+.tFree_Board td .label_red {
+    color:#ff0000
+}
+.community_btn_area {
+    margin:18px 0;
+    text-align:right
+}
+.btn_free_write {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    color:#fff;
+    background:#373737 ;
+}
+.btn_free_write:active {
+    background:#000
+}
+
+/* === 자유게시판 상세페이지 === */
+.tFree_View {
+    width:100%;
+    border-top:1px solid #e5e5e5
+}
+.tFree_View th {
+    font-size:13px;
+    color:#2e2d2d;
+    padding:15px;
+    background:#f9f9f9;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tFree_View td {
+    font-size:13px;
+    text-align:left;
+    padding:15px 20px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tFree_View td.lnh_file{line-height:23px;}
+.tFree_View td.bbs_select_td{padding:6px 20px;} /*160603 셀렉박스 패딩값 수정*/
+.tFree_View td.view {
+    padding:40px 50px;
+    line-height:22px;
+    border-bottom:none
+}
+.tFree_View td.bbs_file{border-bottom:1px solid #e5e5e5;} /*160603 첨부파일 라인 추가*/
+.tFree_View td a {
+    color:#2e2d2d
+}
+.tFree_View td.free_con {
+    text-align:center;
+    padding:0;
+    line-height:1
+}
+.file_add{height:25px; line-height:25px;}/*160603 첨부파일 다중파일 추가*/
+.free_comment_write {
+    margin:12px 0;
+    padding:20px 20px 0 20px;
+    text-align:left;
+    border:1px solid #e5e5e5
+}
+.free_comment_warning {
+    font-size:12px;
+    color:#a1a1a1;
+    margin-bottom:7px
+}
+.free_comment_form {
+    position:relative;
+    width:100%;
+    height:67px;
+    border:1px solid #e5e5e5
+}
+.free_comment_form textarea {
+    float:left;
+    border:none;
+    resize:none;
+    padding:5px;
+    font-size:12px;
+    width:608px;
+    height:57px;
+    overflow-y:auto
+}
+.free_comment_form label {
+    position:absolute;
+    right:75px;
+    bottom:5px;
+    font-size:12px;
+    color:#a1a1a1
+}
+.btn_free_comment {
+    float:right;
+    width:70px;
+    height:68px;
+    font-size:14px;
+    font-weight:700;
+    color:#373737;
+    background:#e5e5e5
+}
+.btn_free_comment:active {
+    background:#ddd
+}
+.free_comment_no {
+    color:#ff0000;
+    margin-left:5px
+}
+.free_comment_list {
+    margin:0px 0 0px
+}
+.free_comment_view {
+    padding:20px 0 20px;
+    overflow:hidden ;
+    background:url(../img/product/reply_dot_line.png) repeat-x left bottom;
+}
+.free_comment_id {
+    float:left;
+    width:70px;
+    margin-right:20px;
+    font-size:13px;
+    font-weight:700
+}
+.free_comment_text {
+    float:left;
+    width:70%;
+    font-size:12px;
+    line-height:18px
+}
+.free_comment_info {
+    float:right;
+    text-align:right;
+    width:70px;
+}
+.free_comment_text02 {
+    float:left;
+    width:740px;
+    font-size:12px;
+    line-height:18px
+}
+.free_comment_btn {
+    float:right;
+    text-align:right;
+    width:110px;
+}
+.free_comment_btn button {
+    vertical-align:bottom
+}
+.free_comment_info_date {
+    font-size:12px;
+    line-height:16px;
+    margin-bottom:5px
+}
+.btn_free_area {
+    margin:20px auto
+}
+.btn_free_list {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    line-height:32px;
+    color:#fff;
+    background:#373737
+}
+.btn_free_list:active {
+    background:#000
+}
+.btn_free_spam {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    line-height:32px;
+    color:#fff;
+    background:#898989
+}
+.btn_free_spam:active {
+    background:#373737
+}
+.btn_free_reply {
+    border:1px solid #e5e5e5;
+    width:68px;
+    height:32px;
+    line-height:32px;
+    color:#373737;
+    background:#fff
+}
+.btn_free_modify {
+    border:1px solid #e5e5e5;
+    width:68px;
+    height:32px;
+    line-height:32px;
+    color:#373737;
+    background:#fff
+}
+.btn_free_del {
+    border:1px solid #e5e5e5;
+    width:68px;
+    height:32px;
+    line-height:32px;
+    color:#373737;
+    background:#fff
+}
+.btn_free_reply:active {
+    background:#e5e5e5
+}
+.btn_free_modify:active {
+    background:#e5e5e5
+}
+.btn_free_del:active {
+    background:#e5e5e5
+}
+
+/* === 자유게시판 쓰기 === */
+.tFree_Insert {
+    width:100%;
+    border-top:1px solid #e5e5e5
+}
+.tFree_Insert th {
+    font-size:13px;
+    font-weight:700;
+    background:#f9f9f9;
+    padding:7px 0px;
+    border-bottom:1px solid #e5e5e5
+}
+.tFree_Insert td {
+    font-size:13px;
+    text-align:left;
+    padding:7px 16px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tFree_Insert td input[type="text"],
+.tFree_Insert td input[type="password"] {
+    border:1px solid #e5e5e5;
+    padding:5px;
+    font-size:12px;
+    letter-spacing:-1px;
+    height:16px
+}
+.tFree_Insert td.view {padding:40px 50px;line-height:22px;}/*160603 대답하기페이지 추가*/
+
+
+.tFree_Insert .free_notice_check {
+    display:inline-block;
+    font-size:13px;
+    color:#0e0e0e;
+    line-height:28px;
+    margin:0px 0 0px 20px
+}
+.tFree_Insert .free_notice_check label {
+    height:11px;
+    line-height:11px
+}
+.tFree_Insert .free_notice_check label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.tFree_Insert .free_notice_check label span {
+    width: 11px;
+    height: 11px;
+    margin-right:3px;
+    margin-bottom:-1px;
+    display: inline-block;
+    background: url("../img/common/input_checkbox03.gif");
+}
+.tFree_Insert .free_notice_check label input:checked + span {
+    background: url("../img/common/input_checkbox_checked03.gif");
+}
+.tFree_Insert td.insert {
+    padding:6px 0;
+}
+.tFree_Insert td.insert textarea {
+    border:1px solid #e5e5e5;
+    padding:20px;
+    width:94.3%;
+    font-size:12px;
+    line-height:20px;
+    resize:none;
+    overflow-y:auto;
+    height:253px
+}
+.tFree_Insert .free_pw_check {
+    display:inline-block;
+    font-size:13px;
+    color:#0e0e0e;
+    margin:7px 0 7px 0px
+}
+.tFree_Insert .free_pw_check label {
+    height:11px;
+    line-height:11px;
+    margin-right:10px;
+}
+.tFree_Insert .free_pw_check label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.tFree_Insert .free_pw_check label span {
+    width: 11px;
+    height: 11px;
+    margin-right:3px;
+    margin-bottom:-1px;
+    display: inline-block;
+    background: url("../img/common/input_radio.png");
+}
+.tFree_Insert .free_pw_check label input:checked + span {
+    background: url("../img/common/input_radio_checked.png");
+}
+.tFree_Insert .btn_file_up {
+    color:#fff;
+    font-size:12px;
+    height:28px;
+    line-height:28px;
+    width:100px;
+    background:#898989;
+}
+.tFree_Insert .btn_file_up:active {
+    color:#fff;
+    font-size:12px;
+    height:28px;
+    line-height:28px;
+    width:100px;
+    background:#373737;
+}
+.btn_free_insert {
+    border:1px solid #e5e5e5;
+    width:68px;
+    height:32px;
+    line-height:32px;
+    color:#373737;
+    background:#fff
+}
+.btn_free_insert:active {
+    background:#e5e5e5
+}
+.btn_free_insert_cancel {
+    border:1px solid #e5e5e5;
+    width:68px;
+    height:32px;
+    line-height:32px;
+    color:#373737;
+    background:#fff
+}
+.btn_free_insert_cancel:active {
+    background:#e5e5e5
+}
+.btn_free_insert_area {
+    margin:11px auto
+}
+
+/* === 자료실 === */
+.tDownload_Board {
+    width:100%;
+    border-top:1px solid #e5e5e5 ;
+}
+.tDownload_Board th {
+    font-size:13px;
+    color:#2e2d2d;
+    padding:16px 0;
+    background:#f9f9f9;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tDownload_Board td {
+    font-size:13px;
+    text-align:left;
+    padding:14px 20px;
+    color:#2e2d2d;
+    border-bottom:1px solid #e5e5e5 ;
+}
+.tDownload_Board td.textC {
+    text-align:center;
+    padding:14px 0;
+}
+.tDownload_Board td.pix_img img {
+    width:65px;
+    height:65px;
+}
+.tDownload_Board td a {
+    color:#2e2d2d
+}
+.tDownload_Board .download_check {
+}
+.tDownload_Board .download_check label {
+    height:11px;
+    line-height:11px
+}
+.tDownload_Board .download_check label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.tDownload_Board .download_check label span {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+    background: url("../img/common/input_checkbox03.gif");
+}
+.tDownload_Board .download_check label input:checked + span {
+    background: url("../img/common/input_checkbox_checked03.gif");
+}
+.btn_free_write {
+    width:100px;
+    height:32px;
+    font-size:13px;
+    color:#fff;
+    background:#373737 ;
+}
+.btn_free_write:active {
+    background:#000
+}
+
+/* === 갤러리형 게시판 ===*/
+.tGallery_list {
+    margin-top:10px;
+    overflow:hidden;
+    border-bottom:1px solid #e5e5e5
+}
+.tGallery_list li {
+    float:left;
+    height:255px;
+    text-align:center;
+    width:150px;
+    margin-right:43px
+}
+.tGallery_list li:nth-child(4n+4) {
+    margin-right:0
+}
+.tGallery_list li .gallery_check {
+    display:block;
+    text-align:left;
+    margin:0px 0 10px 0px
+}
+.tGallery_list li .gallery_check img {
+    width:150px;
+    height:150px;
+}
+.tGallery_list li .gallery_check label {
+    height:11px;
+    line-height:11px
+}
+.tGallery_list li .gallery_check label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.tGallery_list li .gallery_check label span {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+    margin-bottom:3px;
+    background: url("../img/common/input_checkbox03.gif");
+}
+.tGallery_list li .gallery_check label input:checked + span {
+    background: url("../img/common/input_checkbox_checked03.gif");
+}
+.tGallery_list li.no_data {
+    float:none;
+    width:100%;
+    text-align:center;
+    padding:30px 0;
+    font-size:12px;
+    color:#2e2d2d
+}
+.gallery_info {
+    font-size:11px;
+    color:#2e2d2d;
+    line-height:16px;
+    margin:10px 0 0
+}
+
+/*160603 아이콘추가*/
+.bbs_icon_new{font-size:10px; color:#008CFF; margin-left:3px;}
+.bbs_icon_hot{font-size:10px; color:#FF0004; margin-left:3px;}
+
+/*160603 게시판 배너추가*/
+.bbs_banner_top{margin-bottom:30px;}
+.bbs_banner_top img{width:100%;}
+.bbs_banner_bottom img{width:100%;}
+
+/*160603 자동등록방지*/
+.bbs_insert_auto{color:#1F87E8; font-weight:bold;}
+.bbs_insert_input{width:180px; margin-left:15px;}
+.bbs_insert_txt{font-size:11px; padding-top:8px; color:#A2A2A2; display:inline-block;}
+
+/*160603 갤러리 리스트 이미지 추가*/
+.bbs_g_thum{padding-top:10px;}
+.bbs_g_thum > img{
+    width:65px;
+    height:65px;
+}
+
+
+

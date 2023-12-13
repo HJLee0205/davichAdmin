@@ -1,0 +1,118 @@
+@charset "utf-8";
+/*set*/
+.alignC	{text-align:center;}
+.alignL	{text-align:left;}
+.align	R	{text-align:right;}
+.mt-5	{margin-top:5px;}
+.w50	{width:50px;}
+.w30p	{width:30% !important;}
+
+
+.icon_go_prev {
+	display: inline-block;
+    width: 10px;
+    height: 32px;
+    background: url(../img/common/icon_go_prev.png) no-repeat left 9px;
+    background-size:8px;
+}
+
+.alert_body, .layer_popup {
+	position: absolute;
+	z-index:1200;
+	top:50%;
+	/*left:10%;*/
+}
+
+.alert_body, .layer_popup {
+	position: absolute;
+	z-index:1200
+}
+
+div.dimmed{z-index:51;position:fixed;left:0;top:0;width:100%;height:100%;background-color:#000;opacity:0.6;filter:alpha(opacity=60);behavior: url(PIE.htc);}
+div.dimmed2{z-index:110;position:fixed;left:0;top:0;width:100%;height:100%;background-color:#000;opacity:0.7;filter:alpha(opacity=70);behavior: url(PIE.htc);}
+.pop_wrap{
+	z-index: 100;
+	position: relative;
+	background-color: #fff;
+	height: 100%;
+	padding: 5px 10px 10px;/*2018-09-13*/
+	/*padding: 10px;2018-09-12*/
+    box-sizing: border-box;/*2018-09-12*/
+}
+
+.agree_check_alert	{
+	text-align:center;
+	padding-bottom:2rem;
+}
+
+/*
+#sub_container > .cont_body > h3.member_sub_tit {
+	text-align: center;
+	font-size: 1rem;
+	font-weight: 400;
+	color: #222222;
+	padding:1rem;
+}
+*/
+h3.customer_tit {
+	width:calc(100% - 5%);
+	margin:10px auto 0 auto;
+	text-align:center;
+	font-size:.9rem;
+	font-weight:normal;
+	border:1px solid #cdcdcd;
+	padding:1rem;
+	background:#f9f9f9;
+	box-sizing: border-box;
+}
+
+
+.email_ps1	{
+	font-size:0.8rem;
+	line-height:1rem;
+}
+h2.promotion_stit	{
+	padding:0 3%;
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+}
+h3.planning_mid_tit {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #333333;
+    padding-left: 9px;
+    margin: 10px 0 0 0;
+	padding:0 3%;
+}
+
+.w100p	{
+	width:calc(100% - 5%);
+	box-sizing:border-box;
+}
+
+.promotion_list_wrap {
+	margin-top:20px
+}
+
+
+select, textarea, input[type="text"], input[type="password"] {
+	outline: none;
+}
+select {
+	cursor:pointer;
+    width:130px;
+    height:32px;
+    line-height: 31px;
+    color: #666666;
+    padding: 0 20px 0 5px;
+    font-size: 14px;
+    background: url(../img/common/select_arrow.png) no-repeat 98% 50%;
+    border: 1px solid #cdcdcd;
+    vertical-align: middle;
+    border-radius: 0px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}

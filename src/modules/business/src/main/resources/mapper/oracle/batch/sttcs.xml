@@ -1,0 +1,2746 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="batch.sttcs">
+
+    <cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <!-- 1.방문자분석 집계 -->
+    <insert id="insertVstrAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+        /* batch.sttcs.insertVstrAnls - 1.방문자분석 집계 */
+        <![CDATA[
+        INSERT INTO TT_VSTR_ANLS
+        (
+            SITE_NO,
+            YR,
+            MM,
+            DT,
+            HR,
+            EQPM_GB_CD,
+            VSTR_CNT,
+            PAGE_VW,
+            REGR_NO,
+            REG_DTTM,
+            UPDR_NO,
+            UPD_DTTM
+        )
+        SELECT SITE_NO,
+               YR,
+               MM,
+               DT,
+               HR,
+               EQPM_GB_CD,
+               count(DISTINCT VSTR) AS VSTR_CNT,
+               count(URL) AS PAGE_VW,
+               190,
+               sysdate,
+               NULL,
+               NULL
+        FROM
+            (
+                SELECT SITE_NO,
+                       to_char(ACCESS_DTTM, 'YYYY') AS YR,
+                       to_char(ACCESS_DTTM, 'MM') AS MM,
+                       to_char(ACCESS_DTTM, 'DD') AS DT,
+                       to_char(ACCESS_DTTM, 'HH24') AS HR,
+                       (CASE WHEN DEVICE_TYPE = 'P' THEN '11' WHEN DEVICE_TYPE = 'M' THEN '12' ELSE '99' END) AS EQPM_GB_CD,
+                       (CASE WHEN MEMBER_NO IS NOT NULL THEN MEMBER_NO WHEN MEMBER_NO IS NULL THEN JSESSIONID END) AS VSTR,
+                       DBMS_LOB.SUBSTR(URL, 3200) AS URL
+                FROM TA_ACCESS_LOG
+                WHERE ACCESS_DTTM >= to_date(to_char(sysdate - 1, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+                  AND ACCESS_DTTM < to_date(to_char(sysdate, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+            )
+        GROUP BY SITE_NO, YR, MM, DT, HR, EQPM_GB_CD, VSTR, URL
+        ]]>
+    </insert>
+
+    <!-- 2.방문경로분석 집계 -->
+    <update id="insertVisitPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertVisitPathAnls - 2-1.방문경로분석 집계 */
+     <![CDATA[
+     INSERT INTO TT_VISIT_PATH_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , EQPM_GB_CD
+          , VISIT_PATH_CD
+          , VSTR_CNT
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT st.* FROM (
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.EQPM_GB_CD
+          , C.VISIT_PATH_CD
+          , COUNT(DISTINCT C.VSTR)       VSTR_CNT
+          , 190                          REGR_NO   -- 등록자번호
+          , sysdate, null col1, null col2
+       FROM (
+             SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                  , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                  , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                  , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                  , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                         ELSE '99' END                      EQPM_GB_CD
+                  , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                         WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                         WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                         WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                         WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                         WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                         WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                         WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                         WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                         WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                         WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                         WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                         WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                         WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                         WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                         WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                         WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                         ELSE '09' END                      VISIT_PATH_CD
+                  , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                         ELSE A.JSESSIONID
+                     END                                    VSTR
+               FROM TA_ACCESS_LOG A
+              WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND NOT EXISTS (
+                        SELECT 1 
+                          FROM TT_VISIT_PATH_ANLS F
+                        WHERE F.SITE_NO = A.SITE_NO
+                          AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                          AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                          AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                          AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END)
+                          AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                             WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                             WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                             WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                             WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                             WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                             WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                             WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                             WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                             WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                             WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                             WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                             WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                             WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                             WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                             WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                             WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                             ELSE '09' END))                                             
+            ) C
+      GROUP BY C.SITE_NO
+             , C.YR, C.MM, C.DT
+             , C.EQPM_GB_CD
+             , C.VISIT_PATH_CD
+      ) st 
+]]>
+    </update>
+
+
+    <!-- 2.방문경로분석 집계 -->
+    <update id="updateVisitPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+      /* batch.sttcs.updateVisitPathAnls - 2-2.방문경로분석 집계  - 당일 방문경로분석 업데이트 */
+        <![CDATA[
+                MERGE INTO TT_VISIT_PATH_ANLS T
+                USING (
+                SELECT  COUNT(DISTINCT C.VSTR) AS VSTR ,C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                               FROM (
+                                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END                      EQPM_GB_CD
+                                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                 ELSE '09' END                      VISIT_PATH_CD
+                                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                                 ELSE A.JSESSIONID
+                                             END                                    VSTR
+                                       FROM TA_ACCESS_LOG A
+                                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND EXISTS (
+                                                SELECT /*+ INDEX (F IDX_TT_VISTI_PATH_ANLS_003) */  1
+                                                  FROM TT_VISIT_PATH_ANLS F
+                                                WHERE F.SITE_NO = A.SITE_NO
+                                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                                         ELSE '99' END)
+                                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                                    WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                     WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                     WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                     WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                     WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                     WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                     WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                     WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                     WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                     WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                     WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                     WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                     WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                     WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                     WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                     WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                     ELSE '09' END)
+                                                  AND F.UPD_DTTM IS NULL
+
+                                                    )            -- 수정일자 없는 데이터만 조회
+                                    ) C
+                                    GROUP BY C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                ) C
+                ON (
+                            T.SITE_NO = C.SITE_NO
+                             AND T.YR  = C.YR
+                             AND T.MM = C.MM
+                             AND T.DT = C.DT
+                             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+                             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD
+                             AND T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                             AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                T.VSTR_CNT =       C.VSTR
+                , T.UPDR_NO          = 190  -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+                , T.UPD_DTTM         = null   -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+        ]]>
+    </update>
+    <update id="updateVisitPathAnls_org" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVisitPathAnls_org - 2-2.방문경로분석 집계 - 당일 방문경로 업데이트 */
+     <![CDATA[
+     UPDATE TT_VISIT_PATH_ANLS T
+     SET T.VSTR_CNT         = 
+             (SELECT COUNT(DISTINCT C.VSTR)
+               FROM (
+                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                 ELSE '99' END                      EQPM_GB_CD
+                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                 ELSE '09' END                      VISIT_PATH_CD
+                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                 ELSE A.JSESSIONID
+                             END                                    VSTR
+                       FROM TA_ACCESS_LOG A
+
+                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+
+                        AND EXISTS (
+                                SELECT 1 
+                                  FROM TT_VISIT_PATH_ANLS F
+                                WHERE F.SITE_NO = A.SITE_NO
+                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                         ELSE '99' END)
+                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                    WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                     WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                     WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                     WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                     WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                     WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                     WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                     WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                     WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                     WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                     WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                     WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                     WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                     WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                     WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                     WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                     ELSE '09' END)                              
+                                  AND F.UPD_DTTM IS NULL )            -- 수정일자 없는 데이터만 조회
+                    ) C
+            WHERE T.SITE_NO          = C.SITE_NO
+             AND T.YR  = C.YR
+             AND T.MM = C.MM
+             AND T.DT = C.DT
+             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD        
+              GROUP BY C.SITE_NO
+                     , C.YR, C.MM, C.DT
+                     , C.EQPM_GB_CD
+                     , C.VISIT_PATH_CD )
+       , T.UPDR_NO          = 190           -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+       , T.UPD_DTTM         = null          -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+  WHERE T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+    AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+      ]]>
+         
+    </update>
+
+    <!-- 2.방문예약 경로분석 집계 -->
+    <update id="insertVisitRsvPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertVisitRsvPathAnls - 2-3.방문예약 경로분석 집계 */
+      <![CDATA[
+     INSERT INTO TT_VISIT_RSV_PATH_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , EQPM_GB_CD
+          , VISIT_PATH_CD
+          , VSTR_CNT
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT st.* FROM (
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.EQPM_GB_CD
+          , C.VISIT_PATH_CD
+          , COUNT(DISTINCT C.VSTR)       VSTR_CNT
+          , 190                          REGR_NO   -- 등록자번호
+          , sysdate, null col1, null col2
+       FROM (
+             SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */ A.SITE_NO
+                  , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                  , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                  , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                  , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                         ELSE '99' END                      EQPM_GB_CD
+                  , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                         WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                         WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                         WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                         WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                         WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                         WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                         WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                         WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                         WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                         WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                         WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                         WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                         WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                         WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                         WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                         WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                         ELSE '09' END                      VISIT_PATH_CD
+                  , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                         ELSE A.JSESSIONID
+                     END                                    VSTR
+               FROM TA_ACCESS_LOG A
+              WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND NOT EXISTS (
+                        SELECT 1
+                          FROM TT_VISIT_RSV_PATH_ANLS F
+                        WHERE F.SITE_NO = A.SITE_NO
+                          AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                          AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                          AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                          AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END)
+                          AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                             WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                             WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                             WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                             WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                             WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                             WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                             WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                             WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                             WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                             WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                             WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                             WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                             WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                             WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                             WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                             WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                             ELSE '09' END))
+                AND A.URL like '%visit-book%'
+            ) C
+      GROUP BY C.SITE_NO
+             , C.YR, C.MM, C.DT
+             , C.EQPM_GB_CD
+             , C.VISIT_PATH_CD
+      ) st
+        ]]>
+    </update>
+
+
+    <!-- 2.방문예약 경로분석 집계 -->
+    <update id="updateVisitRsvPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVisitRsvPathAnls - 2-4.방문예약 경로분석 집계 - 당일 방문예약 경로 업데이트 */
+     <![CDATA[
+     MERGE INTO TT_VISIT_RSV_PATH_ANLS T
+                USING (
+                SELECT  COUNT(DISTINCT C.VSTR) AS VSTR ,C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                               FROM (
+                                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END                      EQPM_GB_CD
+                                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                 ELSE '09' END                      VISIT_PATH_CD
+                                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                                 ELSE A.JSESSIONID
+                                             END                                    VSTR
+                                       FROM TA_ACCESS_LOG A
+                                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND EXISTS (
+                                                SELECT /*+ INDEX (F TT_VISIT_RSV_PATH_ANLS_003) */  1
+                                                  FROM TT_VISIT_RSV_PATH_ANLS F
+                                                WHERE F.SITE_NO = A.SITE_NO
+                                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                                         ELSE '99' END)
+                                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                                                             WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                                             WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                                             WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                                             WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                                             WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                                             WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                                             WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                                             WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                                             WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                                             WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                                             WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                                             WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                                             WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                                             WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                                             WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                                             WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                                             ELSE '09' END)
+                                                    AND F.UPD_DTTM IS NULL
+                                                    )            -- 수정일자 없는 데이터만 조회
+                                                    AND A.URL like '%visit-book%'
+                                    ) C
+                                    GROUP BY C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                ) C
+                ON (
+                            T.SITE_NO = C.SITE_NO
+                             AND T.YR  = C.YR
+                             AND T.MM = C.MM
+                             AND T.DT = C.DT
+                             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+                             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD
+                             AND T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                             AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                T.VSTR_CNT =       C.VSTR
+                , T.UPDR_NO          = 190  -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+                , T.UPD_DTTM         = null   -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+      ]]>
+
+    </update>
+    <update id="updateVisitRsvPathAnls_org" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVisitRsvPathAnls_org - 2-4.방문예약 경로분석 집계 - 당일 방문예약 경로 업데이트 */
+     <![CDATA[
+     UPDATE TT_VISIT_RSV_PATH_ANLS T
+     SET T.VSTR_CNT         =
+             (SELECT COUNT(DISTINCT C.VSTR)
+               FROM (
+                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */ A.SITE_NO
+                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                 ELSE '99' END                      EQPM_GB_CD
+                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                 ELSE '09' END                      VISIT_PATH_CD
+                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                 ELSE A.JSESSIONID
+                             END                                    VSTR
+                       FROM TA_ACCESS_LOG A
+                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND EXISTS (
+                                SELECT 1
+                                  FROM TT_VISIT_RSV_PATH_ANLS F
+                                WHERE F.SITE_NO = A.SITE_NO
+                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                         ELSE '99' END)
+                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                    WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                     WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                     WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                     WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                     WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                     WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                     WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                     WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                     WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                     WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                     WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                     WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                     WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                     WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                     WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                     WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                     ELSE '09' END)
+                                  AND F.UPD_DTTM IS NULL )            -- 수정일자 없는 데이터만 조회
+                                AND A.URL like '%visit-book%'
+                    ) C
+            WHERE T.SITE_NO          = C.SITE_NO
+             AND T.YR  = C.YR
+             AND T.MM = C.MM
+             AND T.DT = C.DT
+             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD
+              GROUP BY C.SITE_NO
+                     , C.YR, C.MM, C.DT
+                     , C.EQPM_GB_CD
+                     , C.VISIT_PATH_CD )
+       , T.UPDR_NO          = 190           -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+       , T.UPD_DTTM         = null          -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+  WHERE T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+    AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+      ]]>
+
+    </update>
+
+    <!-- 2.방문접수 경로분석 집계 -->
+    <update id="insertVisitRsvComPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertVisitRsvComPathAnls - 2-5.방문접수 경로분석 집계 */
+     <![CDATA[
+     INSERT INTO TT_VISIT_RSVCOM_PATH_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , EQPM_GB_CD
+          , VISIT_PATH_CD
+          , VSTR_CNT
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT st.* FROM (
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.EQPM_GB_CD
+          , C.VISIT_PATH_CD
+          , COUNT(DISTINCT C.VSTR)       VSTR_CNT
+          , 190                          REGR_NO   -- 등록자번호
+          , sysdate, null col1, null col2
+       FROM (
+             SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */ A.SITE_NO
+                  , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                  , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                  , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                  , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                         ELSE '99' END                      EQPM_GB_CD
+                  , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                         WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                         WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                         WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                         WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                         WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                         WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                         WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                         WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                         WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                         WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                         WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                         WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                         WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                         WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                         WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                         WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                         ELSE '09' END                      VISIT_PATH_CD
+                  , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                         ELSE A.JSESSIONID
+                     END                                    VSTR
+               FROM TA_ACCESS_LOG A
+              WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND NOT EXISTS (
+                        SELECT 1
+                          FROM TT_VISIT_RSVCOM_PATH_ANLS F
+                        WHERE F.SITE_NO = A.SITE_NO
+                          AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                          AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                          AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                          AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END)
+                          AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                             WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                             WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                             WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                             WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                             WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                             WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                             WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                             WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                             WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                             WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                             WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                             WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                             WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                             WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                             WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                             WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                             ELSE '09' END))
+                AND A.URL like '%visit-rsv-regist%'
+            ) C
+      GROUP BY C.SITE_NO
+             , C.YR, C.MM, C.DT
+             , C.EQPM_GB_CD
+             , C.VISIT_PATH_CD
+      ) st
+          ]]>
+    </update>
+
+
+    <!-- 2.방문접수 경로분석 집계 -->
+    <update id="updateVisitRsvComPathAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVisitRsvComPathAnls - 2-6.방문접수 경로분석 집계 - 당일 방문접수 경로 업데이트 */
+      <![CDATA[
+        MERGE INTO TT_VISIT_RSVCOM_PATH_ANLS T
+                USING (
+                SELECT  COUNT(DISTINCT C.VSTR) AS VSTR ,C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                               FROM (
+                                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END                      EQPM_GB_CD
+                                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                 ELSE '09' END                      VISIT_PATH_CD
+                                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                                 ELSE A.JSESSIONID
+                                             END                                    VSTR
+                                       FROM TA_ACCESS_LOG A
+                                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND EXISTS (
+                                                SELECT   /*+ INDEX (F TT_VISIT_RSVCOMPATH_ANLS_003) */ 1
+                                                  FROM TT_VISIT_RSVCOM_PATH_ANLS F
+                                                WHERE F.SITE_NO = A.SITE_NO
+                                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                                         ELSE '99' END)
+                                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                                    WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                     WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                     WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                     WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                     WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                     WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                     WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                     WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                     WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                     WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                     WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                     WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                     WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                     WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                     WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                     WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                     ELSE '09' END)
+                                                  AND F.UPD_DTTM IS NULL
+                                                    )            -- 수정일자 없는 데이터만 조회
+                                                      AND A.URL like '%visit-rsv-regist%'
+                                    ) C
+                                    GROUP BY C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.VISIT_PATH_CD
+                ) C
+                ON (
+                            T.SITE_NO = C.SITE_NO
+                             AND T.YR  = C.YR
+                             AND T.MM = C.MM
+                             AND T.DT = C.DT
+                             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+                             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD
+                             AND T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                             AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                T.VSTR_CNT =       C.VSTR
+                , T.UPDR_NO          = 190  -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+                , T.UPD_DTTM         = null   -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+      ]]>
+
+    </update>
+
+    <update id="updateVisitRsvComPathAnls_org" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVisitRsvComPathAnls_org - 2-6.방문접수 경로분석 집계 - 당일 방문접수 경로 업데이트 */
+     <![CDATA[
+     UPDATE TT_VISIT_RSVCOM_PATH_ANLS T
+     SET T.VSTR_CNT         =
+             (SELECT COUNT(DISTINCT C.VSTR)
+               FROM (
+                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */ A.SITE_NO
+                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                 ELSE '99' END                      EQPM_GB_CD
+                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                 ELSE '09' END                      VISIT_PATH_CD
+                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                 ELSE A.JSESSIONID
+                             END                                    VSTR
+                       FROM TA_ACCESS_LOG A
+                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND EXISTS (
+                                SELECT 1
+                                  FROM TT_VISIT_RSVCOM_PATH_ANLS F
+                                WHERE F.SITE_NO = A.SITE_NO
+                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                         ELSE '99' END)
+                                  AND F.VISIT_PATH_CD = (CASE WHEN A.REFERER = 'G' THEN 'GG'
+                                    WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                     WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                     WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                     WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                     WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                     WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                     WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                     WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                     WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                     WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                     WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                     WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                     WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                     WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                     WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                     WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                     ELSE '09' END)
+                                  AND F.UPD_DTTM IS NULL )            -- 수정일자 없는 데이터만 조회
+                                AND A.URL like '%visit-rsv-regist%'
+                    ) C
+            WHERE T.SITE_NO          = C.SITE_NO
+             AND T.YR  = C.YR
+             AND T.MM = C.MM
+             AND T.DT = C.DT
+             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+             AND T.VISIT_PATH_CD    = C.VISIT_PATH_CD
+              GROUP BY C.SITE_NO
+                     , C.YR, C.MM, C.DT
+                     , C.EQPM_GB_CD
+                     , C.VISIT_PATH_CD )
+       , T.UPDR_NO          = 190           -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+       , T.UPD_DTTM         = null          -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+  WHERE T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+    AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+      ]]>
+
+    </update>
+
+    <!-- 3.방문자IP분석 집계 -->
+    <update id="insertVstrIpAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertVstrIpAnls - 3-1.방문자IP분석 집계 */
+     <![CDATA[
+     INSERT INTO TT_VSTR_IP_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , EQPM_GB_CD
+          , VISIT_IP
+          , VISIT_PATH_CD
+          , VISIT_CNT
+          , PAGE_VW
+          , CONNECT_TIME
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT st.* FROM (
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.EQPM_GB_CD
+          , C.IP
+          , MAX(C.VISIT_PATH_CD)         VISIT_PATH_CD
+          , COUNT(DISTINCT C.VSTR)       VSTR_CNT
+          , COUNT(C.URL)                 PAGE_VW
+          , MAX(C.ACCESS_DTTM)           ACCESS_DTTM
+          , 190                          REGR_NO   -- 등록자번호
+          , sysdate, null col1, null col2
+       FROM (
+             SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */ A.SITE_NO
+                  , TO_CHAR(A.ACCESS_DTTM, 'YYYY')       YR
+                  , TO_CHAR(A.ACCESS_DTTM, 'MM')       MM
+                  , TO_CHAR(A.ACCESS_DTTM, 'DD')       DT
+                  , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'   -- PC
+                         WHEN A.DEVICE_TYPE = 'M' THEN '12'   -- 모바일
+                         ELSE '99' END   AS EQPM_GB_CD
+                  , A.IP                                      -- 방문IP
+                  , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                         WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                         WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                         WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                         WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                         WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                         WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                         WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                         WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                         WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                         WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                         WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                         WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                         WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                         WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                         WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                         WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                         ELSE '09' END                 VISIT_PATH_CD
+                  , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                         WHEN A.MEMBER_NO IS NULL THEN A.JSESSIONID
+                     END                                       VSTR
+                  , DBMS_LOB.SUBSTR(A.URL,3200) URL                                          -- 페이지뷰
+                  , TO_CHAR(A.ACCESS_DTTM, 'YYYYMMDDHH24MISS') ACCESS_DTTM
+               FROM TA_ACCESS_LOG A
+              WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                AND NOT EXISTS (
+                        SELECT 1 
+                          FROM TT_VSTR_IP_ANLS F
+                        WHERE F.SITE_NO = A.SITE_NO
+                          AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                          AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                          AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                          AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END)
+                          AND F.VISIT_IP = A.IP)                      
+             ) C
+     GROUP BY C.SITE_NO
+            , C.YR, C.MM, C.DT
+            , C.EQPM_GB_CD
+            , C.IP
+     ) st
+      ]]>
+    </update>
+
+
+     <update id="updateVstrIpAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertVstrIpAnls - 3-2.방문자IP분석 집계 - 당일 방문자IP 업데이트 */
+     <![CDATA[
+    MERGE INTO TT_VSTR_IP_ANLS T
+                USING (
+                SELECT  COUNT(DISTINCT C.VSTR) AS VSTR_CNT
+                        , COUNT(C.URL)                 PAGE_VW
+                            ,C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     ,C.IP
+                               FROM (
+                                     SELECT /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')    YR
+                                          , TO_CHAR(A.ACCESS_DTTM, 'MM')    MM
+                                          , TO_CHAR(A.ACCESS_DTTM, 'DD')    DT
+                                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                 ELSE '99' END                      EQPM_GB_CD
+                                          , A.IP                                      -- 방문IP
+                                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                                 ELSE '09' END                      VISIT_PATH_CD
+                                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                                 ELSE A.JSESSIONID
+                                             END                                    VSTR
+                                             , DBMS_LOB.SUBSTR(A.URL,3200) URL                                               -- 페이지뷰
+                                             , TO_CHAR(A.ACCESS_DTTM, 'YYYYMMDDHH24:MI:SS') ACCESS_DTTM
+                                       FROM TA_ACCESS_LOG A
+                                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                                        AND EXISTS (
+                                                SELECT   /*+ INDEX (F IDX_VSTR_IP_ANLS_004) */ 1
+                                                  FROM TT_VSTR_IP_ANLS F
+                                                WHERE F.SITE_NO = A.SITE_NO
+                                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                                         ELSE '99' END)
+                                                  AND F.VISIT_IP = A.IP
+                                                  AND F.UPD_DTTM IS NULL            -- 수정일자 없는 데이터만 조회
+                                                    )
+                                    ) C
+                                    GROUP BY C.SITE_NO
+                                     , C.YR, C.MM, C.DT
+                                     , C.EQPM_GB_CD
+                                     , C.IP
+                ) C
+                ON (
+                            T.SITE_NO = C.SITE_NO
+                             AND T.YR  = C.YR
+                             AND T.MM = C.MM
+                             AND T.DT = C.DT
+                             AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+                             AND T.VISIT_IP      = C.IP
+                             AND T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                             AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                 T.VISIT_CNT    = C.VSTR_CNT
+                ,T.PAGE_VW    =  C.PAGE_VW
+                , T.UPDR_NO          = 190  -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+                , T.UPD_DTTM         =  CASE WHEN T.YR || T.MM || T.DT < TO_CHAR(sysdate, 'YYYYMMDD')
+                                            THEN sysdate    -- 전일 데이터만 수정일자 업데이트
+               ELSE NULL END
+      ]]>
+    </update>
+
+    <update id="updateVstrIpAnls_org" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateVstrIpAnls_org - 3-2.방문자IP분석 집계 - 당일 방문자IP 업데이트 */
+     UPDATE TT_VSTR_IP_ANLS T
+         SET (T.VISIT_CNT,T.PAGE_VW)      =            (
+             SELECT COUNT(DISTINCT C.VSTR)       VSTR_CNT
+                  , COUNT(C.URL)                 PAGE_VW
+               FROM (
+                     SELECT  /*+ INDEX (A IDX_TA_ACCESS_LOG_006) */  A.SITE_NO
+                          , TO_CHAR(A.ACCESS_DTTM, 'YYYY')       YR
+                          , TO_CHAR(A.ACCESS_DTTM, 'MM')       MM
+                          , TO_CHAR(A.ACCESS_DTTM, 'DD')       DT
+                          , CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'   -- PC
+                                 WHEN A.DEVICE_TYPE = 'M' THEN '12'   -- 모바일
+                                 ELSE '99' END   AS EQPM_GB_CD
+                          , A.IP                                      -- 방문IP
+                          , CASE WHEN A.REFERER = 'G' THEN 'GG'     -- 구글
+                                 WHEN A.REFERER = 'B' THEN 'NB'     -- 네이버 블로그
+                                 WHEN A.REFERER = 'N' THEN 'NV'     -- 네이버
+                                 WHEN A.REFERER = 'D' THEN 'DM'     -- 다음
+                                 WHEN A.REFERER = 'T' THEN 'NT'     -- 네이트
+                                 WHEN A.REFERER = 'Z' THEN 'ZU'     -- 줌
+                                 WHEN A.REFERER = 'O' THEN 'ST'     -- 사이트주소
+                                 WHEN A.REFERER = 'E' THEN '09'     -- 기타
+                                 WHEN A.REFERER = 'H' THEN 'DH'     -- 다비치보청기
+                                 WHEN A.REFERER = 'S' THEN 'DS'     -- 다비치안경
+                                 WHEN A.REFERER = 'L' THEN 'DL'     -- 다비치렌즈
+                                 WHEN A.REFERER = 'C' THEN 'SC'     -- 광고매체
+                                 WHEN A.REFERER = 'F' THEN 'FB'     -- 페이스북
+                                 WHEN A.REFERER = 'Y' THEN 'YT'     -- 유투부
+                                 WHEN A.REFERER = 'I' THEN 'IG'     -- 인스타그램
+                                 WHEN A.REFERER = 'P' THEN 'PR'     -- 핀터레스트
+                                 WHEN A.REFERER = 'K' THEN 'KT'     -- 카카오
+                                 ELSE '09' END                 VISIT_PATH_CD
+                          , CASE WHEN A.MEMBER_NO IS NOT NULL THEN A.MEMBER_NO
+                                 WHEN A.MEMBER_NO IS NULL THEN A.JSESSIONID
+                             END                                       VSTR
+                          , DBMS_LOB.SUBSTR(A.URL,3200) URL                                               -- 페이지뷰
+                          , TO_CHAR(A.ACCESS_DTTM, 'YYYYMMDDHH24:MI:SS') ACCESS_DTTM
+                       FROM TA_ACCESS_LOG A
+      <![CDATA[
+                      WHERE A.ACCESS_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+                        AND A.ACCESS_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+      ]]>
+                        AND EXISTS (
+                                SELECT 1 
+                                  FROM TT_VSTR_IP_ANLS F
+                                WHERE F.SITE_NO = A.SITE_NO
+                                  AND F.YR = TO_CHAR(A.ACCESS_DTTM, 'YYYY')
+                                  AND F.MM   = TO_CHAR(A.ACCESS_DTTM, 'MM')
+                                  AND F.DT   = TO_CHAR(A.ACCESS_DTTM, 'DD')
+                                  AND F.EQPM_GB_CD = (CASE WHEN A.DEVICE_TYPE = 'P' THEN '11'             -- PC
+                                                         WHEN A.DEVICE_TYPE = 'M' THEN '12'             -- 모바일
+                                                         ELSE '99' END)   
+                                  AND F.VISIT_IP = A.IP
+                                  AND F.UPD_DTTM IS NULL            -- 수정일자 없는 데이터만 조회
+                                  )                   
+                     ) C
+               WHERE T.SITE_NO       = C.SITE_NO
+                 AND T.YR = C.YR
+                 AND T.MM = C.MM
+                 AND T.DT = C.DT
+                 AND T.EQPM_GB_CD    = C.EQPM_GB_CD
+                 AND T.VISIT_IP      = C.IP
+             GROUP BY C.SITE_NO
+                    , C.YR, C.MM, C.DT
+                    , C.EQPM_GB_CD
+                    , C.IP
+            ) 
+           , T.UPDR_NO       = 190                -- 수정자번호
+      <![CDATA[
+           , T.UPD_DTTM      = CASE WHEN T.YR || T.MM || T.DT < TO_CHAR(sysdate, 'YYYYMMDD')
+                                    THEN sysdate    -- 전일 데이터만 수정일자 업데이트
+                               ELSE NULL END
+  WHERE T.REG_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+    AND T.REG_DTTM >= TO_DATE(TO_CHAR(sysdate - 7,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')
+      ]]>
+
+   
+    </update>
+
+    <!-- 4.신규회원분석 집계 -->
+    <insert id="insertNwMemberAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertNwMemberAnls - 4.신규회원분석 집계 */
+     <![CDATA[
+     INSERT INTO TT_NW_MEMBER_ANLS (
+            SITE_NO
+          , YR, MM, DT, HR
+          , NW_JONR_CNT
+          , PC_JONR_CNT
+          , MOBILE_JONR_CNT
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT, C.HR
+          , COUNT(C.LOGIN_ID)            VSTR_CNT
+          , COUNT(C.P_CNT)               P_CNT
+          , COUNT(C.M_CNT)               M_CNT
+          , 190                          REGR_NO   -- 등록자번호
+          , sysdate, null, null
+       FROM (
+             SELECT A.SITE_NO
+                  , TO_CHAR(A.JOIN_DTTM, 'YYYY')    YR
+                  , TO_CHAR(A.JOIN_DTTM, 'MM')    MM
+                  , TO_CHAR(A.JOIN_DTTM, 'DD')    DT
+                  , TO_CHAR(A.JOIN_DTTM, 'HH24')    HR
+                  , A.LOGIN_ID
+                  , CASE WHEN NVL(A.JOIN_DEVICE_TYPE ,'P') = 'P' THEN '11' ELSE null END P_CNT
+                  , CASE WHEN A.JOIN_DEVICE_TYPE             = 'M' THEN '12' ELSE null END M_CNT
+               FROM TC_MEMBER A
+              WHERE 1=1
+                AND A.JOIN_DTTM IS NOT NULL
+                AND A.MEMBER_NO NOT IN (SELECT MEMBER_NO FROM TC_WITHDRAWAL_MEMBER)
+                AND A.MEMBER_NO NOT IN (SELECT MEMBER_NO FROM TC_DORMANT_MEMBER)
+                AND A.MEMBER_STATUS_CD = '01'
+                AND NOT EXISTS (
+                        SELECT 1 
+                          FROM TT_NW_MEMBER_ANLS F
+                        WHERE F.SITE_NO = A.SITE_NO
+                          AND F.YR = TO_CHAR(A.JOIN_DTTM, 'YYYY')
+                          AND F.MM   = TO_CHAR(A.JOIN_DTTM, 'MM')
+                          AND F.DT   = TO_CHAR(A.JOIN_DTTM, 'DD')
+                          AND F.HR   = TO_CHAR(A.JOIN_DTTM, 'HH24')
+                          AND A.JOIN_DTTM < TO_DATE(TO_CHAR(sysdate,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS')  -- 정시 이전까지만 집계
+                          )
+            ) C
+      GROUP BY C.SITE_NO
+             , C.YR, C.MM, C.DT, C.HR
+     ]]>
+    </insert>
+
+    <!-- 5.회원마켓포인트분석 집계 -->
+    <update id="insertMemberSvmnAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertMemberSvmnAnls - 5-1.회원마켓포인트분석 집계 */
+     <![CDATA[
+     INSERT INTO TT_MEMBER_SVMN_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , MEMBER_ID
+          , PVD_SVMN_CNT
+          , PVD_SVMN
+          , USE_SVMN_CNT
+          , USE_SVMN
+          , CANCEL_SVMN_CNT
+          , CANCEL_SVMN
+          , REMAIN_SVMN
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.LOGIN_ID
+          , SUM(C.PVD_CNT)           PVD_CNT
+          , SUM(C.PVD_SVMN)          PVD_SVMN
+          , SUM(C.USE_CNT)           USE_CNT
+          , SUM(C.USE_SVMN)          USE_SVMN
+          , SUM(C.CANCEL_CNT)        CANCEL_CNT
+          , SUM(C.CANCEL_SVMN)       CANCEL_SVMN
+          , SUM(C.REMAIN_SVMN)       REMAIN_SVMN
+          , 190                      REGR_NO   -- 등록자번호
+          , sysdate, null, null
+       FROM (
+
+             SELECT D.SITE_NO, D.YR, D.MM, D.DT, D.LOGIN_ID
+                  , SUM(D.PVD_CNT)                    PVD_CNT
+                  , SUM(D.PVD_SVMN)                   PVD_SVMN
+                  , SUM(D.USE_CNT)                    USE_CNT
+                  , SUM(D.USE_SVMN)                   USE_SVMN
+                  , SUM(D.CANCEL_CNT)                 CANCEL_CNT
+                  , SUM(D.CANCEL_SVMN)                CANCEL_SVMN
+                    -- 지급마켓포인트   - (사용마켓포인트 + (-취소마켓포인트))
+                  , SUM(D.PVD_SVMN) - (SUM(D.USE_SVMN) + SUM(D.CANCEL_SVMN)) REMAIN_SVMN
+               FROM (
+                     -- 지급 마켓포인트
+                     SELECT A.SITE_NO
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYY')    YR
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'MM')    MM
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'DD')    DT
+                          , A.LOGIN_ID
+                          , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN 1 ELSE 0 END             PVD_CNT
+                          , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN B.PRC_AMT ELSE 0 END     PVD_SVMN
+                          , 0 USE_CNT, 0 USE_SVMN, 0 CANCEL_CNT, 0 CANCEL_SVMN
+                       FROM TC_MEMBER A
+                          , TC_MEMBER_SVMN_PVD B
+                      WHERE B.MEMBER_NO = A.MEMBER_NO
+                        AND B.PRC_AMT > 0
+                        AND (A.SITE_NO
+                            , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYYMMDD')
+                            , A.LOGIN_ID)
+                            NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                      FROM TT_MEMBER_SVMN_ANLS E)
+                     UNION
+                     -- 유효기간소멸 마켓포인트
+                     SELECT A.SITE_NO
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYY')    YR
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'MM')    MM
+                          , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'DD')    DT
+                          , A.LOGIN_ID
+                          , 0             PVD_CNT
+                          , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN (B.PRC_AMT)*-1 ELSE 0 END     PVD_SVMN
+                          , 0 USE_CNT, 0 USE_SVMN, 0 CANCEL_CNT, 0 CANCEL_SVMN
+                       FROM TC_MEMBER A
+                          , TC_MEMBER_SVMN_PVD B
+                          , TC_MEMBER_SVMN_USE U
+                      WHERE B.MEMBER_NO      = A.MEMBER_NO
+                        AND U.MEMBER_NO      = A.MEMBER_NO
+                        AND U.SVMN_SEQ       = B.SVMN_SEQ
+                        AND U.SVMN_REASON_CD = '04'       -- 유효기간 소멸차감
+                        AND B.PRC_AMT > 0
+                        AND (A.SITE_NO
+                            , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYYMMDD')
+                            , A.LOGIN_ID)
+                            NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                      FROM TT_MEMBER_SVMN_ANLS E)
+                     UNION
+                     -- 사용 마켓포인트
+                     SELECT A.SITE_NO
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYY')    YR
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'MM')    MM
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'DD')    DT
+                          , A.LOGIN_ID
+                          , 0, 0
+                          , CASE WHEN NVL(C.PRC_AMT,0) > 0 THEN 1 ELSE 0 END             USE_CNT
+                          , CASE WHEN NVL(C.PRC_AMT,0) > 0 THEN C.PRC_AMT ELSE 0 END     USE_SVMN
+                          , 0 CANCEL_CNT, 0 CANCEL_SVMN
+                       FROM TC_MEMBER A
+                          , TC_MEMBER_SVMN_USE C
+                      WHERE C.MEMBER_NO = A.MEMBER_NO
+                        AND C.DEDUCT_GB_CD = '01'  -- 차감구분코드 01: 사용
+                        AND (A.SITE_NO
+                            , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYYMMDD')
+                            , A.LOGIN_ID)
+                            NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                      FROM TT_MEMBER_SVMN_ANLS E)
+                     UNION
+                     -- 취소 사용 마켓포인트
+                     SELECT A.SITE_NO
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYY')    YR
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'MM')    MM
+                          , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'DD')    DT
+                          , A.LOGIN_ID
+                          , 0, 0
+                          , 0 USE_CNT, 0 USE_SVMN
+                          , CASE WHEN NVL(C.PRC_AMT,0) < 0 THEN 1 ELSE 0 END             CANCEL_CNT
+                          , CASE WHEN NVL(C.PRC_AMT,0) < 0 THEN C.PRC_AMT ELSE 0 END     CANCEL_SVMN
+                       FROM TC_MEMBER A
+                          , TC_MEMBER_SVMN_USE C
+                      WHERE C.MEMBER_NO = A.MEMBER_NO
+                        AND C.DEDUCT_GB_CD = '02'  -- 차감구분코드 02: 취소
+                        AND NVL(C.PRC_AMT,0) < 0
+                        AND (A.SITE_NO
+                            , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYYMMDD')
+                            , A.LOGIN_ID)
+                            NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                      FROM TT_MEMBER_SVMN_ANLS E)
+                    ) D
+              GROUP BY D.SITE_NO, D.YR, D.MM, D.DT, D.LOGIN_ID
+            ) C
+      WHERE C.LOGIN_ID IS NOT NULL AND C.YR || C.MM || C.DT IS NOT NULL
+        AND PVD_CNT + PVD_SVMN + USE_CNT + USE_SVMN + CANCEL_CNT + CANCEL_SVMN > 0
+     GROUP BY  C.SITE_NO
+             , C.YR, C.MM, C.DT
+             , C.LOGIN_ID
+                  ]]>
+    </update>
+             
+    <update id="updateMemberSvmnAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateMemberSvmnAnls - 5-2.회원마켓포인트분석 집계 - 당일 회원마켓포인트 업데이트 */
+    <![CDATA[
+     UPDATE TT_MEMBER_SVMN_ANLS T
+        SET (T.PVD_SVMN_CNT,T.PVD_SVMN,T.USE_SVMN_CNT,T.USE_SVMN,T.REMAIN_SVMN) =     
+           (
+             SELECT SUM(C.PVD_CNT)           PVD_CNT
+                  , SUM(C.PVD_SVMN)          PVD_SVMN
+                  , SUM(C.USE_CNT)           USE_CNT
+                  , SUM(C.USE_SVMN)          USE_SVMN
+                  , SUM(C.REMAIN_SVMN)       REMAIN_SVMN
+               FROM (
+                     SELECT D.SITE_NO, D.YR, D.MM, D.DT, D.LOGIN_ID
+                          , SUM(D.PVD_CNT)                    PVD_CNT
+                          , SUM(D.PVD_SVMN)                   PVD_SVMN
+                          , SUM(D.USE_CNT)                    USE_CNT
+                          , SUM(D.USE_SVMN)                   USE_SVMN
+                          , SUM(D.CANCEL_CNT)                 CANCEL_CNT
+                          , SUM(D.CANCEL_SVMN)                CANCEL_SVMN
+                            -- 지급마켓포인트   - (사용마켓포인트 + (-취소마켓포인트))
+                          , SUM(D.PVD_SVMN) - (SUM(D.USE_SVMN) + SUM(D.CANCEL_SVMN)) REMAIN_SVMN
+                       FROM (
+                             -- 지급 마켓포인트
+                             SELECT A.SITE_NO
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYY')    YR
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'MM')    MM
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'DD')    DT
+                                  , A.LOGIN_ID
+                                  , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN 1 ELSE 0 END             PVD_CNT
+                                  , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN B.PRC_AMT ELSE 0 END     PVD_SVMN
+                                  , 0 USE_CNT, 0 USE_SVMN, 0 CANCEL_CNT, 0 CANCEL_SVMN
+                               FROM TC_MEMBER A
+                                  , TC_MEMBER_SVMN_PVD B
+                              WHERE B.MEMBER_NO = A.MEMBER_NO
+                                AND B.PRC_AMT > 0
+                                AND (A.SITE_NO
+                                    , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYYMMDD')
+                                    , A.LOGIN_ID)
+                                    IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                              FROM TT_MEMBER_SVMN_ANLS E)
+                             UNION
+                             -- 유효기간소멸 마켓포인트
+                             SELECT A.SITE_NO
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYY')    YR
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'MM')    MM
+                                  , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'DD')    DT
+                                  , A.LOGIN_ID
+                                  , 0             PVD_CNT
+                                  , CASE WHEN NVL(B.PRC_AMT,0) > 0 THEN (B.PRC_AMT)*-1 ELSE 0 END     PVD_SVMN
+                                  , 0 USE_CNT, 0 USE_SVMN, 0 CANCEL_CNT, 0 CANCEL_SVMN
+                               FROM TC_MEMBER A
+                                  , TC_MEMBER_SVMN_PVD B
+                                  , TC_MEMBER_SVMN_USE U
+                              WHERE B.MEMBER_NO      = A.MEMBER_NO
+                                AND U.MEMBER_NO      = A.MEMBER_NO
+                                AND U.SVMN_SEQ       = B.SVMN_SEQ
+                                AND U.SVMN_REASON_CD = '04'       -- 유효기간 소멸차감
+                                AND B.PRC_AMT > 0
+                                AND (A.SITE_NO
+                                    , TO_CHAR(NVL(B.UPD_DTTM, B.REG_DTTM), 'YYYYMMDD')
+                                    , A.LOGIN_ID)
+                                    IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                              FROM TT_MEMBER_SVMN_ANLS E)
+                             UNION
+                             -- 사용 마켓포인트
+                             SELECT A.SITE_NO
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYY')    YR
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'MM')    MM
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'DD')    DT
+                                  , A.LOGIN_ID
+                                  , 0, 0
+                                  , CASE WHEN NVL(C.PRC_AMT,0) > 0 THEN 1 ELSE 0 END             USE_CNT
+                                  , CASE WHEN NVL(C.PRC_AMT,0) > 0 THEN C.PRC_AMT ELSE 0 END     USE_SVMN
+                                  , 0 CANCEL_CNT, 0 CANCEL_SVMN
+                               FROM TC_MEMBER A
+                                  , TC_MEMBER_SVMN_USE C
+                              WHERE C.MEMBER_NO = A.MEMBER_NO
+                                AND C.DEDUCT_GB_CD = '01'  -- 차감구분코드 01: 사용
+                                AND (A.SITE_NO
+                                    , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYYMMDD')
+                                    , A.LOGIN_ID)
+                                    IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                              FROM TT_MEMBER_SVMN_ANLS E)
+                             UNION
+                             -- 취소 사용 마켓포인트
+                             SELECT A.SITE_NO
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYY')    YR
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'MM')    MM
+                                  , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'DD')    DT
+                                  , A.LOGIN_ID
+                                  , 0, 0
+                                  , 0 USE_CNT, 0 USE_SVMN
+                                  , CASE WHEN NVL(C.PRC_AMT,0) < 0 THEN 1 ELSE 0 END             CANCEL_CNT
+                                  , CASE WHEN NVL(C.PRC_AMT,0) < 0 THEN C.PRC_AMT ELSE 0 END     CANCEL_SVMN
+                               FROM TC_MEMBER A
+                                  , TC_MEMBER_SVMN_USE C
+                              WHERE C.MEMBER_NO = A.MEMBER_NO
+                                AND C.DEDUCT_GB_CD = '02'  -- 차감구분코드 02: 취소
+                                AND NVL(C.PRC_AMT,0) < 0
+                                 AND (A.SITE_NO
+                                     , TO_CHAR(NVL(C.UPD_DTTM, C.REG_DTTM), 'YYYYMMDD')
+                                     , A.LOGIN_ID)
+                                     NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.MEMBER_ID
+                                               FROM TT_MEMBER_SVMN_ANLS E)
+                            ) D
+                      GROUP BY D.SITE_NO, D.YR, D.MM, D.DT, D.LOGIN_ID
+                    ) C
+              WHERE C.YR || C.MM || C.DT IS NOT NULL
+                AND PVD_CNT + PVD_SVMN + USE_CNT + USE_SVMN > 0
+                AND T.SITE_NO        = C.SITE_NO
+                AND T.YR = C.YR
+                AND T.MM = C.MM
+                AND T.DT = C.DT
+                AND T.MEMBER_ID      = C.LOGIN_ID
+                
+             GROUP BY  C.SITE_NO
+                     , C.YR, C.MM, C.DT
+                     , C.LOGIN_ID
+            ) 
+          , T.UPDR_NO        = 190
+           , T.UPD_DTTM       = CASE WHEN TO_CHAR(T.REG_DTTM, 'YYYYMMDD') < TO_CHAR(sysdate, 'YYYYMMDD')
+                                     THEN sysdate  
+                                ELSE NULL END
+       WHERE (T.UPD_DTTM IS NULL OR                 
+             TO_CHAR(T.REG_DTTM, 'YYYYMMDD') = TO_CHAR(T.UPD_DTTM, 'YYYYMMDD'))
+       ]]>
+    </update>
+
+    <!-- 6.카테고리상품분석 집계 -->
+    <update id="insertCtgGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertCtgGoodsAnls - 6-1.카테고리상품분석 집계 */
+    <![CDATA[
+    INSERT INTO TT_CTG_GOODS_ANLS (
+            SITE_NO
+          , YR, MM, DT
+          , LARGE_CLSF
+          , MEDIUM_CLSF
+          , PC_SALE_QTT
+          , PC_SALE_AMT
+          , MOBILE_SALE_QTT
+          , MOBILE_SALE_AMT
+          , REVIEW_CNT
+          , REGR_NO
+          , REG_DTTM
+          , UPDR_NO
+          , UPD_DTTM
+          )
+     SELECT C.SITE_NO
+          , C.YR, C.MM, C.DT
+          , C.CTG_1
+          , NVL(C.CTG_2,0) CTG_2
+          , SUM(C.PC_ORD_QTT       - C.PC_CANCEL_QTT)        PC_SALES_QTT
+          , SUM(C.PC_SALES_AMT     - C.PC_CANCEL_AMT)        PC_SALES_AMT
+          , SUM(C.MOBILE_ORD_QTT   - C.MOBILE_CANCEL_QTT)    MOBILE_SALES_QTT
+          , SUM(C.MOBILE_SALES_AMT - C.MOBILE_CANCEL_AMT)    MOBILE_SALES_AMT
+          , SUM(NVL(C.REVIEW_CNT,0))                      REVIEW_CNT
+          , 190                                              REGR_NO   -- 등록자번호
+          , sysdate, null, null
+      FROM (
+             SELECT DISTINCT A.SITE_NO
+                  , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'YYYY')                             YR
+                  , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'MM')                             MM
+                  , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'DD')                             DT
+                  , A.CTG_1
+                  , A.CTG_2, A.GOODS_NO
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                  , CASE WHEN I.ORD_MEDIA_CD = '01'
+                          AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                         THEN H.ORD_QTT ELSE 0 END                                            PC_ORD_QTT
+                 -- 결제취소, 환불완료, 교환완료 - PC
+                  , 0                                                                         PC_CANCEL_QTT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                  , CASE WHEN I.ORD_MEDIA_CD = '01'
+                          AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                         THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END  PC_SALES_AMT
+                 -- 결제취소, 환불완료, 교환완료 - PC
+                  , 0                                                                         PC_CANCEL_AMT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                  , CASE WHEN I.ORD_MEDIA_CD = '02'
+                          AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                         THEN H.ORD_QTT ELSE 0 END                                            MOBILE_ORD_QTT
+                 -- 결제취소, 환불완료, 교환완료 - MOBILE
+                  , 0                                                                         MOBILE_CANCEL_QTT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                  , CASE WHEN I.ORD_MEDIA_CD = '02'
+                          AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                         THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END  MOBILE_SALES_AMT
+                 -- 결제취소, 환불완료, 교환완료 - MOBILE
+                  , 0                                                                         MOBILE_CANCEL_AMT
+                  , (SELECT COUNT(J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                      WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO
+                        AND J.REG_DTTM >= TO_DATE(TO_CHAR(I.PAYMENT_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                        AND J.REG_DTTM <= TO_DATE(TO_CHAR(I.PAYMENT_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                        AND J.CONTENT IS NOT NULL)                                            REVIEW_CNT
+               FROM (
+                     SELECT G.SITE_NO, B.CTG_LVL
+                          , CASE WHEN B.CTG_LVL = 1 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 2 THEN B.UP_CTG_NO
+                                            ELSE (CASE WHEN B.CTG_LVL = 3
+                                                       THEN (SELECT UP_CTG_NO FROM TG_CTG
+                                                               WHERE SITE_NO = G.SITE_NO
+                                                                 AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 2
+                                                            )
+                                                       ELSE (SELECT UP_CTG_NO FROM TG_CTG
+                                                              WHERE SITE_NO = G.SITE_NO
+                                                                AND CTG_NO = (
+                                                                             SELECT UP_CTG_NO FROM TG_CTG
+                                                                              WHERE SITE_NO = G.SITE_NO
+                                                                                AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                             )
+                                                            )
+                                                   END) END) END CTG_1
+                          , CASE WHEN B.CTG_LVL = 2 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 3 THEN B.UP_CTG_NO
+                                            ELSE (CASE WHEN B.CTG_LVL = 4
+                                                       THEN (SELECT CTG_NO FROM TG_CTG
+                                                              WHERE SITE_NO = G.SITE_NO
+                                                                AND CTG_NO = (
+                                                                    SELECT UP_CTG_NO FROM TG_CTG
+                                                                     WHERE SITE_NO = G.SITE_NO
+                                                                       AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                    )
+                                                            )
+                                                   END) END) END CTG_2
+                          , CASE WHEN B.CTG_LVL = 3 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 4 THEN B.UP_CTG_NO
+                                        END) END CTG_3
+                          , CASE WHEN B.CTG_LVL = 4 THEN B.CTG_NO END CTG_4
+                          , B.UP_CTG_NO, G.GOODS_NO
+                       FROM TG_GOODS_CTG G
+                          , TG_CTG B
+                      WHERE G.SITE_NO = B.SITE_NO
+                        AND B.CTG_NO = G.CTG_NO
+                        AND G.DLGT_CTG_YN = 'Y'
+                    ) A
+                  , TO_ORD_DTL H
+                  , TO_ORD I
+              WHERE H.GOODS_NO = A.GOODS_NO
+                AND H.CTG_NO  IN (A.CTG_1, A.CTG_2, A.CTG_3, A.CTG_4) -- 주문상세의 카테고리번호 조인
+                AND I.ORD_NO   = H.ORD_NO
+                AND I.PAYMENT_CMPLT_DTTM IS NOT NULL
+                AND (A.SITE_NO, TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'YYYYMMDD'), A.CTG_1, A.CTG_2)
+                    NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.LARGE_CLSF, E.MEDIUM_CLSF
+                              FROM TT_CTG_GOODS_ANLS E)
+             UNION
+             -- 취소,반품,교환 건은 클레임완료일시 기준으로 추가로 SELECT
+             SELECT DISTINCT A.SITE_NO
+                  , TO_CHAR(H.CLAIM_CMPLT_DTTM, 'YYYY')                               YR
+                  , TO_CHAR(H.CLAIM_CMPLT_DTTM, 'MM')                               MM
+                  , TO_CHAR(H.CLAIM_CMPLT_DTTM, 'DD')                               DT
+                  , A.CTG_1
+                  , A.CTG_2, A.GOODS_NO
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                  , 0                                                                        PC_ORD_QTT
+                 -- 결제취소, 환불완료, 교환완료 - PC
+                  , CASE WHEN I.ORD_MEDIA_CD = '01'
+                          AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                         THEN H.ORD_QTT ELSE 0 END                                           PC_CANCEL_QTT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                  , 0                                                                        PC_SALES_AMT
+                 -- 결제취소, 환불완료, 교환완료 - PC
+                  , CASE WHEN I.ORD_MEDIA_CD = '01'
+                          AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                         THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END PC_CANCEL_AMT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                  , 0                                                                        MOBILE_ORD_QTT
+                 -- 결제취소, 환불완료, 교환완료 - MOBILE
+                  , CASE WHEN I.ORD_MEDIA_CD = '02'
+                          AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                         THEN H.ORD_QTT ELSE 0 END                                           MOBILE_CANCEL_QTT
+                 -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                  , 0                                                                        MOBILE_SALES_AMT
+                 -- 결제취소, 환불완료, 교환완료 - MOBILE
+                  , CASE WHEN I.ORD_MEDIA_CD = '02'
+                          AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                         THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END MOBILE_CANCEL_AMT
+                  , 0                                                                        REVIEW_CNT
+               FROM (
+                     SELECT G.SITE_NO, B.CTG_LVL
+                          , CASE WHEN B.CTG_LVL = 1 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 2 THEN B.UP_CTG_NO
+                                            ELSE (CASE WHEN B.CTG_LVL = 3
+                                                       THEN (SELECT UP_CTG_NO FROM TG_CTG
+                                                               WHERE SITE_NO = G.SITE_NO
+                                                                 AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 2
+                                                            )
+                                                       ELSE (SELECT UP_CTG_NO FROM TG_CTG
+                                                              WHERE SITE_NO = G.SITE_NO
+                                                                AND CTG_NO = (
+                                                                             SELECT UP_CTG_NO FROM TG_CTG
+                                                                              WHERE SITE_NO = G.SITE_NO
+                                                                                AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                             )
+                                                            )
+                                                   END) END) END CTG_1
+                          , CASE WHEN B.CTG_LVL = 2 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 3 THEN B.UP_CTG_NO
+                                            ELSE (CASE WHEN B.CTG_LVL = 4
+                                                       THEN (SELECT CTG_NO FROM TG_CTG
+                                                              WHERE SITE_NO = G.SITE_NO
+                                                                AND CTG_NO = (
+                                                                    SELECT UP_CTG_NO FROM TG_CTG
+                                                                     WHERE SITE_NO = G.SITE_NO
+                                                                       AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                    )
+                                                            )
+                                                   END) END) END CTG_2
+                          , CASE WHEN B.CTG_LVL = 3 THEN B.CTG_NO
+                                 ELSE (CASE WHEN B.CTG_LVL = 4 THEN B.UP_CTG_NO
+                                        END) END CTG_3
+                          , CASE WHEN B.CTG_LVL = 4 THEN B.CTG_NO END CTG_4
+                          , B.UP_CTG_NO, G.GOODS_NO
+                       FROM TG_GOODS_CTG G
+                          , TG_CTG B
+                      WHERE G.SITE_NO = B.SITE_NO
+                        AND B.CTG_NO = G.CTG_NO
+                        AND G.DLGT_CTG_YN = 'Y'
+                    ) A
+                  , TO_ORD_DTL H
+                  , TO_ORD I
+              WHERE H.GOODS_NO = A.GOODS_NO
+                AND H.CTG_NO  IN (A.CTG_1, A.CTG_2, A.CTG_3, A.CTG_4) -- 주문상세의 카테고리번호 조인
+                AND I.ORD_NO   = H.ORD_NO
+                AND H.CLAIM_CMPLT_DTTM IS NOT NULL
+                AND (A.SITE_NO, TO_CHAR(H.CLAIM_CMPLT_DTTM, 'YYYYMMDD'), A.CTG_1, A.CTG_2)
+                    NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.LARGE_CLSF, E.MEDIUM_CLSF
+                              FROM TT_CTG_GOODS_ANLS E)
+           ) C
+     GROUP BY C.SITE_NO, C.YR, C.MM, C.DT, C.CTG_1, C.CTG_2
+      ]]>
+
+    </update>
+
+
+    <update id="updateCtgGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertCtgGoodsAnls - 6-2.카테고리상품분석 집계 - 당일 카테고리상품분석 업데이트 */
+    <![CDATA[
+     UPDATE TT_CTG_GOODS_ANLS T
+         SET (T.PC_SALE_QTT
+           , T.PC_SALE_AMT
+           , T.MOBILE_SALE_QTT
+           , T.MOBILE_SALE_AMT
+           , T.REVIEW_CNT) =
+           (
+             SELECT SUM(C.PC_ORD_QTT       - C.PC_CANCEL_QTT)        PC_SALES_QTT
+                  , SUM(C.PC_SALES_AMT     - C.PC_CANCEL_AMT)        PC_SALES_AMT
+                  , SUM(C.MOBILE_ORD_QTT   - C.MOBILE_CANCEL_QTT)    MOBILE_SALES_QTT
+                  , SUM(C.MOBILE_SALES_AMT - C.MOBILE_CANCEL_AMT)    MOBILE_SALES_AMT
+                  , SUM(NVL(C.REVIEW_CNT,0))                      REVIEW_CNT
+              FROM (
+                     SELECT DISTINCT A.SITE_NO
+                          , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'YYYY')                             YR
+                          , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'MM')                             MM
+                          , TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'DD')                             DT
+                          , A.CTG_1
+                          , A.CTG_2, A.GOODS_NO
+                         -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                          , CASE WHEN I.ORD_MEDIA_CD = '01'
+                                  AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                 THEN H.ORD_QTT ELSE 0 END                                      PC_ORD_QTT
+                         -- 결제취소, 환불완료, 교환완료 - PC
+                          , CASE WHEN I.ORD_MEDIA_CD = '01'
+                                  AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                 THEN H.ORD_QTT ELSE 0 END                                      PC_CANCEL_QTT
+                         -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - PC
+                          , CASE WHEN I.ORD_MEDIA_CD = '01'
+                                  AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                 THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      PC_SALES_AMT
+                         -- 결제취소, 환불완료, 교환완료 - PC
+                          , CASE WHEN I.ORD_MEDIA_CD = '01'
+                                  AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                 THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      PC_CANCEL_AMT
+                         -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                          , CASE WHEN I.ORD_MEDIA_CD = '02'
+                                  AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                 THEN H.ORD_QTT ELSE 0 END                                      MOBILE_ORD_QTT
+                         -- 결제취소, 환불완료, 교환완료 - MOBILE
+                          , CASE WHEN I.ORD_MEDIA_CD = '02'
+                                  AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                 THEN H.ORD_QTT ELSE 0 END                                      MOBILE_CANCEL_QTT
+                         -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정 - MOBILE
+                          , CASE WHEN I.ORD_MEDIA_CD = '02'
+                                  AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                 THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      MOBILE_SALES_AMT
+                         -- 결제취소, 환불완료, 교환완료 - MOBILE
+                          , CASE WHEN I.ORD_MEDIA_CD = '02'
+                                  AND H.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                 THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      MOBILE_CANCEL_AMT
+                          , (SELECT COUNT(J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                              WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO
+                                AND J.REG_DTTM >= TO_DATE(TO_CHAR(I.PAYMENT_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                AND J.REG_DTTM <= TO_DATE(TO_CHAR(I.PAYMENT_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                                AND J.CONTENT IS NOT NULL)                                      REVIEW_CNT
+                       FROM (
+                             SELECT G.SITE_NO, B.CTG_LVL
+                                  , CASE WHEN B.CTG_LVL = 1 THEN B.CTG_NO
+                                         ELSE (CASE WHEN B.CTG_LVL = 2 THEN B.UP_CTG_NO
+                                                    ELSE (CASE WHEN B.CTG_LVL = 3
+                                                               THEN (SELECT UP_CTG_NO FROM TG_CTG
+                                                                       WHERE SITE_NO = G.SITE_NO
+                                                                         AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 2
+                                                                    )
+                                                               ELSE (SELECT UP_CTG_NO FROM TG_CTG
+                                                                      WHERE SITE_NO = G.SITE_NO
+                                                                        AND CTG_NO = (
+                                                                                     SELECT UP_CTG_NO FROM TG_CTG
+                                                                                      WHERE SITE_NO = G.SITE_NO
+                                                                                        AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                                     )
+                                                                    )
+                                                           END) END) END CTG_1
+                                  , CASE WHEN B.CTG_LVL = 2 THEN B.CTG_NO
+                                         ELSE (CASE WHEN B.CTG_LVL = 3 THEN B.UP_CTG_NO
+                                                    ELSE (CASE WHEN B.CTG_LVL = 4
+                                                               THEN (SELECT CTG_NO FROM TG_CTG
+                                                                      WHERE SITE_NO = G.SITE_NO
+                                                                        AND CTG_NO = (
+                                                                            SELECT UP_CTG_NO FROM TG_CTG
+                                                                             WHERE SITE_NO = G.SITE_NO
+                                                                               AND CTG_NO = B.UP_CTG_NO AND CTG_LVL = 3
+                                                                            )
+                                                                    )
+                                                           END) END) END CTG_2
+                                  , CASE WHEN B.CTG_LVL = 3 THEN B.CTG_NO
+                                         ELSE (CASE WHEN B.CTG_LVL = 4 THEN B.UP_CTG_NO
+                                                END) END CTG_3
+                                  , CASE WHEN B.CTG_LVL = 4 THEN B.CTG_NO END CTG_4
+                                  , B.UP_CTG_NO, G.GOODS_NO
+                               FROM TG_GOODS_CTG G
+                                  , TG_CTG B
+                              WHERE G.SITE_NO = B.SITE_NO
+                                AND B.CTG_NO = G.CTG_NO
+                                AND G.DLGT_CTG_YN = 'Y'
+                            ) A
+                          , TO_ORD_DTL H
+                          , TO_ORD I
+                      WHERE H.GOODS_NO = A.GOODS_NO
+                        AND H.CTG_NO  IN (A.CTG_1, A.CTG_2, A.CTG_3, A.CTG_4) -- 주문상세의 카테고리번호 조인
+                        AND I.ORD_NO   = H.ORD_NO
+                        AND I.PAYMENT_CMPLT_DTTM IS NOT NULL
+                      --  AND (A.SITE_NO, TO_CHAR(I.PAYMENT_CMPLT_DTTM, 'YYYYMMDD'), A.CTG_1, A.CTG_2)
+                      --      NOT IN (SELECT E.SITE_NO, E.YR || E.MM || E.DT, E.LARGE_CLSF, E.MEDIUM_CLSF
+                      --                FROM TT_CTG_GOODS_ANLS E)
+                   ) C
+               WHERE T.SITE_NO          = C.SITE_NO
+                 AND T.YR = C.YR
+                 AND T.MM = C.MM
+                 AND T.DT = C.DT
+                 AND T.LARGE_CLSF       = C.CTG_1
+                 AND T.MEDIUM_CLSF      = C.CTG_2
+             GROUP BY C.SITE_NO, C.YR, C.MM, C.DT, C.CTG_1, C.CTG_2
+             )
+           , T.UPDR_NO         = 190                -- 수정자번호
+           , T.UPD_DTTM        = CASE WHEN TO_CHAR(T.REG_DTTM, 'YYYYMMDD') < TO_CHAR(sysdate, 'YYYYMMDD')
+                                      THEN sysdate    -- 전일 데이터만 수정일자 업데이트
+                                 ELSE NULL END
+        WHERE (T.UPD_DTTM IS NULL OR            -- 다음날이 되면 전일 데이터는 한번만 업데이트한다
+             TO_CHAR(T.REG_DTTM, 'YYYYMMDD') = TO_CHAR(T.UPD_DTTM, 'YYYYMMDD'))
+      ]]>
+    </update>
+
+    <!-- 7.판매순위 상품분석 집계 -->
+    <update id="insertSaleRankGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertSaleRankGoodsAnls - 7-1.판매순위 상품분석 집계 */
+      <![CDATA[
+    INSERT INTO TT_GOODS_ANLS (
+                SITE_NO
+              , ANLS_GB_CD
+              , YR, MM, DT
+              , EQPM_GB_CD
+              , GOODS_NO
+              , SALE_QTT
+              , SALE_AMT
+              , STOCK_QTT
+              , AVAIL_QTT
+              , BASKET_QTT
+              , BASKET_CNT
+              , BASKET_MEMBER_CNT
+              , FAV_GOODS_QTT
+              , REVIEW_CNT
+              , REGR_NO
+              , REG_DTTM
+              , UPDR_NO
+              , UPD_DTTM
+              )
+        SELECT  C.SITE_NO
+              , C.ANLS_GB_CD
+              , C.YR, C.MM, C.DT
+              , C.EQPM_GB_CD
+              , C.GOODS_NO
+              , SUM(C.ORD_QTT   - C.CANCEL_QTT)      SALES_QTT
+              , SUM(C.SALES_AMT - C.CANCEL_AMT)      SALES_AMT
+              , SUM(C.STOCK_QTT)                     STOCK_QTT
+              , SUM(C.AVAIL_QTT)                     AVAIL_QTT
+              , SUM(C.BASKET_QTT)                    BASKET_QTT
+              , SUM(C.BASKET_NO)          BASKET_CNT
+              , SUM(C.MEMBER_NO)          MEMBER_CNT
+              , SUM(C.FAV_CNT)                       FAV_CNT
+              , SUM(C.REVIEW_CNT)                    REVIEW_CNT
+              , 190                                  REGR_NO   -- 등록자번호
+              , sysdate, null, null
+           FROM (
+                 SELECT A.SITE_NO                    SITE_NO
+                      , '1'                          ANLS_GB_CD     -- 1:판매순위, 2:장바구니순위
+                      , TO_CHAR(D.ORD_CMPLT_DTTM, 'YYYY')    YR
+                      , TO_CHAR(D.ORD_CMPLT_DTTM, 'MM')    MM
+                      , TO_CHAR(D.ORD_CMPLT_DTTM, 'DD')    DT
+                      , CASE WHEN D.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                             WHEN D.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                             ELSE '99' END                   EQPM_GB_CD
+                      , A.GOODS_NO                           GOODS_NO
+                      , D.ORD_NO, C.ORD_DTL_SEQ
+                      -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                       , CASE WHEN C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                              THEN C.ORD_QTT ELSE 0 END                                             ORD_QTT
+                      -- 결제취소, 교환완료, 환불완료
+                       , CASE WHEN C.ORD_DTL_STATUS_CD IN ('21','66','74')
+                               AND TO_CHAR(C.CLAIM_CMPLT_DTTM,'YYYYMMDD')                        -- 클레임완료일자
+                                 = TO_CHAR(D.ORD_CMPLT_DTTM,'YYYYMMDD')                          -- = 주문완료일자
+                              THEN C.ORD_QTT ELSE 0 END                                             CANCEL_QTT
+                      -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                       , CASE WHEN C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                              THEN (C.SALE_AMT*NVL(C.ORD_QTT,0))-NVL(C.DC_AMT,0) ELSE 0 END   SALES_AMT
+                      -- 결제취소, 교환완료, 환불완료
+                       , CASE WHEN C.ORD_DTL_STATUS_CD IN ('21','66','74')
+                               AND TO_CHAR(C.CLAIM_CMPLT_DTTM,'YYYYMMDD')                        -- 클레임완료일자
+                                 = TO_CHAR(D.ORD_CMPLT_DTTM,'YYYYMMDD')                          -- = 주문완료일자
+                              THEN (C.SALE_AMT*NVL(C.ORD_QTT,0))-NVL(C.DC_AMT,0) ELSE 0 END   CANCEL_AMT
+                       , NVL(A.STOCK_QTT,0)                                                      STOCK_QTT
+                       , NVL(A.STOCK_QTT,0) + (SELECT NVL(AVAIL_STOCK_QTT,0)
+                                                    FROM TS_SITE
+                                                   WHERE SITE_NO = A.SITE_NO)                       AVAIL_QTT
+                       , (SELECT NVL(SUM(B.BUY_QTT),0) FROM TO_BASKET B
+                           WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                             AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   BASKET_QTT
+                       , (SELECT COUNT(DISTINCT B.BASKET_NO) FROM TO_BASKET B
+                           WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                             AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   BASKET_NO
+                       , (SELECT COUNT(DISTINCT B.MEMBER_NO) FROM TO_BASKET B
+                           WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                             AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   MEMBER_NO
+                       , (SELECT COUNT(DISTINCT E.GOODS_NO) FROM TC_MEMBER_FAV_GOODS E
+                           WHERE E.GOODS_NO = A.GOODS_NO
+                             AND E.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND E.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   FAV_CNT
+                       , (SELECT COUNT(DISTINCT J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                           WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO
+                             AND J.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND J.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND J.CONTENT IS NOT NULL)                                             REVIEW_CNT
+                   FROM TG_ITEM A
+                      , TO_ORD_DTL C
+                      , TO_ORD     D
+                  WHERE D.ORD_CMPLT_DTTM IS NOT NULL
+                    AND (A.SITE_NO, '1'                                      -- 1:판매순위, 2:장바구니순위
+                        ,TO_CHAR(D.ORD_CMPLT_DTTM, 'YYYYMMDD')
+                        , CASE WHEN D.ORD_MEDIA_CD IN ('01','03') THEN '11'  -- PC
+                             WHEN D.ORD_MEDIA_CD = '02'         THEN '12'    -- 모바일
+                             ELSE '99' END
+                        , A.GOODS_NO)
+                         NOT IN (SELECT E.SITE_NO, E.ANLS_GB_CD, E.YR || E.MM || E.DT, E.EQPM_GB_CD, E.GOODS_NO
+                                   FROM TT_GOODS_ANLS E)
+                    AND C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90'     -- 결제완료, 배송상태, 구매확정
+                                              , '21','66','74')              -- 결제취소, 교환완료, 환불완료
+                    AND C.ITEM_NO = A.ITEM_NO
+                    AND D.ORD_NO = C.ORD_NO
+
+                ) C
+          GROUP BY C.SITE_NO, C.ANLS_GB_CD, C.YR, C.MM, C.DT, C.EQPM_GB_CD, C.GOODS_NO
+            ]]>
+    </update>
+          
+
+    <update id="updateSaleRankGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.updateSaleRankGoodsAnls - 7-2.판매순위 상품분석 집계 - 당일 판매순위 상품분석 업데이트 */
+    <![CDATA[
+     MERGE INTO TT_GOODS_ANLS T
+                USING (
+                SELECT  SUM(B.ORD_QTT   - B.CANCEL_QTT)      SALE_QTT
+                  , SUM(B.SALES_AMT - B.CANCEL_AMT)      SALE_AMT
+                  , SUM(B.STOCK_QTT)                     STOCK_QTT
+                  , SUM(B.AVAIL_QTT)                     AVAIL_QTT
+                  , SUM(B.BASKET_QTT)                    BASKET_QTT
+                  , SUM(B.BASKET_NO)          BASKET_CNT
+                  , SUM(B.MEMBER_NO)          MEMBER_CNT
+                  , SUM(B.FAV_CNT)                       FAV_CNT
+                  , SUM(B.REVIEW_CNT)                    REVIEW_CNT
+                  ,B.SITE_NO, B.ANLS_GB_CD, B.YR, B.MM, B.DT, B.EQPM_GB_CD, B.GOODS_NO
+               FROM (
+                     SELECT A.SITE_NO                    SITE_NO
+                          , '1'                          ANLS_GB_CD     -- 1:판매순위, 2:장바구니순위
+                          , TO_CHAR(D.ORD_CMPLT_DTTM, 'YYYY')    YR
+                          , TO_CHAR(D.ORD_CMPLT_DTTM, 'MM')    MM
+                          , TO_CHAR(D.ORD_CMPLT_DTTM, 'DD')    DT
+                          , CASE WHEN D.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                                 WHEN D.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                                 ELSE '99' END                   EQPM_GB_CD
+                          , A.GOODS_NO                           GOODS_NO
+                          , D.ORD_NO, C.ORD_DTL_SEQ
+                          -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                           , CASE WHEN C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                  THEN C.ORD_QTT ELSE 0 END                                               ORD_QTT
+                          -- 결제취소, 교환완료, 환불완료
+                           , CASE WHEN C.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                   AND TO_CHAR(C.CLAIM_CMPLT_DTTM,'YYYYMMDD')                     -- 클레임완료일자
+                                     = TO_CHAR(D.ORD_CMPLT_DTTM,'YYYYMMDD')                       -- = 주문완료일자
+                                  THEN C.ORD_QTT ELSE 0 END                                             CANCEL_QTT
+                          -- 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                           , CASE WHEN C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                  THEN (C.SALE_AMT*NVL(C.ORD_QTT,0))-NVL(C.DC_AMT,0) ELSE 0 END   SALES_AMT
+                          -- 결제취소, 교환완료, 환불완료
+                           , CASE WHEN C.ORD_DTL_STATUS_CD IN ('21','66','74')
+                                   AND TO_CHAR(C.CLAIM_CMPLT_DTTM,'YYYYMMDD')                     -- 클레임완료일자
+                                     = TO_CHAR(D.ORD_CMPLT_DTTM,'YYYYMMDD')                       -- = 주문완료일자
+                                  THEN (C.SALE_AMT*NVL(C.ORD_QTT,0))-NVL(C.DC_AMT,0) ELSE 0 END   CANCEL_AMT
+                           , NVL(A.STOCK_QTT,0)                                                      STOCK_QTT
+                           , NVL(A.STOCK_QTT,0) + (SELECT NVL(AVAIL_STOCK_QTT,0)
+                                                        FROM TS_SITE
+                                                       WHERE SITE_NO = A.SITE_NO)                       AVAIL_QTT
+                           , (SELECT NVL(SUM(B.BUY_QTT),0) FROM TO_BASKET B
+                               WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                                 AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   BASKET_QTT
+                           , (SELECT COUNT(DISTINCT B.BASKET_NO) FROM TO_BASKET B
+                               WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                                 AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   BASKET_NO
+                           , (SELECT COUNT(DISTINCT B.MEMBER_NO) FROM TO_BASKET B
+                               WHERE B.ITEM_NO = A.ITEM_NO AND B.ORD_MEDIA_CD = D.ORD_MEDIA_CD
+                                 AND B.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND B.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   MEMBER_NO
+                           , (SELECT COUNT(DISTINCT E.GOODS_NO) FROM TC_MEMBER_FAV_GOODS E
+                               WHERE E.GOODS_NO = A.GOODS_NO
+                                 AND E.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND E.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS'))   FAV_CNT
+                           , (SELECT COUNT(DISTINCT J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                               WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO
+                                 AND J.REG_DTTM >= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND J.REG_DTTM <= TO_DATE(TO_CHAR(D.ORD_CMPLT_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                                 AND J.CONTENT IS NOT NULL)                                             REVIEW_CNT
+                       FROM TG_ITEM A
+                          , TO_ORD_DTL C
+                          , TO_ORD     D
+                      WHERE D.ORD_CMPLT_DTTM IS NOT NULL
+                        AND (A.SITE_NO, '1'                                      -- 1:판매순위, 2:장바구니순위
+                            ,TO_CHAR(D.ORD_CMPLT_DTTM, 'YYYYMMDD')
+                            , CASE WHEN D.ORD_MEDIA_CD IN ('01','03') THEN '11'  -- PC
+                                 WHEN D.ORD_MEDIA_CD = '02'         THEN '12'    -- 모바일
+                                 ELSE '99' END
+                            , A.GOODS_NO)
+                             IN (SELECT E.SITE_NO, E.ANLS_GB_CD, E.YR || E.MM || E.DT, E.EQPM_GB_CD, E.GOODS_NO
+                                       FROM TT_GOODS_ANLS E)
+                        AND C.ORD_DTL_STATUS_CD IN ('20','30','40','50','90'     -- 결제완료, 배송상태, 구매확정
+                                                  , '21','66','74')              -- 결제취소, 교환완료, 환불완료
+                        AND C.ITEM_NO = A.ITEM_NO
+                        AND D.ORD_NO = C.ORD_NO
+                    ) B
+
+              GROUP BY B.SITE_NO, B.ANLS_GB_CD, B.YR, B.MM, B.DT, B.EQPM_GB_CD, B.GOODS_NO
+                ) C
+                ON (
+                            T.SITE_NO       = C.SITE_NO
+                     AND T.ANLS_GB_CD    = C.ANLS_GB_CD
+                     AND T.YR = C.YR
+                     AND T.MM = C.MM
+                     AND T.DT = C.DT
+                     AND T.EQPM_GB_CD    = C.EQPM_GB_CD
+                     AND T.GOODS_NO      = C.GOODS_NO
+                     AND (T.UPD_DTTM IS NULL OR            -- 다음날이 되면 전일 데이터는 한번만 업데이트한다
+                         TO_CHAR(T.REG_DTTM, 'YYYYMMDD') = TO_CHAR(T.UPD_DTTM, 'YYYYMMDD'))
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                 T.SALE_QTT  = C.SALE_QTT
+           , T.SALE_AMT = C.SALE_AMT
+           , T.STOCK_QTT = C.STOCK_QTT
+           , T.AVAIL_QTT = C.AVAIL_QTT
+           , T.BASKET_QTT = C.BASKET_QTT
+           , T.BASKET_CNT = C.BASKET_CNT
+           , T.BASKET_MEMBER_CNT = C.MEMBER_CNT
+           , T.FAV_GOODS_QTT = C.FAV_CNT
+           , T.REVIEW_CNT      = C.REVIEW_CNT
+                , T.UPDR_NO          = 190  -- 당일 데이터는 다음날까지 수정자 번호만 업데이트
+                , T.UPD_DTTM          = CASE WHEN TO_CHAR(T.REG_DTTM, 'YYYYMMDD') < TO_CHAR(sysdate, 'YYYYMMDD')
+                                        THEN sysdate    -- 전일 데이터만 수정일자 업데이트
+                                   ELSE NULL END
+      ]]>
+    </update>
+
+    <!-- 8.장바구니 상품분석 집계 -->
+    <update id="insertBasketGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertBasketGoodsAnls - 8-1.장바구니 상품분석 집계 */
+     <![CDATA[
+    INSERT INTO TT_GOODS_ANLS (
+                SITE_NO
+              , ANLS_GB_CD
+              , YR, MM, DT
+              , EQPM_GB_CD
+              , GOODS_NO
+              , STOCK_QTT
+              , AVAIL_QTT
+              , BASKET_CNT
+              , BASKET_MEMBER_CNT
+              , REVIEW_CNT
+              , REGR_NO
+              , REG_DTTM
+              , UPDR_NO
+              , UPD_DTTM
+              )
+        SELECT  C.SITE_NO
+              , C.ANLS_GB_CD
+              , C.YR, C.MM, C.DT
+              , C.EQPM_GB_CD
+              , C.GOODS_NO
+              , SUM(C.STOCK_QTT)                     STOCK_QTT
+              , SUM(C.AVAIL_QTT)                     AVAIL_QTT
+              , COUNT(DISTINCT C.BASKET_NO)          BASKET_CNT
+              , COUNT(DISTINCT C.MEMBER_NO)          MEMBER_CNT
+              , SUM(C.REVIEW_CNT)                    REVIEW_CNT
+              , 190                                  REGR_NO   -- 등록자번호
+              , sysdate, null, null
+           FROM (
+                 SELECT A.SITE_NO                    SITE_NO
+                      , '2'                          ANLS_GB_CD     -- 2:장바구니순위, 1:판매순위
+                      , TO_CHAR(B.REG_DTTM, 'YYYY')    YR
+                      , TO_CHAR(B.REG_DTTM, 'MM')    MM
+                      , TO_CHAR(B.REG_DTTM, 'DD')    DT
+                      , CASE WHEN B.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                             WHEN B.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                             ELSE '99' END                   EQPM_GB_CD
+                      , A.GOODS_NO                           GOODS_NO
+                       , NVL(A.STOCK_QTT,0)                                              STOCK_QTT
+                       , NVL(A.STOCK_QTT,0) + (SELECT NVL(AVAIL_STOCK_QTT,0)
+                                                    FROM TS_SITE
+                                                   WHERE SITE_NO = A.SITE_NO)               AVAIL_QTT
+                      , B.BASKET_NO
+                      , B.MEMBER_NO
+                       , (SELECT COUNT(DISTINCT J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                           WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO         -- 해당일자의 상품 리뷰 건수
+	                         AND J.REG_DTTM >= TO_DATE(TO_CHAR(B.REG_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+	                         AND J.REG_DTTM <= TO_DATE(TO_CHAR(B.REG_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                             AND J.CONTENT IS NOT NULL)                                     REVIEW_CNT
+                   FROM TG_ITEM A
+                      , TO_BASKET_ANLS  B
+                  WHERE 1=1
+                    AND (A.SITE_NO, '2'                               -- 2:장바구니순위, 1:판매순위
+                       , TO_CHAR(B.REG_DTTM, 'YYYYMMDD')
+                       , CASE WHEN B.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                              WHEN B.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                              ELSE '99' END
+                       , A.GOODS_NO)
+                        NOT IN (SELECT E.SITE_NO, E.ANLS_GB_CD, E.YR || E.MM || E.DT, E.EQPM_GB_CD, E.GOODS_NO
+                                  FROM TT_GOODS_ANLS E)
+                    AND B.ITEM_NO = A.ITEM_NO
+                ) C
+          GROUP BY C.SITE_NO, C.ANLS_GB_CD, C.YR, C.MM, C.DT, C.EQPM_GB_CD, C.GOODS_NO
+           ]]>
+    </update>
+
+    <update id="updateBasketGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+    /* batch.sttcs.updateBasketGoodsAnls - 8-2.장바구니 상품분석 집계  - 당일 판매순위 상품분석 업데이트 */
+     <![CDATA[
+     MERGE INTO TT_GOODS_ANLS T
+                USING (
+                SELECT  SUM(B.STOCK_QTT)                     STOCK_QTT
+                    , SUM(B.AVAIL_QTT)                     AVAIL_QTT
+                    , COUNT(DISTINCT B.BASKET_NO)          BASKET_CNT
+                    , COUNT(DISTINCT B.MEMBER_NO)          MEMBER_CNT
+                    , SUM(B.REVIEW_CNT)                    REVIEW_CNT
+                    ,B.SITE_NO, B.ANLS_GB_CD, B.YR, B.MM, B.DT, B.EQPM_GB_CD, B.GOODS_NO
+                 FROM (
+                       SELECT A.SITE_NO                    SITE_NO
+                            , '2'                          ANLS_GB_CD     -- 2:장바구니순위, 1:판매순위
+                            , TO_CHAR(B.REG_DTTM, 'YYYY')    YR
+                            , TO_CHAR(B.REG_DTTM, 'MM')    MM
+                            , TO_CHAR(B.REG_DTTM, 'DD')    DT
+                            , CASE WHEN B.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                                   WHEN B.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                                   ELSE '99' END                   EQPM_GB_CD
+                            , A.GOODS_NO                           GOODS_NO
+                             , NVL(A.STOCK_QTT,0)                                              STOCK_QTT
+                             , NVL(A.STOCK_QTT,0) + (SELECT NVL(AVAIL_STOCK_QTT,0)
+                                                          FROM TS_SITE
+                                                         WHERE SITE_NO = A.SITE_NO)               AVAIL_QTT
+
+                            , B.BASKET_NO
+                            , B.MEMBER_NO
+                             , (SELECT COUNT(DISTINCT J.LETT_NO)  FROM TB_GOODS_BBS_LETT J
+                                 WHERE J.BBS_ID = 'review' AND J.GOODS_NO = A.GOODS_NO         -- 해당일자의 상품 리뷰 건수
+                                   AND J.REG_DTTM >= TO_DATE(TO_CHAR(B.REG_DTTM,'YYYY-MM-DD')||'00:00:01', 'YYYY-MM-DD-HH24:MI:SS')
+                                   AND J.REG_DTTM <= TO_DATE(TO_CHAR(B.REG_DTTM,'YYYY-MM-DD')||'23:59:59', 'YYYY-MM-DD-HH24:MI:SS')
+                                   AND J.CONTENT IS NOT NULL)                                     REVIEW_CNT
+                         FROM TG_ITEM A
+                            , TO_BASKET_ANLS  B
+                        WHERE 1=1
+                          AND (A.SITE_NO, '2'                               -- 2:장바구니순위, 1:판매순위
+                             , TO_CHAR(B.REG_DTTM, 'YYYYMMDD')
+                             , CASE WHEN B.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                                    WHEN B.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                                    ELSE '99' END
+                             , A.GOODS_NO)
+                              IN (SELECT E.SITE_NO, E.ANLS_GB_CD, E.YR || E.MM || E.DT, E.EQPM_GB_CD, E.GOODS_NO
+                                    FROM TT_GOODS_ANLS E)
+                          AND B.ITEM_NO = A.ITEM_NO
+                          ) B
+                          GROUP BY B.SITE_NO, B.ANLS_GB_CD, B.YR, B.MM, B.DT, B.EQPM_GB_CD, B.GOODS_NO
+                ) C
+                ON (
+                            T.SITE_NO          = C.SITE_NO
+                     AND T.ANLS_GB_CD       = C.ANLS_GB_CD
+                     AND T.YR = C.YR
+                     AND T.MM = C.MM
+                     AND T.DT = C.DT
+                     AND T.EQPM_GB_CD       = C.EQPM_GB_CD
+                     AND T.GOODS_NO         = C.GOODS_NO
+                     AND (T.UPD_DTTM IS NULL OR            -- 다음날이 되면 전일 데이터는 한번만 업데이트한다
+                        TO_CHAR(T.REG_DTTM, 'YYYYMMDD') = TO_CHAR(T.UPD_DTTM, 'YYYYMMDD'))
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+                 T.STOCK_QTT = C.STOCK_QTT
+               , T.AVAIL_QTT = C.AVAIL_QTT
+               , T.BASKET_CNT = C.BASKET_CNT
+               , T.BASKET_MEMBER_CNT = C.MEMBER_CNT
+               , T.REVIEW_CNT = C.REVIEW_CNT
+                , T.UPDR_NO           = 190                -- 수정자번호
+                , T.UPD_DTTM          = CASE WHEN TO_CHAR(T.REG_DTTM, 'YYYYMMDD') < TO_CHAR(sysdate, 'YYYYMMDD')
+                                        THEN sysdate    -- 전일 데이터만 수정일자 업데이트
+                                   ELSE NULL END
+          ]]>
+    </update>
+
+    <update id="deleteBasketGoodsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.deleteBasketGoodsAnls - 8-3.장바구니 상품분석 집계 - 7일전까지 장바구니분석 이력테이블 삭제 처리 */
+         <![CDATA[
+         DELETE FROM TO_BASKET_ANLS
+           WHERE (SITE_NO, BASKET_NO) IN (
+                 SELECT *
+                   FROM (
+                         SELECT B.SITE_NO, B.BASKET_NO
+                           FROM TG_ITEM A
+                              , TO_BASKET_ANLS B
+                          WHERE 1=1
+                            AND B.ITEM_NO = A.ITEM_NO
+                            AND (A.SITE_NO, '2'                               -- 2:장바구니순위, 1:판매순위
+                               , TO_CHAR(B.REG_DTTM, 'YYYYMMDD')
+                               , CASE WHEN B.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                                      WHEN B.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                                      ELSE '99' END
+                               , A.GOODS_NO)
+                                    IN (SELECT E.SITE_NO, E.ANLS_GB_CD, E.YR || E.MM || E.DT, E.EQPM_GB_CD, E.GOODS_NO
+                                          FROM TT_GOODS_ANLS E                -- 상품분석통계 테이블
+                                         WHERE E.YR || E.MM || E.DT
+                                             < TO_CHAR(sysdate -7,'YYYYMMDD')  -- 7일전까지
+                                       )
+                          ) D)
+            ]]>
+    </update>
+
+    <!-- 9.주문통계분석 집계 -->
+    <insert id="insertOrdSttcsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+     /* batch.sttcs.insertOrdSttcsAnls - 9.주문통계분석 집계 */
+    {CALL
+		DECLARE
+		BEGIN
+
+	DELETE FROM TT_ORD_STTCS F
+          WHERE  F.YR  = TO_CHAR(SYSDATE,'YYYY')
+          AND F.MM  = TO_CHAR(SYSDATE,'MM');
+
+    INSERT INTO TT_ORD_STTCS (
+                SITE_NO
+              , YR
+              , MM
+              , DT
+              , HR
+              , PC_BUYR_CNT
+              , PC_BUY_CNT
+              , PC_SALE_AMT
+              , MOBILE_BUYR_CNT
+              , MOBILE_BUY_CNT
+              , MOBILE_SALE_AMT
+              , MANUAL_BUYR_CNT
+              , MANUAL_BUY_CNT
+              , MANUAL_SALE_AMT
+              , REGR_NO
+              , REG_DTTM
+              , UPDR_NO
+              , UPD_DTTM
+              )
+         SELECT C.SITE_NO
+              , C.YR, C.MM, C.DT, C.HR
+              , NVL(COUNT(DISTINCT C.PC_BUYR), 0)          - NVL(COUNT(DISTINCT C.CANCEL_PC_BUYR), 0)           AS PC_BUYR_CNT
+              , NVL(COUNT(DISTINCT C.PC_BUY_GOODS), 0)     - NVL(COUNT(DISTINCT C.CANCEL_PC_BUY_GOODS), 0)      AS PC_BUY_CNT
+              , NVL(SUM(C.PC_SALE_AMT), 0)                 - NVL(SUM(C.CANCEL_PC_SALE_AMT), 0)                  AS PC_SALE_AMT
+              , NVL(COUNT(DISTINCT C.MOBILE_BUYR), 0)      - NVL(COUNT(DISTINCT C.CANCEL_MOBILE_BUYR), 0)       AS MOBILE_BUYR_CNT
+              , NVL(COUNT(DISTINCT C.MOBILE_BUY_GOODS), 0) - NVL(COUNT(DISTINCT C.CANCEL_MOBILE_BUY_GOODS), 0)  AS MOBILE_BUY_CNT
+              , NVL(SUM(C.MOBILE_SALE_AMT), 0)             - NVL(SUM(C.CANCEL_MOBILE_SALE_AMT), 0)              AS MOBILE_SALE_AMT
+              , NVL(COUNT(DISTINCT C.MANUAL_BUYR), 0)      - NVL(COUNT(DISTINCT C.CANCEL_MANUAL_BUYR), 0)       AS MANUAL_BUYR_CNT
+              , NVL(COUNT(DISTINCT C.MANUAL_BUY_GOODS), 0) - NVL(COUNT(DISTINCT C.CANCEL_MANUAL_BUY_GOODS), 0)  AS MANUAL_BUY_CNT
+              , NVL(SUM(C.MANUAL_SALE_AMT), 0)             - NVL(SUM(C.CANCEL_MANUAL_SALE_AMT), 0)              AS MANUAL_SALE_AMT
+              , 190                          REGR_NO    -- 등록자번호
+              , sysdate, null, null
+           FROM (
+                SELECT A.SITE_NO, A.PAYMENT_CMPLT_DTTM
+                     , TO_CHAR(A.PAYMENT_CMPLT_DTTM, 'YYYY') YR, TO_CHAR(A.PAYMENT_CMPLT_DTTM, 'MM') MM
+                     , TO_CHAR(A.PAYMENT_CMPLT_DTTM, 'DD') DT, TO_CHAR(A.PAYMENT_CMPLT_DTTM, 'HH24') HR
+                     , A.ORD_NO, A.LOGIN_ID, A.ORDR_NM, A.ORDR_MOBILE, A.ORD_MEDIA_CD
+                     -- PC구매자: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    PC_BUYR
+                     -- PC구매취소자: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    CANCEL_PC_BUYR
+                     -- PC구매 주문번호,상품번호: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN CONCAT(A.ORD_NO, D.GOODS_NO)
+                             END                                                                    PC_BUY_GOODS
+                     -- PC구매취소 주문번호,상품번호: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN A.ORD_NO || D.GOODS_NO
+                             END                                                                    CANCEL_PC_BUY_GOODS
+                     -- PC판매금액: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN
+                            (SELECT SUM(PAYMENT_AMT) FROM TO_PAYMENT WHERE ORD_NO=A.ORD_NO)
+                            /*(D.SALE_AMT*D.ORD_QTT)-D.DC_AMT*/
+                             END                                                                    PC_SALE_AMT
+                     -- PC판매취소금액:결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '01' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN (D.SALE_AMT*D.ORD_QTT)-D.DC_AMT
+                             END                                                                    CANCEL_PC_SALE_AMT
+
+                     -- 모바일구매자: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    MOBILE_BUYR
+                     -- 모바일구매취소자: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    CANCEL_MOBILE_BUYR
+                     -- 모바일구매 주문번호,상품번호: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN A.ORD_NO || D.GOODS_NO
+                             END                                                                    MOBILE_BUY_GOODS
+                     -- 모바일구매취소 주문번호,상품번호: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN A.ORD_NO || D.GOODS_NO
+                             END                                                                    CANCEL_MOBILE_BUY_GOODS
+                     -- 모바일판매금액: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN
+                            (SELECT SUM(PAYMENT_AMT) FROM TO_PAYMENT WHERE ORD_NO=A.ORD_NO)
+                            /*(D.SALE_AMT*D.ORD_QTT)-D.DC_AMT*/
+                             END                                                                    MOBILE_SALE_AMT
+                     -- 모바일판매취소금액: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.ORD_MEDIA_CD = '02' AND NVL(A.MANUAL_ORD_YN,'N') ='N'      -- 수기주문 제외
+                             AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN (D.SALE_AMT*D.ORD_QTT)-D.DC_AMT
+                             END                                                                    CANCEL_MOBILE_SALE_AMT
+
+                     -- 수기구매자: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y'
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    MANUAL_BUYR
+                     -- 수기구매취소자: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y' AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN NVL(A.LOGIN_ID,'') || NVL(A.ORDR_MOBILE,'') || NVL(A.ORDR_NM,'')
+                             END                                                                    CANCEL_MANUAL_BUYR
+                     -- 수기구매 주문번호,상품번호: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y' AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN A.ORD_NO || D.GOODS_NO
+                             END                                                                    MANUAL_BUY_GOODS
+                     -- 수기구매취소 주문번호,상품번호: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y' AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN A.ORD_NO || D.GOODS_NO
+                             END                                                                    CANCEL_MANUAL_BUY_GOODS
+                     -- 수기판매금액: 결제완료, 배송준비중, 배송중, 배송완료, 구매확정
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y'
+                             AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                            THEN (D.SALE_AMT*D.ORD_QTT)-D.DC_AMT
+                             END                                                                    MANUAL_SALE_AMT
+                     -- 수기판매취소금액: 결제취소, 환불완료, 교환완료
+                     , CASE WHEN A.MANUAL_ORD_YN = 'Y' AND D.ORD_DTL_STATUS_CD IN ('21','66','74')
+                            THEN (D.SALE_AMT*D.ORD_QTT)-D.DC_AMT
+                             END                                                                    CANCEL_MANUAL_SALE_AMT
+                  FROM TO_ORD     A
+                     , TO_ORD_DTL D
+                 WHERE A.ORDR_NM IS NOT NULL
+                   AND A.PAYMENT_CMPLT_DTTM IS NOT NULL
+                   AND D.ORD_NO = A.ORD_NO
+                   AND D.ORD_DTL_STATUS_CD IN ('20','30','40','50','90'    -- 결제완료, 배송상태, 구매확정
+                                             , '21','66','74')             -- 결제취소, 환불완료, 교환완료
+                   AND (A.SITE_NO, TO_CHAR(A.PAYMENT_CMPLT_DTTM, 'YYYYMMDDHH24')) NOT IN (SELECT F.SITE_NO, F.YR || F.MM || F.DT || F.HR FROM TT_ORD_STTCS F)
+                   AND ABS(A.PAYMENT_AMT) > 0
+                   AND A.PAYMENT_CMPLT_DTTM BETWEEN TRUNC(SYSDATE,'MM') AND TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS') -- 정시 이전까지만 집계
+                   AND A.ORD_NO NOT IN (
+                    '1909091119367670'
+                ,'1909091119067669'
+                ,'1909091118247668'
+                ,'1909091117507667'
+                ,'1909091114327666'
+                ,'1909091120107671'
+                ,'1909091121257672'
+                ,'1909091122517673'
+                ,'1909091126357679'
+                ,'1909091126067678'
+                ,'1909091125297677'
+                ,'1909091123247674'
+                ,'1909091124137675'
+                ,'1909091124517676'
+                   )
+                ) C
+          GROUP BY C.SITE_NO, C.YR, C.MM, C.DT, C.HR;
+        END
+		}
+    </insert>
+
+    <!-- 10.매출통계분석 집계 -->
+    <insert id="insertSalesSttcsAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+    /* batch.sttcs.insertSalesSttcsAnls - 10.매출통계분석 집계 */
+    {CALL
+		DECLARE
+		BEGIN
+
+    DELETE FROM TT_SALES_STTCS F
+          WHERE  F.YR  = TO_CHAR(SYSDATE,'YYYY')
+          AND F.MM  = TO_CHAR(SYSDATE,'MM');
+
+    INSERT INTO TT_SALES_STTCS (
+                SITE_NO
+              , YR, MM, DT
+              , EQPM_GB_CD
+              , HR
+              , PAYMENT_CNT
+              , PAYMENT_AMT
+              , CP_DC_AMT
+              , ETC_DC_AMT
+              , REAL_PAYMENT_AMT
+              , SVMN_PAYMENT_CNT
+              , SVMN_PAYMENT_AMT
+              , SBN_PAYMENT_CNT
+              , SBN_PAYMENT_AMT
+              , NOPB_DPST_CNT
+              , NOPB_DPST_AMT
+              , VIRT_ACT_DPST_CNT
+              , VIRT_ACT_DPST_AMT
+              , CRED_PAYMENT_CNT
+              , CRED_PAYMENT_AMT
+              , ACT_TRANS_CNT
+              , ACT_TRANS_AMT
+              , MOBILE_PAYMENT_CNT
+              , MOBILE_PAYMENT_AMT
+              , SIMP_PAYMENT_CNT
+              , SIMP_PAYMENT_AMT
+              , PAYPAL_CNT
+              , PAYPAL_AMT
+              , RETURN_REFUND_AMT
+              , CANCEL_REFUND_AMT
+              , REFUND_AMT
+              , SALES_AMT
+              , REGR_NO
+              , REG_DTTM
+              , UPDR_NO
+              , UPD_DTTM
+              )
+        SELECT DISTINCT F.SITE_NO
+             , F.YR, F.MM, F.DT
+             , F.EQPM_GB_CD
+             , F.HR
+             , COUNT(F.PAYMENT_NO)                        PAYMENT_CNT
+             , NVL(SUM(F.PAYMENT_AMT)      , 0)        PAYMENT_AMT
+             , NVL(SUM(F.CP_DC_AMT)        , 0)        CP_DC_AMT
+             , NVL(SUM(F.ETC_DC_AMT)       , 0)        ETC_DC_AMT
+             , NVL(SUM(F.REAL_PAYMENT_AMT) , 0)        REAL_PAYMENT_AMT
+             , NVL(SUM(F.SVMN_CNT)         , 0)        SVMN_CNT
+             , NVL(SUM(F.SVMN_AMT)         , 0)        SVMN_AMT
+             , NVL(SUM(F.SBN_CNT)          , 0)        SBN_CNT
+             , NVL(SUM(F.SBN_AMT)          , 0)        SBN_AMT
+             , NVL(SUM(F.NOPB_DPST_CNT)    , 0)        NOPB_DPST_CNT
+             , NVL(SUM(F.NOPB_DPST_AMT)    , 0)        NOPB_DPST_AMT
+             , NVL(SUM(F.VIRT_ACT_CNT)     , 0)        VIRT_ACT_CNT
+             , NVL(SUM(F.VIRT_ACT_AMT)     , 0)        VIRT_ACT_AMT
+             , NVL(SUM(F.CRED_CNT)         , 0)        CRED_CNT
+             , NVL(SUM(F.CRED_AMT)         , 0)        CRED_AMT
+             , NVL(SUM(F.ACT_TRANS_CNT)    , 0)        ACT_TRANS_CNT
+             , NVL(SUM(F.ACT_TRANS_AMT)    , 0)        ACT_TRANS_AMT
+             , NVL(SUM(F.MOBILE_CNT)       , 0)        MOBILE_CNT
+             , NVL(SUM(F.MOBILE_AMT)       , 0)        MOBILE_AMT
+             , NVL(SUM(F.SIMP_CNT)         , 0)        SIMP_CNT
+             , NVL(SUM(F.SIMP_AMT)         , 0)        SIMP_AMT
+             , NVL(SUM(F.PAYPAL_CNT)       , 0)        PAYPAL_CNT
+             , NVL(SUM(F.PAYPAL_AMT)       , 0)        PAYPAL_AMT
+             , NVL(SUM(F.RETURN_REFUND_AMT), 0)        RETURN_REFUND_AMT
+             , NVL(SUM(F.CANCEL_REFUND_AMT), 0)        CANCEL_REFUND_AMT
+             , SUM(F.RETURN_REFUND_AMT) + SUM(F.CANCEL_REFUND_AMT)  REFUND_AMT
+             , SUM(F.REAL_PAYMENT_AMT) - (SUM(F.RETURN_REFUND_AMT) + SUM(F.CANCEL_REFUND_AMT))  SALES_AMT
+              , 190                                       REGR_NO   -- 등록자번호
+              , sysdate, null, null
+          FROM (
+                SELECT A.SITE_NO
+                     , TO_CHAR(B.PAYMENT_CMPLT_DTTM, 'YYYY')          YR
+                     , TO_CHAR(B.PAYMENT_CMPLT_DTTM, 'MM')          MM
+                     , TO_CHAR(B.PAYMENT_CMPLT_DTTM, 'DD')          DT
+                     , CASE WHEN A.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                            WHEN A.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                            ELSE '99' END   AS EQPM_GB_CD
+                     , TO_CHAR(B.PAYMENT_CMPLT_DTTM, 'HH24')          HR
+                     , A.ORD_NO                                            -- 주문번호
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'                -- 결제완료
+                            THEN B.PAYMENT_NO
+                        END                                    PAYMENT_NO  -- 결제번호
+                     -- 결제금액: 결제완료금액 + 쿠폰할인금액 + 기타할인금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                            THEN NVL(B.PAYMENT_AMT, 0)
+                                 + NVL((SELECT SUM(NVL(C.CP_USE_AMT,0))
+                                             FROM TO_COUPON_USE C
+                                            WHERE C.ORD_NO = A.ORD_NO),0)
+                                 + NVL((SELECT SUM(NVL(D.ADDED_AMOUNT_AMT,0))
+                                             FROM TO_ADDED_AMOUNT D
+                                            WHERE D.ORD_NO = A.ORD_NO),0)
+                            ELSE 0 END                                                  PAYMENT_AMT
+                     -- 쿠폰할인금액: 결제완료 02
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                            THEN NVL((SELECT SUM(NVL(C.CP_USE_AMT,0))
+                                           FROM TO_COUPON_USE C
+                                          WHERE C.ORD_NO = A.ORD_NO),0)
+                            ELSE 0 END                                                  CP_DC_AMT
+                     -- 기타할인금액: 결제완료 02
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                            THEN NVL((SELECT SUM(NVL(D.ADDED_AMOUNT_AMT,0))   -- 기타할인 부가비용 금액
+                                           FROM TO_ADDED_AMOUNT D
+                                          WHERE D.ORD_NO = A.ORD_NO),0)
+                            ELSE 0 END                                                  ETC_DC_AMT
+                     -- 실결제금액: 결제완료 02
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                            THEN B.PAYMENT_AMT
+                            ELSE 0 END                                                  REAL_PAYMENT_AMT
+
+                     -- 반품환불금액: 주문상세상태코드 74:환불완료인 결제테이블의 환불금액 : UNION으로 추가로 SELECT (CLAIM_CMPLT_DTTM 기준)
+                     , 0                                                                RETURN_REFUND_AMT -- 반품금액
+                     -- 취소환불금액: 주문상세상태코드 21:취소완료인 결제테이블의 환불금액 : UNION으로 추가로 SELECT (CLAIM_CMPLT_DTTM 기준)
+                     , 0                                                                CANCEL_REFUND_AMT  -- 취소금액
+
+                     -- 마켓포인트 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '01' THEN 1 ELSE 0 END              SVMN_CNT
+                     -- 마켓포인트 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '01' THEN B.PAYMENT_AMT ELSE 0 END  SVMN_AMT
+
+                     -- 사방넷 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '51' THEN 1 ELSE 0 END              SBN_CNT
+                     -- 사방넷 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '51' THEN B.PAYMENT_AMT ELSE 0 END  SBN_AMT
+
+                     -- 무통장입금 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '11' THEN 1 ELSE 0 END              NOPB_DPST_CNT
+                     -- 무통장입금 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '11' THEN B.PAYMENT_AMT ELSE 0 END  NOPB_DPST_AMT
+                     -- 가상계좌 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '22' THEN 1 ELSE 0 END              VIRT_ACT_CNT
+                     -- 가상계좌 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '22' THEN B.PAYMENT_AMT ELSE 0 END  VIRT_ACT_AMT
+                     -- 신용카드 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '23' THEN 1 ELSE 0 END              CRED_CNT
+                     -- 신용카드 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '23' THEN B.PAYMENT_AMT ELSE 0 END  CRED_AMT
+                     -- 계좌이체 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '21' THEN 1 ELSE 0 END              ACT_TRANS_CNT
+                     -- 계좌이체 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '21' THEN B.PAYMENT_AMT ELSE 0 END  ACT_TRANS_AMT
+                     -- 휴대폰 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '24' THEN 1 ELSE 0 END              MOBILE_CNT
+                     -- 휴대폰 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '24' THEN B.PAYMENT_AMT ELSE 0 END  MOBILE_AMT
+                     -- 간편결제 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '31' THEN 1 ELSE 0 END              SIMP_CNT
+                     -- 간편결제 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '31' THEN B.PAYMENT_AMT ELSE 0 END  SIMP_AMT
+                     -- 페이팔 결제건수
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '41' THEN 1 ELSE 0 END              PAYPAL_CNT
+                     -- 페이팔 결제금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '02'
+                             AND B.PAYMENT_WAY_CD = '41' THEN B.PAYMENT_AMT ELSE 0 END  PAYPAL_AMT
+                  FROM TO_ORD     A
+                     , TO_PAYMENT B
+                 WHERE B.ORD_NO = A.ORD_NO
+                   AND A.ORDR_NM IS NOT NULL
+                   AND B.PAYMENT_CMPLT_DTTM IS NOT NULL
+                   AND B.PAYMENT_STATUS_CD IN ('02', '03')            -- 결제상태코드 02:완료, 03:취소
+                   AND (A.SITE_NO
+                      , TO_CHAR(B.PAYMENT_CMPLT_DTTM, 'YYYYMMDDHH24')
+                      , CASE WHEN A.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                             WHEN A.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                             ELSE '99' END)
+                       NOT IN (SELECT G.SITE_NO, G.YR || G.MM || G.DT || G.HR, G.EQPM_GB_CD  FROM TT_SALES_STTCS G)
+                   AND B.PAYMENT_CMPLT_DTTM BETWEEN TRUNC(SYSDATE,'MM') AND TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS') -- 정시 이전까지만 집계
+                   AND A.ORD_NO NOT IN (
+                    '1909091119367670'
+                    ,'1909091119067669'
+                    ,'1909091118247668'
+                    ,'1909091117507667'
+                    ,'1909091114327666'
+                    ,'1909091120107671'
+                    ,'1909091121257672'
+                    ,'1909091122517673'
+                    ,'1909091126357679'
+                    ,'1909091126067678'
+                    ,'1909091125297677'
+                    ,'1909091123247674'
+                    ,'1909091124137675'
+                    ,'1909091124517676'
+                   )
+                UNION
+             -- 취소,반품,교환 건은 클레임완료일시 기준으로 추가로 SELECT
+                SELECT A.SITE_NO
+                     , TO_CHAR(B.CLAIM_CMPLT_DTTM, 'YYYY')              YR
+                     , TO_CHAR(B.CLAIM_CMPLT_DTTM, 'MM')              MM
+                     , TO_CHAR(B.CLAIM_CMPLT_DTTM, 'DD')              DT
+                     , CASE WHEN A.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                            WHEN A.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                            ELSE '99' END   AS EQPM_GB_CD
+                     , TO_CHAR(B.CLAIM_CMPLT_DTTM, 'HH24')              HR
+                     , A.ORD_NO                                            -- 주문번호
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '03'                -- 결제취소
+                            THEN B.PAYMENT_NO
+                        END                                    PAYMENT_NO  -- 결제번호
+
+                     -- 결제금액: 결제완료금액 + 쿠폰할인금액 + 기타할인금액
+                     , 0
+                     -- 쿠폰할인금액: 결제완료
+                     , 0
+                     -- 기타할인금액: 결제완료
+                     , 0
+                     -- 실결제금액: 결제완료
+                     , 0
+
+                     -- 반품환불금액: 주문상세상태코드 74:환불완료인 결제테이블의 환불금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '03'                     -- 결제취소
+                             AND (SELECT MAX(ORD_DTL_STATUS_CD) FROM TO_ORD_DTL
+                                   WHERE ORD_NO = B.ORD_NO
+                                     AND ORD_DTL_STATUS_CD IN ('21','74')
+                                     AND CLAIM_CMPLT_DTTM = B.CLAIM_CMPLT_DTTM  -- 클레임완료일시
+                                     ) = '74'                                   -- 환불완료
+                            THEN B.REFUND_AMT                                   -- 환불금액
+                            ELSE 0 END                                                  RETURN_REFUND_AMT -- 반품금액
+                     -- 취소환불금액: 주문상세상태코드 21:취소완료인 결제테이블의 환불금액
+                     , CASE WHEN B.PAYMENT_STATUS_CD = '03'                     -- 결제취소
+                             AND (SELECT MAX(ORD_DTL_STATUS_CD) FROM TO_ORD_DTL
+                                   WHERE ORD_NO = B.ORD_NO
+                                     AND ORD_DTL_STATUS_CD IN ('21','74')
+                                     AND CLAIM_CMPLT_DTTM = B.CLAIM_CMPLT_DTTM  -- 클레임완료일시
+                                     ) = '21'                                   -- 환불완료
+                            THEN B.REFUND_AMT                                   -- 환불금액
+                            ELSE 0 END                                                  CANCEL_REFUND_AMT  -- 취소금액
+
+                     -- 마켓포인트 결제건수
+                     , 0
+                     -- 마켓포인트 결제금액
+                     , 0
+                     -- 사방넷 결제건수
+                     , 0
+                     -- 사방넷 결제금액
+                     , 0
+                     -- 무통장입금 결제건수
+                     , 0
+                     -- 무통장입금 결제금액
+                     , 0
+                     -- 가상계좌 결제건수
+                     , 0
+                     -- 가상계좌 결제금액
+                     , 0
+                     -- 신용카드 결제건수
+                     , 0
+                     -- 신용카드 결제금액
+                     , 0
+                     -- 계좌이체 결제건수
+                     , 0
+                     -- 계좌이체 결제금액
+                     , 0
+                     -- 휴대폰 결제건수
+                     , 0
+                     -- 휴대폰 결제금액
+                     , 0
+                     -- 간편결제 결제건수
+                     , 0
+                     -- 간편결제 결제금액
+                     , 0
+                     -- 페이팔 결제건수
+                     , 0
+                     -- 페이팔 결제금액
+                     , 0
+                  FROM TO_ORD     A
+                     , TO_PAYMENT B
+                 WHERE B.ORD_NO = A.ORD_NO
+                   AND A.ORDR_NM IS NOT NULL
+                   AND B.CLAIM_CMPLT_DTTM IS NOT NULL
+                   AND B.PAYMENT_STATUS_CD IN ('03')            -- 결제상태코드 02:완료, 03:취소
+                   AND (A.SITE_NO
+                      , TO_CHAR(B.CLAIM_CMPLT_DTTM, 'YYYYMMDDHH24')
+                      , CASE WHEN A.ORD_MEDIA_CD IN ('01','03') THEN '11'   -- PC
+                             WHEN A.ORD_MEDIA_CD = '02'         THEN '12'   -- 모바일
+                             ELSE '99' END)
+                       NOT IN (SELECT G.SITE_NO, G.YR || G.MM || G.DT || G.HR, G.EQPM_GB_CD  FROM TT_SALES_STTCS G)
+                   AND B.CLAIM_CMPLT_DTTM BETWEEN TRUNC(SYSDATE,'MM') AND TO_DATE(TO_CHAR(SYSDATE,'YYYY-MM-DD HH24'),'YYYY-MM-DD HH24MISS') -- 정시 이전까지만 집계
+                   AND A.ORD_NO NOT IN (
+                     '1909091119367670'
+                    ,'1909091119067669'
+                    ,'1909091118247668'
+                    ,'1909091117507667'
+                    ,'1909091114327666'
+                    ,'1909091120107671'
+                    ,'1909091121257672'
+                    ,'1909091122517673'
+                    ,'1909091126357679'
+                    ,'1909091126067678'
+                    ,'1909091125297677'
+                    ,'1909091123247674'
+                    ,'1909091124137675'
+                    ,'1909091124517676'
+                       )
+               ) F
+         GROUP BY F.SITE_NO, F.YR, F.MM, F.DT, F.EQPM_GB_CD, F.HR;
+
+          END
+		}
+    </insert>
+
+    <!-- 11.로그인현황분석 집계 -->
+    <insert id="insertLoginCurrentStatusAnls" parameterType="net.danvi.dmall.biz.batch.sttcs.model.ProcRunnerVO">
+        <![CDATA[
+        insert into TT_LOGIN_CURSTATUS_ANLS
+            (
+             SITE_NO,
+             YR,
+             MM,
+             DT,
+             EQPM_GB_CD,
+             LOGIN_ID,
+             MEMBER_NM,
+             LAST_LOGIN,
+             LOGIN_CNT,
+             PAGE_VW,
+             REGR_NO,
+             REG_DTTM,
+             UPDR_NO,
+             UPD_DTTM
+            )
+            SELECT A.SITE_NO,
+                   to_char(tmlh.LOGIN_DTTM, 'YYYY') AS YR,
+                   to_char(tmlh.LOGIN_DTTM, 'MM') AS MM,
+                   to_char(tmlh.LOGIN_DTTM, 'DD') AS DT,
+                   A.EQPM_GB_CD,
+                   tm.LOGIN_ID,
+                   tm.MEMBER_NM,
+                   max(tmlh.LOGIN_DTTM) AS LAST_LOGIN,
+                   count(tmlh.MEMBER_NO) AS LOGIN_CNT,
+                   A.PAGE_VW,
+                   190,
+                   sysdate,
+                   NULL,
+                   NULL
+            FROM TC_MEMBER_LOGIN_HIST tmlh
+                 INNER JOIN TC_MEMBER tm ON tmlh.MEMBER_NO = tm.MEMBER_NO
+                 INNER JOIN
+                 (
+                     SELECT tal.SITE_NO,
+                            tal.MEMBER_NO,
+                            (CASE WHEN tal.DEVICE_TYPE = 'P' THEN '11' WHEN tal.DEVICE_TYPE = 'M' THEN '12' ELSE '99' END) AS EQPM_GB_CD,
+                            count(DBMS_LOB.SUBSTR(tal.URL, 3200)) AS PAGE_VW
+                     FROM TA_ACCESS_LOG tal
+                     WHERE tal.ACCESS_DTTM >= to_date(to_char(sysdate - 1, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+                       AND tal.ACCESS_DTTM < to_date(to_char(sysdate, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+                       and tal.MEMBER_NO is not null
+                     GROUP BY tal.SITE_NO, tal.MEMBER_NO , tal.DEVICE_TYPE
+                 ) A ON tmlh.MEMBER_NO = A.MEMBER_NO
+            WHERE tmlh.LOGIN_DTTM >= to_date(to_char(sysdate - 1, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+              AND tmlh.LOGIN_DTTM < to_date(to_char(sysdate, 'YYYY-MM-DD')||' 03', 'YYYY-MM-DD HH24')
+            GROUP BY A.SITE_NO, tmlh.LOGIN_DTTM, A.EQPM_GB_CD, tm.LOGIN_ID, tm.MEMBER_NM, tmlh.MEMBER_NO, A.PAGE_VW
+        ]]>
+    </insert>
+</mapper>

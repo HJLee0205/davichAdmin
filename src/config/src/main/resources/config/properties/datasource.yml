@@ -1,0 +1,90 @@
+properties:
+  database:
+    # Market Database
+    market:
+      type: oracle
+      driver: net.sf.log4jdbc.DriverSpy
+#      url: jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      user: DAVICH_MALL
+      password: danvi2018
+#      url: jdbc:log4jdbc:oracle:thin:@211.253.11.151:1521:XE
+#      user: MALL_TEST
+#      password: MALL_TEST
+      charset: 'euc-kr'
+      maxTotal: 100
+      maxIdle: 30
+      maxWaitMillis: 10000
+
+    # SMS, Email push database
+    push:
+      type: oracle
+      driver: net.sf.log4jdbc.DriverSpy
+      #url: jdbc:log4jdbc:oracle:thin:@211.253.11.151:1521:XE
+      #user: sms_push_test
+      #password: sms_push_test
+#      url: jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      user: sms_push
+      password: sms_push
+      maxTotal: 100
+      maxIdle: 30
+      maxWaitMillis: 10000
+
+    # 가맹점 push Database
+    store:
+      type: oracle
+      driver: net.sf.log4jdbc.DriverSpy
+#      url: jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+      user: store_push
+      password: store_push
+      maxTotal: 100
+      maxIdle: 30
+      maxWaitMillis: 10000
+
+    # ERP Database
+    erp:
+      type: oracle
+      driver: net.sf.log4jdbc.DriverSpy
+      url: jdbc:log4jdbc:oracle:thin:@193.122.96.196:21359/DAVICH_PDB1.DAVICHADMINDBSU.DAVICHADMIN.ORACLEVCN.COM
+      user: davich
+      password: davich
+      charset: euc-kr
+      maxTotal: 100
+      maxIdle: 30
+      maxWaitMillis: 10000
+---
+spring:
+  profile: local
+properties:
+  database:
+    # Market Database
+    market.user: DAVICH_MALL
+    market.password: danvi2018
+
+---
+spring:
+  profile: dev
+properties:
+  database:
+    # Market Database
+    market.user: DAVICH_MALL
+    market.password: danvi2018
+
+---
+spring:
+  profile: sandbox
+properties:
+
+---
+spring:
+  profile: stage
+properties:
+
+  market:
+    url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+  push:
+    url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM
+  store:
+    url: jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM

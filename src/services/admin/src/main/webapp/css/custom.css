@@ -1,0 +1,48 @@
+.div_editor {
+    width: 100%;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+.div_editor iframe {
+    border: 0;
+    width: 100%;
+    height: 496px;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+span.disa {background-color:#9e9e9e;}
+
+/* 상품관리 - 안경테 goods-detail_grasses_frame.html 옵션만들기 모달 맨앞에 col*/
+.plus_.btn_comm{display:inline-block;width:14px;height:14px;cursor:pointer;background-position:0 0;background: url(/admin/img/icons/icon_plus_big.png)no-repeat center center;}
+.minus_.btn_comm{display:inline-block;width:14px;height:14px;cursor:pointer;background-position:-20px 0;background: url(/admin/img/icons/icon_minus_big.png)no-repeat center center;} 
+
+/* 상품문의/1대1문의 */
+div.prod_con .list_con li a,
+div.vs_con .list_con li a {
+    width : 250px;
+	font-size:14px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    word-wrap:normal;
+    overflow: hidden;
+    display:inline-block;
+}
+
+/* 메인의 업데이트/공지 */
+#ul_id_update li a,
+#ul_id_notice li a {
+    width : 334px;
+    height: 13.5px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    word-wrap:normal;
+    overflow: hidden;
+    display:inline-block;
+}
+
+/* validator 라디오 등의 텍스트 표시를 위해 */
+.formError .formErrorContent {
+    text-indent: 0;
+}

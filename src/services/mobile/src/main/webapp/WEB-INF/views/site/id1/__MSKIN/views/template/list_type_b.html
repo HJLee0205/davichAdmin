@@ -1,0 +1,27 @@
+<li>
+	<a href="javascript:goods_detail('#[goodsNo]');">
+		<div class="img_area">
+			<img src="#[_IMAGE_DOMAIN]#[goodsDispImgB]" alt="#[goodsNm]" title="#[goodsNm]" onerror="this.src='/m/front/img/product/product_180_180.gif'">
+		</div>
+		<div class="text_area">
+			<p class="name">#[goodsNm]</p>
+			<span class="discount">
+                    #[customerPrice]
+                   #[saleRate]
+            </span>
+			<p class="price">
+				#[salePrice]
+			</p>
+		</div>
+		<div class="label_area">
+			#[iconImgs]
+		</div>
+	</a>
+	<!-- 버튼영역 -->
+	<!--<div class="img_menu">
+		<button type="button" class="menu01" onclick="javascript:goods_preview('#[goodsNo]');">크게보기</button>
+		<button type="button" class="menu02" onclick="javascript:ListBtnUtil.insertInterest('#[goodsNo]');">좋아요</button>
+		<button type="button" class="menu03" onclick="javascript:ListBtnUtil.insertBasket('#[goodsNo]');">장바구니</button>
+	</div>-->
+	<!--// 버튼영역 -->
+</li>

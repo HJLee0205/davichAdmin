@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="design.htmlEdit">
+
+    
+    <select id="selectHtmlList" resultType="htmlEditVO">
+        /* design.htmlEdit.selectHtmlList */
+        SELECT  
+                TS.SKIN_ID
+        FROM    TD_SKIN TS
+        WHERE   TS.WORK_SKIN_YN = 'Y'
+        AND     TS.SITE_NO = #{siteNo}
+        AND     TS.PC_GB_CD = #{pcGbCd}
+    </select>
+    
+    <select id="selectHtmlDtl" resultType="htmlEditVO">
+        /* design.htmlEdit.selectHtmlDtl */
+        SELECT  
+                TT.TMPL_NO,
+                TT.SKIN_NO,
+                TT.SKIN_ID,
+                TT.SITE_NO,
+                TT.TMPL_NM,
+                TT.TMPL_GB_CD,
+                TT.TMPL_SCREEN_GRP_CD,
+                TT.TMPL_SCREEN_CD,
+                TT.TMPL_AREA_CD,
+                TT.TMPL_CD,
+                TT.SCREEN_NM,
+                TT.FILE_NM,
+                TT.FILE_PATH,
+                TT.SCRIPT_NM,
+                TT.SCRIPT_PATH,
+                TT.CSS_NM,
+                TT.CSS_PATH,
+                TT.WIDTH_LENGTH,
+                TT.TMPL_CNT,
+                TT.DISP_YN,
+                TT.CONTENT
+        FROM    TD_TMPL TT
+        WHERE   TT.SITE_NO = #{siteNo}
+        AND     TT.SKIN_NO = #{skinNo}
+        AND     TT.TMPL_NO = #{tmplNo}
+    </select>
+    
+    <select id="selectHtmlWorkInfo" resultType="htmlEditVO">
+        /* design.htmlEdit.selectHtmlDtl */
+        SELECT  
+                TS.SKIN_NO,
+                TS.SITE_NO,
+                TS.SKIN_ID,
+                TS.PC_GB_CD,
+                TS.DEFAULT_SKIN_YN,
+                TS.SKIN_NM,
+                TS.IMG_NM,
+                TS.IMG_PATH,
+                TS.FOLDER_PATH,
+                TS.APPLY_SKIN_YN,
+                TS.WORK_SKIN_YN
+        FROM    TD_SKIN TS
+        WHERE   TS.SITE_NO  = #{siteNo}
+        <if test="pcGbCd != null and pcGbCd != ''">
+        AND     TS.PC_GB_CD = #{pcGbCd}
+        </if>
+        <if test="applySkinYn != null and applySkinYn != ''">
+        AND     TS.APPLY_SKIN_YN = #{applySkinYn}
+        </if>
+        <if test="workSkinYn != null and workSkinYn != ''">
+        AND     TS.WORK_SKIN_YN = #{workSkinYn}
+        </if>
+    </select>
+    
+    <insert id="insertHtmlEdit">
+        /* design.htmlEdit.insertHtmlEdit */
+       
+    </insert>   
+
+    <update id="updateHtmlEdit">
+        /* design.htmlEdit.updateHtmlEdit */
+    </update>
+    
+    <select id="selectPreViewInfo" resultType="htmlEditVO">
+        /* design.htmlEdit.selectPreViewInfo */
+        SELECT  
+                TMPL_NO,
+                TMPL_NM,
+                LINK_URL,
+                FILE_PATH,
+                FILE_NM,
+                PC_GB_CD,
+                USE_YN
+        FROM    TD_TMPL
+        WHERE   USE_YN    = 'Y'
+        AND     FILE_NM   = #{fileNm}
+        AND     PC_GB_CD  = #{pcGbCd}
+    </select>
+
+</mapper>

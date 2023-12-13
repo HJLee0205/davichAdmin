@@ -1,0 +1,55 @@
+properties:
+  path: /data/O4OPJT/logs
+
+  log:
+    root.level: ERROR
+    dmall.level: ERROR
+    net.danvi.level: ERROR
+    org.apache.commons.level: ERROR
+    org.mybatis.level: ERROR
+    jdbc.resultset.level: ERROR
+    jdbc.audit.level: ERROR
+    jdbc.sqlonly.level: ERROR
+    jdbc.resultsettable.level: ERROR
+    jdbc.sqltiming.level: ERROR
+    jdbc.connection.level: ERROR
+    com.sun.mail.smtp.level: ERROR
+    org.apache.commons: ERROR
+    org.springframework: ERROR
+    org.mybatis: ERROR
+
+---
+spring:
+  profile: local
+properties:
+  log:
+    path: /tmp/davichmarket/logs
+    dmall.level: ERROR
+    net.danvi.level: ERROR
+    org.apache.commons.level: ERROR
+    jdbc.resultset.level: ERROR
+    jdbc.audit.level: ERROR
+    jdbc.sqlonly.level: ERROR
+    jdbc.resultsettable.level: ERROR
+    jdbc.sqltiming.level: ERROR
+    jdbc.connection.level: ERROR
+    com.sun.mail.smtp.level: ERROR
+    org.apache.commons: ERROR
+    org.springframework: ERROR
+    org.mybatis: ERROR
+
+---
+spring:
+  profile: dev
+properties:
+
+
+---
+spring:
+  profile: sandbox
+properties:
+
+---
+spring:
+  profile: stage
+properties:

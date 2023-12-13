@@ -1,0 +1,211 @@
+@charset "utf-8";
+
+.com_head {
+	width:1000px;
+    margin:35px auto 40px auto;
+    overflow:hidden;
+    border-bottom:1px solid #ddd;
+}
+h2.com_tit {
+    font-size:37px;
+    font-weight:400;
+    line-height:37px;
+    color:#333333;
+    margin-left:0;
+    padding-bottom:25px;
+}
+.com_info_area {
+	color:#dfdfdf;
+	height:700px;
+	line-height:700px;
+	text-align:center;
+	border:1px solid #e0e0e0
+}
+.btn_com_area {
+	text-align:center;
+	margin:65px 0
+}
+.btn_go_site {
+	width:245px;
+    height:50px;
+    color:#fff;
+    font-size:16px;
+    font-weight:600;
+    background:#1f59ff;
+    border:1px solid #4d4f52;
+}
+.com_tabs {
+    /*width:585px;*/
+	text-align:center;
+    margin:0 auto 40px;
+    overflow:hidden;
+}
+.com_tabs li {
+	display:inline-block;
+    /*float:left;*/
+    padding:0 50px;
+    background:url(../img/mypage/bar_lens.gif) no-repeat right 4px;
+}
+.com_tabs li:last-child {
+	background:none
+}
+.com_tabs li span {
+    cursor:pointer;
+    display:inline-block;
+    width:160px;
+    text-align:center;
+    font-size:20px;
+    padding-bottom:14px;
+}
+.com_tabs li span.active {
+    color:#006cfe;
+    background: url(../img/company/tabs_agree_bar.gif) no-repeat 50% bottom;
+}
+
+.bottom_agree_area {
+	white-space:pre-line;
+	border: 1px solid #e0e0e0;
+    padding: 20px;
+    width: 960px;
+    margin: 0 auto;
+    line-height: 150%;
+}
+.bottom_agree_area strong:first-child {
+	margin-top:0;
+}
+.bottom_agree_area strong {
+	margin:20px 0 10px 0;
+	font-size:16px;
+	display:block;
+}
+.bottom_agree_area textarea {
+	font-family:"NotoSansKR", Arial, Helvetica, sans-serif;
+	width:100%;
+    padding:20px;
+    color:#666666;
+    font-size:0.98em;
+    font-weight:300;
+    line-height:20px;
+	resize: none;
+	border:none;
+	box-sizing:border-box
+}
+.bottom_agree_area textarea:focus {
+	border:none !important
+}
+
+.partnership_info_area {
+	position: relative;
+    color: #333;
+    /* text-align: center; */
+    border: 1px solid #e0e0e0;
+    padding: 20px 20px 20px 20px;
+}
+.partnership_info_area p	{
+	padding-left:10px;
+}
+.seller_img	{
+	margin-top: 10px;
+}
+.list_type2	{
+	position: absolute;
+    top: 60px;
+    right: 15px;
+    width: 530px;
+    border: 1px solid #eee;
+    background: #fafafa;
+    padding: 15px;
+    text-align: left;
+    font-size: 14px;
+}
+.list_type2 dt	{
+	color:#333;
+	font-weight:600;
+}
+.list_type2 dd	{
+	padding:3px 0;
+	margin:0;
+	color:#666;
+}
+.partnership_insert {
+	margin:40px 0;
+	padding:20px 0;
+	border-top:1px solid #666;
+	border-bottom:1px solid #e0e0e0
+}
+.form_partnership {
+	font-family:"NotoSansKR", Arial, Helvetica, sans-serif;
+	width:800px;
+	height:170px;
+	padding:10px;
+	font-size:15px;
+	color:#666;
+	border:1px solid #cdcdcd;
+}
+.select_partnership {
+	width:170px;
+	margin:0 47px 0 10px
+}
+.agree_partnership_scroll {
+	margin:10px 0;
+	height:280px;
+    border:1px solid #cdcdcd;
+    overflow-y:scroll;
+}
+.agree_partnership_scroll pre {
+    font-family: "NotoSansKR", Arial, Helvetica, sans-serif;
+    padding:20px;
+    color:#666666;
+    font-weight:300;
+    line-height:22px;
+    white-space:pre-wrap;
+}
+.agree_partnership_scroll pre em {
+	color:#333;
+	font-size:16px;
+	font-weight:600
+}
+.agree_partnership_scroll pre b {
+	color:#333;
+	font-weight:600
+}
+/*약관 추가 css*/
+.agree_scroll	{
+	font-family: "NotoSansKR", Arial, Helvetica, sans-serif;
+   padding: 20px;
+   color: #666666;
+   font-size: 0.98em;
+   font-weight: 300;
+   line-height: 24px;
+}
+.agree_scroll strong:first-child	{
+	margin-top:0;
+}
+.agree_scroll strong	{
+	display:block;
+	margin:10px 0;
+}
+.agree_scroll p	{
+	margin-bottom:20px;
+}
+.agree_tb	{
+	width:100%;
+	border-top:2px solid #ccc;
+	border-collapse:collapse;
+	border-spacing: 0;
+	margin-top:10px;
+}
+.agree_tb th {
+	/*font-weight:500;*/
+	/*text-align:center;*/
+	border:1px solid #eee;
+	border-collapse:collapse;
+	padding:5px;
+	background:#f9f9f9;
+}
+.agree_tb td {
+	text-align:center;
+	border:1px solid #eee;
+	border-collapse:collapse;
+	padding:5px;
+}

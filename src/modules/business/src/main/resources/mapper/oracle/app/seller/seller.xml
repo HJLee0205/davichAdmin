@@ -1,0 +1,960 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="seller">
+
+    <sql id="selectSellerWhere">
+        <where>
+            SITE_NO = #{siteNo}
+            AND DEL_YN = 'N'
+			<!-- 검색어 조건 -->
+            <if test="searchWords != null and searchWords != ''">
+                <choose>
+                    <when test = "searchType eq 'name'">
+                        AND SELLER_NM LIKE '%'||#{searchSellerNm}||'%'
+                    </when>
+                    <when test = "searchType eq 'id'">
+                        AND SELLER_ID LIKE '%'||#{searchSellerId}||'%'
+                    </when>
+                    <when test = "searchType eq 'email'">
+                        AND MANAGER_EMAIL LIKE '%'||#{searchManagerEmail}||'%'
+                    </when>
+                    <when test = "searchType eq 'tel'">
+                        AND MANAGER_TELNO LIKE '%'||#{searchManagerTelNo}||'%'
+                    </when>
+                    <when test = "searchType eq 'all'">
+                        AND (
+                             SELLER_ID LIKE '%'||#{searchSellerId}||'%' OR
+                             SELLER_NM LIKE '%'||#{searchSellerNm}||'%' OR
+                             MANAGER_TELNO LIKE '%'||#{searchManagerTelNo}||'%' OR
+                             MANAGER_EMAIL LIKE '%'||#{searchManagerEmail}||'%'
+                             )
+                    </when>
+                    <otherwise>
+						<choose>
+							<when test="searchSellerId != null and searchSellerId != ''">
+								AND (
+								SELLER_ID = #{searchSellerId} OR
+								SELLER_NM LIKE '%'||#{searchWords}||'%' OR
+								MANAGER_NM LIKE '%'||#{searchWords}||'%' OR
+								MANAGER_TELNO LIKE '%'||#{searchWords}||'%' OR
+								MANAGER_MOBILE_NO LIKE '%'||#{searchWords}||'%'
+								)
+							</when>
+							<otherwise>
+								AND (
+								STORE_INQUIRY_CONTENT LIKE '%'||#{searchWords}||'%' OR
+								SELLER_NM LIKE '%'||#{searchWords}||'%' OR
+								MANAGER_NM LIKE '%'||#{searchWords}||'%'
+								)
+							</otherwise>
+						</choose>
+					</otherwise>
+                </choose>
+            </if>
+
+            <!-- 거래상태 조건 -->
+            <if test="statusCds != null and statusCds != ''">
+				AND STATUS_CD IN <foreach collection="statusCds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+			</if>
+			<if test="statusCd != null and statusCd != ''">
+				and STATUS_CD = #{statusCd}
+			</if>
+
+	        <!-- 승인일자 시작일 조건 -->
+	        <if test="fromApvDt != null and fromApvDt != ''">
+	          <![CDATA[
+	            AND APRV_DTTM >= TO_DATE(#{fromApvDt}, 'YYYY-MM-DD')
+	          ]]>
+	          </if>
+
+	        <!-- 승인일자 종료일 조건 -->
+	        <if test="toApvDt != null and toApvDt != ''">
+	          <![CDATA[
+	            AND APRV_DTTM < TO_DATE(#{toApvDt}, 'YYYY-MM-DD') + 1
+	          ]]>
+	        </if>
+
+			<!-- 입점 문의 구분 코드 조건 -->
+			<if test="storeInquiryGbCds != null and storeInquiryGbCds != ''">
+				AND STORE_INQUIRY_GB_CD IN <foreach collection="storeInquiryGbCds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+			</if>
+			<if test="storeInquiryGbCd != null and storeInquiryGbCd != ''">
+				and STORE_INQUIRY_GB_CD = #{storeInquiryGbCd}
+			</if>
+
+			<!-- 등록일 조건 -->
+			<if test="fromRegDt != null and fromRegDt != ''">
+				<![CDATA[
+				AND REG_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+            	]]>
+			</if>
+			<if test="toRegDt != null and toRegDt != ''">
+				<![CDATA[
+				AND REG_DTTM <= TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 0.99999
+            	]]>
+			</if>
+        </where>
+    </sql>
+
+
+    <select id="selectSellerList" resultType="SellerVO">
+    /* seller.selectSellerList */
+	      SELECT SELLER_NO,
+				 SITE_NO,
+				 SELLER_ID,
+				 SELLER_NM,
+				 PW,
+				 CEO_NM,
+				 BIZ_REG_NO,
+				 FARM_INTRO,
+				 PAYMENT_ACT_NM,
+				 PAYMENT_BANK,
+				 fn_getCodeNm('BANK_CD', PAYMENT_BANK) PAYMENT_BANK_NM,
+				 PAYMENT_ACT_NO,
+				 BSNS_CDTS,
+				 ST,
+				 DLGT_TEL,
+				 MOBILE_NO,
+				 FAX,
+				 EMAIL,
+				 POST_NO,
+				 ADDR,
+				 ADDR_DTL,
+				 RETADRSS_POST_NO,
+				 RETADRSS_ADDR,
+				 RETADRSS_DTL_ADDR,
+				 TAXBILL_RECV_MAIL,
+				 HOMEPAGE_URL,
+				 MANAGER_NM,
+				 MANAGER_TELNO,
+				 MANAGER_MOBILE_NO,
+				 MANAGER_POS,
+				 MANAGER_EMAIL,
+				 COURIER_CD,
+				 fn_getCodeNm('COURIER_CD', COURIER_CD) COURIER_CD_NM,
+				 DLVR_GB,
+				 DLVR_AMT,
+				 CHRG_SET_AMT,
+				 CHRG_DLVR_AMT,
+				 STATUS_CD,
+				 BIZ_FILE_PATH,
+				 BIZ_FILE_NM,
+				 BIZ_ORG_FILE_NM,
+				 BK_COPY_FILE_PATH,
+				 BK_COPY_FILE_NM,
+				 BK_COPY_ORG_FILE_NM,
+				 ETC_FILE_PATH,
+				 ETC_FILE_NM,
+				 ETC_ORG_FILE_NM,
+				 CEO_FILE_PATH,
+				 CEO_FILE_NM,
+				 CEO_ORG_FILE_NM,
+				 REGR_NO,
+				 REG_DTTM,
+				 UPDR_NO,
+				 UPD_DTTM
+	        FROM TS_SELLER
+        <include refid="selectSellerWhere" />
+        ORDER BY SELLER_NM
+    </select>
+
+
+    <select id="selectSellerPaging" resultType="SellerVO">
+        /* seller.selectSellerPaging */
+        SELECT *
+        FROM
+        (
+        	select ROWNUM AS PAGING_NUM, T.tot_cnt - T.SORT_NUM + 1 as ROW_NUM, T.*
+        	FROM
+        	(
+				select AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+							      SELECT SELLER_NO,
+										 SITE_NO,
+										 SELLER_ID,
+										 SELLER_NM,
+										 SELLER_CMS_RATE,
+										 PW,
+										 CEO_NM,
+										 BIZ_REG_NO,
+										 FARM_INTRO,
+										 PAYMENT_ACT_NM,
+										 PAYMENT_BANK,
+										 PAYMENT_ACT_NO,
+										 BSNS_CDTS,
+										 ST,
+										 DLGT_TEL,
+										 MOBILE_NO,
+										 FAX,
+										 EMAIL,
+										 POST_NO,
+										 ADDR,
+										 ADDR_DTL,
+										 RETADRSS_POST_NO,
+										 RETADRSS_ADDR,
+										 RETADRSS_DTL_ADDR,
+										 TAXBILL_RECV_MAIL,
+										 HOMEPAGE_URL,
+										 MANAGER_NM,
+										 MANAGER_TELNO,
+										 MANAGER_MOBILE_NO,
+										 MANAGER_POS,
+										 MANAGER_EMAIL,
+										 COURIER_CD,
+										 DLVR_GB,
+										 DLVR_AMT,
+										 CHRG_SET_AMT,
+										 CHRG_DLVR_AMT,
+										 STATUS_CD,
+										 fn_getCodeNm('STATUS_CD', STATUS_CD) STATUS_NM,
+										 BIZ_FILE_PATH,
+										 BIZ_FILE_NM,
+										 BIZ_ORG_FILE_NM,
+										 BK_COPY_FILE_PATH,
+										 BK_COPY_FILE_NM,
+										 BK_COPY_ORG_FILE_NM,
+										 ETC_FILE_PATH,
+										 ETC_FILE_NM,
+										 ETC_ORG_FILE_NM,
+										 CEO_FILE_PATH,
+										 CEO_FILE_NM,
+										 CEO_ORG_FILE_NM,
+										 REGR_NO,
+										 REG_DTTM,
+										 TO_CHAR(REG_DTTM, 'YYYY-MM-DD HH24:MI:SS') REG_DT,
+										 UPDR_NO,
+										 UPD_DTTM,
+										 fn_getCodeNm('STORE_INQUIRY_GB_CD', STORE_INQUIRY_GB_CD) STORE_INQUIRY_GB_CD_NM,
+										 STORE_INQUIRY_CONTENT,
+										 case when STORE_INQUIRY_REPLY is null then '미완료' else '완료' end as REPLY_STATUS_YN_NM,
+										 case when APRV_DTTM is null then 'N' else 'Y' end as APRV_YN
+							        FROM TS_SELLER
+							        <include refid="selectSellerWhere" />
+							        <include refid="common.sortSql" />
+					) A
+				) AA
+			) T
+		)
+		<include refid="common.pageSql" />
+
+    </select>
+
+    <select id="selectSellerPagingTotalCount" resultType="Integer">
+        /* seller.selectSellerPagingTotalCount */
+        SELECT  count(*)
+        FROM    TS_SELLER
+        WHERE   SITE_NO = #{siteNo}
+          AND   DEL_YN = 'N'
+    </select>
+
+    <select id="selectSellerPagingCount" resultType="Integer">
+        /* design.bannerManage.selectBannerPagingCount */
+        SELECT  count(*)
+        FROM    TS_SELLER
+        <include refid="selectSellerWhere" />
+    </select>
+
+    <select id="selectSellerDtl" resultType="SellerVO">
+        /* seller.selectSeller */
+	      SELECT SELLER_NO,
+				 SITE_NO,
+				 SELLER_ID,
+				 SELLER_NM,
+				 PW,
+				 CEO_NM,
+				 BIZ_REG_NO,
+				 FARM_INTRO,
+				 PAYMENT_ACT_NM,
+				 PAYMENT_BANK,
+				 fn_getCodeNm('BANK_CD', PAYMENT_BANK) PAYMENT_BANK_NM,
+				 PAYMENT_ACT_NO,
+				 BSNS_CDTS,
+				 ST,
+				 DLGT_TEL,
+				 MOBILE_NO,
+				 FAX,
+				 EMAIL,
+				 POST_NO,
+				 ADDR,
+				 ADDR_DTL,
+				 RETADRSS_POST_NO,
+				 RETADRSS_ADDR,
+				 RETADRSS_DTL_ADDR,
+				 TAXBILL_RECV_MAIL,
+				 HOMEPAGE_URL,
+				 MANAGER_NM,
+				 MANAGER_TELNO,
+				 MANAGER_MOBILE_NO,
+				 MANAGER_POS,
+				 MANAGER_EMAIL,
+				 COURIER_CD,
+				 fn_getCodeNm('COURIER_CD', COURIER_CD) COURIER_CD_NM,
+				 DLVR_GB,
+				 DLVR_AMT,
+				 CHRG_SET_AMT,
+				 CHRG_DLVR_AMT,
+				 STATUS_CD,
+				 BIZ_FILE_PATH,
+				 BIZ_FILE_NM,
+				 BIZ_ORG_FILE_NM,
+				 BK_COPY_FILE_PATH,
+				 BK_COPY_FILE_NM,
+				 BK_COPY_ORG_FILE_NM,
+				 ETC_FILE_PATH,
+				 ETC_FILE_NM,
+				 ETC_ORG_FILE_NM,
+				 CEO_FILE_PATH,
+				 CEO_FILE_NM,
+				 CEO_ORG_FILE_NM,
+				 MANAGER_MEMO,
+				 SELLER_CMS_RATE,
+				 RECOM_PVD_RATE,
+				 SELLER_SVMN_GB_CD,
+				 SELLER_SVMN_AMT,
+				 SELLER_SVMN_MAX_USE_RATE,
+				 REGR_NO,
+				 REG_DTTM,
+				 UPDR_NO,
+				 UPD_DTTM,
+				 STORE_INQUIRY_GB_CD,
+				 fn_getCodeNm('STORE_INQUIRY_GB_CD', STORE_INQUIRY_GB_CD) STORE_INQUIRY_GB_CD_NM,
+				 STORE_INQUIRY_CONTENT,
+				 REF_FILE_PATH,
+				 REF_FILE_NM,
+				 REF_ORG_FILE_NM,
+				 SVMN_LOADRATE,
+				 STORE_INQUIRY_REPLY,
+				 REF_FILE_SIZE,
+				 case when APRV_DTTM is null then 'N' else 'Y' end as APRV_YN
+	        FROM TS_SELLER
+           WHERE SITE_NO = #{siteNo}
+            <if test="sellerNo != null and sellerNo != ''">
+   				AND SELLER_NO = #{sellerNo}
+            </if>
+
+	</select>
+
+    <insert id="insertSellerInfo" parameterType="sellerVO" >
+        /* seller.insertSellerInfo */
+		INSERT INTO ts_seller
+		(
+		 SELLER_NO,
+		 SITE_NO,
+		 SELLER_ID,
+		 SELLER_NM,
+		 PW,
+		 CEO_NM,
+		 BIZ_REG_NO,
+		 FARM_INTRO,
+		 PAYMENT_ACT_NM,
+		 PAYMENT_BANK,
+		 PAYMENT_ACT_NO,
+		 BSNS_CDTS,
+		 ST,
+		 DLGT_TEL,
+		 MOBILE_NO,
+		 FAX,
+		 EMAIL,
+		 POST_NO,
+		 ADDR,
+		 ADDR_DTL,
+		 RETADRSS_POST_NO,
+		 RETADRSS_ADDR,
+		 RETADRSS_DTL_ADDR,
+		 TAXBILL_RECV_MAIL,
+		 HOMEPAGE_URL,
+		 MANAGER_NM,
+		 MANAGER_TELNO,
+		 MANAGER_MOBILE_NO,
+		 MANAGER_POS,
+		 MANAGER_EMAIL,
+		 COURIER_CD,
+		 DLVR_GB,
+		 DLVR_AMT,
+		 CHRG_SET_AMT,
+		 CHRG_DLVR_AMT,
+		 STATUS_CD,
+		 BIZ_FILE_PATH,
+		 BIZ_FILE_NM,
+		 BIZ_ORG_FILE_NM,
+		 BK_COPY_FILE_PATH,
+		 BK_COPY_FILE_NM,
+		 BK_COPY_ORG_FILE_NM,
+		 ETC_FILE_PATH,
+		 ETC_FILE_NM,
+		 ETC_ORG_FILE_NM,
+		 CEO_FILE_PATH,
+		 CEO_FILE_NM,
+		 CEO_ORG_FILE_NM,
+		 MANAGER_MEMO,
+		 SELLER_CMS_RATE,
+		 RECOM_PVD_RATE,
+		 SELLER_SVMN_GB_CD,
+		 SELLER_SVMN_AMT,
+		 SELLER_SVMN_MAX_USE_RATE,
+		 APRV_DTTM,
+		 REGR_NO,
+		 REG_DTTM,
+		 UPDR_NO,
+		 UPD_DTTM,
+		 STORE_INQUIRY_GB_CD,
+		 STORE_INQUIRY_CONTENT,
+		 REF_FILE_PATH,
+		 REF_FILE_NM,
+		 REF_ORG_FILE_NM,
+		 SVMN_LOADRATE,
+		 REF_FILE_SIZE
+		)
+  		VALUES
+  		(
+  		fn_getSeq(0, 'SELLER_NO'),
+		#{siteNo},
+		#{sellerId},
+		#{sellerNm},
+		#{pw},
+		#{ceoNm},
+		#{bizRegNo},
+		#{farmIntro},
+		#{paymentActNm},
+		#{paymentBank},
+		#{paymentActNo},
+		#{bsnsCdts},
+		#{st},
+		#{dlgtTel},
+		#{mobileNo},
+		#{fax},
+		#{email},
+		#{postNo},
+		#{addr},
+		#{addrDtl},
+		#{retadrssPostNo},
+		#{retadrssAddr},
+		#{retadrssDtlAddr},
+		#{taxbillRecvMail},
+		#{homepageUrl},
+		#{managerNm},
+		#{managerTelno},
+		#{managerMobileNo},
+		#{managerPos},
+		#{managerEmail},
+		#{courierCd},
+		#{dlvrGb},
+		#{dlvrAmt},
+		#{chrgSetAmt},
+		#{chrgDlvrAmt},
+		'03',
+		#{bizFilePath},
+		#{bizFileNm},
+		#{bizOrgFileNm},
+		#{bkCopyFilePath},
+		#{bkCopyFileNm},
+		#{bkCopyOrgFileNm},
+		#{etcFilePath},
+		#{etcFileNm},
+		#{etcOrgFileNm},
+		#{ceoFilePath},
+		#{ceoFileNm},
+		#{ceoOrgFileNm},
+		#{managerMemo},
+		#{sellerCmsRate},
+		#{recomPvdRate},
+		#{sellerSvmnGbCd},
+		#{sellerSvmnAmt},
+		#{sellerSvmnMaxUseRate},
+  		sysdate,
+		#{regrNo},
+		sysdate,
+		#{updrNo},
+		sysdate,
+		#{storeInquiryGbCd},
+		#{storeInquiryContent},
+		#{refFilePath},
+		#{refFileNm},
+		#{refOrgFileNm},
+		#{svmnLoadrate},
+	    #{refFileSize}
+  		)
+    </insert>
+
+    <update id="updateSellerInfo">
+        /* seller.updateSellerInfo */
+        UPDATE  ts_seller
+           SET
+                <if test="sellerId != null and sellerId != ''">
+					SELLER_ID = #{sellerId},
+				</if>
+				<if test="pw != null and pw != ''">
+                   PW = #{pw},
+                </if>
+				 SELLER_NM      = #{sellerNm},
+				 CEO_NM      	= #{ceoNm},
+				 BIZ_REG_NO     = #{bizRegNo},
+				 FARM_INTRO     = #{farmIntro},
+				 PAYMENT_ACT_NM = #{paymentActNm},
+				 PAYMENT_BANK   = #{paymentBank},
+				 PAYMENT_ACT_NO = #{paymentActNo},
+				 BSNS_CDTS      = #{bsnsCdts},
+				 ST      		= #{st},
+				 DLGT_TEL      	= #{dlgtTel},
+				 MOBILE_NO      = #{mobileNo},
+				 FAX      		= #{fax},
+				 EMAIL      	= #{email},
+				 POST_NO      	= #{postNo},
+				 ADDR      		= #{addr},
+				 ADDR_DTL      	= #{addrDtl},
+				 RETADRSS_POST_NO  	= #{retadrssPostNo},
+				 RETADRSS_ADDR      = #{retadrssAddr},
+				 RETADRSS_DTL_ADDR  = #{retadrssDtlAddr},
+				 TAXBILL_RECV_MAIL  = #{taxbillRecvMail},
+				 HOMEPAGE_URL       = #{homepageUrl},
+				 MANAGER_NM         = #{managerNm},
+				 MANAGER_TELNO      = #{managerTelno},
+				 MANAGER_MOBILE_NO  = #{managerMobileNo},
+				 MANAGER_POS        = #{managerPos},
+				 MANAGER_EMAIL      = #{managerEmail},
+				 COURIER_CD      	= #{courierCd},
+				 DLVR_GB      		= #{dlvrGb},
+				 DLVR_AMT      		= #{dlvrAmt},
+				 CHRG_SET_AMT      	= #{chrgSetAmt},
+				 CHRG_DLVR_AMT      = #{chrgDlvrAmt},
+				<if test="statusCd != null and statusCd != ''">
+				 	STATUS_CD      	= #{statusCd},
+				</if>
+				<if test="bizFileNm != null and bizFileNm != ''">
+					 BIZ_FILE_PATH      = #{bizFilePath},
+					 BIZ_FILE_NM      	= #{bizFileNm},
+					 BIZ_ORG_FILE_NM     = #{bizOrgFileNm},
+				 </if>
+				 <if test="bkCopyFileNm != null and bkCopyFileNm != ''">
+					 BK_COPY_FILE_PATH  = #{bkCopyFilePath},
+					 BK_COPY_FILE_NM    = #{bkCopyFileNm},
+					 BK_COPY_ORG_FILE_NM = #{bkCopyOrgFileNm},
+				 </if>
+				 <if test="etcFileNm != null and etcFileNm != ''">
+					 ETC_FILE_PATH       = #{etcFilePath},
+					 ETC_FILE_NM      	 = #{etcFileNm},
+					 ETC_ORG_FILE_NM     = #{etcOrgFileNm},
+				 </if>
+				 <if test="ceoFileNm != null and ceoFileNm != ''">
+					 CEO_FILE_PATH       = #{ceoFilePath},
+					 CEO_FILE_NM      	 = #{ceoFileNm},
+					 CEO_ORG_FILE_NM     = #{ceoOrgFileNm},
+				 </if>
+				 MANAGER_MEMO      		 = #{managerMemo},
+				 SELLER_CMS_RATE     = #{sellerCmsRate},
+				 RECOM_PVD_RATE     = #{recomPvdRate},
+				 SVMN_LOADRATE		= #{svmnLoadrate},
+				 SELLER_SVMN_GB_CD  = #{sellerSvmnGbCd},
+				 SELLER_SVMN_AMT  =  #{sellerSvmnAmt},
+				 SELLER_SVMN_MAX_USE_RATE  = #{sellerSvmnMaxUseRate},
+				 UPDR_NO      		 = #{updrNo},
+				 UPD_DTTM            = sysdate
+				 <if test="storeInquiryGbCd != null and storeInquiryGbCd != ''">
+					 ,STORE_INQUIRY_GB_CD       = #{storeInquiryGbCd}
+				 </if>
+				 <if test="storeInquiryContent != null and storeInquiryContent != ''">
+					 ,STORE_INQUIRY_CONTENT       = #{storeInquiryContent}
+				 </if>
+				 <if test="refFileNm != null and refFileNm != ''">
+					 ,REF_FILE_PATH       = #{refFilePath}
+					 ,REF_FILE_NM      	 = #{refFileNm}
+					 ,REF_ORG_FILE_NM     = #{refOrgFileNm}
+					 ,REF_FILE_SIZE        = #{refFileSize}
+				 </if>
+        WHERE   SITE_NO     = #{siteNo}
+        AND     seller_no   = #{sellerNo}
+    </update>
+
+    <delete id="deleteSeller">
+        /* seller.deleteSeller */
+	        UPDATE ts_seller
+	        SET DEL_YN = 'Y'
+	        WHERE   SITE_NO     = #{siteNo}
+	        AND     SELLER_NO   = #{sellerNo}
+    </delete>
+
+
+    <!-- 아이디 중복확인 -->
+    <select id="checkDuplicationId" parameterType="sellerSO" resultType="Integer">
+        /* member.info.checkDuplicationId */
+		SELECT COUNT(MEMBER.LOGIN_ID) FROM
+		(
+		SELECT LOGIN_ID
+		FROM TC_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{sellerId}
+		UNION ALL
+		SELECT LOGIN_ID
+		FROM TC_WITHDRAWAL_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{sellerId}
+		UNION ALL
+		SELECT LOGIN_ID
+		FROM TC_DORMANT_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{sellerId}
+
+		UNION ALL
+		SELECT SELLER_ID
+		  FROM TS_SELLER
+         WHERE SITE_NO = #{siteNo}
+           AND SELLER_ID = #{sellerId}
+		) MEMBER
+    </select>
+
+    <delete id="deleteAtchFile">
+        /* seller."deleteAtchFile" */
+        UPDATE ts_seller
+           SET
+				<if test="fileGbn eq 'biz'">
+					BIZ_FILE_PATH = null,
+					BIZ_FILE_NM = null,
+					BIZ_ORG_FILE_NM = null
+				</if>
+				<if test="fileGbn eq 'bk'">
+					BK_COPY_FILE_PATH = null,
+					BK_COPY_FILE_NM = null,
+					BK_COPY_ORG_FILE_NM = null
+				</if>
+				<if test="fileGbn eq 'etc'">
+					ETC_FILE_PATH = null,
+					ETC_FILE_NM = null,
+					ETC_ORG_FILE_NM = null
+				</if>
+				<if test="fileGbn eq 'ceo'">
+					CEO_FILE_PATH = null,
+					CEO_FILE_NM = null,
+					CEO_ORG_FILE_NM = null
+				</if>
+				<if test="fileGbn eq 'ref'">
+					REF_FILE_PATH = null,
+					REF_FILE_NM = null,
+					REF_ORG_FILE_NM = null,
+					REF_FILE_SIZE = null
+				</if>
+        WHERE   SITE_NO     = #{siteNo}
+        AND     SELLER_NO   = #{sellerNo}
+    </delete>
+
+    <select id="selectAtchFile" resultType="FileVO">
+        /* seller.selectAtchFile */
+	      SELECT
+	      		 CASE WHEN #{fileGbn} = 'biz' THEN BIZ_FILE_PATH
+	      		      WHEN #{fileGbn} = 'bk' THEN BK_COPY_FILE_PATH
+	      		      WHEN #{fileGbn} = 'etc' THEN ETC_FILE_PATH
+	      		      WHEN #{fileGbn} = 'ceo' THEN CEO_FILE_PATH
+	      		      WHEN #{fileGbn} = 'ref' THEN REF_FILE_PATH
+	      		      ELSE '' END file_path,
+	      		 CASE WHEN #{fileGbn} = 'biz' THEN BIZ_FILE_NM
+	      		      WHEN #{fileGbn} = 'bk' THEN BK_COPY_FILE_NM
+	      		      WHEN #{fileGbn} = 'etc' THEN ETC_FILE_NM
+	      		      WHEN #{fileGbn} = 'ceo' THEN CEO_FILE_NM
+	      		      WHEN #{fileGbn} = 'ref' THEN REF_FILE_NM
+	      		      ELSE '' END file_name,
+	      		 CASE WHEN #{fileGbn} = 'biz' THEN BIZ_ORG_FILE_NM
+	      		      WHEN #{fileGbn} = 'bk' THEN BK_COPY_ORG_FILE_NM
+	      		      WHEN #{fileGbn} = 'etc' THEN ETC_ORG_FILE_NM
+	      		      WHEN #{fileGbn} = 'ceo' THEN CEO_ORG_FILE_NM
+	      		      WHEN #{fileGbn} = 'ref' THEN REF_ORG_FILE_NM
+	      		      ELSE '' END file_org_name
+	        FROM TS_SELLER
+           WHERE SITE_NO = #{siteNo}
+             AND SELLER_NO = #{sellerNo}
+    </select>
+
+    <update id="updateSellerSt">
+        /* seller.updateSellerSt */
+		UPDATE  TS_SELLER
+		SET  STATUS_CD = #{statusCd},
+		     <if test="managerMemo != null and managerMemo != '' and managerMemo eq 'approve'.toString()">
+			 REG_DTTM = sysdate,
+			 </if>
+			 UPDR_NO = #{updrNo},
+			 <if test="aprvYn eq 'N'.toString() and statusCd eq '02'.toString()">
+			 APRV_DTTM = sysdate,
+			 </if>
+			 UPD_DTTM = sysdate
+		WHERE SITE_NO = #{siteNo}
+		AND SELLER_NO = #{sellerNo}
+    </update>
+
+    <!-- 회원 상세 조회 -->
+    <select id="viewMemInfoDtl" parameterType="memberManageSO" resultType="SellerVO">
+	   SELECT SELLER_NO,
+	               SELLER_NM,
+	               SELLER_ID
+	          FROM TS_SELLER A
+	         WHERE SITE_NO = #{siteNo}
+	           AND SELLER_NO = #{memberNo}
+    </select>
+
+    <!-- 배송관련 설정정보 조회 -->
+    <select id="selectDeliveryConfig" parameterType="SellerPO" resultType="deliveryConfigVO">
+        /* setup.seller.selectDeliveryConfig - 배송관련 설정정보 조회 */
+            SELECT
+                  ts.COURI_USE_YN
+				, ts.DIRECT_VISIT_RECPT_YN
+				, ts.DEFAULT_DLVRC_TYPE_CD
+				, ts.DEFAULT_DLVRC
+				, ts.DEFAULT_DLVR_MIN_AMT
+				, ts.DEFAULT_DLVR_MIN_DLVRC
+				, ts.DLVR_PAYMENT_KIND_CD
+				, ts.REG_DTTM
+            FROM    TS_SELLER_DLVR_POLICY ts
+            WHERE   ts.SELLER_NO = #{sellerNo}
+    </select>
+
+    <!-- 배송관련 설정정보 수정 -->
+    <update id="updateDeliveryConfig">
+    	/* setup.delivery.updateDeliveryConfig - 배송관련 설정정보 등록 수정 */
+    	MERGE INTO TS_SELLER_DLVR_POLICY
+		USING DUAL
+		ON (SELLER_NO = #{sellerNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          COURI_USE_YN = #{couriUseYn}
+		        , DIRECT_VISIT_RECPT_YN = #{directVisitRecptYn}
+		        , DEFAULT_DLVRC_TYPE_CD = #{defaultDlvrcTypeCd}
+		        , DEFAULT_DLVRC = #{defaultDlvrc}
+		        , DEFAULT_DLVR_MIN_AMT = #{defaultDlvrMinAmt}
+		        , DEFAULT_DLVR_MIN_DLVRC = #{defaultDlvrMinDlvrc}
+		        , DLVR_PAYMENT_KIND_CD = #{dlvrPaymentKindCd}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SELLER_NO
+				, COURI_USE_YN
+				, DIRECT_VISIT_RECPT_YN
+				, DEFAULT_DLVRC_TYPE_CD
+				, DEFAULT_DLVRC
+				, DEFAULT_DLVR_MIN_AMT
+				, DEFAULT_DLVR_MIN_DLVRC
+				, DLVR_PAYMENT_KIND_CD
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{sellerNo}
+		        , #{couriUseYn}
+				, #{directVisitRecptYn}
+				, #{defaultDlvrcTypeCd}
+				, #{defaultDlvrc}
+				, #{defaultDlvrMinAmt}
+				, #{defaultDlvrMinDlvrc}
+				, #{dlvrPaymentKindCd}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+ <select id="selectDeliveryListPagingTotalCount" resultType="Integer">
+        /* goods.delivery.selectDeliveryListPagingTotalCount - 배송지역 설정목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_AREA_DLVR_SET tad
+         WHERE SITE_NO = #{siteNo}
+         AND SELLER_NO = #{sellerNo}
+    </select>
+
+    <select id="selectDeliveryListPagingCount" resultType="Integer">
+        /* goods.delivery.selectDeliveryListPagingCount - 배송지역 설정목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_AREA_DLVR_SET tad
+         WHERE SITE_NO = #{siteNo}
+         AND SELLER_NO = #{sellerNo}
+    </select>
+
+     <!-- 배송지역 설정목록 조회(페이징) -->
+    <select id="selectDeliveryListPaging" parameterType="long" resultType="deliveryAreaVO">
+        /* seller.delivery.selectDeliveryListPaging - 배송지역 설정목록 조회(페이징) */
+        SELECT *
+        FROM
+        (
+		    select A.*,  count(*) over() as tot_cnt, ROWNUM AS PAGING_NUM, ROWNUM
+		    from
+		    (
+	             SELECT
+	                      SITE_NO
+						, AREA_DLVR_SET_NO
+						, POST_NO
+						, DLVRC
+						, NUM_ADDR
+						, ROADNM_ADDR
+						, AREA_NM
+						, REG_DTTM
+                    FROM  TS_AREA_DLVR_SET tad
+                    WHERE SITE_NO = #{siteNo}
+                    AND SELLER_NO = #{sellerNo}
+              <include refid="common.sortSql" />
+			) A
+		)
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectCountDeliveryArea" resultType="Integer">
+        /* seller.delivery.selectCountDeliveryArea - 배송지역 설정여부 확인 */
+            SELECT count(1)
+              FROM  TS_AREA_DLVR_SET
+             WHERE SITE_NO = #{siteNo}
+               AND POST_NO = #{postNo}
+               AND SELLER_NO = #{sellerNo}
+    </select>
+
+     <!-- 배송지역 설정정보 수정 -->
+    <update id="updateDeliveryArea">
+    	/* seller.delivery.updateDeliveryArea - 배송지역 설정정보 등록 수정 */
+    	MERGE INTO TS_AREA_DLVR_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND AREA_DLVR_SET_NO = #{areaDlvrSetNo} AND SELLER_NO=#{sellerNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          POST_NO = #{postNo}
+				, DLVRC = #{dlvrc}
+				, NUM_ADDR = #{numAddr}
+				, ROADNM_ADDR = #{roadnmAddr}
+				, AREA_NM = #{areaNm}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+		        , SELLER_NO
+				, AREA_DLVR_SET_NO
+				, POST_NO
+				, DLVRC
+				, NUM_ADDR
+				, ROADNM_ADDR
+				, AREA_NM
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+				  #{siteNo}
+				, #{sellerNo}
+				, #{areaDlvrSetNo}
+<!--
+				  <if test="areaDlvrSetNo == null or areaDlvrSetNo == ''">
+					, fn_getSeq(#{siteNo}, 'TS_AREA_DLVR_SET')
+			      </if>
+			      <if test="areaDlvrSetNo != null and areaDlvrSetNo != ''">
+		            , #{areaDlvrSetNo}
+		          </if>
+-->
+				, #{postNo}
+				, #{dlvrc}
+				, #{numAddr}
+				, #{roadnmAddr}
+				, #{areaNm}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+     <!-- 기본 배송지역 설정정보 적용 -->
+    <update id="updateApplyDefaultDeliveryArea">
+    /* seller.delivery.updateApplyDefaultDeliveryArea - 기본 배송지역 설정정보 적용 */
+     <![CDATA[
+    {call
+		declare
+		begin
+		DELETE FROM TS_AREA_DLVR_SET WHERE SITE_NO = #{siteNo} AND SELLER_NO=#{sellerNo};
+
+	 	INSERT INTO TS_AREA_DLVR_SET
+     		(SITE_NO, SELLER_NO, AREA_DLVR_SET_NO, POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, REGR_NO, REG_DTTM)
+        	SELECT #{siteNo},#{sellerNo}, fn_getSeq(#{siteNo}, 'TS_AREA_DLVR_SET'), POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, #{regrNo}, sysdate
+          	FROM TA_AREA_DLVR_DEFAULT;
+		end
+		}
+		   ]]>
+    </update>
+
+     <!-- 배송지역 설정정보 삭제 -->
+    <delete id="deleteDeliveryArea">
+        /* seller.delivery.deleteDeliveryArea - 배송지역 설정정보 삭제 */
+        DELETE  FROM TS_AREA_DLVR_SET
+        WHERE   SITE_NO = #{siteNo}
+        AND     AREA_DLVR_SET_NO = #{areaDlvrSetNo}
+        AND SELLER_NO=#{sellerNo}
+    </delete>
+
+      <!-- 배송지역 설정정보 모두 삭제 -->
+    <delete id="deleteAllDeliveryArea">
+        /* seller.delivery.deleteAllDeliveryArea - 배송지역 설정정보 모두 삭제 */
+        DELETE  FROM TS_AREA_DLVR_SET
+        WHERE   SITE_NO = #{siteNo}
+        AND SELLER_NO=#{sellerNo}
+    </delete>
+
+	<!-- 입점 문의 답변 등록 -->
+	<update id="insertSellerReply">
+		update TS_SELLER
+		set STORE_INQUIRY_REPLY = #{storeInquiryReply},
+		    <if test="saveType eq 'I'.toString()">
+				REPLY_REGR_NO = #{replyRegrNo},
+				REPLY_REG_DTTM = sysdate
+			</if>
+		    <if test="saveType eq 'U'.toString()">
+				REPLY_UPDR_NO = #{replyRegrNo},
+		    	REPLY_UPD_DTTM = sysdate
+			</if>
+		where SITE_NO = #{siteNo}
+		  and SELLER_NO = #{sellerNo}
+	</update>
+
+	<!-- 판매자 정보 변경 이력 조회 -->
+	<select id="selectChgLog" resultType="SellerVO">
+		select CHG_DTTM,
+			   nvl2(SELLER_ID,'판매자 ID/','')||
+			   nvl2(SELLER_NM,'업체명/','')||
+			   nvl2(PW,'비밀번호/','')||
+			   nvl2(BIZ_REG_NO,'사업자등록번호/','')||
+			   nvl2(FARM_INTRO,'판매자 소개/','')||
+			   nvl2(SELLER_CMS_RATE,'판매자 수수료율/','')||
+			   decode(SELLER_SVMN_GB_CD,null,'',
+					  decode(SELLER_SVMN_GB_CD,
+							 '1','포인트 지급 방식[비율]/',
+							 '2','포인트 지급 방식[금액]/',
+							 '포인트 지급 방식/'))||
+			   nvl2(SELLER_SVMN_AMT,'포인트 지급 수치/','')||
+			   nvl2(SELLER_SVMN_MAX_USE_RATE,'최대 사용가능 포인트/','')||
+			   nvl2(SVMN_LOADRATE,'포인트 본사부담율/','')||
+			   nvl2(PAYMENT_BANK,'결제은행/','')||
+			   nvl2(PAYMENT_ACT_NO,'결제계좌번호/','')||
+			   nvl2(PAYMENT_ACT_NM,'예금주명/','')||
+			   nvl2(BSNS_CDTS,'업태/','')||
+			   nvl2(ST,'종목/','')||
+			   nvl2(CEO_NM,'대표자명/','')||
+			   nvl2(DLGT_TEL,'대표 전화번호/','')||
+			   nvl2(MOBILE_NO,'대표 휴대폰번호/','')||
+			   nvl2(FAX,'팩스/','')||
+			   nvl2(EMAIL,'이메일/','')||
+			   nvl2(POST_NO,'주소/',
+					nvl2(ADDR,'주소/',
+						 nvl2(ADDR_DTL,'주소/','')))||
+			   nvl2(RETADRSS_POST_NO,'반품지 주소/',
+					nvl2(RETADRSS_ADDR,'반품지 주소/',
+						 nvl2(RETADRSS_DTL_ADDR,'반품지 주소/','')))||
+			   nvl2(TAXBILL_RECV_MAIL,'세금계산서 수신메일/','')||
+			   nvl2(HOMEPAGE_URL,'홈페이지/','')||
+			   nvl2(MANAGER_NM,'담당자명/','')||
+			   nvl2(MANAGER_POS,'담당자 직급/','')||
+			   nvl2(MANAGER_TELNO,'담당자 전화번호/','')||
+			   nvl2(MANAGER_MOBILE_NO,'담당자 휴대푠번호/','')||
+			   nvl2(MANAGER_EMAIL,'담당자 이메일/','')||
+			   decode(STATUS_CD,null,'',
+					  decode(STATUS_CD,
+							 '01','거래상태[승인요청]/',
+							 '02','거래상태[거래중]/',
+							 '03','거래상태[거래정지]/',''))||
+			   nvl2(BIZ_ORG_FILE_NM,'사업자 등본/','')||
+			   nvl2(BK_COPY_ORG_FILE_NM,'통장 사본/','')||
+			   nvl2(ETC_ORG_FILE_NM,'기타 파일','')||
+			   nvl2(REF_ORG_FILE_NM,'참조 파일','')
+			   as CHG_NM
+		from TS_SELLER_CHG_HIST
+		where SELLER_NO = #{sellerNo}
+		order by CHG_DTTM desc
+	</select>
+</mapper>

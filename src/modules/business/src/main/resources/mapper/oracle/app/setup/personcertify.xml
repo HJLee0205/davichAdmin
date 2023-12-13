@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.personcertify">
+    <!-- 본인인증 확인 정보 목록 정보 조회 -->
+    <select id="selectPersonCertifyConfigList" parameterType="long"
+            resultType="net.danvi.dmall.biz.app.setup.personcertify.model.PersonCertifyConfigVO">
+        /* setup.personcertify.selectPersonCertifyConfigList - 본인인증 확인 정보 목록 조회 */
+        SELECT ROWNUM, A.*
+          FROM (
+	        SELECT
+	                pcc.SITE_NO
+	              , pcc.CERTIFY_TYPE_CD
+	              , pcc.USE_YN
+	              , pcc.SITE_CD
+	              , pcc.SITE_PW
+	              , pcc.CERTIFY_FILE_PATH
+	              , pcc.MEMBER_JOIN_USE_YN
+	              , pcc.PW_FIND_USE_YN
+	              , pcc.DORMANTMEMBER_CERTIFY_USE_YN
+	              , pcc.ADULT_CERTIFY_ACCESS_USE_YN
+	        FROM    TS_PRSN_CHECK_CERTIFY pcc
+	        WHERE   pcc.SITE_NO = #{siteNo}
+          ) A
+    </select>
+
+    <select id="selectPersonCertifyConfig" parameterType="net.danvi.dmall.biz.app.setup.personcertify.model.PersonCertifyConfigVO"
+            resultType="net.danvi.dmall.biz.app.setup.personcertify.model.PersonCertifyConfigVO">
+        /* setup.personcertify.selectPersonCertifyConfig - 본인인증 확인 정보 조회 */
+            SELECT
+                    pcc.SITE_NO
+                  , pcc.CERTIFY_TYPE_CD
+                  , pcc.USE_YN
+                  , pcc.SITE_CD
+                  , pcc.SITE_PW
+                  , pcc.CERTIFY_FILE_PATH
+                  , pcc.MEMBER_JOIN_USE_YN
+                  , pcc.PW_FIND_USE_YN
+                  , pcc.DORMANTMEMBER_CERTIFY_USE_YN
+                  , pcc.ADULT_CERTIFY_ACCESS_USE_YN
+                  , pcc.REGR_NO
+                  , pcc.REG_DTTM
+                  , pcc.UPDR_NO
+                  , pcc.UPD_DTTM
+            FROM    TS_PRSN_CHECK_CERTIFY pcc
+            WHERE   pcc.SITE_NO = #{siteNo}
+            AND     pcc.CERTIFY_TYPE_CD = #{certifyTypeCd}
+    </select>
+
+    <!-- 성인인증 설정 수단 존재여부 확인 -->
+    <select id="checkAdultCertifyConfig" parameterType="net.danvi.dmall.biz.app.setup.personcertify.model.PersonCertifyConfigVO"
+            resultType="Integer">
+
+        /* setup.personcertify.checkAdultCertifyConfig - 성인인증 설정 수단 존재여부 확인 */
+        <![CDATA[
+		SELECT
+		    nvl(max(DECODE(SIGN(LENGTH(SITE_CD) - 1), 1, DECODE(SIGN(LENGTH(SITE_PW) - 1), 1, ADULT_CERTIFY_ACCESS_USE_YN, null), null)), 0)
+		FROM TS_PRSN_CHECK_CERTIFY
+		WHERE USE_YN = 'Y'
+		AND ADULT_CERTIFY_ACCESS_USE_YN = 'Y'
+		AND SITE_NO =  #{siteNo}
+		 ]]>
+    </select>
+
+    <!-- 본인인증 확인 정보 수정 -->
+    <update id="updatePersonCertifyConfig">
+    	/* setup.personcertify.updatePersonCertifyConfig - 본인인증 확인 정보 수정 */
+    	MERGE INTO TS_PRSN_CHECK_CERTIFY
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND CERTIFY_TYPE_CD = #{certifyTypeCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+				  USE_YN = #{useYn}
+				<if test="useYn != null and  useYn eq 'Y'.toString()">
+				, SITE_CD = #{siteCd}
+		        , SITE_PW = #{sitePw}
+				, CERTIFY_FILE_PATH = #{certifyFilePath}
+				, MEMBER_JOIN_USE_YN = #{memberJoinUseYn}
+				, PW_FIND_USE_YN = #{pwFindUseYn}
+				, DORMANTMEMBER_CERTIFY_USE_YN = #{dormantmemberCertifyUseYn}
+				, ADULT_CERTIFY_ACCESS_USE_YN = #{adultCertifyAccessUseYn}
+				</if>
+				, UPDR_NO = #{updrNo}
+				, UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+		        , CERTIFY_TYPE_CD
+		        , USE_YN
+		        <if test="useYn != null and  useYn eq 'Y'.toString()">
+		        , SITE_CD
+		        , SITE_PW
+		        , CERTIFY_FILE_PATH
+		        , MEMBER_JOIN_USE_YN
+		        , PW_FIND_USE_YN
+		        , DORMANTMEMBER_CERTIFY_USE_YN
+		        , ADULT_CERTIFY_ACCESS_USE_YN
+		        </if>
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{certifyTypeCd}
+		        , #{useYn}
+		        <if test="useYn != null and  useYn eq 'Y'.toString()">
+		        , #{siteCd}
+		        , #{sitePw}
+		        , #{certifyFilePath}
+		        , #{memberJoinUseYn}
+		        , #{pwFindUseYn}
+		        , #{dormantmemberCertifyUseYn}
+		        , #{adultCertifyAccessUseYn}
+		        </if>
+		        , #{updrNo}
+		        , sysdate
+		    )
+    </update>
+
+</mapper>

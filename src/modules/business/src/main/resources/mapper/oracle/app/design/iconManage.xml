@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+
+-->
+<mapper namespace="design.iconManage">
+
+    <sql id="selectIconInfoWhere">
+        <where>
+            SITE_NO = #{siteNo}
+            <if test="iconDispnm != null and iconDispnm != ''">
+                AND INSTR (ICON_DISPNM,#{iconDispnm}) > 0
+            </if>
+            <if test="fromRegDt != null and fromRegDt != ''">
+                <![CDATA[
+                AND DISP_START_DTTM <= concat(replace(#{fromRegDt},'-',''),'000000')
+                ]]>
+            </if>
+            <if test="toRegDt != null and toRegDt != ''">
+                <![CDATA[
+                AND DISP_END_DTTM >= concat(replace(#{toRegDt},'-',''),'235960')
+                ]]>
+            </if>
+            <if test="goodsTypeCd != null and goodsTypeCd != ''">
+                AND GOODS_TYPE_CD like '%'||#{goodsTypeCd}||'%'
+            </if>
+            <if test="goodsTypeCds != null and goodsTypeCds.length > 0">
+                AND <foreach collection="goodsTypeCds" item="item" open="(" close=")" separator="OR">
+                    GOODS_TYPE_CD LIKE '%'||#{item}||'%'
+                    </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectIconList" resultType="iconVO">
+    /* design.iconManage.selectIconList */
+        SELECT  ICON_NO,
+                SITE_NO,
+                GOODS_TYPE_CD,
+                ICON_DISPNM,
+                IMG_PATH,
+                replace(replace(IMG_PATH,'\\',''),'/','')||'_'||IMG_NM AS ICN_IMG_INFO,
+                ORG_IMG_NM,
+                IMG_NM,
+                IMG_SIZE,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+        FROM    TG_ICON TB
+        <include refid="selectIconInfoWhere" />
+    </select>
+
+
+    <select id="selectIconPaging" resultType="iconVO">
+        /* design.iconManage.selectIconPaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+		        SELECT  ICON_NO,
+		                SITE_NO,
+                        GOODS_TYPE_CD,
+		                ICON_DISPNM,
+		                IMG_PATH,
+		                replace(replace(IMG_PATH,'\',''),'/','')||'_'||IMG_NM AS IMG_IMG_INFO,
+		                ORG_IMG_NM,
+		                IMG_NM,
+		                IMG_SIZE,
+		                REG_DTTM,
+		                REGR_NO,
+		                UPD_DTTM,
+		                UPDR_NO
+		        FROM    TG_ICON TB
+		        <include refid="selectIconInfoWhere" />
+		        <include refid="common.sortSql" />
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectIconPagingTotalCount" resultType="Integer">
+        /* design.iconManage.selectIconPagingTotalCount */
+        SELECT  count(*)
+        FROM    TG_ICON
+        WHERE   SITE_NO = #{siteNo}
+        <!--
+        WHERE   SITE_NO = #{siteNo}
+        <include refid="selectIconInfoWhere" />
+        -->
+    </select>
+
+    <select id="selectIconPagingCount" resultType="Integer">
+        /* design.iconManage.selectIconPagingCount */
+        SELECT  count(*)
+        FROM    TG_ICON
+        <include refid="selectIconInfoWhere" />
+    </select>
+
+    <select id="selectIcon" resultType="iconVO">
+        /* design.iconManage.selectIcon */
+        SELECT  ICON_NO,
+                SITE_NO,
+                GOODS_TYPE_CD,
+                ICON_DISPNM,
+                IMG_PATH,
+                replace(replace(IMG_PATH,'\',''),'/','')||'_'||IMG_NM AS ICN_IMG_INFO,
+                ORG_IMG_NM,
+                IMG_NM,
+                IMG_SIZE,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+        FROM    TG_ICON
+        WHERE   SITE_NO = #{siteNo}
+        AND     ICON_NO = #{iconNo}
+    </select>
+
+    <select id="selectIconGoodsList" resultType="goodsVO" >
+        /* design.iconManage.selectIconGoodsList */
+        SELECT *
+        FROM
+            (
+                SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+                FROM
+                    (
+                    SELECT BB.GOODS_NO
+                         , MAX(BB.ERP_ITM_CODE)         as ERP_ITM_CODE
+                         , MAX(BB.GOODS_TYPE_CD)        AS GOODS_TYPE_CD
+                         , MAX(BB.GOODS_NM)             AS GOODS_NM
+                         , MAX(BB.GOODS_IMG_02)         AS GOODS_IMG_02
+                         , MAX(BB.BRAND_NM)             AS BRAND_NM
+                         , MAX(BB.SALE_PRICE)           AS SALE_PRICE
+                         , MAX(BB.STOCK_QTT)            AS STOCK_QTT
+                         , MAX(BB.SELLER_NM)            AS SELLER_NM
+                         , MAX(BB.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_CD
+                         , MAX(BB.GOODS_SALE_STATUS_NM) AS GOODS_SALE_STATUS_NM
+                    FROM (SELECT (SELECT MAX(ERP_ITM_CODE)
+                                    FROM TI_ERP_PRD_MAPPING TPM
+                                   WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                     AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS ERP_ITM_CODE,
+                                 GDS.GOODS_NO,
+                                 GDS.GOODS_TYPE_CD,
+                                 GDS.GOODS_SALE_STATUS_CD,
+                                 (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                                 GDS.GOODS_NM,
+                                 fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD)    AS GOODS_SALE_STATUS_NM,
+                                 fn_getGoodsImgPath(GDS.GOODS_NO, '02')                            AS GOODS_IMG_02,
+                                 fn_getBrandNm(GDS.BRAND_NO)                               AS BRAND_NM,
+                                 NVL(ITM.SALE_PRICE, 0)                                            AS SALE_PRICE,
+                                 (SELECT SUM(STOCK_QTT)
+                                  FROM TG_ITEM
+                                  WHERE GOODS_NO = GDS.GOODS_NO
+                                    AND USE_YN = 'Y')                                              AS STOCK_QTT
+                          FROM TG_GOODS GDS
+                             , TS_SITE TS
+                             , TG_GOODS_ICON TGI
+                             , TG_ITEM ITM
+                           LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                                       ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                       AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+                          WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                            AND GDS.SITE_NO = TS.SITE_NO
+                            AND GDS.SITE_NO = #{siteNo}
+                            AND GDS.DEL_YN = 'N'
+                            AND ITM.DEL_YN = 'N'
+                            AND TGI.GOODS_NO = GDS.GOODS_NO
+                            AND TGI.ICON_NO = #{iconNo}
+                        ) BB
+                    GROUP BY BB.GOODS_NO
+                    ) T
+            )
+        <include refid="common.pageSql" />
+    </select>
+    <select id="selectIconGoodsListTotalCount" resultType="Integer">
+        /* design.bannerManage.selectIconGoodsListTotalCount */
+        SELECT count(*)
+        FROM (SELECT (SELECT MAX(ERP_ITM_CODE)
+                      FROM TI_ERP_PRD_MAPPING TPM
+                      WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS ERP_ITM_CODE,
+                     GDS.GOODS_NO,
+                     GDS.GOODS_TYPE_CD,
+                     GDS.GOODS_SALE_STATUS_CD,
+                     (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                     GDS.GOODS_NM,
+                     fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD)    AS GOODS_SALE_STATUS_NM,
+                     fn_getGoodsImgPath(GDS.GOODS_NO, '02')                            AS GOODS_IMG_02,
+                     fn_getBrandNm(GDS.BRAND_NO)                                       AS BRAND_NM,
+                     NVL(ITM.SALE_PRICE, 0)                                            AS SALE_PRICE,
+                     (SELECT SUM(STOCK_QTT)
+                      FROM TG_ITEM
+                      WHERE GOODS_NO = GDS.GOODS_NO
+                        AND USE_YN = 'Y')                                              AS STOCK_QTT
+              FROM TG_GOODS GDS
+                 , TS_SITE TS
+                 , TG_GOODS_ICON TGI
+                 , TG_ITEM ITM
+                       LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                                       ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                           AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+              WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                AND GDS.SITE_NO = TS.SITE_NO
+                AND GDS.SITE_NO = #{siteNo}
+                AND GDS.DEL_YN = 'N'
+                AND ITM.DEL_YN = 'N'
+                AND TGI.GOODS_NO = GDS.GOODS_NO
+                AND TGI.ICON_NO = #{iconNo})
+    </select>
+
+    <select id="selectIconGoodsListCount" resultType="Integer">
+        /* design.bannerManage.selectIconGoodsListCount */
+        SELECT count(*)
+        FROM (SELECT (SELECT MAX(ERP_ITM_CODE)
+                        FROM TI_ERP_PRD_MAPPING TPM
+                       WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                         AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS ERP_ITM_CODE,
+                     GDS.GOODS_NO,
+                     GDS.GOODS_TYPE_CD,
+                     GDS.GOODS_SALE_STATUS_CD,
+                     (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                     GDS.GOODS_NM,
+                     fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD)    AS GOODS_SALE_STATUS_NM,
+                     fn_getGoodsImgPath(GDS.GOODS_NO, '02')                            AS GOODS_IMG_02,
+                     fn_getBrandNm(GDS.BRAND_NO)                                       AS BRAND_NM,
+                     NVL(ITM.SALE_PRICE, 0)                                            AS SALE_PRICE,
+                     (SELECT SUM(STOCK_QTT)
+                      FROM TG_ITEM
+                      WHERE GOODS_NO = GDS.GOODS_NO
+                        AND USE_YN = 'Y')                                              AS STOCK_QTT
+              FROM TG_GOODS GDS
+                 , TS_SITE TS
+                 , TG_GOODS_ICON TGI
+                 , TG_ITEM ITM
+                       LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                                       ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                           AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+              WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                AND GDS.SITE_NO = TS.SITE_NO
+                AND GDS.SITE_NO = #{siteNo}
+                AND GDS.DEL_YN = 'N'
+                AND ITM.DEL_YN = 'N'
+                AND TGI.GOODS_NO = GDS.GOODS_NO
+                AND TGI.ICON_NO = #{iconNo})
+    </select>
+    <insert id="insertIcon">
+        /* setup.siteInfo.insertIcon - 아이콘 추가 등록 */
+        INSERT INTO TG_ICON (
+            ICON_NO
+            , SITE_NO
+            , GOODS_TYPE_CD
+            , ICON_TYPE_CD
+            , ICON_DISPNM
+            , IMG_PATH
+            , IMG_NM
+            , ORG_IMG_NM
+            , IMG_SIZE
+            , REGR_NO
+            , REG_DTTM
+        )
+        VALUES
+        (
+            #{iconNo},
+            #{siteNo},
+            #{goodsTypeCd},
+            #{iconTypeCd},
+            #{iconDispnm},
+            #{imgPath},
+            #{imgNm},
+            #{orgImgNm},
+            #{imgSize},
+            #{regrNo},
+            sysdate
+        )
+    </insert>
+
+    <update id="updateIcon">
+        /* design.iconManage.updateIcon */
+        UPDATE  TG_ICON
+        SET
+                GOODS_TYPE_CD  = #{goodsTypeCd},
+                ICON_DISPNM    = #{iconDispnm},
+            <if test="imgSize != null and imgSize != ''">
+                IMG_PATH       = #{imgPath},
+                ORG_IMG_NM     = #{orgImgNm},
+                IMG_NM         = #{imgNm},
+                IMG_SIZE       = #{imgSize},
+            </if>
+                UPDR_NO         = #{updrNo},
+                UPD_DTTM        = sysdate
+        WHERE   SITE_NO     = #{siteNo}
+        AND     ICON_NO   = #{iconNo}
+    </update>
+
+    <delete id="deleteIcon">
+        { CALL
+            DECLARE
+            BEGIN
+                DELETE FROM TG_GOODS_ICON WHERE ICON_NO = #{iconNo};
+                DELETE FROM TG_ICON WHERE ICON_NO = #{iconNo};
+            END
+            }
+    </delete>
+
+</mapper>

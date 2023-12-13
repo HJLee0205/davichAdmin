@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="sell">
+	
+	<parameterMap type="net.danvi.dmall.biz.ifapi.sell.dto.OfflineBuyInfoReqDTO" id="offBuyInfoReqDto" />
+	
+	<resultMap type="net.danvi.dmall.biz.ifapi.sell.dto.OfflineBuyInfoResDTO$OfflineBuyInfoDTO" id="offBuyInfoDto" autoMapping="true" />
+	
+	<sql id="selectOfflineBuyInfoCondition">
+		where 1=1
+		<if test="erpMemNo != null and erpMemNo != ''">
+			and member_no = #{erpMemNo}
+		</if>
+		<if test="fromDate != null and fromDate != ''">
+			and saldates >= #{fromDate}
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and saldates &lt;= #{toDate}
+		</if>
+		<!-- 
+		<if test="orderNo != null and erpOrderNo.size > 0">
+			and order_no in 
+			<foreach collection="orderNo" open="(" close=")" separator="," item="ordNo">
+				#{erpOrderNo}
+			</foreach>
+		</if>
+		 -->
+	</sql>
+	
+	<!-- 오프라인 구매내역 조회 -->
+	<select id="selectOfflineBuyInfoList" parameterMap="offBuyInfoReqDto" resultMap="offBuyInfoDto">
+		select sal.saldates as salDate
+			, sal.saltimes as salTime
+			, str.str_name as strName
+			, canc.ctr_name as cancType
+			, prd.itm_name as itmName
+			, sal.qty as qty
+			, sal.sprc as sprc
+			, sal.dc_amt as dcAmt
+			, sal.sal_amt as salAmt
+		from (
+			select * from (
+				select b.*
+					, rownum as rn
+				from (
+					select a.*, dtl.itm_code, dtl.qty, dtl.sprc, dtl.dc_amt, dtl.sal_amt
+					from dt060tbl@DAVISION a
+					inner join dt061tbl@DAVISION dtl
+						on a.dates = dtl.dates
+						and a.str_code = dtl.str_code
+						and a.pos_no = dtl.pos_no
+						and a.trxn_no = dtl.trxn_no
+					<include refid="selectOfflineBuyInfoCondition"></include>
+					order by a.dates desc, a.saltimes desc
+				) b
+			)
+			<!-- 오프라인 거래 내역만 조회시에는 페이징을 한다. -->
+			<if test="erpMemNo != null and erpMemNo != ''">
+				where rn > #{pageNo} * #{cntPerPage}
+				  and rn &lt;= (#{pageNo} + 1) * #{cntPerPage}
+				  and rownum &lt;= #{cntPerPage}
+			</if>
+		) sal
+		left outer join am010tbl@DAVISION str
+			on sal.str_code = str.str_code
+		left outer join am070tbl@DAVISION prd
+			on sal.itm_code = prd.itm_code
+		left outer join am700tbl@DAVISION canc
+			on sal.canc_type = canc.ctr_code
+			and canc.ctr_id = '199'
+		order by sal.saldates desc, sal.saltimes desc
+	</select>
+	
+	<!-- 오프라인 구매 내역 개수 조회 -->
+	<select id="countOfflineBuyInfoList" parameterMap="offBuyInfoReqDto" resultType="int">
+		select count(*) as cnt
+		from dt060tbl@DAVISION a
+		inner join dt061tbl@DAVISION dtl
+			on a.dates = dtl.dates
+			and a.str_code = dtl.str_code
+			and a.pos_no = dtl.pos_no
+			and a.trxn_no = dtl.trxn_no
+		<include refid="selectOfflineBuyInfoCondition"></include>
+	</select>
+</mapper>

@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    휴면 회원 관리
+-->
+<mapper namespace="member.manageDormant">
+
+<sql id="selectDormantMemberListWhere">
+        AND SITE_NO = #{siteNo}
+
+        <if test="searchWords != null and searchWords != ''">
+            <choose>
+                <when test = "searchType eq 'name'">
+                    AND MEMBER_NM = #{searchName}
+                </when>
+                <when test = "searchType eq 'id'">
+                    AND LOGIN_ID LIKE '%'||#{searchWords}||'%'
+                </when>
+                <when test = "searchType eq 'email'">
+                    AND EMAIL LIKE '%'||#{searchWords}||'%'
+                </when>
+                <when test = "searchType eq 'mobile'">
+                    AND MOBILE = #{searchMobile}
+                </when>
+                <when test = "searchType eq 'all'">
+                    AND (
+                         MOBILE = #{searchMobile} OR
+                         TEL = #{searchTel} OR
+                         EMAIL LIKE '%'||#{searchWords}||'%' OR
+                         LOGIN_ID LIKE '%'||#{searchWords}||'%' OR
+                         MEMBER_NM = #{searchName}
+                         )
+                </when>
+            </choose>
+        </if>
+        <if test="dormantStDttm != null and dormantStDttm != ''">
+            <![CDATA[
+            AND DORMANT_DTTM >= TO_DATE(#{dormantStDttm}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="dormantEndDttm != null and dormantEndDttm != ''">
+            <![CDATA[
+            AND DORMANT_DTTM < TO_DATE(#{dormantEndDttm}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+    </sql>
+
+    <!-- 휴면 회원 조회 -->
+    <select id="selectDormantMemberPaging" parameterType="memberManageSO" resultType="memberManageVO">
+            /* member.manageDormant.selectDormantMemberPaging */
+			SELECT *
+			FROM
+			(
+				SELECT AAA.*, ROWNUM AS PAGING_NUM, ROWNUM
+				FROM
+				(
+					SELECT AA.*
+					FROM
+					(
+			            SELECT ROWNUM AS SORT_NUM, A.*
+			            FROM
+			            (
+                            SELECT MEMBER_NO,
+                                   MEMBER_NM,
+                                   LOGIN_ID,
+                                   TO_CHAR(DORMANT_DTTM, 'YYYY-MM-DD HH24:MI:SS') DORMANT_DTTM,
+                                   EMAIL,
+                                   TEL,
+                                   MOBILE,
+                                   JOIN_DTTM,
+                                   SITE_NO
+                            FROM TC_DORMANT_MEMBER
+                            WHERE 1=1
+                            <include refid="selectDormantMemberListWhere" />
+						    <include refid="common.sortSql" />
+					    ) A
+		            ) AA
+		            ORDER BY SORT_NUM DESC
+	            ) AAA
+	        )
+	        <include refid="common.pageSql" />
+	    </select>
+
+    <!-- 휴면 회원 검색 카운트 -->
+    <select id="selectDormantMemberPagingCount" resultType="Integer">
+            /* member.manageDormant.selectDormantMemberPagingTotalCount */
+            SELECT  count(*)
+            FROM TC_DORMANT_MEMBER
+            WHERE 1=1
+            <include refid="selectDormantMemberListWhere" />
+    </select>
+
+    <!-- 휴면 회원 전체 카운트 -->
+    <select id="selectDormantMemberPagingTotalCount" resultType="Integer">
+            /* member.manageDormant.selectDormantMemberPagingTotalCount */
+            SELECT  count(*)
+            FROM TC_DORMANT_MEMBER
+            WHERE 1=1
+            AND SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 휴면 회원 상세 조회 -->
+    <select id="viewDormantMemberInfoDtl" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manageDormant.viewDormantMemberInfoDtl */
+        SELECT A.MEMBER_NO,
+               A.MEMBER_NM,
+               A.BIRTH,
+               A.BORN_YEAR,
+               A.BORN_MONTH,
+               A.GENDER_GB_CD,
+               A.NTN_GB_CD,
+               TO_CHAR(A.JOIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') JOIN_DTTM,
+               TO_CHAR(A.DORMANT_DTTM, 'YYYY-MM-DD HH24:MI:SS') DORMANT_DTTM,
+               A.CERTIFY_METHOD_CD,
+               nvl(A.EMAIL_RECV_YN, 'N') EMAIL_RECV_YN,
+               nvl(A.SMS_RECV_YN, 'N') SMS_RECV_YN,
+               A.MEMBER_STATUS_CD,
+               A.LOGIN_ID,
+               A.PW,
+               A.TEL,
+               A.MOBILE,
+               A.EMAIL,
+               A.JOIN_PATH_CD,
+               TO_CHAR(A.PW_CHG_DTTM, 'YYYY-MM-DD HH24:MI:SS') PW_CHG_DTTM,
+               A.LOGIN_FAIL_CNT,
+               A.STRTNB_ADDR,
+               A.ROAD_ADDR,
+               A.DTL_ADDR,
+               A.NEW_POST_NO,
+               A.MANAGER_MEMO,
+               nvl(A.REALNM_CERTIFY_YN, 'N') REALNM_CERTIFY_YN,
+               A.MEMBER_GRADE_NO,
+               A.GRADE_AUTO_REARRANGE_YN,
+               A.MEMBER_CI,
+               A.MEMBER_DI,
+               A.MEMBER_GB_CD,
+               A.ADULT_CERTIFY_YN,
+               A.FRG_ADDR_COUNTRY,
+               A.FRG_ADDR_CITY,
+               A.FRG_ADDR_STATE,
+               A.FRG_ADDR_ZIP_CODE,
+               A.FRG_ADDR_DTL1,
+               A.FRG_ADDR_DTL2,
+               A.JOIN_DEVICE_TYPE,
+               A.SITE_NO,
+               A.REGR_NO,
+               A.REG_DTTM,
+               A.UPDR_NO,
+               A.UPD_DTTM,
+               A.RECV_RJT_YN,
+			   A.MEMBER_TYPE_CD,
+			   A.BIZ_REG_NO,
+			   A.MANAGER_NM,
+			   A.BIZ_FILE_PATH,
+			   A.BIZ_FILE_NM,
+			   A.BIZ_FILE_SIZE,
+			   A.BIZ_ORG_FILE_NM,
+			   A.EMAIL_CERTIFY_VALUE,
+			   A.MEMBER_CARD_NO,
+			   A.CUSTOM_STORE_NO,
+			   A.CUSTOM_STORE_NM,
+			   A.INTEGRATION_MEMBER_GB_CD,
+			   A.MOBILE_SMR,
+			   A.APP_TOKEN,
+			   A.RECOM_MEMBER_NO,
+			   TO_CHAR(A.APP_LAST_LOGIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') APP_LAST_LOGIN_DTTM,
+			   A.AUTO_LOGIN_GB,
+			   A.LOCA_GB,
+			   A.NOTI_GB,
+			   A.EVENT_GB,
+			   A.NEWS_GB,
+			   TO_CHAR(A.MEMBER_INTEGRATION_DTTM, 'YYYY-MM-DD HH24:MI:SS') MEMBER_INTEGRATION_DTTM,
+			   A.STORE_JOIN_YN,
+			   A.OS_TYPE,
+			   A.CEO_NM,
+			   A.ID_CHG_YN,
+			   TO_CHAR(A.ID_CHG_DTTM, 'YYYY-MM-DD HH24:MI:SS') ID_CHG_DTTM,
+			   TO_CHAR(A.APP_FIRST_LOGIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') APP_FIRST_LOGIN_DTTM,
+               B.MEMBER_GRADE_NM,
+               A.MEMBER_NN,
+               A.IMG_PATH,
+               A.IMG_NM,
+               A.IMG_ORG_NM,
+               A.INF_DESC,
+               nvl(A.BIZ_APRV_YN, 'N') BIZ_APRV_YN
+         FROM TC_DORMANT_MEMBER A LEFT JOIN TC_MEMBER_GRADE B ON (A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO and B.SITE_NO = #{siteNo})
+         WHERE A.SITE_NO = #{siteNo}
+         AND   A.MEMBER_NO = #{memberNo}
+
+    </select>
+
+    <!-- 회원 정보 수정 -->
+    <update id="updateMemInfo" >
+        /* member.manageDormant.updateMemInfo */
+        UPDATE  TC_MEMBER
+           SET MEMBER_NM = #{memberNm},
+               BIRTH = #{birth},
+               BORN_YEAR = #{bornYear},
+               BORN_MONTH = #{bornMonth},
+               GENDER_GB_CD = #{genderGbCd},
+               NTN_GB_CD = #{ntnGbCd},
+               JOIN_DTTM = TO_DATE(#{joinDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+               CERTIFY_METHOD_CD = #{certifyMethodCd},
+               EMAIL_RECV_YN = #{emailRecvYn},
+               SMS_RECV_YN = #{smsRecvYn},
+               MEMBER_STATUS_CD = #{memberStatusCd},
+               TEL = #{tel},
+               MOBILE = #{mobile},
+               EMAIL = #{email},
+               JOIN_PATH_CD = #{joinPathCd},
+               PW_CHG_DTTM = TO_DATE(#{pwChgDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+               LOGIN_FAIL_CNT = #{loginFailCnt},
+               STRTNB_ADDR = #{strtnbAddr},
+               ROAD_ADDR = #{roadAddr},
+               DTL_ADDR = #{dtlAddr},
+               NEW_POST_NO = #{newPostNo},
+               MANAGER_MEMO = #{managerMemo},
+               REALNM_CERTIFY_YN = #{realnmCertifyYn},
+               MEMBER_GRADE_NO = #{memberGradeNo},
+               GRADE_AUTO_REARRANGE_YN = #{gradeAutoRearrangeYn},
+               MEMBER_CI = #{memberCi},
+               MEMBER_DI = #{memberDi},
+               MEMBER_GB_CD = #{memberGbCd},
+               ADULT_CERTIFY_YN = #{adultCertifyYn},
+               FRG_ADDR_COUNTRY = #{frgAddrCountry},
+               FRG_ADDR_CITY = #{frgAddrCity},
+               FRG_ADDR_STATE = #{frgAddrState},
+               FRG_ADDR_ZIP_CODE = #{frgAddrZipCode},
+               FRG_ADDR_DTL1 = #{frgAddrDtl1},
+               FRG_ADDR_DTL2 = #{frgAddrDtl2},
+               REGR_NO = #{regrNo},
+               REG_DTTM = #{regDttm},
+               UPDR_NO = #{updrNo},
+               UPD_DTTM = sysdate,
+               RECV_RJT_YN = #{recvRjtYn},
+			   MEMBER_TYPE_CD = #{memberTypeCd},
+			   BIZ_REG_NO = #{bizRegNo},
+			   MANAGER_NM = #{managerNm},
+			   BIZ_FILE_PATH = #{bizFilePath},
+			   BIZ_FILE_NM = #{bizFileNm},
+			   BIZ_FILE_SIZE = #{bizFileSize},
+			   BIZ_ORG_FILE_NM = #{bizOrgFileNm},
+			   EMAIL_CERTIFY_VALUE = #{emailCertifyValue},
+			   MEMBER_CARD_NO = #{memberCardNo},
+			   CUSTOM_STORE_NO = #{customStoreNo},
+			   CUSTOM_STORE_NM = #{customStoreNm},
+			   INTEGRATION_MEMBER_GB_CD = #{integrationMemberGbCd},
+			   MOBILE_SMR = #{mobileSmr},
+			   APP_TOKEN = #{appToken},
+			   RECOM_MEMBER_NO = #{recomMemberNo},
+			   APP_LAST_LOGIN_DTTM = TO_DATE(#{appLastLoginDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+			   AUTO_LOGIN_GB = #{autoLoginGb},
+			   LOCA_GB = #{locaGb},
+			   NOTI_GB = #{notiGb},
+			   EVENT_GB = #{eventGb},
+			   NEWS_GB = #{newsGb},
+			   MEMBER_INTEGRATION_DTTM = TO_DATE(#{memberIntegrationDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+			   STORE_JOIN_YN = #{storeJoinYn},
+			   OS_TYPE = #{osType},
+			   CEO_NM = #{ceoNm},
+			   ID_CHG_YN = #{idChgYn},
+			   ID_CHG_DTTM = TO_DATE(#{idChgDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+			   APP_FIRST_LOGIN_DTTM = TO_DATE(#{appFirstLoginDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+			   MEMBER_NN = #{memberNn},
+			   IMG_PATH = #{imgPath},
+			   IMG_NM = #{imgNm},
+			   IMG_ORG_NM = #{imgOrgNm},
+			   INF_DESC = #{infDesc},
+			   BIZ_APRV_YN = #{bizAprvYn}
+         WHERE MEMBER_NO = #{memberNo}
+         AND SITE_NO = #{siteNo}
+    </update>
+
+    <delete id="deleteDormantMem" >
+        /* member.manageDormant.deleteDormantMem */
+        DELETE FROM TC_DORMANT_MEMBER
+        WHERE  MEMBER_NO = #{memberNo}
+        AND    SITE_NO       = #{siteNo}
+    </delete>
+    
+    
+    
+    <!-- 회원 정보 수정 -->
+    <update id="updateCustomStore" >
+        /* member.manageDormant.updateCustomStore */
+        UPDATE  TC_MEMBER
+           SET CUSTOM_STORE_NO = #{storeNo},
+               CUSTOM_STORE_NM = #{storeNm}
+         WHERE MEMBER_NO = #{memberNo}
+         AND SITE_NO = #{siteNo}
+    </update>
+    
+    <!-- App 로그인 세션 정보 저장-->
+    <insert id="insertAppLoginInfo" >
+    	INSERT INTO TA_APP_LOGIN_INFO
+    	(LOGIN_DTTM, JSESSIONID, LOGIN_ID, EXPIRE_TIME, MEMBER_NO, COOKIE_VAL)
+        VALUES
+    	(systimestamp, #{jsessionid}, #{loginId}, #{expireTime}, #{memberNo}, #{cookieVal})
+    </insert>   
+    
+    <!-- App 로그인 세션 정보 수정-->
+    <update id="updateAppCookieInfo">
+    	UPDATE TA_APP_LOGIN_INFO
+    		SET COOKIE_VAL = #{cookieVal}
+    	WHERE JSESSIONID = #{jsessionid}
+    </update>
+    
+    
+    <select id="selectAppLoginInfo"  resultType="appLogPO">
+	    SELECT LOGIN_DTTM, JSESSIONID, LOGIN_ID, EXPIRE_TIME, MEMBER_NO, COOKIE_VAL
+	      FROM (
+	        SELECT LOGIN_DTTM, JSESSIONID, LOGIN_ID, EXPIRE_TIME, MEMBER_NO, COOKIE_VAL FROM TA_APP_LOGIN_INFO
+	         WHERE EXPIRE_TIME <![CDATA[>]]> SYSDATE
+	           AND JSESSIONID = #{jsessionid}
+	        ORDER BY LOGIN_DTTM DESC
+	        ) 
+	     WHERE ROWNUM = 1   
+    </select>
+    
+    <!-- App 로그인 세션 정보 삭제-->
+    <delete id="deleteAppLoginInfo" >
+    	DELETE FROM TA_APP_LOGIN_INFO 
+    	 WHERE JSESSIONID = #{jsessionid}
+    </delete>   
+    
+    
+    <!-- App 로그인 세션 정보 갱신-->
+    <update id="updateAppLoginInfo" >
+    	UPDATE TA_APP_LOGIN_INFO
+    	   SET EXPIRE_TIME = #{expireTime}
+    	 WHERE JSESSIONID = #{jsessionid}   
+    </update>   
+    
+    
+    
+</mapper>

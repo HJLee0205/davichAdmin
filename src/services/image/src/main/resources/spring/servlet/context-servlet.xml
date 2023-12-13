@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc		http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+						http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/aop		http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+						http://www.springframework.org/schema/task		http://www.springframework.org/schema/task/spring-task-4.2.xsd ">
+
+
+	<!--
+		@Component, @Controller, @Service, @Repository
+		BeanPostProcessor를 함께 등록
+		자동 설정
+	-->
+	<context:component-scan base-package="net.danvi.dmall.admin">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	<!--
+		RequiredAnnotationBeanPostProcessor : @Required
+		AutowiredAnnotationBeandPostProcessor : @Autowird
+		CommonAnnotationBeanPostProcessor : @Resource, @PostConstruct @PreDestroy
+		ConfigurationClassPostProcessor : @Configuration
+		자동설정
+	-->
+	<!--
+		<context:annotation-config />
+	-->
+
+	<!--
+		@Aspect Bean객체를 Aspect로 등록
+		실제 Class에는 @Component를 설정하여 Bean으로 등록 또느 XML파일에 Bean으로 등록한다
+		proxy-target-class="true" 이 설정을 추가하면 CGLib를 사용하고, 삭제하면 JDK 프록시를 사용하는 것을 의미한다.
+		CGLib사용 시 해당 라이브러리 추가 필수
+		예) <aop:aspectj-autoproxy proxy-target-class="true" />
+	-->
+	<aop:aspectj-autoproxy />
+
+	<!-- MVC 3.1 DispatcherServlet 전략 자동 등록 -->
+	<mvc:annotation-driven validator="validator">
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<!--<property name="supportedMediaTypes" value="application/json;charset=UTF-8" />-->
+				<property name="supportedMediaTypes" value="text/plain;charset=UTF-8"/><!-- IE8 ajax -->
+			</bean>
+		</mvc:message-converters>
+
+		<mvc:argument-resolvers>
+<!-- 			<bean class="net.danvi.dmall.admin.web.common.resolver.SessionArgumentResolver" /> -->
+			<!--<bean class="net.danvi.dmall.admin.web.common.resolver.MemberNoArgumentResolver" />-->
+		</mvc:argument-resolvers>
+
+	</mvc:annotation-driven>
+
+	<!-- Interceptor -->
+	<mvc:interceptors>
+		<!-- 세션에 사이트 정보를 저장  -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*" />
+			<bean class="net.danvi.dmall.biz.system.interceptor.CommonSiteInterceptor" />
+		</mvc:interceptor>
+	</mvc:interceptors>
+
+	<!-- View Resolver -->
+	<bean id="downloadViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<property name="order" value="0" />
+	</bean>
+
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="1" />
+	</bean>
+
+	<bean id="imageView" class="dmall.framework.common.view.ImageView" />
+
+</beans>
+

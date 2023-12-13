@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.freebie">
+    <!-- 사은품목록 검색 조건절 -->
+    <sql id="selectFreebieListWhere">
+        <!-- 등록일 조건 -->
+        <if test="searchDateFrom != null and searchDateFrom != ''">
+            <![CDATA[
+                AND free.REG_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchDateTo != null and searchDateTo != ''">
+            <![CDATA[
+                AND free.REG_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <!-- 전시여부 조건 -->
+        <if test="useYn != null and useYn.length > 0">
+            AND free.USE_YN IN (
+            <foreach collection="useYn" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        <!-- 검색어 조건 : 프로모션 사은품검색에서 필요해서 조건 추가함-->
+        <if test="searchWord != null and searchWord != ''">
+             <choose>
+                <when test='searchType != null and  searchType.equals("1")'>
+                    AND free.FREEBIE_NM LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test='searchType != null and searchType.equals("2")'>
+                    AND free.FREEBIE_NO LIKE '%'||#{searchWord}||'%'
+                </when>
+            </choose>
+        </if>
+        <if test="searchCode != null and searchCode != ''">
+            AND free.FREEBIE_NO LIKE '%'||#{searchCode}||'%'
+        </if>
+        <!-- 삭제여부 -->
+        AND free.DEL_YN = 'N'
+    </sql>
+
+    <sql id="onlyPromotion">
+        <if test="isPromotion != null and isPromotion != ''">
+        , (SELECT IMG_PATH FROM TG_FREEBIE_IMG_DTL WHERE FREEBIE_NO = free.FREEBIE_NO AND FREEBIE_IMG_TYPE = '05') AS IMG_PATH
+        , (SELECT IMG_NM FROM TG_FREEBIE_IMG_DTL WHERE FREEBIE_NO = free.FREEBIE_NO AND FREEBIE_IMG_TYPE = '05') AS IMG_NM
+        </if>
+    </sql>
+
+    <!-- 사은품 목록(페이징) 조회 -->
+    <select id="selectFreebieListPaging" resultType="FreebieVO">
+        /* goods.freebie.selectFreebieListPaging */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+                     SELECT
+                         free.FREEBIE_NO
+                         , free.SITE_NO
+                         , free.FREEBIE_NM
+                         , free.SIMPLE_DSCRT
+                         , free.FREEBIE_DSCRT
+                         , free.MANAGE_MEMO
+                         , free.USE_YN
+                         , CASE free.USE_YN WHEN 'Y' THEN '사용' ELSE '미사용' END AS USE_NM
+                         , replace(replace(tid.IMG_PATH,'\',''),'/','') AS IMG_PATH
+                         , tid.IMG_NM
+                         , free.REGR_NO
+                         , free.REG_DTTM
+                         , free.UPDR_NO
+                         , free.UPD_DTTM
+                         , TO_DATE(free.REG_DTTM, 'YYYY-MM-DD HH24:MI:SS') AS REG_DATE
+                         , TO_DATE(free.UPD_DTTM, 'YYYY-MM-DD HH24:MI:SS') AS UPD_DATE
+                      <!--<include refid="onlyPromotion" />-->
+                     FROM TG_FREEBIE free, TG_FREEBIE_IMG_DTL tid
+                     WHERE free.SITE_NO = #{siteNo}
+                       AND tid.FREEBIE_NO = free.FREEBIE_NO
+                     <include refid="selectFreebieListWhere" />
+                     <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 사은품 총건수 조회 -->
+    <select id="selectFreebieListPagingTotalCount" resultType="Integer">
+        /* goods.freebie.selectFreebieListPagingTotalCount */
+        SELECT  count(*)
+        FROM    TG_FREEBIE free, TG_FREEBIE_IMG_DTL tid
+        WHERE free.FREEBIE_NO = tid.FREEBIE_NO
+        and free.SITE_NO = #{siteNo}
+        and free.DEL_YN = 'N'
+    </select>
+
+    <!-- 사은품 조건적용 총건수 조회 -->
+    <select id="selectFreebieListPagingCount" resultType="Integer">
+        /* goods.freebie.selectFreebieListPagingCount */
+        SELECT  count(*)
+        FROM    TG_FREEBIE free, TG_FREEBIE_IMG_DTL tid
+        WHERE free.FREEBIE_NO = tid.FREEBIE_NO
+        and free.SITE_NO = #{siteNo}
+        <include refid="selectFreebieListWhere" />
+    </select>
+
+    <!-- 사은품 목록 상세 조회 -->
+    <select id="selectFreebieContents" resultType="FreebieVO">
+	    /* goods.freebie.selectFreebieContents */
+	    SELECT
+	        free.FREEBIE_NO
+	        , free.SITE_NO
+	        , free.FREEBIE_NM
+	        , free.SIMPLE_DSCRT
+	        , free.FREEBIE_DSCRT
+	        , free.MANAGE_MEMO
+	        , free.USE_YN
+	        , free.REGR_NO
+	        , free.REG_DTTM
+	        , free.UPDR_NO
+	        , free.UPD_DTTM
+	    FROM TG_FREEBIE free
+	    WHERE free.SITE_NO = #{siteNo}
+	    AND   free.FREEBIE_NO = #{freebieNo}
+	    AND   free.DEL_YN = 'N'
+    </select>
+
+    <!-- 사이트에 설정된 상품 이미지 정보조회 -->
+    <select id="selectGoodsSiteInfo" parameterType="FreebieSO"  resultType="FreebieImageInfoVO">
+        /* goods.manage.selectGoodsSiteInfo */
+        SELECT
+              GOODS_DEFAULT_IMG_WIDTH
+            , GOODS_DEFAULT_IMG_HEIGHT
+            , GOODS_LIST_IMG_WIDTH
+            , GOODS_LIST_IMG_HEIGHT
+          FROM TS_SITE_DTL
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 상품 이미지 정보 조회 -->
+    <select id="selectFreebieImageInfo" resultType="FreebieImageDtlVO">
+        /* goods.manage.selectFreebieImageInfo */
+        SELECT
+	        tid.FREEBIE_NO
+	        , tid.FREEBIE_IMG_TYPE
+	        , tid.IMG_PATH
+	        , tid.IMG_NM
+	        , tid.IMG_WIDTH
+	        , tid.IMG_HEIGHT
+            , tid.ORG_IMG_NM
+	    FROM TG_FREEBIE_IMG_DTL tid
+	    WHERE tid.FREEBIE_NO = #{freebieNo}
+      </select>
+
+    <!-- 신규등록 사은품번호 생성 -->
+    <select id="selectFreebieNo"  resultType="String">
+        /* goods.freebie.selectFreebieNo */
+        SELECT fn_getSeq(0, 'FREEBIE_NO') from dual
+    </select>
+
+    <!-- 사은품 정보 등록 -->
+    <insert id="insertFreebieContents">
+        /* goods.freebie.insertFreebieContents */
+	    INSERT INTO TG_FREEBIE (
+	        FREEBIE_NO
+			, SITE_NO
+			, FREEBIE_NM
+			, SIMPLE_DSCRT
+			, FREEBIE_DSCRT
+			, MANAGE_MEMO
+			, USE_YN
+			, REGR_NO
+			, REG_DTTM
+			, DEL_YN
+	    ) VALUES (
+	        #{freebieNo}
+			, #{siteNo}
+			, #{freebieNm}
+			, #{simpleDscrt}
+			, #{freebieDscrt:CLOB}
+			, #{manageMemo}
+			, #{useYn}
+			, #{regrNo}
+			, sysdate
+			, 'N'
+	    )
+    </insert>
+
+    <!-- 사은품 정보 수정 -->
+    <update id="updateFreebieContents">
+        /* goods.freebie.updateFreebieContents */
+        UPDATE TG_FREEBIE SET
+            FREEBIE_NM = #{freebieNm}
+            , SIMPLE_DSCRT = #{simpleDscrt}
+            , FREEBIE_DSCRT = #{freebieDscrt}
+            , MANAGE_MEMO = #{manageMemo}
+            , USE_YN = #{useYn}
+			, UPDR_NO = #{updrNo}
+			, UPD_DTTM = sysdate
+		WHERE SITE_NO = #{siteNo}
+		AND   FREEBIE_NO = #{freebieNo}
+    </update>
+
+    <update id="deleteFreebieContents">
+        /* goods.freebie.deleteFreebieContents */
+        UPDATE  TG_FREEBIE
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{delrNo},
+                DEL_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND FREEBIE_NO = TO_NUMBER(#{freebieNo})
+    </update>
+
+    <!-- 사은품 이미지 정보 삭제 -->
+    <delete id="deleteFreebieImageDtl">
+        /* goods.manage.deleteFreebieImageDtl */
+        DELETE FROM TG_FREEBIE_IMG_DTL
+        WHERE FREEBIE_NO = #{freebieNo}
+    </delete>
+
+    <!-- 사은품 이미지 상세 정보 등록 -->
+    <insert id="insertFreebieImageDtl">
+	    /* freebie.manage.insertFreebieImageDtl */
+        INSERT INTO TG_FREEBIE_IMG_DTL (
+            FREEBIE_NO
+            , FREEBIE_IMG_TYPE
+            , IMG_PATH
+            , IMG_NM
+            , IMG_WIDTH
+            , IMG_HEIGHT
+            , REGR_NO
+            , REG_DTTM
+            , ORG_IMG_NM
+        ) VALUES (
+            #{freebieNo}
+            , #{freebieImgType}
+            , #{imgPath}
+            , #{imgNm}
+            , #{imgWidth}
+            , #{imgHeight}
+            , #{regrNo}
+            , sysdate
+            , #{orgImgNm}
+            )
+    </insert>
+
+    <update id="updateCheckFreebie">
+        update TG_FREEBIE
+        set USE_YN = #{useYn},
+            UPDR_NO = #{updrNo},
+            UPD_DTTM = sysdate
+        where SITE_NO = #{siteNo}
+        and FREEBIE_NO = #{freebieNo}
+    </update>
+</mapper>

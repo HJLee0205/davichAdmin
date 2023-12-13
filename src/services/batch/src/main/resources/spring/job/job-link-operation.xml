@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+    
+    <!-- SMS 080 수신거부 상태 업데이트  -->
+    <bean id="sms080RejectTasklet" class="net.danvi.dmall.biz.batch.operation.job.Sms080RejectTasklet" />
+    <batch:job id="sms080RejectJob">
+        <batch:step id="sms080RejectJobStep">
+            <batch:tasklet ref="sms080RejectTasklet" />
+        </batch:step>
+    </batch:job>
+</beans>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.kiosk.customer.mapper.CustomerMapper">
+	<select id="selectVisitCount" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="int">
+		SELECT COUNT(*) AS CNT
+	    FROM TO_VISIT_RSV A LEFT JOIN TC_MEMBER B ON A.MEMBER_NO = B.MEMBER_NO
+	    WHERE A.STORE_NO = #{store_no}
+	    AND B.SITE_NO = #{site_no}
+	    AND A.RSV_DATE = #{rsv_date}
+	    AND A.CANCEL_YN = #{cancel_yn}
+	    AND A.VISIT_YN = #{visit_yn}
+	    AND A.MEMBER_NO IN(
+	        SELECT MEMBER_NO 
+	        FROM TC_MEMBER 
+	        WHERE SITE_NO = #{site_no} AND MOBILE=#{mobile})
+	    ORDER BY A.RSV_TIME
+	</select>
+	<select id="selectVisitList" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="egovframework.kiosk.customer.vo.CustomerVO">
+		SELECT A.RSV_NO, A.MEMBER_NO, B.MEMBER_NM, A.RSV_TIME, A.REQ_MATR, A.VISIT_PURPOSE_CD, A.VISIT_PURPOSE_NM
+	    FROM TO_VISIT_RSV A LEFT JOIN TC_MEMBER B ON A.MEMBER_NO = B.MEMBER_NO
+	    WHERE A.STORE_NO = #{store_no}
+	    AND B.SITE_NO = #{site_no}
+	    AND A.RSV_DATE = #{rsv_date}
+	    AND A.CANCEL_YN = #{cancel_yn}
+	    AND A.VISIT_YN = #{visit_yn}
+	    AND A.MEMBER_NO IN(
+	        SELECT MEMBER_NO 
+	        FROM TC_MEMBER 
+	        WHERE SITE_NO = #{site_no} AND MOBILE=#{mobile})
+	    ORDER BY A.RSV_TIME
+	</select>
+	<select id="selectNoVisitList" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="egovframework.kiosk.customer.vo.CustomerVO">
+		SELECT A.RSV_NO, A.MEMBER_NO, B.MEMBER_NM, A.RSV_TIME, A.REQ_MATR, A.VISIT_PURPOSE_CD, A.VISIT_PURPOSE_NM
+	    FROM TO_VISIT_RSV A LEFT JOIN TC_MEMBER B ON A.MEMBER_NO = B.MEMBER_NO
+	    WHERE A.STORE_NO = #{store_no}
+	    AND B.SITE_NO = #{site_no}
+	    AND A.RSV_DATE = #{rsv_date}
+	    AND A.CANCEL_YN = #{cancel_yn}
+	    AND A.MEMBER_NO IN(
+	        SELECT MEMBER_NO 
+	        FROM TC_MEMBER 
+	        WHERE SITE_NO = #{site_no} AND MOBILE=#{mobile})
+	    ORDER BY A.RSV_TIME
+	</select>
+	<select id="selectMemberCount" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="int">
+		SELECT COUNT(*) AS CNT FROM TC_MEMBER WHERE SITE_NO = #{site_no} AND MOBILE=#{mobile}
+	</select>
+	<select id="selectMemberList" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="egovframework.kiosk.customer.vo.MemberVO">
+		SELECT MEMBER_NO, SITE_NO, MEMBER_NM, MOBILE, INTEGRATION_MEMBER_GB_CD FROM TC_MEMBER 
+		WHERE SITE_NO = #{site_no} AND MOBILE=#{mobile} AND INTEGRATION_MEMBER_GB_CD = #{integration_member_gb_cd} 
+	</select>
+	<insert id="insertStrBoonikg" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		INSERT INTO TC_STR_BOOKING_LIST (
+		    DATES,
+		    STR_CODE,
+		    TIMES,
+		    NM_CUST,
+		    HANDPHONE,
+		    FLAG,
+		    PURPOSE,
+		    PURPOSE_ETC,
+		    BOOK_YN,
+		    BOOK_TIME,
+		    INPUT_DATE,
+		    CNG_DATE
+		) VALUES (
+		    sysdate,
+		    #{str_code},
+		    #{times},
+		    #{nm_cust},
+		    #{handphone},
+		    #{flag},
+		    #{purpose},
+		    #{purpose_etc},
+		    #{book_yn},
+		    #{book_time},
+		    sysdate,
+		    sysdate
+		)
+	</insert>
+	<update id="updateVisitRsvYN" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE TO_VISIT_RSV SET VISIT_YN = #{visit_yn}, UPDR_NO = #{member_no}, UPD_DTTM = sysdate  WHERE RSV_NO = #{rsv_no}
+	</update>
+	<select id="countStrBooking" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*) AS CNT FROM TC_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+	</select>
+	<select id="selectStrBookingList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT B.*
+		FROM(
+			SELECT ROWNUM RNUM, A.*, LAST_VALUE(ROWNUM) OVER() AS TOT_CNT,
+			(SELECT COUNT(*) 
+			   FROM TC_STR_BOOKING_LIST 
+			  WHERE STATUS = 0 
+			    AND STR_CODE = #{str_code} 
+			    AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+			    AND FLAG = '1' 			
+			<if test="book_yn != null and book_yn != ''">
+					AND BOOK_YN = #{book_yn}
+			</if>) AS WAITING_CNT
+	        FROM( 
+				SELECT SEQ_NO, TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, STR_CODE, TIMES, NM_CUST, HANDPHONE, FLAG, PURPOSE, PURPOSE_ETC, BOOK_YN, BOOK_TIME, INPUT_DATE, CNG_DATE, STATUS
+				FROM TC_STR_BOOKING_LIST 
+				WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+				<if test="book_yn != null and book_yn != ''">
+					AND BOOK_YN = #{book_yn}
+				</if>
+				<if test='book_yn != null and book_yn == "N"'>
+				ORDER BY TIMES ASC
+				</if>
+				<if test='book_yn != null and book_yn == "Y"'>
+				ORDER BY BOOK_TIME ASC
+				</if>
+				<if test='book_yn == null or book_yn == ""'>
+				ORDER BY TIMES ASC
+				</if>
+			) A
+        ) B
+		WHERE RNUM BETWEEN ((#{page_index}-1) * #{page_unit} +1) AND (#{page_index} * #{page_unit})
+	</select>	
+	<select id="selectStrBookingListAll" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, STR_CODE, TIMES, NM_CUST, HANDPHONE, FLAG, PURPOSE, PURPOSE_ETC, BOOK_YN, BOOK_TIME, INPUT_DATE, CNG_DATE
+		FROM TC_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+		ORDER BY TIMES ASC
+	</select>
+	<update id="updateStrBookingFlag" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE TC_STR_BOOKING_LIST SET FLAG = #{flag}
+		WHERE TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') = #{dates}
+		AND STR_CODE = #{str_code}
+		AND TIMES = #{times}
+	</update>
+	<select id="selectStrBookingListComplete" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, STR_CODE, TIMES,  HANDPHONE, FLAG, PURPOSE, PURPOSE_ETC, BOOK_YN, BOOK_TIME, INPUT_DATE, CNG_DATE, SEQ_NO, NM_CUST
+		FROM TC_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1' AND STATUS = 7
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+		ORDER BY TIMES ASC
+	</select>
+	<select id="selectCountStrBookingListTts" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM TC_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1' 
+		AND (TTS_YN = '0' OR TTS_YN IS NULL) 
+		<![CDATA[AND IP = #{ip, jdbcType=VARCHAR}]]>
+		AND INPUT_DATE = #{input_date2}
+		
+		AND SEQ_NO = #{seq_no}
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+		ORDER BY TIMES ASC
+	</select>
+	<insert id="insertStrBoonikgTtsList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		INSERT INTO TC_STR_BOOKING_TTS_LIST (
+		    DATES,
+		    STR_CODE,
+		    TIMES,
+		    NM_CUST,
+		    HANDPHONE,
+		    FLAG,
+		    PURPOSE,
+		    PURPOSE_ETC,
+		    BOOK_YN,
+		    BOOK_TIME,
+		    INPUT_DATE,
+		    CNG_DATE,
+		    IP,
+		    SEQ_NO
+		) VALUES (
+		    sysdate,
+		    #{str_code},
+		    #{times},
+		    #{nm_cust},
+		    #{handphone},
+		    #{flag},
+		    #{purpose},
+		    #{purpose_etc},
+		    #{book_yn},
+		    #{book_time},
+		    #{input_date2},
+		    #{cng_date2},
+		    #{ip},
+		    #{seq_no2}
+		)
+	</insert>
+	<select id="selectTcMemberCardNo" parameterType="int" resultType="java.lang.String">
+		SELECT NVL(MEMBER_CARD_NO,'')
+		FROM TC_MEMBER 
+		WHERE member_no = #{member_no}
+	</select>
+	<select id="selectNoMemberCount" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="int">
+		SELECT COUNT(*) AS CNT 
+		  FROM TC_MEMBER 
+		 WHERE SITE_NO = #{site_no} 
+		   AND MOBILE=#{mobile}
+		   AND integration_member_gb_cd !='03'
+	</select>
+	<select id="selectNoMemberList" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="egovframework.kiosk.customer.vo.MemberVO">
+		SELECT MEMBER_NO, 
+		       SITE_NO, 
+		       MEMBER_NM, 
+		       MOBILE, 
+		       INTEGRATION_MEMBER_GB_CD 
+		  FROM TC_MEMBER 
+		 WHERE SITE_NO = #{site_no} 
+		   AND MOBILE=#{mobile} 
+		   AND INTEGRATION_MEMBER_GB_CD != '03' 
+	  ORDER BY MEMBER_NM
+	</select>
+</mapper>

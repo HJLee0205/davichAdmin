@@ -1,0 +1,38 @@
+<configuration scan="true">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - [%F:%L] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/app/logs/front/front.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>/app/logs/front/front.%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - [%F:%L] - %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <logger name="dmall" level="ERROR"></logger>
+    <logger name="net.danvi" level="ERROR"></logger>
+    <logger name="org.apache.commons" level="ERROR"></logger>
+    <logger name="org.springframework" level="ERROR"></logger>
+    <logger name="org.mybatis" level="ERROR"></logger>
+
+    <!-- log4jdbc -->
+    <logger name="jdbc.resultset" level="ERROR" additivity="false" />
+    <logger name="jdbc.audit" level="OFF" />
+    <logger name="jdbc.sqlonly" level="ERROR" />
+    <logger name="jdbc.resultsettable" level="ERROR" />
+    <logger name="jdbc.sqltiming" level="OFF" />
+    <logger name="jdbc.connection" level="ERROR" />
+    <logger name="com.sun.mail.smtp" level="ERROR" />
+
+    <root level="ERROR">
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+</configuration>

@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="basket">
+    <resultMap type="net.danvi.dmall.biz.app.basket.model.BasketVO" id="basketResultMap">
+        <id     property="basketNo"         column="BASKET_NO"/>        <!-- 장바구니번호 -->
+        <result property="siteNo"           column="SITE_NO"/>          <!-- 사이트 번호 -->
+        <result property="goodsNo"          column="GOODS_NO"/>         <!-- 상품 번호 -->
+        <result property="goodsNm"          column="GOODS_NM"/>         <!-- 상품명 -->
+        <result property="imgPath"          column="IMG_PATH"/>         <!-- 이미지 경로 -->
+        <result property="salePrice"        column="SALE_PRICE"/>       <!-- 판매금액 -->
+        <result property="saleYn"           column="SALE_YN"/>          <!-- 판매여부 -->
+        <result property="dcAmt"            column="DC_AMT"/>           <!-- 할인금액 -->
+        <result property="buyQtt"           column="BUY_QTT"/>          <!-- 구매수량 -->
+        <result property="attrVer"          column="ATTR_VER"/>         <!-- 속성버전 -->
+        <result property="attr1"            column="ATTR_1"/>           <!-- 옵션1 -->
+        <result property="attr2"            column="ATTR_2"/>           <!-- 옵션2 -->
+        <result property="attr3"            column="ATTR_3"/>           <!-- 옵션3 -->
+        <result property="attr4"            column="ATTR_4"/>           <!-- 옵션4 -->
+        <collection property="basketOptList" column="{BASKET_NO=basketNo, SITE_NO=siteNo}" javaType="java.util.ArrayList" ofType="net.danvi.dmall.biz.app.basket.model.BasketOptVO" select="selectBasketAddOptList" />
+    </resultMap>
+    <!-- 장바구니 조회 조건절 -->
+	<sql id="selectBasketInfoWhere">
+	    <where>
+            TA.GOODS_NO = TB.GOODS_NO
+            <if test="basketNo != null and basketNo != ''">
+                AND TB.BASKET_NO = #{basketNo}
+            </if>
+		    <if test="siteNo != null and siteNo != ''">
+                AND TB.SITE_NO = #{siteNo}
+            </if>
+            <if test="memberNo != null and memberNo != ''">
+                AND TB.MEMBER_NO = #{memberNo}
+            </if>
+		</where>
+	</sql>
+    <!-- 장바구니 목록조회 -->
+	<select id="selectBasketListPaging" resultType="BasketVO">
+        /* basket.selectBasketListPaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT TA.GOODS_NO,
+				       TA.GOODS_NM,
+				       TI.ITEM_NO,
+				       TA.IMG_PATH,
+				       TA.SALE_PRICE,
+				       TA.SALE_YN,
+				       TA.DC_AMT,
+				       TB.BUY_QTT,
+				       TB.BASKET_NO,
+				       TA.ATTR_1,
+				       TA.ATTR_2,
+				       TA.ATTR_3,
+				       TA.ATTR_4
+				       TA.ATTR_VER,
+				       TA.DLVR_SET_CD
+				  FROM (SELECT TG.GOODS_NO,
+				               TG.GOODS_NM,
+				               TG.SALE_YN,
+				               TGID.IMG_PATH,
+				               TI.ITEM_NO,
+				               TI.SALE_PRICE,
+				               TI.DC_AMT,
+				               TIA.ATTR_1,
+				               TIA.ATTR_2,
+				               TIA.ATTR_3,
+				               TIA.ATTR_4,
+				               TIA.ATTR_VER,
+				               TG.DLVR_SET_CD
+				          FROM TG_GOODS TG,                            <!-- 상품정보 -->
+				               TG_GOODS_IMG_SET TGIS,                  <!-- 이미지세트 -->
+				               TG_GOODS_IMG_DTL TGID,                  <!-- 이미지상세 -->
+				               TG_ITEM TI                              <!-- 단품정보 -->
+				               TG_ITEM_ATTR TIA                        <!-- 단품속성 -->
+				         WHERE     TG.GOODS_NO = TGIS.GOODS_NO
+				               AND TGIS.GOODS_IMGSET_NO = TGID.GOODS_IMGSET_NO
+				               AND TG.ITEM_NO = TI.ITEM_NO
+				               AND TI.ITEM_NO = TIA.ITEM_NO) TA,          <!-- 상품정보 -->
+				       TO_BASKET TB                                       <!-- 장바구니 정보 -->
+		        <include refid="selectBasketInfoWhere" />
+		        <include refid="common.sortSql" />
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+
+    <!-- 장바구니조회(Count) -->
+    <!-- <select id="selectBasketPagingCount" resultType="Integer">
+        /* basket.selectBasketPagingCount */
+        SELECT COUNT(*)
+          FROM (SELECT TG.GOODS_NO
+                  FROM TG_GOODS TG,                            상품정보
+                       TG_GOODS_IMG_SET TGIS,                  이미지세트
+                       TG_GOODS_IMG_DTL TGID,                  이미지상세
+                       TG_ITEM TI,                             단품정보
+                       TG_ITEM_ATTR TIA                        단품속성
+                 WHERE     TG.GOODS_NO = TGIS.GOODS_NO
+                       AND TGIS.GOODS_IMGSET_NO = TGID.GOODS_IMGSET_NO
+                       AND TG.ITEM_NO = TI.ITEM_NO
+                       AND TI.ITEM_NO = TIA.ITEM_NO) TA,          상품정보
+               TO_BASKET TB                                       장바구니 정보
+        <include refid="selectBasketInfoWhere" />
+    </select> -->
+    <!-- 장바구니조회(TotalCount) -->
+    <select id="selectBasketListPagingTotalCount" resultType="Integer">
+        /* basket.selectBasketPagingTotalCount */
+        SELECT COUNT(*)
+        FROM TO_BASKET                                        <!-- 장바구니 정보 -->
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+    </select>
+
+    <select id="selectBasketList" resultType="BasketVO">
+        /* basket.selectBasketList */
+        SELECT T.*
+        FROM
+        (
+	        select ROWNUM AS PAGING_NUM, ROWNUM,
+	               basket.SITE_NO,
+	               basket.BASKET_NO,
+	               basket.ITEM_VER as BASKET_ITEM_VER,
+	               basket.ATTR_VER as BASKET_ATTR_VER,
+	               case when item.ITEM_VER = basket.ITEM_VER then 'Y' else 'N' end ITEM_VER_CHK,
+	               case when (SELECT MAX(ATTR_VER) FROM TG_ITEM_ATTR WHERE ITEM_NO = itemAttr.ITEM_NO) = basket.ATTR_VER
+	               then 'Y' else 'N'
+	               end ATTR_VER_CHK,
+	               basket.BUY_QTT,
+	               basket.DLVRC_PAYMENT_CD,
+	               basket.CTG_NO,
+	               goods.GOODS_NO,
+	               goods.BRAND_NO,
+				   goods.SELLER_NO,
+	               goods.GOODS_NM,
+	               goods.DLVR_SET_CD,
+	               goods.GOODSEACH_DLVRC,
+	               goods.PACK_MAX_UNIT,
+	               goods.PACK_UNIT_DLVRC,
+	               goods.DLVR_PAYMENT_KIND_CD,
+	               goods.GOODS_SVMN_POLICY_USE_YN,
+	               goods.GOODS_SVMN_AMT,
+	               goods.GOODS_SALE_STATUS_CD,
+	               goods.DEL_YN AS TG_DEL_YN,
+	               goods.DISP_YN,
+	               goods.SALE_YN,
+	               goods.MIN_ORD_LIMIT_YN,
+	               goods.MIN_ORD_QTT,
+	               goods.MAX_ORD_LIMIT_YN,
+	               goods.MAX_ORD_QTT,
+	               goods.MULTI_OPT_YN,
+	               goods.RSV_ONLY_YN,
+	               item.ITEM_NO,
+	               item.ITEM_NM,
+	               (select ts.seller_nm from ts_seller ts where ts.seller_no = goods.seller_no) seller_nm,
+	               item.CUSTOMER_PRICE,
+	               item.SALE_PRICE,
+	               item.SALE_PRICE AS TOTAL_PRICE,
+	               item.STOCK_QTT,
+	               item.USE_YN,
+	               item.DEL_YN AS TI_DEL_YN,
+	               itemAttr.ATTR_VER,
+	               itemAttr.OPT_NO1,
+	               itemAttr.ATTR_NO1,
+	               itemAttr.OPT_NO2,
+	               itemAttr.ATTR_NO2,
+	               itemAttr.OPT_NO3,
+	               itemAttr.ATTR_NO3,
+	               itemAttr.OPT_NO4,
+	               itemAttr.ATTR_NO4,
+	               TS.DEFAULT_DLVRC_TYPE_CD,
+	               TS.DEFAULT_DLVRC,
+	               TS.DEFAULT_DLVR_MIN_AMT,
+	               TS.DEFAULT_DLVR_MIN_DLVRC,
+	               TS.AVAIL_STOCK_SALE_YN,
+	               TS.AVAIL_STOCK_QTT,
+	               TS.STOCK_SET_YN,
+	               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO1),'N') as opt_no1Nm,
+	               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO1),'N') as attr_no1Nm,
+	               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO2),'N') as opt_no2Nm,
+	               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO2),'N') as attr_no2Nm,
+	               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO3),'N') as opt_no3Nm,
+	               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO3),'N') as attr_no3Nm,
+	               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO4),'N') as opt_no4Nm,
+	               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO4),'N') as attr_no4Nm,
+	               fn_getGoodsImgPath(basket.GOODS_NO, '01') AS GOODS_IMG_01,
+	               fn_getGoodsImgPath(basket.GOODS_NO, '02') AS GOODS_IMG_02,
+	               fn_getGoodsImgPath(basket.GOODS_NO, '03') AS GOODS_IMG_03,
+	               fn_getGoodsDispImgPath(basket.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+	               fn_getGoodsDispImgPath(basket.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+	               fn_getGoodsDispImgPath(basket.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+	               fn_getGoodsDispImgPath(basket.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+	               fn_getGoodsDispImgPath(basket.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+				  (CASE WHEN fav.GOODS_NO IS NULL THEN 'N' ELSE 'Y' END)  FAV_YN
+				   ,NVL((SELECT
+	          		CASE WHEN  max((SELECT
+							CASE WHEN COUNT(1) > 0 AND A.SALE_AMT*A.ORD_QTT-A.DC_AMT =  MAX(TP.FIRST_BUY_SPC_PRICE)*A.ORD_QTT THEN 'Y' ELSE 'N' END
+					FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+					WHERE TP.PRMT_NO = TPTG.PRMT_NO
+					  AND TP.PRMT_TYPE_CD ='06'
+					  AND TP.SITE_NO = 1
+					  AND TPTG.GOODS_NO= A.GOODS_NO)) ='Y' then 'Y' else 'N' end
+	        	 FROM TO_ORD_DTL A ,TO_ORD B WHERE GOODS_NO IN (
+									   SELECT DISTINCT TPTG.GOODS_NO
+										 FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+										WHERE TP.PRMT_NO = TPTG.PRMT_NO
+										  AND TP.PRMT_TYPE_CD = '06'
+										  AND TPTG.GOODS_NO = goods.GOODS_NO
+										  AND TP.USE_YN = 'Y'
+										  AND TP.DEL_YN = 'N'
+										  AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+										  AND TP.SITE_NO = 1
+	          )
+	          AND A.ORD_NO=B.ORD_NO
+	          AND B.MEMBER_NO = #{memberNo}),'N') AS FIRST_SPC_ORD_YN
+	            FROM TO_BASKET basket inner join  TG_ITEM item  on (basket.ITEM_NO = item.ITEM_NO)
+	                                left outer join  TG_ITEM_ATTR itemAttr  on (item.ITEM_NO = itemAttr.ITEM_NO and basket.ATTR_VER = itemAttr.ATTR_VER)
+	                                inner join TG_GOODS goods on (item.GOODS_NO = goods.GOODS_NO)
+	                                left join TS_SITE TS ON (basket.SITE_NO = TS.SITE_NO)
+                                    left outer join TC_MEMBER_FAV_GOODS fav ON (basket.SITE_NO = fav.SITE_NO AND basket.GOODS_NO = fav.GOODS_NO AND basket.ITEM_NO = fav.ITEM_NO AND basket.MEMBER_NO = fav.MEMBER_NO)
+	        where 1=1
+	        and basket.MEMBER_NO = #{memberNo}
+	        <if test="itemNo != null and itemNo != ''">
+	            AND basket.ITEM_NO = #{itemNo}
+	        </if>
+		ORDER BY SELLER_NO , DLVR_SET_CD , DLVRC_PAYMENT_CD, basket.REG_DTTM DESC
+		) T
+        <if test="limit != null and limit > 0">
+            WHERE PAGING_NUM <![CDATA[<=]]> #{limit}
+        </if>
+    </select>
+
+    <select id="selectBasketOptList" resultType="basketOptVO">
+        /* basket.selectBasketList */
+        select basketAddOpt.BASKET_ADD_OPT_NO,
+               basketAddOpt.BASKET_NO,
+               basketAddOpt.OPT_VER,
+               opt.ADD_OPT_NO,
+               opt.ADD_OPT_NM,
+               opt.REQUIRED_YN,
+               optDtl.ADD_OPT_DTL_SEQ,
+               optDtl.ADD_OPT_AMT,
+               optDtl.ADD_OPT_AMT_CHG_CD,
+               optDtl.ADD_OPT_VALUE,
+               basketAddOpt.OPT_BUY_QTT
+
+        from   TO_BASKET_ADD_OPT basketAddOpt left outer join TG_ADD_OPT opt on (basketAddOpt.OPT_NO = opt.ADD_OPT_NO AND opt.GOODS_NO = #{goodsNo})
+                                              left outer join TG_ADD_OPT_DTL optDtl on ( basketAddOpt.OPT_DTL_SEQ = optDtl.ADD_OPT_DTL_SEQ AND optDtl.GOODS_NO = #{goodsNo})
+
+        where 1=1
+
+        AND basketAddOpt.BASKET_NO = #{basketNo}
+        AND basketAddOpt.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectItemInfo" resultType="BasketVO">
+        /* basket.selectItemInfo */
+        select item.ITEM_NO,
+               NVL(item.ITEM_VER, 0) AS ITEM_VER,
+               item.CUSTOMER_PRICE,
+               item.SALE_PRICE,
+               item.USE_YN,
+               item.SALE_PRICE as TOTAL_PRICE,
+               item.STOCK_QTT,
+               item.DEL_YN AS TI_DEL_YN,
+               goods.GOODS_NO,
+               goods.GOODS_NM,
+               goods.BRAND_NO,
+               goods.DLVR_SET_CD,
+               goods.GOODSEACH_DLVRC,
+               goods.PACK_MAX_UNIT,
+               goods.PACK_UNIT_DLVRC,
+               goods.DLVR_PAYMENT_KIND_CD,
+               goods.GOODS_SVMN_POLICY_USE_YN,
+               goods.GOODS_SVMN_AMT,
+               goods.DEL_YN AS TG_DEL_YN,
+               goods.DISP_YN,
+               goods.SALE_YN,
+               goods.GOODS_SALE_STATUS_CD,
+               goods.MIN_ORD_LIMIT_YN,
+               goods.MIN_ORD_QTT,
+               goods.MAX_ORD_LIMIT_YN,
+               goods.MAX_ORD_QTT,
+               goods.MULTI_OPT_YN,
+               goods.RSV_ONLY_YN,
+               NVL(itemAttr.ATTR_VER,0) AS ATTR_VER,
+               itemAttr.OPT_NO1,
+               itemAttr.ATTR_NO1,
+               itemAttr.OPT_NO2,
+               itemAttr.ATTR_NO2,
+               itemAttr.OPT_NO3,
+               itemAttr.ATTR_NO3,
+               itemAttr.OPT_NO4,
+               itemAttr.ATTR_NO4,
+               TS.STOCK_SET_YN,
+               TS.AVAIL_STOCK_SALE_YN,
+               TS.AVAIL_STOCK_QTT,
+               fn_getGoodsImgPath(goods.GOODS_NO,'03') AS IMG_PATH,
+               fn_getGoodsDispImgPath(goods.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+               (SELECT
+                  utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',TGC.CTG_NO) order by TGC.EXPS_PRIOR_RANK asc ).EXTRACT ('//text()').GETSTRINGVAL(),2))
+                 FROM TG_GOODS_CTG TGC
+                 WHERE TGC.SITE_NO = goods.SITE_NO
+                 AND TGC.GOODS_NO = goods.GOODS_NO
+                 AND TGC.DEL_YN = 'N' ) AS CTG_NO_ARR,
+               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO1),'N') as opt_no1Nm,
+               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO1),'N') as attr_no1Nm,
+               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO2),'N') as opt_no2Nm,
+               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO2),'N') as attr_no2Nm,
+               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO3),'N') as opt_no3Nm,
+               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO3),'N') as attr_no3Nm,
+               NVL((select opt_nm from TG_OPT opt where 1=1 and opt.OPT_NO = itemAttr.OPT_NO4),'N') as opt_no4Nm,
+               NVL((select attr_nm from TG_ATTR attr where 1=1 and attr.ATTR_NO = itemAttr.ATTR_NO4),'N') as attr_no4Nm
+        from   TG_ITEM item  inner join TG_GOODS goods on (item.GOODS_NO = goods.GOODS_NO)
+                             left outer join TG_ITEM_ATTR itemAttr on (item.ITEM_NO = itemAttr.ITEM_NO and itemAttr.ATTR_VER = #{attrVer})
+                             left join TS_SITE TS ON (TS.SITE_NO = goods.SITE_NO)
+        where 1=1
+        AND   item.item_NO  = #{itemNo}
+    </select>
+
+    <!-- 장바구니 등록 -->
+	<insert id="insertBasket">
+	    /* basket.insertBasket */
+		INSERT INTO TO_BASKET
+		(
+		 BASKET_NO
+		,SITE_NO
+		,CTG_NO
+		,MEMBER_NO
+		,BUY_QTT
+		,SESSION_ID
+		,GOODS_NO
+		,ITEM_NO
+		,ITEM_VER
+		,ATTR_VER
+		,DLVRC_PAYMENT_CD
+		,ORD_MEDIA_CD
+		,REGR_NO
+		,REG_DTTM
+		)
+		VALUES
+		(
+		 #{basketNo}
+		,#{siteNo}
+		,#{ctgNo}
+		,#{memberNo}
+		,#{buyQtt}
+		,#{sessionId}
+		,#{goodsNo}
+		,#{itemNo}
+		,#{itemVer}
+		,#{attrVer}
+		,#{dlvrcPaymentCd}
+		,#{ordMediaCd}
+		,#{regrNo}
+		,sysdate
+		)
+	</insert>
+
+	<!-- 장바구니 추가 옵션 정보 등록 -->
+    <insert id="insertBasketAddOpt">
+        /* basket.insertBasketAddOpt */
+        INSERT INTO TO_BASKET_ADD_OPT
+        (
+         BASKET_ADD_OPT_NO
+        ,BASKET_NO
+        ,SITE_NO
+        ,OPT_NO
+        ,OPT_DTL_SEQ
+        ,OPT_VER
+        ,OPT_BUY_QTT
+        ,REGR_NO
+        ,REG_DTTM
+        )
+        VALUES
+        (
+         (SELECT fn_getSeq(0,'TO_BASKET_ADD_OPT_NO') FROM DUAL)
+        ,#{basketNo}
+        ,#{siteNo}
+        ,#{optNo}
+        ,#{optDtlSeq}
+        ,#{optVer}
+        ,#{optBuyQtt}
+        ,#{regrNo}
+        ,sysdate
+        )
+    </insert>
+
+    <!-- 장바구니 상품정보 수정 -->
+    <update id="updateBasket">
+        /* basket.updateBasket */
+		UPDATE TO_BASKET
+		SET
+		  UPDR_NO     = #{updrNo}
+		  ,UPD_DTTM    = sysdate
+		<if test="ctgNo != null and ctgNo != ''">
+          ,CTG_NO = #{ctgNo}
+        </if>
+		<if test="buyQtt != null and buyQtt != ''">
+		  ,BUY_QTT = #{buyQtt}
+		</if>
+		<if test="itemNo != null and itemNo != ''">
+		  ,ITEM_NO = #{itemNo}
+		</if>
+		<if test="goodsNo != null and goodsNo != ''">
+		  ,GOODS_NO = #{goodsNo}
+		</if>
+		<if test="attrVer != null and attrVer != ''">
+		  ,ATTR_VER = #{attrVer}
+		</if>
+		<if test="dlvrcPaymentCd != null and dlvrcPaymentCd != ''">
+		  ,DLVRC_PAYMENT_CD = #{dlvrcPaymentCd}
+		</if>
+		<if test="ordMediaCd != null and ordMediaCd != ''">
+		  ,ORD_MEDIA_CD = #{ordMediaCd}
+		</if>
+		WHERE BASKET_NO = #{basketNo}
+		AND SITE_NO     = #{siteNo}
+		AND MEMBER_NO   = #{memberNo}
+		AND GOODS_NO    = #{goodsNo}
+	</update>
+
+	<!-- 장바구니 옵션 정보 수정 -->
+	<update id="updateBasketAddOpt">
+	    /* basket.updateBasketAddOpt */
+        UPDATE TO_BASKET_ADD_OPT
+        SET
+          UPDR_NO     = #{updrNo}
+          ,UPD_DTTM    = sysdate
+        <if test="optBuyQtt != null and optBuyQtt != ''">
+          ,OPT_BUY_QTT = #{optBuyQtt}
+        </if>
+        <if test="optNo != null and optNo != ''">
+          ,OPT_NO = #{optNo}
+        </if>
+        <if test="optDtlSeq != null and optDtlSeq != ''">
+          ,OPT_DTL_SEQ = #{optDtlSeq}
+        </if>
+        <if test="optVer != null and optVer != ''">
+          ,OPT_VER = #{optVer}
+        </if>
+        WHERE BASKET_NO = #{basketNo}
+        <if test="basketAddOptNo != null and basketAddOptNo != ''">
+          AND BASKET_ADD_OPT_NO = #{basketAddOptNo}
+        </if>
+    </update>
+
+    <!-- 장바구니 상품정보 삭제 -->
+    <delete id="deleteBasket">
+        /* basket.deleteBasket */
+        DELETE FROM TO_BASKET
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+        AND BASKET_NO = #{basketNo}
+    </delete>
+
+    <!-- 장바구니 상품정보 삭제 -->
+    <delete id="deleteBasketAddOpt">
+        /* basket.deleteBasket */
+        DELETE FROM TO_BASKET_ADD_OPT
+        WHERE SITE_NO = #{siteNo}
+        AND BASKET_NO = #{basketNo}
+        <if test="basketAddOptNo != null and basketAddOptNo != ''">
+        AND BASKET_ADD_OPT_NO     = #{basketAddOptNo}
+        </if>
+    </delete>
+
+    <!-- 장바구니 상품정보 조회(단품번호 기준) -->
+    <select id="selectBasketByItemNo" resultType="basketVO">
+        /* basket.selectBasketByItemNo */
+        SELECT
+            BASKET_NO
+        FROM TO_BASKET
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+        AND ITEM_NO IN
+        <foreach collection="itemNoArr" item="itemNo" index="index" open="(" separator="," close=")">
+        #{itemNo}
+        </foreach>
+    </select>
+
+    <select id="selectAddOptInfo" resultType="basketOptVO">
+        /* basket.selectAddOptInfo */
+        select opt.ADD_OPT_NO,
+		       opt.ADD_OPT_NM,
+		       opt.REQUIRED_YN,
+               optDtl.ADD_OPT_DTL_SEQ,
+               optDtl.ADD_OPT_AMT,
+               optDtl.ADD_OPT_AMT_CHG_CD,
+               optDtl.ADD_OPT_VALUE
+
+		from TG_ADD_OPT opt inner join TG_ADD_OPT_DTL optDtl on (opt.ADD_OPT_NO = optDtl.ADD_OPT_NO)
+		where 1=1
+        and   opt.GOODS_NO = #{goodsNo}
+        and   optDtl.GOODS_NO = #{goodsNo}
+        and   opt.ADD_OPT_NO = #{addOptNo}
+        and   optDtl.ADD_OPT_DTL_SEQ = #{addOptDtlSeq}
+    </select>
+
+	<select id="selectBasketAddOptList" parameterType="java.util.Map" resultType="net.danvi.dmall.biz.app.basket.model.BasketOptVO">
+	    /* basket.selectBasketAddOptList */
+	    SELECT OPT_NO,
+	           OPT_DTL_SEQ,
+	           OPT_VER,
+	           OPT_BUY_QTT
+	      FROM TO_BASKET_ADD_OPT
+	     WHERE 1=1
+	     <if test="siteNo != null and siteNo != ''">
+	       AND SITE_NO = #{siteNo}
+	     </if>
+	     <if test="memberNo != null and memberNo != ''">
+	       AND MEMBER_NO = #{memberNo}
+	     </if>
+	     <if test="basketNo != null and basketNo != ''">
+	       AND BASKET_NO = #{basketNo}
+	     </if>
+	</select>
+
+	<!-- 장바구니 중복 체크 -->
+	<select id="duplicationBasketCheck" resultType="net.danvi.dmall.biz.app.basket.model.BasketVO">
+	   /* basket.duplicationBasketCheck */
+	   SELECT
+	       BASKET_NO
+	       , BUY_QTT
+        FROM TO_BASKET
+        WHERE SITE_NO = #{siteNo}
+        <if test="memberNo != null and memberNo != ''">
+        AND MEMBER_NO = #{memberNo}
+        </if>
+        <if test="sessionId != null and sessionId != ''">
+        AND SESSEION_ID = #{sessionId}
+        </if>
+        <choose>
+	        <when test="basketNo == null || basketNo == ''">
+		        AND GOODS_NO = #{goodsNo}
+	            AND ITEM_NO = #{itemNo}
+	        </when>
+	        <otherwise>
+	           AND BASKET_NO = #{basketNo}
+               AND ITEM_NO = #{itemNo}
+	        </otherwise>
+        </choose>
+	</select>
+
+	<!-- 장바구니 추가 옵션 중복 체크 -->
+	<select id="duplicationBasketAddOptCheck" resultType="net.danvi.dmall.biz.app.basket.model.BasketOptVO">
+	   /* basket.duplicationBasketAddOptCheck */
+	   SELECT
+	       BASKET_ADD_OPT_NO
+	       ,BASKET_NO
+	       ,OPT_BUY_QTT
+        FROM TO_BASKET_ADD_OPT
+        WHERE BASKET_NO = #{basketNo}
+        AND OPT_NO = #{optNo}
+        AND OPT_DTL_SEQ = #{optDtlSeq}
+	</select>
+
+	<insert id="insertBasketAnls">
+	    /* basket.insertBasketAnls */
+        INSERT INTO TO_BASKET_ANLS
+        (
+	         BASKET_NO
+	        , SITE_NO
+	        , MEMBER_NO
+	        , GOODS_NO
+	        , ITEM_NO
+	        , ORD_MEDIA_CD
+            , REGR_NO
+            , REG_DTTM
+        )
+        VALUES
+        (
+	         #{basketNo}
+	        , #{siteNo}
+	        , #{memberNo}
+	        , #{goodsNo}
+	        , #{itemNo}
+	        , #{ordMediaCd}
+	        , #{regrNo}
+            , sysdate
+        )
+	</insert>
+</mapper>

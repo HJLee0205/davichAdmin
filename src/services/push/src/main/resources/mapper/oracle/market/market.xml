@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="market">
+
+	<!-- 쇼핑몰 회원정보 조회 -->
+	<select id="selectMemberInfo" resultType="egovMap">
+		SELECT A.MALL_MEMBER_NO as member_no,
+		       B.APP_TOKEN,
+		       B.NOTI_GB,
+		       B.EVENT_GB,
+		       B.NEWS_GB,
+		       B.OS_TYPE,
+		       A.ERP_MEMBER_NO as cd_cust
+		  FROM TI_ERP_MEM_MAPPING A JOIN TC_MEMBER B ON A.MALL_MEMBER_NO = B.MEMBER_NO
+		 WHERE A.DEL_YN = 'N'
+		   AND A.ERP_MEMBER_NO = #{cdCust}
+		   AND ROWNUM = 1
+	</select>
+	
+	
+</mapper>

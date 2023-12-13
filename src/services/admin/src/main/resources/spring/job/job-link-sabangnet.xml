@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!-- 1.상품 정보 등록 Job -->
+    <bean id="goodsRegiTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.GoodsRegiTasklet" />
+    <batch:job id="goodsRegiJob">
+        <batch:step id="goodsRegiStep1">
+            <batch:tasklet ref="goodsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- 2.상품 요약 수정 Job -->
+    <bean id="goodsSmrUpdTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.GoodsSmrUpdTasklet" />
+    <batch:job id="goodsSmrUpdJob">
+        <batch:step id="goodsSmrUpdStep1">
+            <batch:tasklet ref="goodsSmrUpdTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- 3.주문 정보 수집 Job -->
+    <bean id="orderRequestXmlTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.OrderRequestXmlTasklet" />
+    <bean id="orderRequestTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.OrderRequestTasklet" />
+    <batch:job id="orderRequestJob">
+        <batch:step id="orderGetheringStep1" next="orderGetheringStep2">
+            <batch:tasklet ref="orderRequestXmlTasklet" />
+        </batch:step>
+        <batch:step id="orderGetheringStep2">
+            <batch:tasklet ref="orderRequestTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 4.송장 등록 Job -->
+    <bean id="invoiceRegiTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.InvoiceRegiTasklet" />
+    <batch:job id="invoiceRegiJob">
+        <batch:step id="invoiceRegiStep1">
+            <batch:tasklet ref="invoiceRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 5.클레임 정보 수집 Job -->
+    <bean id="claimRequestXmlTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.ClaimRequestXmlTasklet" />
+    <bean id="claimRequestTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.ClaimRequestTasklet" />
+    <batch:job id="claimRequestJob">
+        <batch:step id="claimGetheringStep1" next="claimGetheringStep2">
+            <batch:tasklet ref="claimRequestXmlTasklet" />
+        </batch:step>
+        <batch:step id="claimGetheringStep2">
+            <batch:tasklet ref="claimRequestTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 6.문의사항 정보 수집 Job -->
+    <bean id="inquiryRequestXmlTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.InquiryRequestXmlTasklet" />
+    <bean id="inquiryRequestTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.InquiryRequestTasklet" />
+    <batch:job id="inquiryRequestJob">
+        <batch:step id="inquiryGetheringStep1" next="inquiryGetheringStep2">
+            <batch:tasklet ref="inquiryRequestXmlTasklet" />
+        </batch:step>
+        <batch:step id="inquiryGetheringStep2">
+            <batch:tasklet ref="inquiryRequestTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 7.문의답변 등록 Job -->
+    <bean id="inquiryReplyRegiTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.InquiryReplyRegiTasklet" />
+    <batch:job id="inquiryReplyRegiJob">
+        <batch:step id="inquiryReplyRegiStep1">
+            <batch:tasklet ref="inquiryReplyRegiTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- 8.상품 정보 수집 Job -->
+    <!--<bean id="goodsRequestXmlTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.GoodsRequestXmlTasklet" />
+    <bean id="goodsRequestTasklet" class="net.danvi.dmall.biz.batch.link.sabangnet.batch.job.GoodsRequestTasklet" />
+    <batch:job id="goodsRequestJob">
+        <batch:step id="goodsGetheringStep1" next="goodsGetheringStep2">
+            <batch:tasklet ref="goodsRequestXmlTasklet" />
+        </batch:step>
+        <batch:step id="goodsGetheringStep2">
+            <batch:tasklet ref="goodsRequestTasklet" />
+        </batch:step>
+    </batch:job>-->
+    
+</beans>
+

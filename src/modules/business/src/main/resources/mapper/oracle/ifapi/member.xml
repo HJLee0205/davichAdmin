@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member">
+	
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineMemSearchReqDTO" id="offMemSearchDto" />
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OnlineMemSearchReqDTO" id="onMemSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberCombineReqDTO" id="memCombineDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.AppMemberLoginReqDTO" id="appMemberLoginDTO"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointSearchReqDTO" id="offPointSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointHistorySearchReqDTO" id="pointHistSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.StoreVCResultReqDTO" id="storeVcSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.StoreEyesightInfoReqDTO" id="storeEsSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MallEyesightInfoReqDTO" id="mallEsSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.PrescriptionUrlReqDTO" id="prescriptionReqDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointUseDTO" id="offPointUseDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointUseCancelReqDTO" id="offPointUseCancelDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineCardNoDupCheckReqDTO" id="offCardNoDupCheckDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MallVCResultReqDTO" id="mallVcSearchDto"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberYearEndTaxReqDTO" id="memberYearEndTaxReqDTO"/>
+	<parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.BeaconDataReqDTO" id="beaconDataReqDTO"/>
+
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OnlineMemSearchResDTO$OnlineMemInfo" id="onMemResultDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OfflineMemSearchResDTO$OfflineMemInfo" id="offnMemResultDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointHistorySearchResDTO$PointHistoryDTO" id="pointHistDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.StoreVCResultResDTO$VCResultDTO" id="storeVcResultDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.StoreVCResultResDTO$VCRecoGoodsDTO" id="storeVcRecoGoodsDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.StoreEyesightInfoResDTO" id="storeEsResDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberOffLevelResDTO$MemberOffLevelDTO" id="memOffLvlDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MallEyesightInfoResDTO" id="mallEsResDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointUseDTO" id="offPointUseDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MallVCResultResDTO$MallVCResultDTO" id="mallVcResultDto" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberYearEndTaxResDTO$YearEndTaxInfo" id="yearEndTaxInfo" autoMapping="true"/>
+	<resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.BeaconDataResDTO" id="beaconDataResDTO" autoMapping="true"/>
+		
+	<!-- 오프라인 회원 목록 조회 -->
+	<select id="selectOfflineMemberList" parameterMap="offMemSearchDto" resultMap="offnMemResultDto">
+		select cd_cust as cdCust
+			, nm_cust as nmCust
+			, lvl as lvl
+			, no_card as offlineCardNo
+			, nvl(mall_yn, 'N') as combineYn
+			, (select str_name from am010tbl@DAVISION where str_code = a.man_code) as recentStrName
+		from eaa07@DAVISION a
+		where cd_gubun = '0'
+		<if test="custName != null and custName != ''">
+			and nm_cust = #{custName}
+		</if>
+		<if test="hp != null and hp != ''">
+			and hand_phone = #{hp}
+		</if>
+		<if test="strCode != null and strCode != ''">
+			and man_code = #{strCode}
+		</if>
+	</select>
+	
+	<!-- 온라인 회원 목록 조회 -->
+	<select id="selectOnlineMemberList" parameterMap="onMemSearchDto" resultMap="onMemResultDto">
+		select
+			  A.member_no as memNo
+			, A.member_nm as memName
+			, A.login_id as mallUserId
+			, A.mobile as hp
+			, A.tel as tel
+			, A.gender_gb_cd as gender
+			, A.birth as birthDay
+			, A.new_post_no as postNo
+			, A.road_addr as address1
+			, A.dtl_addr as address2
+			, A.member_card_no as onlineCardNo
+			, case A.INTEGRATION_MEMBER_GB_CD when '03' then 'Y' else 'N' end as combineYn
+            , B.ERP_MEMBER_NO as cdCust
+		from TC_MEMBER A LEFT OUTER JOIN TI_ERP_MEM_MAPPING B ON A.member_no = B.MALL_MEMBER_NO and B.DEL_YN='N'
+		where A.member_status_cd = '01'
+		and A.member_no > 1000        
+		<if test="custName != null and custName != ''">
+			and A.member_nm = #{custName}
+		</if>
+		<if test="hp != null and hp != ''">
+			and A.mobile_smr = #{hp}
+		</if>
+		<if test="fullHp != null and fullHp != ''">
+			and A.mobile = #{fullHp}
+		</if>
+		<if test="onlineCardNo != null and onlineCardNo != ''">
+			and A.member_card_no = #{onlineCardNo}
+		</if>
+		<if test="combineYn != null and combineYn eq 'Y'.toString()">
+			and A.INTEGRATION_MEMBER_GB_CD = '03'
+		</if>
+		<if test="combineYn != null and combineYn eq 'N'.toString()">
+			and A.INTEGRATION_MEMBER_GB_CD != '03'
+		</if>
+
+	</select>
+	
+	<!-- 온라인 회원 목록 카드번호로 조회 -->
+	<select id="selectOnlineMemberCardList" parameterMap="onMemSearchDto" resultMap="onMemResultDto">
+		select
+			  A.member_no as memNo
+			, A.member_nm as memName
+			, A.login_id as mallUserId
+			, A.mobile as hp
+			, A.tel as tel
+			, A.gender_gb_cd as gender
+			, A.birth as birthDay
+			, A.new_post_no as postNo
+			, A.road_addr as address1
+			, A.dtl_addr as address2
+			, A.member_card_no as onlineCardNo
+			, case A.INTEGRATION_MEMBER_GB_CD when '03' then 'Y' else 'N' end as combineYn
+            , B.ERP_MEMBER_NO as cdCust
+		from TC_MEMBER A LEFT OUTER JOIN TI_ERP_MEM_MAPPING B ON A.member_no = B.MALL_MEMBER_NO and B.DEL_YN='N'
+		where A.member_status_cd = '01'
+		and A.member_no > 1000        
+		<if test="onlineCardNo != null and onlineCardNo != ''">
+			and A.member_card_no = #{onlineCardNo}
+		</if>
+
+	</select>
+	
+	<!-- 회원통합 정보 등록(ERP) -->
+	<update id="insertMemberCombineInfo" parameterMap="memCombineDto">
+		update eaa07@DAVISION
+		set mall_no_card = #{onlineCardNo}
+		  , mall_yn = 'Y'
+		  , cng_id = 'MALL_INTERFACE'
+		  , cng_date = SYSDATE
+		  , mall_in_date = TO_CHAR(SYSDATE,'YYYYMMDD')
+		  , mall_gb = 'C'
+		where cd_cust = #{cdCust}
+	</update>
+	
+	<!-- 통합회원구분코드 조회 -->
+	<select id="selectCombineGbCd" parameterMap="memCombineDto" resultType="string">
+		select integration_member_gb_cd
+		from tc_member
+		where site_no = #{siteNo}
+		  and member_no = #{memNo}
+	</select>
+	
+	<!-- 회원 통합 상태 변경 -->
+	<update id="updateMallMemberInfoCombine" parameterMap="memCombineDto">
+	    UPDATE  TC_MEMBER
+	       SET INTEGRATION_MEMBER_GB_CD = #{combineGbCd}
+	       	   , UPDR_NO = #{updrNo}
+	       	   , UPD_DTTM = SYSDATE
+			<if test="combineGbCd eq '03'.toString()">
+	       	   , MEMBER_INTEGRATION_DTTM = sysdate
+	       	</if>
+	       	<if test="combineGbCd != '03'.toString()">
+	       		, MEMBER_INTEGRATION_DTTM = null
+	       	</if>
+	     WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memNo}
+	</update>
+	
+	<!-- 회원통합 정보 삭제(ERP) -->
+	<update id="deleteMemberCombineInfo" parameterMap="memCombineDto">
+		update eaa07@DAVISION
+		set mall_no_card = null
+		  , mall_yn = 'N'
+		  , cng_id = 'MALL_INTERFACE'
+		  , cng_date = sysdate
+		  , mall_login_date = null
+		where cd_cust = #{cdCust}
+	</update>
+	
+	<!-- 회원 등급 조회 -->
+	<!--<select id="selectMemberLvlInfo" resultMap="memOffLvlDto">
+		select cd_cust as cdCust
+			, lvl as lvl
+		from eaa07
+		where mall_yn = 'Y'
+	</select>-->
+	
+	<!-- ERP 회원등급을 회원 정보에 갱신 -->
+	<update id="updateMemberLvl">
+		MERGE INTO TI_ERP_MEM_MAPPING T
+                USING (
+                 SELECT CD_CUST,LVL FROM EAA07_MALL_YN@DAVI
+                ) C
+                ON (
+                    T.ERP_MEMBER_NO = C.CD_CUST
+                    AND T.DEL_YN = 'N'
+                 )
+                WHEN MATCHED THEN
+                UPDATE SET
+					  T.ERP_MEMBER_LVL = C.lvl
+					, T.UPD_DTTM = sysdate
+	</update>
+	
+	<!-- 보유 포인트 조회 (ERP) -->
+	<select id="selectOfflineAvailPoint" parameterMap="offPointSearchDto" resultType="int">
+		select nvl(max(mt_point1), 0)
+		from eaa07@DAVISION
+		where cd_cust = #{cdCust}
+	</select>
+	
+	<!-- 포인트 증감내역 조회(ERP) -->
+	<select id="selectOfflinePointHistory" parameterMap="pointHistSearchDto" resultMap="pointHistDto">
+		SELECT * FROM (
+			SELECT to_char(DATES, 'YYYY-MM-DD') as dealDate
+			  , FNC_STR_NAME@DAVISION(STR_CODE) as strName
+			  , CANC_TYPE as cancType
+			  , IN_FLAG as inFlag
+			  , SAL_AMT as salAmt
+			  , SAL_POINT as salPoint
+			  , USE_POINT as usePoint
+			  , SUM(SAL_POINT - USE_POINT) OVER (PARTITION BY CD_CUST ORDER BY DATES, CD_CUST, SEQ_NO) AS curPoint
+			  , ROWNUM AS RN
+			FROM (
+				SELECT A.DATES
+				  , A.STR_CODE
+				  , A.CANC_TYPE
+				  , A.IN_FLAG
+				  , A.SAL_AMT
+				  , DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT
+				  , DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT
+				  , A.MEMBER_NO   AS CD_CUST
+				  , A.SEQ_NO
+			  FROM GT040TBL@DAVISION A
+			  WHERE A.MEMBER_NO = #{cdCust}
+			  <if test="searchFrom != null and searchFrom != ''">
+			    AND A.DATES >= to_date(#{searchFrom}, 'YYYYMMDD')
+			  </if> 
+			  <if test="searchTo != null and searchTo != ''">
+			  	AND A.DATES &lt; to_date(#{searchTo}, 'YYYYMMDD') + 1
+			  </if>
+			  ORDER BY DATES DESC, SEQ_NO DESC
+			)
+		)
+		WHERE RN > #{pageNo} * #{cntPerPage}
+		  AND RN &lt;= (#{pageNo} + 1) * #{cntPerPage}
+		ORDER BY RN
+	</select>
+	
+	<!-- 포인트 증감내역 전체 건수 조회(ERP) -->
+	<select id="countOfflinePointHistory" parameterMap="pointHistSearchDto" resultType="int">
+		select count(*)
+		from GT040TBL@DAVISION A
+		WHERE A.MEMBER_NO = #{cdCust}
+		<if test="searchFrom != null and searchFrom != ''">
+			AND A.DATES >= to_date(#{searchFrom}, 'YYYYMMDD')
+		</if> 
+		<if test="searchTo != null and searchTo != ''">
+			AND A.DATES &lt; to_date(#{searchTo}, 'YYYYMMDD') + 1
+		</if>
+	</select>
+	
+	<!-- 매장 (최근 1건의)비젼체크 결과 조회 -->
+	<select id="selectLatestStoreVisionCheck" parameterMap="storeVcSearchDto" resultMap="storeVcResultDto">
+		SELECT 0 AS seq
+		       , '' AS vcQ
+		       , C.NAME_KOR AS vcA
+		       , A.VISION_ROOT_CODE as visionRootCd
+		    FROM VI_SURVEY_RESULT_MASTER@DAVISION A
+		       , VI_VISION_ROOT@DAVISION B
+		       , VI_VISION_CODE@DAVISION C
+		   WHERE A.COMPANY_CODE = B.COMPANY_CODE
+		     AND A.BRAND_CODE = B.BRAND_CODE
+		     AND A.VISION_ROOT_CODE = B.VISION_ROOT_CODE
+		     AND B.COMPANY_CODE = C.COMPANY_CODE
+		     AND B.BRAND_CODE = C.BRAND_CODE
+		     AND B.TOP_CODE = C.TOP_CODE
+		     AND B.MIDDLE_CODE = C.MIDDLE_CODE
+		     AND B.LOW_CODE = C.LOW_CODE
+		     AND (A.company_code, A.brand_code, A.survey_date, A.cd_cust, A.seq_no_m) = (  Select company_code, brand_code, survey_date, cd_cust, seq_no_m
+		                                                                                     from (  select * 
+		                                                                                               from vi_survey_result_master@DAVISION
+		                                                                                              where company_code = '100'
+		                                                                                                and brand_code   = '0001'
+		                                                                                                and cd_cust      = #{cdCust}
+		                                                                                           order by survey_date desc, seq_no_m desc)
+		                                                                                     where rownum = 1)
+		UNION ALL 
+		  Select A.SEQ_NO_D as seq
+		       , DECODE(B.NAME_KOR, '예상 착용 시간', C.NAME_KOR, B.NAME_KOR) AS vcQ
+		       , DECODE(B.NAME_KOR, '예상 착용 시간', D.NAME_KOR, C.NAME_KOR) AS vcA
+		       , A.VISION_ROOT_CODE as visionRootCd
+		    from vi_survey_result_detail@DAVISION A
+		       , (  SELECT B1.COMPANY_CODE, B1.BRAND_CODE, B1.SURVEY_MASTER_CODE, B2.NAME_KOR, B1.VISION_ROOT_CODE
+		              FROM vi_survey_MASTER@DAVISION B1
+		                 , VI_VISION_CODE@DAVISION B2
+		             WHERE B1.COMPANY_CODE = B2.COMPANY_CODE
+		               AND B1.BRAND_CODE   = B2.BRAND_CODE
+		               AND B1.TOP_CODE     = B2.TOP_CODE
+		               AND B1.MIDDLE_CODE  = B2.MIDDLE_CODE
+		               AND B1.LOW_CODE     = B2.LOW_CODE 
+		         ) B
+		       , (  SELECT C1.COMPANY_CODE, C1.BRAND_CODE, C1.SURVEY_MASTER_CODE, C1.SURVEY_DETAIL_CODE, C2.NAME_KOR AS NAME_KOR
+		              FROM vi_survey_DETAIL@DAVISION C1
+		                 , VI_VISION_CODE@DAVISION C2
+		             WHERE C1.COMPANY_CODE = C2.COMPANY_CODE
+		               AND C1.BRAND_CODE   = C2.BRAND_CODE
+		               AND C1.TOP_CODE     = C2.TOP_CODE
+		               AND C1.MIDDLE_CODE  = C2.MIDDLE_CODE
+		               AND C1.LOW_CODE     = C2.LOW_CODE 
+		         ) C
+		       , (  SELECT D1.COMPANY_CODE, D1.BRAND_CODE, D1.SURVEY_MASTER_CODE, D1.SURVEY_DETAIL_CODE, D1.SURVEY_SUBJECT_CODE, D2.NAME_KOR
+		              FROM vi_survey_SUBJECT@DAVISION D1
+		                 , VI_VISION_CODE@DAVISION D2
+		             WHERE D1.COMPANY_CODE = D2.COMPANY_CODE
+		               AND D1.BRAND_CODE   = D2.BRAND_CODE
+		               AND D1.TOP_CODE     = D2.TOP_CODE
+		               AND D1.MIDDLE_CODE  = D2.MIDDLE_CODE
+		               AND D1.LOW_CODE     = D2.LOW_CODE 
+		         ) D
+		   where A.COMPANY_CODE        = B.COMPANY_CODE
+		     AND A.BRAND_CODE          = B.BRAND_CODE
+		     AND A.SURVEY_MASTER_CODE  = B.SURVEY_MASTER_CODE
+		     AND A.COMPANY_CODE        = C.COMPANY_CODE
+		     AND A.BRAND_CODE          = C.BRAND_CODE
+		     AND A.SURVEY_MASTER_CODE  = C.SURVEY_MASTER_CODE
+		     AND A.SURVEY_DETAIL_CODE  = C.SURVEY_DETAIL_CODE
+		     AND A.COMPANY_CODE        = D.COMPANY_CODE (+)
+		     AND A.BRAND_CODE          = D.BRAND_CODE (+)
+		     AND A.SURVEY_MASTER_CODE  = D.SURVEY_MASTER_CODE (+)
+		     AND A.SURVEY_DETAIL_CODE  = D.SURVEY_DETAIL_CODE (+)
+		     AND A.SURVEY_SUBJECT_CODE = D.SURVEY_SUBJECT_CODE  (+)
+		     AND (A.company_code, A.brand_code, A.survey_date, A.cd_cust, A.seq_no_m) = (  Select company_code, brand_code, survey_date, cd_cust, seq_no_m
+		                                                                                     from (  select * 
+		                                                                                               from vi_survey_result_master@DAVISION
+		                                                                                                where company_code = '100'
+		                                                                                                and brand_code   = '0001'
+		                                                                                                and cd_cust      = #{cdCust}
+		                                                                                           order by survey_date desc, seq_no_m desc)
+		                                                                                     where rownum = 1)
+	</select>
+	
+	<!-- 매장 (최근 1건의)비젼체크 결과에 따른 추천상품 목록 조회 -->
+	<select id="selectLatestStoreVisionCheckRecoPrdList" parameterMap="storeVcSearchDto" resultMap="storeVcRecoGoodsDto">
+		select b.company_code as companyCode
+			, b.brand_code as brandCode
+			, b.reco_goods_code as recoGoodsCode
+			, b.reco_goods_name_kor as recoGoodsName
+		from vi_survey_result_goods@DAVISION a
+		inner join vi_reco_goods@DAVISION b
+		on a.company_code = b.company_code
+		and a.brand_code = b.brand_code
+		and a.reco_goods_code = b.reco_goods_code
+		where (a.company_code, a.brand_code, a.survey_date, a.cd_cust, a.seq_no_m) = (select company_code, brand_code, survey_date, cd_cust, seq_no_m
+				                                                                                     from (  select * 
+				                                                                                               from vi_survey_result_master@DAVISION
+				                                                                                                where company_code = '100'
+				                                                                                                and brand_code   = '0001'
+				                                                                                                and cd_cust      = #{cdCust}
+				                                                                                           order by survey_date desc, seq_no_m desc)
+				                                                                                     where rownum = 1)
+	</select>
+	
+	<!-- 쇼핑몰 시력정보 조회(최근1건) - 매장에서 조회 -->
+	<select id="selectLastestMallVisionCheck" parameterMap="mallVcSearchDto" resultMap="mallVcResultDto">
+		select h.lens_gb_cd as lensGbCd
+			, case h.lens_gb_cd when 'G' then '안경렌즈' when 'C' then '콘택즈렌즈' else '' end as lensGbNm
+			, h.age as selAge
+			, h.relate_activity as selItem
+			, wm_concat(d.check_nm) as recLens
+		from tc_vison_check h
+		left outer join tc_vison_check_dscrt d
+		on h.lens_gb_cd = d.lens_gb_cd
+		and h.check_no = d.check_no
+		where h.member_no = #{memNo}
+		group by h.member_no, h.lens_gb_cd, h.age, h.relate_activity 
+	</select>
+	
+	<!-- 매장 (최근1건의)시력정보 조회  -->
+	<select id="selectLatestStoreEyesightInfo" parameterMap="storeEsSearchDto" resultMap="storeEsResDto">
+		select *
+		from (
+			select to_char(dates, 'YYYYMMDD') as testDate
+				, str_code as testStrCd
+				, (select str_name from am010tbl@DAVISION where str_code = a.str_code) as testStrNm
+				, sph_l as sphL
+				, sph_r as sphR
+				, cyl_l as cylL
+				, cyl_r as cylR
+				, axis_l as axisL
+				, axis_r as axisR
+				, add_l as addL
+				, add_r as addR
+				, pd1_l as pdL
+				, pd1_r as pdR
+				, case
+					when base_io_r is not null and base_ud_r is not null then base_io_r || '/' || base_ud_r
+					else nvl(base_io_r, base_ud_r)
+				end as baseR
+				, case 
+					when base_io_l is not null and base_ud_l is not null then base_io_l || '/' || base_ud_l
+					else nvl(base_io_l, base_ud_l)
+				end as baseL
+				, case 
+					when base_io_prism_r is not null and base_ud_prism_r is not null then base_io_prism_r || '/' || base_ud_prism_r
+					else nvl(base_io_prism_r, base_ud_prism_r)
+				end as prismR
+				, case 
+					when base_io_prism_l is not null and base_ud_prism_l is not null then base_io_prism_l || '/' || base_ud_prism_l
+					else nvl(base_io_prism_l, base_ud_prism_l)
+				end as prismL
+			from gt060tbl@DAVISION a
+			where cd_cust = #{cdCust}
+			order by dates desc
+		) where rownum = 1
+	</select>
+	
+	<!-- 쇼핑몰 시력정보 조회 (쇼핑몰은 회원당 1건만 보유) -->
+	<select id="selectLatestMallEyesightInfo" parameterMap="mallEsSearchDto" resultMap="mallEsResDto">
+		select to_char(checkup_dt, 'YYYYMMDD') as testDate
+			, checkup_institute_nm as testInstNm
+			, sph_l as sphL
+			, sph_r as sphR
+			, cyl_l as cylL
+			, cyl_r as cylR
+			, axis_l as axisL
+			, axis_r as axisR
+			, add_l as addL
+			, add_r as addR
+			, prism_l as prismL
+			, prism_r as prismR
+			, base_l as baseL
+			, base_r as baseR
+			, pd_l as pdL
+			, pd_r as pdR
+		from tc_es_info
+		where member_no = #{memNo}
+	</select>
+	
+	<!-- 쇼핑몰 처방전 최근 1건 파일 ID조회 -->
+	<select id="selectPrescriptionFileId" parameterMap="prescriptionReqDto" resultType="string">
+		select * from (
+			select replace(prescription_file_path, '\', '') || '_' || prescription_file_nm as prescriptionFileId
+			from tc_prescription_info
+			where member_no = #{memNo}
+			  and del_yn = 'N'
+			order by checkup_dt desc, reg_dttm desc
+		)
+		where rownum = 1
+	</select>
+	
+	<!-- 오프라인 포인트 사용정보 등록을 위한 가맹점별 보유 포인트 조회 -->
+	<select id="selectStorePointList" parameterType="string" resultType="map">
+		select str_code as "strCode"
+			, mt_point1 as "pntAmt"
+		from gt070tbl@DAVISION
+		where cd_cust = #{cdCust}
+		  and mt_point1 > 0
+		order by mt_point1 desc, str_code asc
+	</select>
+	
+	<!-- 포인트 로그 등록을 위한 trxn_no 조회 -->
+	<select id="getTrxnNo" parameterMap="offPointUseDto" resultType="string">
+		select lpad(nvl(max(trxn_no), 0) + 1, 6, '0')
+		from gt040tbl@DAVISION
+		where str_code = #{strCode}
+		  and str_code_to = #{strCodeTo}
+		  and dates = to_date(#{dates}, 'YYYYMMDD')
+	</select>
+	
+	<!-- 오프라인 포인트 사용정보 등록 -->
+	<insert id="insertOfflinePointUse" parameterMap="offPointUseDto">
+		<selectKey keyProperty="seqNo" resultType="string" order="BEFORE">
+			select nvl(max(seq_no), 0) +1 as seqNo from gt040tbl@DAVISION
+			where dates = to_date(#{dates}, 'YYYYMMDD')
+			  and member_no = #{cdCust}
+		</selectKey>
+		insert into gt040tbl@DAVISION (
+			dates
+			, member_no
+			, seq_no
+			, in_flag
+			, pdates
+			, str_code
+			, pos_no
+			, trxn_no
+			, canc_type
+			, sal_amt
+			, payamt01
+			, payamt02
+			, payamt03
+			, payamt04
+			, sal_point
+			, sal_upoint
+			, sal_tpoint
+			, cd_no
+			, str_code_to
+		) values (
+			to_date(#{dates}, 'YYYYMMDD')
+			, #{cdCust}
+			, #{seqNo}
+			, '4'
+			, sysdate
+			, #{strCode}
+			, #{strCodeTo}
+			, #{trxnNo}
+			, #{cancType}
+			, 0
+			, 0
+			, 0
+			, #{usePointAmt}
+			, 0
+			, #{usePointAmt}
+			, 0
+			, 0
+			, (select no_card from eaa07@DAVISION where cd_cust = #{cdCust})
+			, #{strCodeTo}
+		)
+	</insert>
+	
+	<!-- 오프라인 포인트 사용 취소 등록을 위한 사용정보 목록 조회 -->
+	<select id="selectOfflinPointUseList" parameterMap="offPointUseCancelDto" resultMap="offPointUseDto">
+		select to_char(dates, 'YYYYMMDD') as dates
+			, member_no as cdCust
+			, str_code as strCode
+			, str_code_to as strCodeTo
+			, payamt03  as usePointAmt
+			, '2' as cancType
+		from gt040tbl@DAVISION
+		where dates = #{orgDates}
+		  and member_no = #{orgCdCust}
+		  and seq_no in
+		  <foreach collection="orgSeqNo" open="(" close=")" separator="," item="orgSeq">
+		  	#{orgSeq}
+		  </foreach>
+		order by seq_no
+	</select>
+	
+	<!-- 카드번호 중복 개수 (온라인 카드번호 발급시 오프라인 카드번호중에 중복되는 번호가 있는지 확인) -->
+	<select id="countDupOfflineCardNo" parameterMap="offCardNoDupCheckDto" resultType="int">
+		select count(*) as cnt
+		from eaa07@DAVISION
+		where no_card = #{onlineCardNo}
+	</select>
+	
+	<!-- 매장에서 가입 여부를 Y로 설정 -->
+	<update id="updateStoreJoinYnToY" parameterType="string">
+		update  tc_member
+		set store_join_yn = 'Y'
+		where member_no = #{memberNo}
+	</update>
+
+    <!-- 앱로그인 일시 다비전 기록 -->
+	<update id="updateMemberLoginDateFromApp" parameterMap="appMemberLoginDTO">
+		update eaa07@DAVISION
+		set mall_login_date = sysdate
+		where cd_cust = #{cdCust}
+		and mall_login_date is null
+	</update>
+	
+	
+	
+	<!--고객 연말정산 목록 조회 -->
+	<select id="selectYearEndTaxList" parameterMap="memberYearEndTaxReqDTO" resultMap="yearEndTaxInfo">
+		select b.nm_cust  as nmCust,
+		       a.str_name as strName,
+		       a.cd_cust  as cdCust,
+		       a.dates    as dates, 
+		       a.cash_amt as cashAmt,
+		       a.card_amt as cardAmt,  
+		       a.cash_amt + a.card_amt   as total  , 
+		       a.str_code as strCode,
+		       case when nvl(b.sign_key,'*') = '*' then 9 else to_number(fnc_IdCardNumber_Chk@DAVISION(ENCRYPTION_AES.DEC_AES(nvl(trim(b.sign_key),0)))) end as SIGN_KEY
+		  from ( select
+		         		to_char(a.dates, 'yyyy')  as dates,
+		                c.str_name                as str_name,
+		                sum(decode(a.canc_type, '0', 1, -1) * decode(b.pay_type, '01', b.pay_amt, '11', b.pay_amt, 0)) as cash_amt,
+		                sum(decode(a.canc_type, '0', 1, -1) * decode(b.pay_type, '03', b.pay_amt, '13', b.pay_amt, 0)) as card_amt,
+		                a.member_no           as cd_cust,
+		                max(a.str_code)       as str_code
+		           from dt060tbl@DAVISION a, dt063tbl@DAVISION b, am010tbl@DAVISION c, AM010TBL_BUSINESS_DOC@DAVISION d
+		          where a.member_no in (select a.cd_cust
+                                          from eaa07@DAVISION a
+                                         where a.rep_cd_cust in (select rep_cd_cust
+		                                                           from eaa07@DAVISION
+                                                                  where cd_cust = #{cdCust} ))
+		            and TO_CHAR(A.DATES, 'YYYY') = #{yyyy}
+                    and (a.STR_CODE = d.STR_CODE OR a.STR_CODE = d.STR_CODE_SUB)
+                    and d.GUBUN = '10' 
+                    and TO_CHAR(a.DATES, 'YYYYMMDD') BETWEEN d.S_DATE AND d.E_DATE
+		            and a.dates     = b.dates
+		            and a.str_code  = b.str_code
+		            and a.str_code  = c.str_code
+		            and a.pos_no    = b.pos_no
+		            and a.trxn_no   = b.trxn_no
+		          group by to_char(a.dates, 'yyyy'),c.str_name,a.member_no
+		
+		
+		       Union All
+		
+		        Select to_char(a.dates, 'yyyy')  as dates,
+		               b.str_name                as str_name,
+		               SUM(DECODE(A.RX_SPRC, 0,  A.SPRC, A.RX_SPRC) * A.SAL_QTY) as cash_amt,
+		               0 as card_amt,
+		               (a.cd_cust) as cd_cust,
+		               max(a.str_code)     as str_code
+		          From GT065TBL@DAVISION A, am010tbl@DAVISION b
+		         Where TO_CHAR(A.DATES, 'YYYY') = #{yyyy}
+		           AND a.cd_cust in (select a.cd_cust
+                                       from eaa07@DAVISION a
+                                      where a.rep_cd_cust in (select rep_cd_cust
+                                                                from eaa07@DAVISION
+                                                               where cd_cust = #{cdCust} ))
+		           and a.str_code  = b.str_code
+		      Group BY to_char(a.dates, 'yyyy'),b.str_name,a.cd_cust
+		        ) a,
+		         eaa07    b
+		where a.cd_cust  = b.cd_cust	
+
+	</select>	
+	
+	<!--고객 연말정산 출력 조회 -->
+	<select id="selectYearEndTaxPrint" parameterMap="memberYearEndTaxReqDTO" resultMap="yearEndTaxInfo">
+		select c.nm_cust as nmCust,
+				a.cd_cust as cdCust,
+				b.busi_no as busiNo,
+				b.str_lname as strLname,
+				b.own_name as ownName,
+				b.nm_btype as nmBtype,
+				b.nm_bitem as nmBitem,
+				b.tel_no as telNo,
+				b.post_no as postNo,
+				b.addr1 AS ADDR1,
+				b.addr2 AS ADDR2,
+				rtrim(b.addr1) ||' '||rtrim(b.addr2) as addr,
+				a.dates AS DATES,
+				nvl(a.cash_amt,0) as cashAmt,
+				nvl(a.card_amt,0) as cardAmt,
+				nvl(a.cash_amt,0) + nvl(a.card_amt,0) as total
+				from (
+				Select to_char(a.dates, 'yyyymm') as dates,
+				sum(decode(a.canc_type, '0', 1, -1) * decode(b.pay_type, '01', b.pay_amt, '11', b.pay_amt, 0)) as cash_amt,
+				sum(decode(a.canc_type, '0', 1, -1) * decode(b.pay_type, '03', b.pay_amt, '13', b.pay_amt, 0)) as card_amt,
+				max(a.str_code) as str_code,
+				min(a.member_no) as cd_cust
+				from dt060tbl@DAVISION a, dt063tbl@DAVISION b, AM010TBL_BUSINESS_DOC@DAVISION d
+				where a.str_code = #{strCode}
+				and a.member_no = #{cdCust}
+				and a.dates between to_date(#{yyyy}||'0101','yyyymmdd') and to_date(#{yyyy}||'1231','yyyymmdd')
+				and (a.STR_CODE = d.STR_CODE OR a.STR_CODE = d.STR_CODE_SUB)
+				and d.GUBUN = '10'
+				and TO_CHAR(a.DATES, 'YYYYMMDD') BETWEEN d.S_DATE AND d.E_DATE
+				and a.dates = b.dates
+				and a.str_code = b.str_code
+				and a.pos_no = b.pos_no
+				and a.trxn_no = b.trxn_no
+				group by to_char(a.dates, 'yyyymm')
+				HAVING
+				 SUM(CASE WHEN B.PAY_TYPE IN ('01','11','03','13') THEN DECODE(A.CANC_TYPE,'2',B.PAY_AMT*(-1), B.PAY_AMT) ELSE 0 END) <![CDATA[<>]]>0
+				Union All
+				Select to_char(a.dates, 'yyyymm')  as dates,
+							   SUM(DECODE(A.RX_SPRC, 0,  A.SPRC, A.RX_SPRC) * A.SAL_QTY) as cash_amt,
+							   0 as card_amt,
+							   max(a.str_code) as str_code,
+							   max(a.cd_cust) as cd_cust
+				From GT065TBL@DAVISION A
+						 Where A.dates between to_date(#{yyyy}||'0101','yyyymmdd') and to_date(#{yyyy}||'1231','yyyymmdd')
+						   AND A.STR_CODE = #{strCode}
+						   AND a.cd_cust = #{cdCust}
+					  Group BY to_char(a.dates, 'yyyymm')
+						) a,
+						am010tbl@DAVISION b,
+						eaa07@DAVISION    c
+				  where a.str_code = b.str_code
+					and a.cd_cust  = c.cd_cust
+				order by A.dates
+
+	</select>
+	
+				
+	<!-- 연말정산 자동신고 -->
+	<update id="updateMemberYearEndTaxAuto" parameterMap="memberYearEndTaxReqDTO">
+		update eaa07@DAVISION
+		  set sign_key = ENCRYPTION_AES.ENC_AES(#{resNo})
+		where cd_cust = #{cdCust}		
+	</update>
+		
+		
+	
+	<!-- 가맹점 비콘 자료 조회 -->
+	<select id="selectBeaconData" parameterMap="beaconDataReqDTO" resultMap="beaconDataResDTO">
+		SELECT BEACON_ID,
+		       MEMO,
+		       LINK_URL,
+		       IMG_URL
+		FROM BEACON_TBL@DAVISION
+		WHERE beacon_id = #{beaconId} 
+		and sysdate between frdate and todate
+		and app_yn = 'Y'
+	</select>
+		
+	
+</mapper>

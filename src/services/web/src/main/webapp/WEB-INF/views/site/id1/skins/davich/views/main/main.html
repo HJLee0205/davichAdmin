@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<title>다비치마켓</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<link rel="stylesheet" type="text/css" href="../../../skin/css/skin.css" /> <!--- 스킨 css ---->
+	<!--[if lt IE 9]>
+	<script type="text/javascript" src="../../../skin/js/html5shiv.js"></script>
+	<script type="text/javascript" src="../../../skin/js/html5shiv.printshiv.js"></script>
+	<![endif]-->
+	<script type="text/javascript" src="../../../skin/js/jquery-1.12.2.min.js"></script>
+	<script type="text/javascript" src="../../../skin/js/jquery-ui.1.9.2.min.js"></script>
+	<script type="text/javascript" src="../../../skin/js/jquery.bxslider.min.js"></script>
+	<script type="text/javascript" src="../../../skin/js/style.js"></script>
+</head>
+
+<body>
+<!--- 00.LAYOUT: --->
+<div id="wrap">
+	<!--- 00.LAYOUT: HEADER AREA --->
+	<div id="header">	
+		<!--- util menu --->
+		<div class="util_area">
+			<ul class="util_list">
+				<li><a href="#">로그인</a></li>
+				<li><a href="#">회원가입</a></li>
+				<li><a href="#">구매팁</a></li>
+				<li><a href="#">최근본상품</a></li>
+				<li><a href="#">주문배송조회</a></li>
+				<li><a href="#" class="cart"><i></i>장바구니<em>(7)</em></a></li>
+				<li><a href="#" class="mypage"><i>마이페이지</i></a></li>
+			</ul>		
+		</div>
+		<!---// util menu --->
+		
+		<!--- logo --->
+		<h1 id="logo">
+			<a href="#"><img src="${_SKIN_IMG_PATH}/header/logo.png" alt="다비치마켓"></a>
+		</h1>
+		<!---// logo --->
+				
+		<!--- search --->
+		<div id="search">
+			<label for="searchText" class="blind">검색하기</label>
+			<input type="text" id="searchText" value="">
+			<button type="button" id="btn_search" class="btn_search">검색하기</button>
+		</div>
+		<!---// search --->
+
+		<!--- theme shop --->			
+		<ul class="theme_list">
+			<li><a href="#">브랜드관</a></li>
+			<li><a href="#">기획전</a></li>
+			<li><a href="#">이벤트</a></li>
+		</ul>			
+		<!---// theme menu --->			
+	</div>	
+	<!---// 00.LAYOUT: HEADER AREA --->
+
+	<!--- 01.LAYOUT: GNB AREA --->
+	<div id="gnb">
+		<div class="layout">
+			<ul class="gnb_list">
+				<li><a href="#" class="btn_all"><i>전체메뉴</i></a></li>
+				<li><a href="#" class="gnb_menu">안경테</a></li>
+				<li><a href="#" class="gnb_menu">선글라스</a></li>
+				<li><a href="#" class="gnb_menu">콘텍트렌즈</a></li>
+				<li><a href="#" class="gnb_menu">안경렌즈</a></li>
+				<li><a href="#" class="gnb_menu">보청기</a></li>
+			</ul>
+			<ul class="theme_shop">
+				<li><a href="#">뷰티<i></i></a></li>
+				<li><a href="#">리빙<i></i></a></li>
+			</ul>
+		</div>
+		<!-- layer_all -->
+		<div class="layer_all">
+			<div class="menu_box">
+				<h2>안경테</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>선글라스</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>콘텍트렌즈</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>안경렌즈</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>보청기</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>뷰티</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<div class="menu_box">
+				<h2>리빙</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+		</div>
+		<!--// layer_all -->
+
+		<!-- layer_2depth -->
+		<div class="layer_2depth">
+			<div class="gnb_box">
+				<h2>안경테</h2>
+				<a href="#">Sun</a>
+				<a href="#">Optical</a>
+				<a href="#">Kids</a>
+				<a href="#">Personal</a>
+				<a href="#">Celebrity</a>
+				<a href="#">Lookbook</a>
+			</div>
+			<ul class="gnb_goods_list">
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/header/gnb_img01.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+							<p class="price">39,000</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/header/gnb_img01.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+							<p class="price">39,000</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/header/gnb_img01.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+							<p class="price">39,000</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/header/gnb_img01.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+							<p class="price">39,000</p>
+						</div>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<!--// layer_2depth -->
+	</div>
+	<!---// 01.LAYOUT: GNB AREA --->
+
+	<!--- 02.LAYOUT: MIDDLE AREA --->
+	<div id="main_container">
+		<div id="main_visual">
+			<!-- banner -->
+			<div class="main_banner">
+				<a href="#"><img src="${_SKIN_IMG_PATH}/main/main_right_banner.jpg" alt="데일리섀도우팔레트"></a>
+			</div>
+			<!--// banner -->
+			<!-- slider -->
+			<ul class="main_visual_slider">
+				<li>
+					<div class="slider_text">
+						<p class="title">2030 World Best<em>DAVICH</em></p>
+						<button type="button" class="btn_visual">SHOP MORE<i></i></button>
+					</div>
+					<img src="${_SKIN_IMG_PATH}/main/main_visual_banner_01.jpg" alt="">
+				</li>
+				<li>
+					<div class="slider_text">
+						<p class="title">2030 World Best<em>DAVICH</em></p>
+						<button type="button" class="btn_visual">SHOP MORE<i></i></button>
+					</div>
+					<img src="${_SKIN_IMG_PATH}/main/main_visual_banner_01.jpg" alt="">
+				</li>
+				<li>
+					<div class="slider_text">
+						<p class="title">2030 World Best<em>DAVICH</em></p>
+						<button type="button" class="btn_visual">SHOP MORE<i></i></button>
+					</div>
+					<img src="${_SKIN_IMG_PATH}/main/main_visual_banner_01.jpg" alt="">
+				</li>
+				<li>
+					<div class="slider_text">
+						<p class="title">2030 World Best<em>DAVICH</em></p>
+						<button type="button" class="btn_visual">SHOP MORE<i></i></button>
+					</div>
+					<img src="${_SKIN_IMG_PATH}/main/main_visual_banner_01.jpg" alt="">
+				</li>
+			</ul>
+			<!--// slider -->
+		</div>
+		
+		<!-- Best of Best -->
+		<div class="best_area">
+			<div class="main_layout_middle">
+				<h2 class="main_title">Best of Best</h2>
+				<div class="main_mid_tab">
+					<a href="#" data-slide-index="0" class="active"><span>안경테</span></a>
+					<a href="#" data-slide-index="1"><span>선글라스</span></a>
+					<a href="#" data-slide-index="2"><span>콘텍트렌즈</span></a>
+					<a href="#" data-slide-index="3"><span>렌즈</span></a>
+					<a href="#" data-slide-index="4"><span>보청기</span></a>
+				</div>				
+				<!-- slider -->
+				<div class="BB_slider">		
+					<!-- 안경테 -->
+					<ul class="BB_list">
+						<li class="w">
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li class="h">
+							<a href="#">
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+								<img src="${_SKIN_IMG_PATH}/main/BB_h_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product03.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product04.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product05.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product06.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+					</ul>
+					<!--// 안경테 -->
+					<!-- 선글라스 -->
+					<ul class="BB_list">
+						<li class="w">
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product06.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li class="h">
+							<a href="#">
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+								<img src="${_SKIN_IMG_PATH}/main/BB_h_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product05.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product04.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product03.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+					</ul>
+					<!--// 선글라스 -->
+					<!-- 콘텍트렌즈 -->
+					<ul class="BB_list">
+						<li class="w">
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li class="h">
+							<a href="#">
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+								<img src="${_SKIN_IMG_PATH}/main/BB_h_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product03.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product04.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product05.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product06.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+					</ul>
+					<!--// 콘텍트렌즈 -->
+					<!-- 렌즈 -->
+					<ul class="BB_list">
+						<li class="w">
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product06.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li class="h">
+							<a href="#">
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+								<img src="${_SKIN_IMG_PATH}/main/BB_h_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product05.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product04.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product03.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+					</ul>
+					<!--// 렌즈 -->
+					<!-- 보청기 -->
+					<ul class="BB_list">
+						<li class="w">
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li class="h">
+							<a href="#">
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+								<img src="${_SKIN_IMG_PATH}/main/BB_h_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product03.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product04.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product05.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+						<li>
+							<a href="#">
+								<div class="img_area">
+									<img src="${_SKIN_IMG_PATH}/main/BB_product06.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+								</div>
+								<div class="text_area">
+									<p class="name">WILLEM02 C2_윌리엄02 C2</p>
+									<p class="price">39,000</p>
+								</div>
+							</a>
+						</li>
+					</ul>
+					<!--// 보청기 -->
+				</div>				
+				<!--// slider -->
+				<div class="BB_slider_btn">
+					<button type="button" class="btn_BB_list_prev">이전으로</button>
+					<button type="button" class="btn_BB_list_next">다음으로</button>
+				</div>
+			</div>
+		</div>
+		<!--// Best of Best -->
+
+		<!-- Beauty & Living -->
+		<div class="main_layout_middle">
+			<div class="mid_banner_area">
+				<a href="#" class="floatL"><img src="${_SKIN_IMG_PATH}/main/mid_banner01.gif" alt="배너1"></a>
+				<a href="#" class="floatR"><img src="${_SKIN_IMG_PATH}/main/mid_banner02.gif" alt="배너2"></a>
+			</div>
+			<h2 class="main_title">Beauty & Living</h2>
+			<div class="BL_left">
+				<a href="#"><img src="${_SKIN_IMG_PATH}/main/BL_banner01.jpg" alt="데일리 섀도 팔레트"></a>
+			</div>
+			<div class="BL_right">
+				<ul class="BL_list">
+					<li>
+						<a href="#">
+							<div class="img_area">
+								<img src="${_SKIN_IMG_PATH}/main/BL_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</div>
+							<div class="text_area">
+								<p class="name">[이즈마인]</p>
+								리아슬림 우드 탁자의 쿠션세트
+								<p class="price">16,000원</p>
+							</div>
+						</a>
+					</li>
+					<li>
+						<a href="#">
+							<div class="img_area">
+								<img src="${_SKIN_IMG_PATH}/main/BL_product02.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</div>
+							<div class="text_area">
+								<p class="name">[이즈마인]</p>
+								리아슬림 우드 탁자의 쿠션세트
+								<p class="price">16,000원</p>
+							</div>
+						</a>
+					</li>
+					<li class="w">
+						<a href="#">
+							<div class="img_area">
+								<img src="${_SKIN_IMG_PATH}/main/BL_w_product01.jpg" alt="리아슬림 우드 탁자의 쿠션세트">
+							</div>
+							<div class="text_area">
+								<p class="name">[이즈마인]</p>
+								리아슬림 우드 탁자의 쿠션세트
+								<p class="price">16,000원</p>
+							</div>
+						</a>
+					</li>
+				</ul>
+			</div>
+			<ul class="BL_list bottom">
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/BL_product03.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">[이즈마인]</p>
+							리아슬림 우드 탁자의 쿠션세트
+							<p class="price">16,000원</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/BL_product04.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">[이즈마인]</p>
+							리아슬림 우드 탁자의 쿠션세트
+							<p class="price">16,000원</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/BL_product05.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">[이즈마인]</p>
+							리아슬림 우드 탁자의 쿠션세트
+							<p class="price">16,000원</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/BL_product06.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">[이즈마인]</p>
+							리아슬림 우드 탁자의 쿠션세트
+							<p class="price">16,000원</p>
+						</div>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<!--// Beauty & Living -->
+
+		<!-- MD Pick -->
+		<div class="main_layout_middle">
+			<div class="MD_top">
+				<a href="#" class="MD_prev"><i>이전으로</i></a>
+				<a href="#" class="MD_next"><i>다음으로</i></a>
+				 <h2>Davich O 사이트 오픈 이벤트 1.3.5.7 특별 기획전</h2>
+			</div>
+			<h2 class="main_title">MD Pick</h2>
+			<ul class="MD_list">
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product01.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product02.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product03.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product04.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product05.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product06.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product07.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<div class="img_area"><img src="${_SKIN_IMG_PATH}/main/MD_product08.jpg" alt=""></div>
+						<div class="text_area">
+							<p class="name">CNBLUE C2_씨엔블루01 C2</p>
+							<p class="price">190,800</p>
+						</div>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<!--// MD Pick -->
+
+		<!-- BRAND SHOP -->
+		<div class="main_layout_middle">
+			<h2 class="main_title">BRAND SHOP</h2>
+			<ul class="brand_list">
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img01.gif" alt="RayBan"></a></li>
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img02.gif" alt="roberto cavalli"></a></li>
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img03.gif" alt="POLICE"></a></li>
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img04.gif" alt="ESCADA"></a></li>
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img05.gif" alt="BALLY"></a></li>
+				<li><a href="#"><img src="${_SKIN_IMG_PATH}/main/brand_img06.gif" alt="BVLGARI"></a></li>
+			</ul>
+		</div>
+		<!--// BRAND SHOP -->
+	</div>
+	<!---// 02.LAYOUT: MIDDLE AREA --->
+
+	<!--- 03.LAYOUT: FOOTER AREA --->
+	<div id="bottom_area">
+		<div class="bottom_layout">
+			<div class="bottom_notice">
+				<h3 class="bottom_tit">
+					공지사항
+					<button type="button" class="btn_more">더보기</button>
+				</h3>
+				<ul class="list">
+					<li><a href="#">워너플렌즈 수령 연기 일정 공지</a></li>
+					<li><a href="#">워너플렌즈 수령 연기 일정 공지</a></li>
+					<li><a href="#">워너플렌즈 수령 연기 일정 공지</a></li>
+					<li><a href="#">신제품 러브블러썸 & 퓨어실리콘 출시</a></li>
+				</ul>
+			</div>
+			<div class="bottom_customer">
+				<h3 class="bottom_tit">고객센터</h3>
+				<p class="tel">02-752-6177</p>
+				<ul class="time">
+					<li><span>평일</span>오전 09:00 ~ 오후 06:00</li>
+					<li><span>점심</span>오후 12:00 ~ 오후 01:00</li>
+					<li><span>휴무</span>토/일/공휴일은 휴무</li>
+				</ul>
+				<button type="button" class="btn_bottom">자주찾는 질문</button>
+				<button type="button" class="btn_bottom">1:1문의하기</button>
+			</div>
+			<div class="bottom_free">
+				<a href="#"><img src="${_SKIN_IMG_PATH}/footer/free_test.gif" alt="무료시력검사 안내 바로가기"></a>
+			</div>
+			<div class="bottom_guide">
+				<ul class="list">
+					<li><a href="#"><i class="icon01"></i>다비치 매장찾기</a></li>
+					<li><a href="#"><i class="icon02"></i>구매가이드</a></li>
+					<li><a href="#"><i class="icon03"></i>방문예약</a></li>
+					<li><a href="#"><i class="icon04"></i>통합멤버쉽 안내</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div id="bottom_menu">
+		<div class="bottom_menu_layout">
+			<ul class="bottom_menu_list">
+				<li><a href="/front/company-info?siteInfoCd=01">회사소개</a></li>
+				<li><a href="/front/company-info?siteInfoCd=03">이용약관</a></li>
+				<li><a href="/front/company-info?siteInfoCd=04">개인정보처리방침</a></li>
+				<li><a href="/front/customer/customer-main">고객센터</a></li>
+			</ul>
+			<select class="family_site">
+				<option>Family Sites</option>
+			</select>
+		</div>
+	</div>
+
+	<!--- footer area --->
+	<div id="footer_area">
+		<div class="footer_layout">
+			<ul class="footer_address">
+				<li>
+					<span>㈜다비치안경체인</span>
+					<span>대표이사 : 김인규</span>
+					<span>사업자등록번호 : 201-81-79545 [<a href="#">확인</a>]</span>
+					<span>통신판매업신고번호 : 제2006-서울-692호</span>
+				</li>
+				<li>
+					<span>주소 : 서울시 중구 세종대로4길 25 광명데이콤 이프라자 빌딩 9층</span>
+					<span>대표전화 : 02-752-6177</span>
+					<span>이메일 : help@davichO.com</span>
+				</li>
+				<li class="copyright">DavichO © Davich Corp. All Rights Reserved.</li>
+			</ul>
+			<div class="sns_list">
+				<button type="button" class="btn_twitter">트위터</button>
+				<button type="button" class="btn_fbook">페이스북</button>
+				<button type="button" class="btn_instar">인스타</button>
+				<button type="button" class="btn_youtube">유투브</button>
+			</div>
+		</div>
+	</div>
+	<!---// footer area --->		
+	<!---// 00.LAYOUT: FOOTER AREA --->
+</div>
+<!---// 03.LAYOUT: --->
+
+</body>
+</html>

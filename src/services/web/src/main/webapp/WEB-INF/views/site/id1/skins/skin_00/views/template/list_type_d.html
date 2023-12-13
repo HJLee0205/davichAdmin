@@ -1,0 +1,30 @@
+<li>
+    <div class="goods_image_area">
+        <div class="img_menu">
+            <a href="javascript:goods_preview('#[goodsNo]');"><span class="menu01" title="미리보기"></span></a>
+            <a href="javascript:ListBtnUtil.insertBasket('#[goodsNo]');"><span class="menu02" title="장바구니"></span></a>
+            <a href="javascript:ListBtnUtil.insertInterest('#[goodsNo]');"><span class="menu03" title="관심상품"></span></a>
+        </div>
+        <div class="product_list_typeD_info_area">
+            <div class="product_list_typeD_info_area_left">
+                <div class="brand_title">
+                    <a href="javascript:goods_detail('#[goodsNo]');">#[brandNm]</a>
+                </div>
+                <div class="goods_title">
+                    <a href="javascript:goods_detail('#[goodsNo]');">#[goodsNm]</a>
+                </div>
+                <div class="product_info">
+                    <a href="javascript:goods_detail('#[goodsNo]');">#[prWords]</a>
+                </div>
+            </div>
+            <div class="price_info">
+                <del>#[customerPrice]</del>
+                #[salePrice]
+            </div>
+            <div class="label_area">
+                #[iconImgs]
+            </div>
+        </div>
+        <a href="javascript:goods_detail('#[goodsNo]');"><img src="#[goodsDispImgD]" alt=""></a>
+    </div>
+</li>

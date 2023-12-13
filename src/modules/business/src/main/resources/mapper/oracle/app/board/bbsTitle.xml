@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.bbsTitle">
+
+    <sql id="selectBbsInfoWhere">
+         <if test="fromRegDt != null and fromRegDt != ''">
+             <![CDATA[
+             TO_DATE(REG_DTTM, 'YYYY-MM-DD') >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+             ]]>
+         </if>
+         AND BBS_ID = #{bbsId}
+         AND DEL_YN = 'N'
+    </sql>
+
+    <select id="selectBbsTitleList" resultType="bbsTitleManageVO">
+        /* board.bbsTitle.selectBbsTitleList */
+        SELECT  TITLE_NO,TITLE_NM
+        FROM    TB_BBS_TITLE
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+
+    </select>
+
+    <select id="selectBbsTitleListTotalCount" resultType="Integer">
+        /* board.bbsTitle.selectBbsTitleListTotalCount */
+        SELECT  count(TITLE_NM)
+        FROM    TB_BBS_TITLE
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <select id="selectBbsTitleListCount" resultType="Integer">
+        /* board.bbsTitle.selectBbsTitleListCount */
+        SELECT  count(*)
+        FROM    TB_BBS_TITLE
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <insert id="insertBbsTitle">
+        /* board.bbsTitle.insertBbsTitle */
+        INSERT INTO TB_BBS_TITLE
+            (
+            	TITLE_NO,
+                BBS_ID,
+                SITE_NO,
+                TITLE_NM,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                DEL_YN
+            )
+            VALUES
+            (
+            	fn_getSeq(0, 'TITLE_NO'),
+                #{bbsId},
+                #{siteNo},
+                #{titleNm},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                'N'
+            )
+    </insert>
+
+    <update id="deleteBbsTitle">
+        /* board.bbsTitle.deleteBbsTitle */
+        UPDATE  TB_BBS_TITLE
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{updrNo},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   TITLE_NO = #{titleNo}
+    </update>
+
+</mapper>

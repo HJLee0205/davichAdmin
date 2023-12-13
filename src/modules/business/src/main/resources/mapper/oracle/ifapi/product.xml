@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="product">
+
+	<!-- 상품목록 검색 -->
+	<!-- 상품목록검색조건 -->
+	<sql id="selectProductCondition">
+		where 1=1
+		<if test="itmCode != null and itmCode != ''">
+			and itm_code like #{itmCode} || '%'
+		</if>
+		<if test="itmName != null and itmName != ''">
+			and upper(itm_name) like '%' || upper(#{itmName}) || '%'
+		</if>
+		<if test="itmKind != null and itmKind != ''">
+			and itm_kind = #{itmKind}
+		</if>
+		<if test="brandCode != null and brandCode != ''">
+			and brand_code = #{brandCode}
+		</if>
+		<if test="itmCodes != null and itmCodes.length > 0">
+			and itm_code in <foreach collection="itmCodes" item="a" open="(" close=")" separator=",">#{a}</foreach>
+		</if>
+	</sql>
+	
+	<!-- 상품목록조회 -->
+	<!--<select id="selectProductList" parameterType="productSearchDto" resultType="productDto">
+		select prd.itm_code as itmCode
+			, prd.itm_name as itmName
+			, prd.std_sprc as stdPrc
+			, prd.cls_code as clsName
+			, mak.ven_name as makName
+			, brd.brand_name as brandName
+			, fcd.ctr_name as focusName
+			, rcd.ctr_name as refractionName
+			, prd.sph as sph
+			, prd.cyl as cyl
+		from (
+			select t.* from (
+				select a.*, rownum as rn
+				from am070tbl@DAVISION a
+				<include refid="selectProductCondition"></include>
+				order by a.itm_name
+			) t
+			where rn > #{pageNo} * #{cntPerPage}
+			  and rn &lt;= (#{pageNo} + 1) * #{cntPerPage}
+			  and rownum &lt;= #{cntPerPage}
+		) prd
+		left outer join am050tbl@DAVISION mak on prd.mak_code = mak.ven_code
+		left outer join am055tbl@DAVISION brd on prd.brand_code = brd.brand_code
+		left outer join am700tbl@DAVISION fcd on fcd.ctr_id = '705' and prd.focus_code = fcd.ctr_code
+		left outer join am700tbl@DAVISION rcd on rcd.ctr_id = '706' and prd.refraction_code = rcd.ctr_code
+	</select>-->
+
+	<!-- 상품목록조회 -->
+	<select id="selectProductList" parameterType="net.danvi.dmall.biz.ifapi.prd.dto.ProductSearchReqDTO" resultType="net.danvi.dmall.biz.ifapi.prd.dto.ProductSearchResDTO$ProductInfoDTO">
+		SELECT prd.ITM_CODE                           AS ITM_CODE
+			, prd.ITM_NAME                            AS ITM_NAME
+			, prd.MAK_CODE                            AS MAK_CODE
+			, mak.VEN_NAME                            AS MAK_NAME
+			, prd.USE_IND                             AS USE_IND /*0:취급, 1:취급중지*/
+			, prd.ORD_RUTE                            AS ORD_RUTE /*4번 재고 일때 물류 재고 연동*/
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+			    WHERE CTR_ID = '124'
+			      AND CTR_CODE = prd.ORD_RUTE)        AS RUTE_NAME
+			, prd.BRAND_CODE                          AS BRAND_CODE
+			, brd.BRAND_NAME                          AS BRAND
+			, prd.SIZE_MARK                           AS FRAME_SIZE_CODE
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '440'
+				  AND CTR_CODE = prd.SIZE_MARK)       AS FRAME_SIZE
+			, prd.SHAPE_CODE                          AS FRAME_SHAPE_CODE
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '703'
+				  AND CTR_CODE = prd.SHAPE_CODE)      AS FRAME_SHAPE
+			, prd.GLASS_TYPE                          AS FRAME_STURCT
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '711'
+				  AND CTR_CODE = prd.GLASS_TYPE)      AS FRAME_STURCT_NAME
+			, prd.MATERIAL_CODE                       AS FRAME_MATERIAL_CODE
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '702'
+				  AND CTR_CODE LIKE '0%'
+				  AND CTR_CODE = prd.MATERIAL_CODE)   AS FRAME_MATERIAL
+			, prd.QOM                                 AS FRAME_MAIN_COLOR_CODE
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '754'
+				  AND CTR_CODE = prd.QOM)             AS FRAME_MAIN_COLOR
+			, prd.SUB_COLOR                           AS FRAME_SUB_COLOR_CODE
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '754'
+				  AND CTR_CODE = prd.SUB_COLOR)       AS FRAME_SUB_COLOR
+			, prd.OVERALL_SIZE                        AS JAEWON_OVERALL_SIZE
+			, prd.BRIDGE_SIZE                         AS JAEWON_BRIDGE_SIZE
+			, prd.HORIZONTAL_SIZE                     AS JAEWON_HORIZONTAL_SIZE
+			, prd.VERTICAL_SIZE                       AS JAEWON_VERTICAL_SIZE
+			, prd.LEG_SIZE                            AS JAEWON_LEG_SIZE
+			, prd.FOCUS_CODE                          AS LENS_KINDS_CODE /*종류 코드*/
+			, (SELECT CTR_NAME
+			 	 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '705'
+				  AND CTR_CODE LIKE '0%'
+				  AND CTR_CODE = prd.FOCUS_CODE)      AS LENS_KINDS /*종류 명*/
+			, prd.MY_CODE_8                           AS LENS_CORRECTION_CODE /*시력교정 코드*/
+		    , (select CTR_NAME
+		       from AM700TBL@DAVISION
+		       where CTR_ID = '397'
+		       and CTR_CODE = prd.MY_CODE_8)		  as LENS_CORRECTION /*시력교정 명*/
+			, prd.MY_CODE_9                           AS LENS_PROTECTION_CODE /*시력보호 코드*/
+		    , (select CTR_NAME
+		       from AM700TBL@DAVISION
+		       where CTR_ID = '398'
+		       and CTR_CODE = prd.MY_CODE_9)		  as LENS_PROTECTION /*시력보호 명*/
+			, prd.MY_CODE_10                          AS LENS_AGE_CODE /*연령대 코드 */
+		    , (select CTR_NAME
+		       from AM700TBL@DAVISION
+		       where CTR_ID = '389'
+		       and CTR_CODE = prd.MY_CODE_10)		  as LENS_AGE /*연령대 명*/
+			, prd.MY_CODE_11                          AS LENS_MANUFACTURER_CODE /*제조사 코드 */
+		    , (select CTR_NAME
+		       from AM700TBL@DAVISION
+		       where CTR_ID = '388'
+		       and CTR_CODE = prd.MY_CODE_11)		  as LENS_MANUFACTURER /*제조사 명*/
+			, prd.CONT_OPT                            AS CONT_OPT_CODE /*투명/컬러 코드*/
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '710'
+				  AND CTR_CODE = prd.CONT_OPT)        AS CONT_OPT /*투명/컬러 명칭*/
+			, prd.FOCUS_CODE                          AS CONT_KINDS_CODE /*시력구분 코드*/
+			, (SELECT CTR_NAME
+			     FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '705'
+				  AND CTR_CODE LIKE '1%'
+				  AND CTR_CODE = prd.FOCUS_CODE)      AS CONT_KINDS /*시력구분 명*/
+			, prd.WEAR_CODE                           AS CONT_WEAR_CODE /*착용주기*/
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '707'
+				  AND CTR_CODE = prd.WEAR_CODE)       AS CONT_WEAR /*착용주기명*/
+			, prd.ITM_COLOR                           AS CONT_COLOR_CODE /*컬러코드*/
+			, (SELECT CTR_NAME
+				 FROM AM700TBL@DAVISION
+				WHERE CTR_ID = '744'
+				  AND CTR_CODE = prd.ITM_COLOR)       AS CONT_COLOR /*컬러명*/
+			, prd.GRAPHIC_DIAMETER                    AS CONT_DIAMETER_CODE /*그래픽 직경 코드*/
+		    , (select CTR_NAME
+		       from AM700TBL@DAVISION
+		       where CTR_ID = '757'
+		       and CTR_CODE = prd.GRAPHIC_DIAMETER)	  as CONT_DIAMETER /*그래픽 직경 명*/
+			, prd.STD_CPRC                            AS CPRC /*원가*/
+			, prd.STD_WPRC                            AS SUPPLY_PRC /*공급가*/
+			, prd.STD_SPRC                            AS SALE_PRC /*판매가*/
+			, CASE WHEN prd.ORD_RUTE = '4' THEN FNC_CEN_JEGO_WEB@DAVISION('0000', prd.ITM_CODE) ELSE 0 END AS JEGO
+			, prd.MY_CODE_1                           AS MYFACE_CODE_SHAPE /*얼굴형*/
+			, prd.MY_CODE_2                           AS MYFACE_CODE_TONE /*피부톤*/
+			, prd.MY_CODE_3                           AS MYFACE_CODE_STYLE /*스타일*/
+			, prd.MY_CODE_4	                          AS MYEYE_CODE_SHAPE /*눈 모양        */
+			, prd.MY_CODE_5	                          AS MYEYE_CODE_SIZE /*동공 사이즈    */
+			, prd.MY_CODE_6	                          AS MYEYE_CODE_STYLE /*콘택트 스타일   */
+			, prd.MY_CODE_7	                          AS MYEYE_CODE_COLOR /*동공 색        */
+		FROM (
+				select t.* from (
+					select a.*, rownum as rn
+					from am070tbl@DAVISION a
+					<include refid="selectProductCondition"></include>
+					order by a.itm_name
+				) t
+				<![CDATA[
+				where rn > #{pageNo} * #{cntPerPage}
+				and rn <= (#{pageNo} + 1) * #{cntPerPage}
+				and rownum <= #{cntPerPage}
+				 ]]>
+			 ) prd, /*상품마스터*/
+			 AM050TBL@DAVISION mak, /*협력업체마스터*/
+			 AM055TBL@DAVISION brd /*브랜드마스터*/
+		WHERE 1 = 1
+		  AND prd.MAK_CODE = mak.VEN_CODE
+		  AND prd.BRAND_CODE = brd.BRAND_CODE
+	</select>
+
+	<!-- 상품목록 개수 조회 -->
+	<select id="countProductList" parameterType="net.danvi.dmall.biz.ifapi.prd.dto.ProductSearchReqDTO" resultType="int">
+		select count(*) as cnt
+		from am070tbl@DAVISION
+		<include refid="selectProductCondition"></include>
+	</select>
+	
+	<!-- 상품재고 조회 -->
+	<select id="selectProductStock" parameterType="net.danvi.dmall.biz.ifapi.prd.dto.ProductStockReqDTO" resultType="int">
+		select fnc_cen_jego@DAVISION('0000', #{erpItmCode}) from dual
+	</select>
+	
+	<!-- 브랜드 목록 검색 -->
+	<select id="selectBrandList" parameterType="net.danvi.dmall.biz.ifapi.prd.dto.BrandSearchReqDTO" resultType="net.danvi.dmall.biz.ifapi.prd.dto.BrandSearchResDTO$BrandDTO">
+		select brand_code as brandCode
+			, brand_name as brandName
+			, brand_name_kr as brandNameKr
+		from am055tbl@DAVISION a
+		where (upper(a.brand_name) like '%' || upper(#{brandName}) || '%' or upper(a.brand_name_kr) like '%' || upper(#{brandName}) || '%')
+		<if test="itmKind eq '1'.toString()">
+			and a.d01 = '1'
+		</if>
+		<if test="itmKind eq '2'.toString()">
+			and a.d02 = '1'
+		</if>
+		<if test="itmKind eq '3'.toString()">
+			and a.d03 = '1'
+		</if>
+		<if test="itmKind eq '4'.toString()">
+			and a.d04 = '1'
+		</if>
+		<if test="itmKind eq '5'.toString()">
+			and a.d05 = '1'
+		</if>
+		and exists(
+			select 1 
+			from am070tbl@DAVISION
+			where brand_code = a.brand_code 
+			and use_ind = '0'
+<!-- 			<if test="itmKind eq '1'.toString()"> -->
+<!-- 				and itm_kind = '01'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '2'.toString()"> -->
+<!-- 				and itm_kind = '02'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '3'.toString()"> -->
+<!-- 				and itm_kind = '03'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '4'.toString()"> -->
+<!-- 				and itm_kind = '04'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '5'.toString()"> -->
+<!-- 				and itm_kind = '11'  -->
+<!-- 			</if>  -->
+			and rownum = 1
+		)
+	</select>
+	
+	<!-- 상품분류 목록 조회 -->
+	<select id="selectItmKindList" resultType="net.danvi.dmall.biz.ifapi.prd.dto.ItmKindSearchResDTO$ItmKindDTO">
+		select ctr_code as code
+			, ctr_name as name
+		from am700tbl@DAVISION
+		where ctr_id = '708'
+	</select>
+</mapper>

@@ -1,0 +1,23 @@
+properties:
+  log:
+    root.name: admin
+
+---
+spring:
+  profile: local
+properties:
+
+---
+spring:
+  profile: dev
+properties:
+
+---
+spring:
+  profile: sandbox
+properties:
+
+---
+spring:
+  profile: stage
+properties:

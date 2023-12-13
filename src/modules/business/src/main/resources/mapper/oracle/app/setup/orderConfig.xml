@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.order.config">
+    <!-- 주문관련 설정정보 조회 -->
+    <select id="selectOrderConfig" parameterType="long" resultType="orderConfigVO">
+        /* setup.delivery.selectCourierListPaging */
+	        SELECT
+				  ts.GOODS_AUTO_DEL_USE_YN
+				, ts.GOODS_KEEP_DCNT
+				, ts.SOLDOUT_GOODS_AUTO_DEL_YN
+				, ts.GOODS_KEEP_QTT_LIMIT_YN
+				, ts.GOODS_KEEP_QTT
+				, ts.BASKET_PAGE_MOV_YN
+				, ts.STOCK_SET_YN
+				, ts.AVAIL_STOCK_SALE_YN
+				, ts.AVAIL_STOCK_QTT
+	        FROM    TS_SITE ts
+	        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 주문관련 설정정보 수정 -->
+    <update id="updateOrderConfig">
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+				  GOODS_AUTO_DEL_USE_YN = #{goodsAutoDelUseYn}
+				<if test="goodsKeepDcnt != null and goodsKeepDcnt != ''">
+				, GOODS_KEEP_DCNT = #{goodsKeepDcnt}
+				</if>
+				, SOLDOUT_GOODS_AUTO_DEL_YN = #{soldoutGoodsAutoDelYn}
+				, GOODS_KEEP_QTT_LIMIT_YN = #{goodsKeepQttLimitYn}
+				, GOODS_KEEP_QTT = #{goodsKeepQtt}
+				, BASKET_PAGE_MOV_YN = #{basketPageMovYn}
+				, STOCK_SET_YN = #{stockSetYn}
+				, AVAIL_STOCK_SALE_YN = #{availStockSaleYn}
+				<if test="availStockQtt != null and availStockQtt != ''">
+				, AVAIL_STOCK_QTT = #{availStockQtt}
+				</if>
+				, UPDR_NO = #{updrNo}
+				, UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+				, GOODS_AUTO_DEL_USE_YN
+				<if test="goodsKeepDcnt != null and goodsKeepDcnt != ''">
+				, GOODS_KEEP_DCNT
+				</if>
+				, SOLDOUT_GOODS_AUTO_DEL_YN
+				, GOODS_KEEP_QTT_LIMIT_YN
+				, GOODS_KEEP_QTT
+				, BASKET_PAGE_MOV_YN
+				, STOCK_SET_YN
+				, AVAIL_STOCK_SALE_YN
+				<if test="availStockQtt != null and availStockQtt != ''">
+				, AVAIL_STOCK_QTT
+				</if>
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+				, #{goodsAutoDelUseYn}
+				<if test="goodsKeepDcnt != null and goodsKeepDcnt != ''">
+				, #{goodsKeepDcnt}
+				</if>
+				, #{soldoutGoodsAutoDelYn}
+				, #{goodsKeepQttLimitYn}
+				, #{goodsKeepQtt}
+				, #{basketPageMovYn}
+				, #{stockSetYn}
+				, #{availStockSaleYn}
+				<if test="availStockQtt != null and availStockQtt != ''">
+				, #{availStockQtt}
+				</if>
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+</mapper>

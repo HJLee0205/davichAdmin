@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.sns.config">
+    <!-- 콘텐츠 공유관리 설정 조회 -->
+    <select id="selectContentsConfig" parameterType="long" resultType="SnsConfigVO">
+        /* setup.sns.config.selectContentsConfig */
+        SELECT
+            CONTS_USE_YN
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 콘텐츠 공유관리 설정 수정 -->
+    <update id="updateContentsConfig">
+	    /* setup.sns.config.updateContentsConfig */
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+	            CONTS_USE_YN=#{contsUseYn}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+	            , CONTS_USE_YN
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+	            , #{contsUseYn}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+
+    <!-- SNS 설정 조회 -->
+    <select id="selectSnsConfig" resultType="SnsConfigVO">
+        /* setup.sns.config.selectSnsConfig */
+        SELECT
+            OUTSIDE_LINK_CD
+            , LINK_USE_YN
+            , LINK_OPER_YN
+            , APP_ID
+            , APP_SECRET
+            , APP_NAMESPACE
+            , SPMALL_NM
+            , DOMAIN_REG
+            , SPMALL_LOGO_IMG
+            , JAVASCRIPT_KEY
+            , KOREAN_DOMAIN
+            , CHG_RESULT
+        FROM    TS_SNS_OUTSIDE_LINK
+        WHERE   SITE_NO = #{siteNo}
+        <if test="outsideLinkCd != '' and outsideLinkCd != null">
+            AND OUTSIDE_LINK_CD = #{outsideLinkCd}
+        </if>
+    </select>
+
+    <!-- SNS 설정 조회 -->
+    <select id="selectSnsConfigList" resultType="SnsConfigVO">
+        /* setup.sns.config.selectSnsConfigList */
+        SELECT
+            OUTSIDE_LINK_CD
+            ,(SELECT CD_NM FROM TA_CMN_CD_DTL
+	          WHERE GRP_CD = 'OUTSIDE_LINK_CD' AND CD = OUTSIDE_LINK_CD) AS OUTSIDE_LINK_NM
+	        , LINK_USE_YN
+	        , LINK_OPER_YN
+	        , APP_ID
+	        , APP_SECRET
+	        , JAVASCRIPT_KEY
+        FROM    TS_SNS_OUTSIDE_LINK
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- SNS 설정 수정 -->
+    <update id="updateSnsConfig">
+        /* setup.sns.config.updateSnsConfig */
+		MERGE INTO TS_SNS_OUTSIDE_LINK
+		USING dual
+		ON (SITE_NO = #{siteNo} AND OUTSIDE_LINK_CD = #{outsideLinkCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+	              LINK_USE_YN=#{linkUseYn}
+	            , LINK_OPER_YN=#{linkOperYn}
+	            , APP_ID=#{appId}
+	            , APP_SECRET=#{appSecret}
+	            , APP_NAMESPACE=#{appNamespace}
+	            , SPMALL_NM=#{spmallNm}
+	            , DOMAIN_REG=#{domainReg}
+	            , SPMALL_LOGO_IMG=#{spmallLogoImg}
+	            , JAVASCRIPT_KEY=#{javascriptKey}
+	            , KOREAN_DOMAIN=#{koreanDomain}
+	            , CHG_RESULT=#{chgResult}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+	            , OUTSIDE_LINK_CD
+	            , LINK_USE_YN
+	            , LINK_OPER_YN
+	            , APP_ID
+	            , APP_SECRET
+	            , APP_NAMESPACE
+	            , SPMALL_NM
+	            , DOMAIN_REG
+	            , SPMALL_LOGO_IMG
+	            , JAVASCRIPT_KEY
+	            , KOREAN_DOMAIN
+	            , CHG_RESULT
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+	            , #{outsideLinkCd}
+	            , #{linkUseYn}
+	            , #{linkOperYn}
+	            , #{appId}
+	            , #{appSecret}
+	            , #{appNamespace}
+	            , #{spmallNm}
+	            , #{domainReg}
+	            , #{spmallLogoImg}
+	            , #{javascriptKey}
+	            , #{koreanDomain}
+	            , #{chgResult}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+</mapper>

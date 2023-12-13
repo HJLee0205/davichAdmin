@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.term.config">
+    <!-- 약관 개인정보 관련 리스트 조회 -->
+    <select id="selectTermConfigListPaging" parameterType="termConfigSO" resultType="termConfigListVO">
+        /* setup.term.config.selectTermConfigList */
+        SELECT *
+        FROM
+            (
+                SELECT B.*, B.tot_cnt - rownum + 1 AS SORT_NUM
+                FROM
+                    (
+                        SELECT rownum AS PAGING_NUM, A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT TITLE,
+                                       REG_DTTM as REG_DT,
+                                       SITE_INFO_NO
+                                FROM TS_SITE_INFO
+                                WHERE SITE_NO = #{siteNo}
+                                  AND SITE_INFO_CD = #{siteInfoCd}
+                                order by REG_DTTM desc
+                            ) A
+                    ) B
+            )
+        <include refid="common.pageSql"/>
+    </select>
+    <select id="selectTermConfigListPagingCount" resultType="Integer">
+        /* setup.term.config.selectTermConfigList */
+        SELECT count(*)
+        FROM
+            (
+                SELECT B.*, B.tot_cnt - rownum + 1 AS SORT_NUM
+                FROM
+                    (
+                        SELECT rownum AS PAGING_NUM, A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT TITLE,
+                                       REG_DTTM,
+                                       SITE_INFO_NO
+                                FROM TS_SITE_INFO
+                                WHERE SITE_NO = #{siteNo}
+                                  AND SITE_INFO_CD = #{siteInfoCd}
+                            ) A
+                    ) B
+            )
+    </select>
+    <select id="selectTermConfigListPagingTotalCount" resultType="Integer">
+        /* setup.term.config.selectTermConfigList */
+        SELECT count(*)
+        FROM
+            (
+                SELECT B.*, B.tot_cnt - rownum + 1 AS SORT_NUM
+                FROM
+                    (
+                        SELECT rownum AS PAGING_NUM, A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT TITLE,
+                                       REG_DTTM,
+                                       SITE_INFO_NO
+                                FROM TS_SITE_INFO
+                                WHERE SITE_NO = #{siteNo}
+                                  AND SITE_INFO_CD = #{siteInfoCd}
+                            ) A
+                    ) B
+            )
+    </select>
+
+    <!-- 약관 개인정보 관련 설정정보 조회 -->
+    <select id="selectTermConfig" parameterType="termConfigSO" resultType="termConfigVO">
+        /* setup.term.config.selectTermConfig */
+        SELECT SITE_INFO_NO
+             , SITE_NO
+             , TITLE
+             , SITE_INFO_CD
+             , CONTENT
+             , USE_YN
+         FROM TS_SITE_INFO
+        WHERE SITE_NO = #{siteNo}
+          AND SITE_INFO_CD = #{siteInfoCd}
+          and SITE_INFO_NO = #{siteInfoNo}
+    </select>
+
+
+    <!-- 사이트 정보(에디터 편집) 등록 전 체크 -->
+    <select id="checkTsSiteInfoTermConfigCnt" resultType="Integer">
+        select count(*)
+         from TS_SITE_INFO
+        where SITE_NO = #{siteNo}
+          and SITE_INFO_CD = #{siteInfoCd}
+    </select>
+
+    <!-- 사이트 정보(에디터 편집) 등록 -->
+    <insert id="insertTsSiteInfoTermConfig">
+        insert into TS_SITE_INFO( SITE_INFO_NO
+                                , SITE_NO
+                                , TITLE
+                                , SITE_INFO_CD
+                                , CONTENT
+                                , USE_YN
+                                , REGR_NO
+                                , REG_DTTM)
+        VALUES ( #{siteInfoNo}
+               , #{siteNo}
+               , #{title}
+               , #{siteInfoCd}
+               , #{content:CLOB}
+               , #{useYn}
+               , #{regrNo}
+               , sysdate)
+    </insert>
+
+    <!-- 사이트 정보(에디터 편집) 수정 -->
+    <update id="updateTsSiteInfoTermConfig">
+        update TS_SITE_INFO
+        set CONTENT  = #{content:CLOB}
+          , TITLE    = #{title}
+          , USE_YN   = #{useYn}
+          , UPDR_NO  = #{updrNo}
+          , UPD_DTTM = sysdate
+        where SITE_INFO_NO = #{siteInfoNo}
+          and SITE_NO = #{siteNo}
+          and SITE_INFO_CD = #{siteInfoCd}
+    </update>
+
+    <!-- 약관 개인정보 관련 설정정보 수정  -->
+    <!--
+    <update id="updateTermConfig">
+    	MERGE INTO TS_SITE_INFO
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND SITE_INFO_CD = #{siteInfoCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          CONTENT = #{content}
+		        , USE_YN = #{useYn}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+		        , SITE_INFO_CD
+		        , CONTENT
+		        , USE_YN
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{siteInfoCd}
+		        , #{content}
+		        , #{useYn}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+    -->
+
+    <select id="selectTermApplyInfo" parameterType="termConfigSO" resultType="Integer">
+        /* setup.term.config.selectTermApplyInfo */
+        SELECT count(1)
+        FROM EAA07_INFO_NEW@davi
+        WHERE KEY_DATA = #{keyData}
+          AND CLAUSE_AGREEMENT_1 = 'Y'
+          AND CLAUSE_AGREEMENT_2 = 'Y'
+          AND CLAUSE_AGREEMENT_3 = 'Y'
+          AND CLAUSE_AGREEMENT_4 = 'Y'
+          AND CLAUSE_AGREEMENT_5 = 'Y'
+    </select>
+
+
+    <!-- 약관동의 사인정보 조회 -->
+    <select id="selectTermApplySingInfo" parameterType="termConfigSO" resultType="termConfigVO">
+        /* setup.term.config.selectTermApplySingInfo */
+        SELECT SIGN
+        FROM DAVICH.EAA07_INFO_NEW
+        WHERE KEY_DATA = #{keyData}
+
+    </select>
+
+    <!-- 약관 개인정보 관련 정보 삭제 -->
+    <delete id="deleteTsSiteInfoTermConfig">
+        /* setup.term.config.deleteTsSiteInfoTermConfig - 약관 개인정보 관련 정보 삭제 */
+        DELETE
+        FROM TS_SITE_INFO
+        where SITE_NO = #{siteNo}
+          and SITE_INFO_NO = #{siteInfoNo}
+    </delete>
+</mapper>

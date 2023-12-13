@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="promotion.freebieCndt">
+    <!--     사은품이벤트 목록조회 조건절 -->
+    <sql id="selectFreebieCndtListWhere">
+        <choose>
+            <when test="periodSelOption == 'applyStartDttm'">
+                  <if test="searchStartDate != null and searchStartDate != ''">
+		              <![CDATA[
+		              AND APPLY_START_DTTM >= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')
+		              ]]>
+		          </if>
+		          <if test="searchEndDate != null and searchEndDate != ''">
+                      <![CDATA[
+                      AND APPLY_START_DTTM < TO_DATE(#{searchEndDate}, 'YYYY-MM-DD') + 1
+                      ]]>
+                  </if>
+            </when>
+            <when test="periodSelOption == 'applyEndDttm'">
+                  <if test="searchStartDate != null and searchStartDate != ''">
+                      <![CDATA[
+                      AND APPLY_END_DTTM >= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')
+                      ]]>
+                  </if>
+                  <if test="searchEndDate != null and searchEndDate != ''">
+                      <![CDATA[
+                      AND APPLY_END_DTTM < TO_DATE(#{searchEndDate}, 'YYYY-MM-DD') + 1
+                      ]]>
+                  </if>
+            </when>
+        </choose>
+          <if test="freebieStatusCds != null">
+              <choose>
+                    <when test = "freebieStatusCds.length> 0">
+                          AND
+                          <foreach collection="freebieStatusCds" item="status" index="index" open="(" close=")" separator=" OR ">
+                            <if test="status == '01'"> <!-- 진행 전 -->
+                            <![CDATA[APPLY_START_DTTM > sysdate]]>
+                            </if>
+                            <if test="status == '02'"> <!-- 진행 중 -->
+                            <![CDATA[(APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM) ]]>
+                            </if>
+                            <if test="status == '03'"> <!-- 종료 -->
+                            <![CDATA[APPLY_END_DTTM <= sysdate]]>
+                            </if>
+                          </foreach>
+                    </when>
+              </choose>
+          </if>
+          <if test="searchWords != null and searchWords != ''">
+              AND FREEBIE_EVENT_NM LIKE '%'||#{searchWords}||'%'
+          </if>
+    </sql>
+
+    <sql id="selectFreebieCndtOrder">
+	        <choose>
+	            <when test="periodSelOption == 'applyStartDttm'">
+	            ORDER BY APPLY_START_DTTM ASC
+	            </when>
+	            <when test="periodSelOption == 'applyEndDttm'">
+	            ORDER BY APPLY_END_DTTM ASC
+	            </when>
+	        </choose>
+    </sql>
+
+    <select id="selectFreebieCndtListPaging" parameterType="freebieCndtSO" resultType="freebieCndtVO">
+        /* promotion.freebieCndt.selectFreebieCndtListPaging - 사은품이벤트 목록 조회*/
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, T.*
+			FROM
+			(
+				select AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+			            SELECT AA.*
+			            FROM (
+					            SELECT
+					                    DISTINCT FREEBIE_EVENT_NO,
+					                    FREEBIE_EVENT_NM,
+					                    APPLY_START_DTTM,
+					                    APPLY_END_DTTM,
+					                    FREEBIE_PRESENT_CNDT_CD,
+					                    TO_CHAR(REG_DTTM,'YYYY-MM-DD HH24:MI:SS') AS REG_DTTM,
+					                    CASE
+			                              WHEN <![CDATA[APPLY_START_DTTM > sysdate]]> THEN '진행전'
+			                              WHEN <![CDATA[(APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM) ]]>  THEN '진행중'
+			                              WHEN <![CDATA[APPLY_END_DTTM <= sysdate]]> THEN '종료'
+					                    END  AS FREEBIE_STATUS_NM,
+					                    SITE_NO,
+					                    USE_YN
+
+					            FROM   TP_FREEBIE_EVENT
+					            WHERE  DEL_YN = 'N'
+					            AND    SITE_NO = #{siteNo}
+						        <include refid="selectFreebieCndtOrder" />
+						) AA
+				        WHERE 1=1
+				        <include refid="selectFreebieCndtListWhere" />
+					) A
+				) AA
+				order by SORT_NUM DESC
+			) T
+		)
+       	<include refid="common.pageSql" />
+    </select>
+
+
+    <select id="selectFreebieCndtListPagingCount" resultType="Integer">
+        /* promotion.freebieCndt.selectFreebieCndtListPagingCount - 사은품이벤트 목록 조회결과 개수*/
+        SELECT COUNT(DISTINCT FREEBIE_EVENT_NO)
+            FROM    TP_FREEBIE_EVENT E
+            WHERE  DEL_YN = 'N'
+        <include refid="selectFreebieCndtListWhere" />
+        <if test="siteNo != null">
+         AND SITE_NO = #{siteNo}
+        </if>
+    </select>
+
+    <select id="selectFreebieCndtListPagingTotalCount" resultType="Integer">
+        /* promotion.freebieCndt.selectFreebieCndtListPagingTotalCount - 총 사은품이벤트 목록 개수*/
+         SELECT COUNT(DISTINCT FREEBIE_EVENT_NO)
+            FROM    TP_FREEBIE_EVENT E
+            WHERE  DEL_YN = 'N'
+	        <if test="siteNo != null">
+	          AND SITE_NO = #{siteNo}
+	        </if>
+    </select>
+
+
+
+    <insert id="insertFreebieCndt">
+        <selectKey keyProperty="freebieEventNo" order="BEFORE" resultType="java.lang.Integer">
+             SELECT NVL(MAX(FREEBIE_EVENT_NO), 0) + 1 AS FREEBIE_EVENT_NO
+             FROM   TP_FREEBIE_EVENT
+        </selectKey>
+        /* promotion.freebieCndt.insertFreebieCndt - 사은품이벤트 정보 등록*/
+        INSERT INTO TP_FREEBIE_EVENT
+            (
+                FREEBIE_EVENT_NO,
+                SITE_NO,
+                FREEBIE_EVENT_NM,
+                FREEBIE_EVENT_DSCRT,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                FREEBIE_PRESENT_CNDT_CD,
+                FREEBIE_EVENT_AMT,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                DEL_YN,
+                USE_YN
+            )
+            VALUES
+            (
+                #{freebieEventNo},
+                #{siteNo},
+                #{freebieEventNm},
+                #{freebieEventDscrt},
+                to_date(#{applyStartDttm}, 'YYYY-MM-DD HH24:MI'),
+                to_date(#{applyEndDttm}, 'YYYY-MM-DD HH24:MI'),
+                NVL(#{freebiePresentCndtCd}, '02'),
+                NVL(#{freebieEventAmt}, 0),
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                'N',
+                'Y'
+            )
+    </insert>
+
+
+   <insert id="insertFreebieCndtGoods">
+        /* promotion.freebieCndt.insertFreebieCndtGoods - 사은품이벤트 상품 등록*/
+        INSERT INTO TP_FREEBIE_EVENT_GOODS
+            (
+               FREEBIE_EVENT_NO,
+               FREEBIE_NO,
+               REG_DTTM,
+               REGR_NO,
+               UPD_DTTM,
+               UPDR_NO,
+               USE_YN
+            )
+            VALUES
+            (
+               #{freebieEventNo},
+               #{freebieNo},
+               sysdate,
+               #{regrNo},
+               sysdate,
+               #{updrNo},
+               NVL(#{useYn}, 'Y')
+            )
+    </insert>
+
+
+    <insert id="insertFreebieCndtTarget">
+        /* promotion.freebieCndt.insertFreebieCndtTarget - 사은품이벤트 대상 등록*/
+        INSERT INTO TP_FREEBIE_EVENT_TARGET
+            (
+               FREEBIE_EVENT_NO,
+               GOODS_NO,
+               REG_DTTM,
+               REGR_NO,
+               UPD_DTTM,
+               UPDR_NO,
+               USE_YN
+            )
+            VALUES
+            (
+               #{freebieEventNo},
+               #{goodsNo},
+               sysdate,
+               #{regrNo},
+               sysdate,
+               #{updrNo},
+               NVL(#{useYn}, 'Y')
+            )
+    </insert>
+
+    <update id="updateFreebieCndt">
+        /* promotion.freebieCndt.updateFreebieCndt - 사은품이벤트 정보 수정*/
+        UPDATE  TP_FREEBIE_EVENT
+        SET
+                FREEBIE_EVENT_NM        = #{freebieEventNm},
+                FREEBIE_EVENT_DSCRT     = #{freebieEventDscrt},
+                APPLY_START_DTTM        = to_date(#{applyStartDttm}, 'YYYY-MM-DD HH24:MI'),
+                APPLY_END_DTTM          = to_date(#{applyEndDttm}, 'YYYY-MM-DD HH24:MI'),
+                FREEBIE_EVENT_AMT       = NVL(#{freebieEventAmt}, 0),
+                FREEBIE_PRESENT_CNDT_CD = #{freebiePresentCndtCd},
+                USE_YN                  = NVL(#{useYn}, 'Y'),
+                UPD_DTTM                = sysdate,
+                UPDR_NO                 = #{updrNo}
+        WHERE   FREEBIE_EVENT_NO = #{freebieEventNo}
+    </update>
+
+    <delete id="deleteFreebieGoods">
+    /* promotion.freebieCndt.deleteFreebieGoods - 사은품이벤트 상품 삭제*/
+        DELETE  FROM TP_FREEBIE_EVENT_GOODS
+        WHERE FREEBIE_EVENT_NO = #{freebieEventNo}
+    </delete>
+
+    <delete id="deleteFreebieTarget">
+    /* promotion.freebieCndt.deleteFreebieTarget - 사은품이벤트 대상 삭제 */
+        DELETE  FROM TP_FREEBIE_EVENT_TARGET
+        WHERE FREEBIE_EVENT_NO = #{freebieEventNo}
+    </delete>
+
+    <update id="deleteFreebieCndt">
+        /* promotion.freebieCndt.deleteFreebieCndt - 사은품이벤트 삭제*/
+        UPDATE  TP_FREEBIE_EVENT
+        SET     DEL_YN = 'Y',
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate,
+                DELR_NO = #{updrNo},
+                DEL_DTTM = sysdate
+        WHERE   FREEBIE_EVENT_NO IN <foreach collection="list" item="item" open="(" close=")" separator=",">#{item.freebieEventNo}</foreach>
+    </update>
+
+    <select id="selectFreebieCndtDtl" resultType="freebieCndtVO">
+            /* promotion.freebieCndt.selectFreebieCndtDtl - 사은품이벤트 정보 조회 (단건)*/
+            SELECT FREEBIE_EVENT_NO,
+                   FREEBIE_EVENT_NM,
+                   FREEBIE_EVENT_DSCRT,
+                   TO_CHAR(APPLY_START_DTTM,'YYYYMMDDHH24MI') AS APPLY_START_DTTM,
+                   TO_CHAR(APPLY_END_DTTM,'YYYYMMDDHH24MI') AS APPLY_END_DTTM,
+                   FREEBIE_PRESENT_CNDT_CD,   <!-- 사은품증정 조건코드 -->
+                   FREEBIE_EVENT_AMT          <!-- 사은품증정 조건코드내용이 총 결제금액일 경우 금액 -->
+            FROM   TP_FREEBIE_EVENT
+            WHERE  FREEBIE_EVENT_NO = #{freebieEventNo}
+            AND    SITE_NO = #{siteNo}
+            AND    DEL_YN = 'N'
+            AND    USE_YN = 'Y'
+    </select>
+
+    <!-- 사은품대상 전체조회 : 사은품대상 중복방지 -->
+    <!-- <select id="selectFreebieCndtTargetTotal" resultType="freebieTargetVO">
+          /* selectFreebieCndtTargetTotal */
+          SELECT TFET.GOODS_NO,
+                 TFE.FREEBIE_EVENT_NM
+          FROM   TP_FREEBIE_EVENT_TARGET TFET INNER JOIN TP_FREEBIE_EVENT TFE ON TFET.FREEBIE_EVENT_NO = TFE.FREEBIE_EVENT_NO
+          WHERE  TFET.DEL_YN = 'N'
+          AND TFE.DEL_YN = 'N'
+          AND TFE.USE_YN = 'Y'
+          AND TFET.USE_YN = 'Y'
+          <if test="siteNo != null and siteNo != ''">
+          AND TFE.SITE_NO = #{siteNo}
+          </if>
+          <![CDATA[
+          AND TFE.APPLY_END_DTTM > sysdate
+          ]]>
+    </select> -->
+
+    <select id="selectFreebieGoods" resultType="freebieGoodsVO">
+        /* promotion.freebieCndt.selectFreebieGoods - 사은품이벤트 상품 조회*/
+        SELECT TF.FREEBIE_NM,
+               IMG.IMG_PATH,
+               IMG.IMG_NM,
+               TF.FREEBIE_NO,
+               TFEG.FREEBIE_EVENT_NO,
+               TF.SIMPLE_DSCRT,
+               (SELECT FREEBIE_EVENT_DSCRT
+                FROM   TP_FREEBIE_EVENT
+                WHERE  FREEBIE_EVENT_NO = TFEG.FREEBIE_EVENT_NO AND SITE_NO = #{siteNo}) AS FREEBIE_EVENT_DSCRT,
+               (SELECT FREEBIE_EVENT_AMT
+                FROM   TP_FREEBIE_EVENT
+                WHERE  FREEBIE_EVENT_NO = TFEG.FREEBIE_EVENT_NO AND SITE_NO = #{siteNo}) AS FREEBIE_EVENT_AMT,
+               (SELECT FREEBIE_PRESENT_CNDT_CD
+                FROM TP_FREEBIE_EVENT
+                WHERE FREEBIE_EVENT_NO = TFEG.FREEBIE_EVENT_NO AND SITE_NO = #{siteNo}) AS FREEBIE_PRESENT_CNDT_CD
+        FROM   TP_FREEBIE_EVENT_GOODS TFEG LEFT OUTER JOIN ( SELECT FREEBIE_NO,
+                                                                       IMG_PATH,
+                                                                       IMG_NM
+                                                                 FROM TG_FREEBIE_IMG_DTL
+                                                                WHERE FREEBIE_IMG_TYPE = '03') IMG ON TFEG.FREEBIE_NO = IMG.FREEBIE_NO
+                                              LEFT OUTER JOIN TG_FREEBIE TF ON TFEG.FREEBIE_NO = TF.FREEBIE_NO AND TF.SITE_NO = #{siteNo}
+        WHERE TFEG.FREEBIE_EVENT_NO = #{freebieEventNo}
+    </select>
+
+    <select id="selectFreebieTarget" resultType="freebieTargetVO">
+        /* promotion.freebieCndt.selectFreebieTarget - 사은품이벤트 대상 조회*/
+        SELECT  fn_getGoodsImgPath(GOODS_NO, '03') AS IMG_PATH,
+                fn_getGoodsNm(GOODS_NO) AS GOODS_NM,
+                GOODS_NO
+        FROM    TP_FREEBIE_EVENT_TARGET
+        WHERE   1=1
+        AND     FREEBIE_EVENT_NO = #{freebieEventNo}
+    </select>
+
+    <select id="selectFreebieListByGoodsNo" resultType="freebieGoodsVO">
+        /* promotion.freebieCndt.selectFreebieByGoodsNo - 상품번호로 사은품이벤트 조회*/
+        SELECT
+            TFE.FREEBIE_EVENT_NO
+        FROM TP_FREEBIE_EVENT TFE, TP_FREEBIE_EVENT_TARGET TFET
+        WHERE TFE.FREEBIE_EVENT_NO = TFET.FREEBIE_EVENT_NO
+        AND TFET.GOODS_NO = #{goodsNo}
+        AND TFE.FREEBIE_PRESENT_CNDT_CD = '02'
+        AND TFE.USE_YN = 'Y'
+        AND TFE.DEL_YN = 'N'
+        AND TFE.SITE_NO = #{siteNo}
+        <![CDATA[
+        AND TFE.APPLY_START_DTTM <= TO_CHAR(sysdate, 'YYYY-MM-DD')
+        AND TFE.APPLY_END_DTTM >= TO_CHAR(sysdate, 'YYYY-MM-DD')
+        ]]>
+        UNION
+        SELECT
+            FREEBIE_EVENT_NO
+        FROM TP_FREEBIE_EVENT
+        WHERE FREEBIE_PRESENT_CNDT_CD = '01'
+        AND USE_YN = 'Y'
+        AND DEL_YN = 'N'
+        AND SITE_NO = #{siteNo}
+        <if test="freebieEventAmt != null and freebieEventAmt != ''">
+        <![CDATA[
+        AND FREEBIE_EVENT_AMT <= #{freebieEventAmt}
+        ]]>
+        </if>
+        <![CDATA[
+        AND APPLY_START_DTTM <= TO_CHAR(sysdate, 'YYYY-MM-DD')
+        AND APPLY_END_DTTM >= TO_CHAR(sysdate, 'YYYY-MM-DD')
+        ]]>
+    </select>
+</mapper>

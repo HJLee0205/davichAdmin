@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<setting name="cacheEnabled" value="true" />
+		<setting name="useGeneratedKeys" value="false" />
+		<setting name="callSettersOnNulls" value="true"/>
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+		<setting name="defaultExecutorType" value="REUSE" />
+		<setting name="jdbcTypeForNull" value="NULL" />
+	</settings>
+
+	<typeAliases>
+		<typeAlias type="net.danvi.dmall.biz.example.model.CmnCdGrpVO" alias="cmnCdGrp" />
+		<typeAlias type="dmall.framework.common.model.FileVO" alias="fileVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsVO" alias="goodsVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsSO" alias="goodsSO" />
+		<typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsPO" alias="goodsPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsRecommendVO" alias="recommendVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsRecommendSO" alias="recommendSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsRecommendPO" alias="recommendPO" />
+		<typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebieVO" alias="freebieVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebieSO" alias="freebieSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebiePO" alias="freebiePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebieImageInfoVO" alias="freebieImageInfoVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebieImageDtlVO" alias="freebieImageDtlVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FreebieImageDtlPO" alias="freebieImageDtlPO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.board.model.BbsManageVO" alias="bbsManageVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.board.model.BbsLettManageVO" alias="bbsLettManageVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.board.model.BbsCmntManageVO" alias="bbsCmntManageVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.board.model.BbsTitleManageVO" alias="bbsTitleManageVO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.setup.banned.model.BannedManageVO" alias="bannedManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.banned.model.BannedConfigVO" alias="bannedConfigVO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.AtchFileVO" alias="atchFileVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.SmsSendVO" alias="smsSendVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.SmsSendSO" alias="smsSendSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.InnerSmsSendHistSO" alias="innerSmsSendHistSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SmsSendHistVO" alias="smsSendHistVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.EmailSendVO" alias="emailSendVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.EmailSendSO" alias="emailSendSO" />
+		<typeAlias type="net.danvi.dmall.biz.app.operation.model.EmailSendPO" alias="emailSendPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.ReplaceCdSO" alias="replaceCdSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.ReplaceCdVO" alias="replaceCdVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.ReplaceCdPO" alias="replaceCdPO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.basket.model.BasketVO" alias="basketVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.basket.model.BasketOptVO" alias="basketOptVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.interest.model.InterestVO" alias="interestVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.OrderVO" alias="orderVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.OrderPO" alias="orderPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.OrderSO" alias="orderSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimVO" alias="claimVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimPO" alias="claimPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimSO" alias="claimSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimInfoVO" alias="claimInfoVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimInfoPO" alias="claimInfoPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimGoodsVO" alias="claimGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimGoodsPO" alias="claimGoodsPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimGoodsSO" alias="claimGoodsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimPayRefundPO" alias="claimPayRefundPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.ClaimPayRefundVO" alias="claimPayRefundVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO" alias="deliveryVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.delivery.model.DeliveryPO" alias="deliveryPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.delivery.model.DeliverySO" alias="deliverySO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.OrderInfoVO" alias="orderInfoVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.manage.model.OrderInfoPO" alias="orderInfoPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofSO" alias="salesProofSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO" alias="salesProofVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofPO" alias="salesProofPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.reservation.model.ReservationSO" alias="reservationSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.order.reservation.model.ReservationVO" alias="reservationVO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.design.model.PopManageSO" alias="popManageSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.PopManageVO" alias="popManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.PopManagePO" alias="popManagePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.HtmlEditSO" alias="htmlEditSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.HtmlEditVO" alias="htmlEditVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.HtmlEditPO" alias="htmlEditPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.DisplaySO" alias="displaySO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.DisplayVO" alias="displayVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.DisplayPO" alias="displayPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.BannerSO" alias="bannerSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.BannerVO" alias="bannerVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.BannerPO" alias="bannerPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SkinSO" alias="skinSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SkinVO" alias="skinVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SkinPO" alias="skinPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SplashSO" alias="splashSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SplashVO" alias="splashVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.SplashPO" alias="splashPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.IconSO" alias="iconSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.IconVO" alias="iconVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.design.model.IconPO" alias="iconPO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.DisplayGoodsSO" alias="displayGoodsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.DisplayGoodsVO" alias="displayGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.DisplayGoodsPO" alias="displayGoodsPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.BrandSO" alias="brandSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.BrandVO" alias="brandVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.BrandPO" alias="brandPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategorySO" alias="categoryManageSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategoryVO" alias="categoryManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategoryPO" alias="categoryManagePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FilterSO" alias="filterManageSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FilterVO" alias="filterManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.FilterPO" alias="filterManagePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.KeywordSO" alias="keywordManageSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.KeywordVO" alias="keywordManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.KeywordPO" alias="keywordManagePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategoryDisplayManageSO" alias="categoryDisplayManageSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategoryDisplayManageVO" alias="categoryDisplayManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.CategoryDisplayManagePO" alias="categoryDisplayManagePO" />
+
+		<typeAlias type="net.danvi.dmall.biz.app.member.level.model.MemberLevelVO" alias="memberLevelVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.member.level.model.MemberLevelSO" alias="memberLevelSO" />
+		<typeAlias type="net.danvi.dmall.biz.app.member.level.model.MemberLevelPO" alias="memberLevelPO" />
+		<typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberDeliveryPO" alias="memberDeliveryPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberDeliverySO" alias="memberDeliverySO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberDeliveryVO" alias="memberDeliveryVO" />
+		<typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberManageSO" alias="memberManageSO" />
+		<typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberManagePO" alias="memberManagePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberManageVO" alias="memberManageVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberFaceSO" alias="memberFaceSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberFacePO" alias="memberFacePO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.MemberFaceVO" alias="memberFaceVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.RefundAccountSO" alias="refundAccountSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.RefundAccountPO" alias="refundAccountPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.member.manage.model.RefundAccountVO" alias="refundAccountVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedmnPointPO" alias="savedmnPointPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedmnPointSO" alias="savedmnPointSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedmnPointVO" alias="savedmnPointVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.freebiecndt.model.FreebieCndtSO" alias="freebieCndtSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.freebiecndt.model.FreebieCndtVO" alias="freebieCndtVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.freebiecndt.model.FreebieCndtPO" alias="freebieCndtPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.freebiecndt.model.FreebieGoodsVO" alias="freebieGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.freebiecndt.model.FreebieTargetVO" alias="freebieTargetVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.exhibition.model.ExhibitionSO" alias="exhibitionSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.exhibition.model.ExhibitionVO" alias="exhibitionVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.exhibition.model.ExhibitionVO" alias="exhibitionPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.exhibition.model.ExhibitionTargetVO" alias="exhibitionTargetVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.exhibition.model.ExhibitionDispzoneVO" alias="exhibitionDispzoneVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.timedeal.model.TimeDealSO" alias="timeDealSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.timedeal.model.TimeDealVO" alias="timeDealVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.timedeal.model.TimeDealVO" alias="timeDealPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.timedeal.model.TimeDealTargetVO" alias="timeDealTargetVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventSO" alias="eventSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventVO" alias="eventVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventPO" alias="evnetPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventLettSO" alias="eventLettSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventLettVO" alias="eventLettVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.event.model.EventLettPO" alias="eventLettPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.coupon.model.CouponSO" alias="couponSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.coupon.model.CouponVO" alias="couponVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.coupon.model.CouponPO" alias="couponPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.promotion.coupon.model.CpTargetVO" alias="cpTargetVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.setup.order.model.OrderConfigPO" alias="orderConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.order.model.OrderConfigVO" alias="orderConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.delivery.model.DeliveryAreaVO" alias="deliveryAreaVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.delivery.model.DeliveryAreaPO" alias="deliveryAreaPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.delivery.model.DeliveryAreaSO" alias="deliveryAreaSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.delivery.model.DeliveryConfigVO" alias="deliveryConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.delivery.model.DeliveryConfigPO" alias="deliveryConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigListVO" alias="termConfigListVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigSO" alias="termConfigSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigVO" alias="termConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.term.model.TermConfigPO" alias="termConfigPO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigSO" alias="savedMoneyConfigSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigVO" alias="savedMoneyConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.SavedMoneyConfigPO" alias="savedMoneyConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigSO" alias="pointConfigSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigVO" alias="pointConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PointConfigPO" alias="pointConfigPO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.setup.taxbill.model.TaxBillConfigVO" alias="taxBillConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.taxbill.model.TaxBillConfigPO" alias="taxBillConfigPO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsNotifySO" alias="goodsNotifySO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsNotifyVO" alias="goodsNotifyVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.setup.memberinfo.model.PasswordChgConfigVO" alias="passwordChgConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.memberinfo.model.PasswordChgConfigPO" alias="passwordChgConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.NopbPaymentConfigVO" alias="nopbPaymentConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.NopbPaymentConfigPO" alias="nopbPaymentConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.CommPaymentConfigSO" alias="commPaymentConfigSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.CommPaymentConfigVO" alias="commPaymentConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.CommPaymentConfigPO" alias="commPaymentConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.SimplePaymentConfigSO" alias="simplePaymentConfigSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.SimplePaymentConfigVO" alias="simplePaymentConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.SimplePaymentConfigPO" alias="simplePaymentConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.SimplePaymentConfigGuideVO" alias="simplePaymentConfigGuideVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.NPayConfigVO" alias="npayConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.payment.model.NPayConfigPO" alias="npayConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.snsoutside.model.SnsConfigVO" alias="snsConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.snsoutside.model.SnsConfigPO" alias="snsConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.operationsupport.model.OperSupportConfigVO" alias="operSupportConfigVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.operationsupport.model.OperSupportConfigPO" alias="operSupportConfigPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.setup.personcertify.model.PersonCertifyConfigVO" alias="personCertifyConfigVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VstrSO" alias="vstrSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VstrVO" alias="vstrVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VisitPathSO" alias="visitPathSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VisitPathVO" alias="visitPathVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VisitIpSO" alias="visitIpSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.VisitIpVO" alias="visitIpVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.NwMemberSO" alias="nwMemberSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.NwMemberVO" alias="nwMemberVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.MemberSvmnSO" alias="memberSvmnSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.MemberSvmnVO" alias="memberSvmnVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.CtgGoodsSO" alias="ctgGoodsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.CtgGoodsVO" alias="ctgGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.SaleRankGoodsSO" alias="saleRankGoodsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.SaleRankGoodsVO" alias="saleRankGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.BasketGoodsSO" alias="basketGoodsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.BasketGoodsVO" alias="basketGoodsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.OrdSttcsSO" alias="ordSttcsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.OrdSttcsVO" alias="ordSttcsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.SalesSttcsSO" alias="salesSttcsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.SalesSttcsVO" alias="salesSttcsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.PayWaySalesSttcsSO" alias="payWaySalesSttcsSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.PayWaySalesSttcsVO" alias="payWaySalesSttcsVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.LoginCurrentStatusSO" alias="loginCurrentStatusSO"/>
+        <typeAlias type="net.danvi.dmall.biz.app.statistics.model.LoginCurrentStatusVO" alias="loginCurrentStatusVO"/>
+
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.SellerVO" alias="SellerVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.SellerSO" alias="SellerSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.SellerPO" alias="SellerPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.CalcVO" alias="CalcVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.CalcDtlVO" alias="CalcDtlVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.seller.model.CalcDeductVO" alias="CalcDeductVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.visit.model.VisitSO" alias="VisitSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.visit.model.VisitVO" alias="VisitVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.goods.model.GoodsOptionPO" alias="GoodsOptionPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionVO" alias="VisionVO" />        
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckDscrtVO" alias="VisionCheckDscrtVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckSO" alias="VisionCheckSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckVO" alias="VisionCheckVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionStepVO" alias="VisionStepVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PushSendSO" alias="PushSendSO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PushSendPO" alias="PushSendPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.operation.model.PushSendVO" alias="PushSendVO" />
+        <typeAlias type="net.danvi.dmall.biz.system.model.AppLogPO" alias="appLogPO" />
+                
+        <typeAlias type="net.danvi.dmall.biz.app.hearingaid.model.HearingaidVO" alias="HearingaidVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.hearingaid.model.HearingaidStep1VO" alias="HearingaidStep1VO" />
+        <typeAlias type="net.danvi.dmall.biz.app.hearingaid.model.HearingaidCheckVO" alias="HearingaidCheckVO" />
+        
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionGunVO" alias="VisionGunVO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckCdPO" alias="VisionCheckCdPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckGlassesPO" alias="VisionCheckGlassesPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckContactPO" alias="VisionCheckContactPO" />
+        <typeAlias type="net.danvi.dmall.biz.app.vision.model.VisionCheckResultVO" alias="VisionCheckResultVO" />
+
+        <typeAlias type="net.danvi.dmall.biz.system.model.DavisionItmVO" alias="davisionItmVo" />
+        <typeAlias type="net.danvi.dmall.biz.system.model.DavisionItmSO" alias="davisionItmSo" />
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler javaType="java.sql.Timestamp" handler="org.apache.ibatis.type.DateTypeHandler"></typeHandler>
+        <typeHandler javaType="java.sql.Time" handler="org.apache.ibatis.type.DateTypeHandler"></typeHandler>
+        <typeHandler javaType="java.util.Date" handler="dmall.framework.common.handler.CustomDateHandler" jdbcType="DATE"></typeHandler>
+        <typeHandler javaType="java.lang.Long" handler="org.apache.ibatis.type.LongTypeHandler"></typeHandler>
+        <typeHandler javaType="java.lang.Float" handler="org.apache.ibatis.type.FloatTypeHandler"></typeHandler>
+    </typeHandlers>
+
+
+</configuration>
+

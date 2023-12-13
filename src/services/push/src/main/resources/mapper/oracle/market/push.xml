@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="push">
+
+	<!-- push 예약 내역 입력 (동기화)  -->
+	<insert id="insertPushRsv">
+		INSERT INTO t_davich_push_rev
+		(SEQ_NO, 
+		 SEMP_NO, 
+		 SEND_DTTM, 
+		 CD_CUST, 
+		 MALL_NO_CARD, 
+		 SEND_MSG, 
+		 LINK, 
+		 ALARM_GB, 
+		 ALARM_GB_NM, 
+		 PUSH_STATUS, 
+		 SVN_NO, 
+		 SVN_YN, 
+		 IMG_URL, 
+		 REG_DTTM, 
+		 STORE_CODE,
+		 APP_YN,
+		 APP_TOKEN,
+		MEMBER_NO,
+		OS_TYPE,
+		NOTI_GB,
+		EVENT_GB ,
+		NEWS_GB ,
+		 DATES)
+	VALUES 
+		(#{seqNo}, 
+		 #{sempNo}, 
+		 #{sendDttm}, 
+		 #{cdCust}, 
+		 #{mallNoCard}, 
+		 #{sendMsg}, 
+		 #{link}, 
+		 #{alarmGb}, 
+		 #{alarmGbNm}, 
+		 #{pushStatus}, 
+		 #{svnNo}, 
+		 'Y',
+		 #{imgUrl}, 
+		 SYSDATE, 
+		 #{storeCode},
+		 #{appYn},
+		 #{appToken},
+		 #{memberNo},
+		 #{osType},
+		 #{notiGb},
+		 #{eventGb},
+		 #{newsGb},
+		 #{dates})	
+	</insert>
+
+	<select id="selectExsistData"  resultType="int">
+		select count(*) cnt from t_davich_push_rev
+		 where seq_no = #{seqNo}
+		   and semp_no = #{sempNo} 
+		   and dates = #{dates}
+		   and store_code = #{storeCode}
+	</select>
+	
+	<update id="updatePushRsv">
+		update t_davich_push_rev
+		   set SEND_DTTM = #{sendDttm},  
+		 	   CD_CUST = #{cdCust},  
+		 	   MALL_NO_CARD = #{mallNoCard}, 
+		 	   SEND_MSG = #{sendMsg},  
+		 	   LINK = #{link}, 
+		 	   ALARM_GB = #{alarmGb},  
+		 	   ALARM_GB_NM = #{alarmGbNm},  
+		 	   PUSH_STATUS = #{pushStatus},  
+		 	   SVN_NO = #{svnNo},  
+		 	   SVN_YN = 'Y', 
+		 	   SEND_YN = 'N',
+		 	   SEND_RST = null,
+		 	   IMG_URL = #{imgUrl},  
+		 	   STORE_CODE = #{storeCode},
+		 	   APP_YN = #{appYn},
+		 	   APP_TOKEN = #{appToken},
+		 	   MEMBER_NO = #{memberNo},
+				OS_TYPE = #{osType},
+				NOTI_GB = #{notiGb},
+				EVENT_GB = #{eventGb},
+				NEWS_GB = #{newsGb},
+		 	   UPD_DTTM = SYSDATE	
+		 where seq_no = #{seqNo}
+		   and semp_no = #{sempNo} 
+		   and dates = #{dates}
+		   and store_code = #{storeCode}
+	</update>
+
+	<select id="selectPushdbRsv"  resultType="egovMap">
+		SELECT RSV_NO, 
+			 	 SEQ_NO, 
+				 SEMP_NO, 
+				 SEND_DTTM, 
+				 CD_CUST, 
+				 MALL_NO_CARD, 
+				 SEND_MSG, 
+				 LINK, 
+				 ALARM_GB, 
+				 ALARM_GB_NM, 
+				 PUSH_STATUS, 
+				 SVN_NO, 
+				 SVN_YN, 
+				 SEND_YN, 
+				 SEND_RST, 
+				 IMG_URL, 
+				 REG_DTTM, 
+				 PUSH_NO, 
+				 STORE_CODE, 
+				 MEMBER_NO, 
+				 APP_TOKEN, 
+				 OS_TYPE, 
+				 NOTI_GB, 
+				 EVENT_GB, 
+				 NEWS_GB,
+				 APP_YN
+		FROM t_davich_push_rev
+		<![CDATA[
+		  WHERE SEND_DTTM < SYSDATE
+		    AND (SEND_YN IS NULL OR SEND_YN = 'N')
+		    AND PUSH_STATUS = '03'
+		    AND APP_YN = 'Y'
+		]]>
+
+	</select>
+
+	<select id="selectPushdbRsvPaging"  resultType="egovMap" parameterType="egovMap">
+	SELECT *
+		FROM
+		(
+			SELECT T.*  ,ROW_NUMBER() OVER(ORDER BY 1 ) PAGING_NUM
+			FROM
+			(
+		SELECT RSV_NO,
+			 	 SEQ_NO,
+				 SEMP_NO,
+				 SEND_DTTM,
+				 CD_CUST,
+				 MALL_NO_CARD,
+				 SEND_MSG,
+				 LINK,
+				 ALARM_GB,
+				 ALARM_GB_NM,
+				 PUSH_STATUS,
+				 SVN_NO,
+				 SVN_YN,
+				 SEND_YN,
+				 SEND_RST,
+				 IMG_URL,
+				 REG_DTTM,
+				 PUSH_NO,
+				 STORE_CODE,
+				 MEMBER_NO,
+				 APP_TOKEN,
+				 OS_TYPE,
+				 NOTI_GB,
+				 EVENT_GB,
+				 NEWS_GB,
+				 APP_YN
+		FROM t_davich_push_rev
+		<![CDATA[
+		  WHERE SEND_DTTM < SYSDATE
+		    AND (SEND_YN IS NULL OR SEND_YN = 'N')
+		    AND PUSH_STATUS = '03'
+		    AND APP_YN = 'Y'
+		    AND APP_TOKEN IS NOT NULL
+		]]>
+			order by reg_dttm asc
+		) T
+		)
+		WHERE PAGING_NUM BETWEEN #{limit} + 1 AND #{limit} + #{offset}
+	</select>
+
+	<select id="selectPushdbRsvPagingCount"  resultType="Integer">
+		SELECT count(1)
+		FROM t_davich_push_rev
+		<![CDATA[
+		  WHERE SEND_DTTM < SYSDATE
+		    AND (SEND_YN IS NULL OR SEND_YN = 'N')
+		    AND PUSH_STATUS = '03'
+		    AND APP_YN = 'Y'
+		    AND APP_TOKEN IS NOT NULL
+		]]>
+
+	</select>
+
+	<update id="registPushRsv">
+		INSERT INTO t_davich_push_rev(
+		 SEQ_NO,
+		 SEMP_NO,
+		 SEND_DTTM,
+		 CD_CUST,
+		 MALL_NO_CARD,
+		 SEND_MSG,
+		 LINK,
+		 ALARM_GB,
+		 ALARM_GB_NM,
+		 PUSH_STATUS,
+		 SVN_NO,
+		 SVN_YN,
+		 IMG_URL,
+		 REG_DTTM,
+		 STORE_CODE,
+		 APP_YN,
+		 APP_TOKEN,
+		 MEMBER_NO,
+		 OS_TYPE,
+		 NOTI_GB,
+		 EVENT_GB ,
+		 NEWS_GB ,
+		 DATES
+  ) VALUES (
+		 #{seqNo},
+		 #{sempNo},
+		 #{sendDttm},
+		 #{cdCust},
+		 #{mallNoCard},
+		 #{sendMsg},
+		 #{link},
+		 #{alarmGb},
+		 #{alarmGbNm},
+		 #{pushStatus},
+		 #{svnNo},
+		 'Y',
+		 #{imgUrl},
+		 SYSDATE,
+		 #{storeCode},
+		 #{appYn},
+		 #{appToken},
+		 #{memberNo},
+		 #{osType},
+		 #{notiGb},
+		 #{eventGb},
+		 #{newsGb},
+		 #{dates}
+		 )
+	</update>
+
+
+	
+	<!-- 예약정보에 추가정보 update  -->
+	<update id="updatePushRsvAdd" >
+	
+		<![CDATA[
+		UPDATE t_davich_push_rev
+			SET
+				 member_no = #{memberNo}, 
+			 	 app_token = #{appToken}, 
+			 	 os_type = #{osType},
+			 	 noti_gb = #{notiGb}, 
+			 	 event_gb = #{eventGb},
+			 	 news_gb = #{newsGb}
+			WHERE cd_cust = #{cdCust}
+		      and send_dttm  < SYSDATE
+		      and (send_yn IS NULL OR send_yn = 'N')
+		      and push_status = '03'
+		      
+		]]>
+	</update>
+	
+	
+	
+	<!-- 전송결과 update -->
+	<update id="updateSendPushRslt" >
+		 update t_davich_push_rev
+		    set send_yn = #{sendYn},
+		        send_rst = #{sendRst},
+		        push_status = #{pushStatus}
+		  where rsv_no = #{rsvNo}
+	</update>	
+		
+	
+	
+</mapper>

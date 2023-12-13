@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="davich">
+
+	<!-- push 예약 내역 조회 -->
+	<select id="selectPushRsvList" resultType="egovMap">
+		SELECT 
+		   to_char(DATES, 'YYYYMMDD') DATES, 
+		   STR_CODE as store_code, 
+		   SEQ_NO, 
+		   SEMP_NO, 
+		   to_char(SEMP_DATE,'YYYY-MM-DD HH24:MI:SS') as send_dttm, 
+		   CD_CUST, 
+		   MALL_NO_CARD, 
+		   MEMO as send_msg, 
+		   LINK_URL as link, 
+		   IMG_URL, 
+		   ALARM_GB, 
+		   ALARM_NM as alarm_gb_nm, 
+		   PUSH_GB as push_status, 
+		   SEND_YN, 
+		   SVN_NO, 
+		   SVN_YN, 
+		   APP_YN,
+		   APP_TOKEN,
+		   INPUT_ID, 
+		   INPUT_DATE, 
+		   CNG_ID, 
+		   CNG_DATE,
+		   MEMBER_NO,
+			OS_TYPE,
+			NOTI_GB,
+			EVENT_GB,
+			NEWS_GB
+		FROM PUSH_TBL
+		<![CDATA[
+			WHERE (SVN_YN <> 'Y' OR SVN_YN IS NULL)
+		]]>
+	</select>
+
+	<!-- push 예약 내역 총건수 조회 -->
+	<select id="selectPushRsvListTotalCount" resultType="Integer">
+		SELECT
+		   COUNT(1)
+		FROM PUSH_TBL
+		<![CDATA[
+			WHERE (SVN_YN <> 'Y' OR SVN_YN IS NULL)
+		]]>
+	</select>
+
+	<select id="selectPushRsvListPaging" resultType="egovMap">
+	SELECT PAGING_NUM as NUM, PAGING_NUM as ROW_NUM, BB.* FROM (
+		 SELECT
+			      ROW_NUMBER() OVER(ORDER BY  AA.INPUT_DATE desc , AA.STORE_CODE,AA.SEMP_NO, AA.seq_no asc) PAGING_NUM
+                , AA.*
+			FROM
+			(
+		SELECT
+		   to_char(DATES, 'YYYYMMDD') DATES,
+		   STR_CODE as store_code,
+		   SEQ_NO,
+		   SEMP_NO,
+		   to_char(SEMP_DATE,'YYYY-MM-DD HH24:MI:SS') as send_dttm,
+		   CD_CUST,
+		   MALL_NO_CARD,
+		   MEMO as send_msg,
+		   LINK_URL as link,
+		   IMG_URL,
+		   ALARM_GB,
+		   ALARM_NM as alarm_gb_nm,
+		   PUSH_GB as push_status,
+		   SEND_YN,
+		   SVN_NO,
+		   SVN_YN,
+		   APP_YN,
+		   APP_TOKEN,
+		   INPUT_ID,
+		   INPUT_DATE,
+		   CNG_ID,
+		   CNG_DATE,
+		   MEMBER_NO,
+			OS_TYPE,
+			NOTI_GB,
+			EVENT_GB,
+			NEWS_GB
+		FROM PUSH_TBL
+		<![CDATA[
+			WHERE (SVN_YN <> 'Y' OR SVN_YN IS NULL)
+		]]>
+		) AA
+		) BB
+		WHERE PAGING_NUM BETWEEN #{limit} + 1 AND #{limit} + #{offset}
+	</select>
+	
+	
+	<!-- 이동결과 update -->
+	<update id="updatePushRsv" >
+		UPDATE PUSH_TBL
+			SET SVN_YN = 'Y',
+				CNG_ID = 'market',
+				CNG_DATE = SYSDATE
+		  WHERE SEQ_NO = #{seqNo}
+		    AND SEMP_NO = #{sempNo}
+	</update>
+	
+	
+	<!-- 푸시 전송 결과 update -->
+	<update id="updateSendPushRslt" >
+		UPDATE PUSH_TBL
+			SET
+				push_gb = #{pushStatus},
+				send_yn = #{sendYn},
+				send_rst = #{sendRst}
+		  WHERE SEQ_NO = #{seqNo}
+		    AND SEMP_NO = #{sempNo}
+	</update>	
+	
+</mapper>

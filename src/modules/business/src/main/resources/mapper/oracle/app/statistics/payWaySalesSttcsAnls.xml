@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   결재수단별 매출 통계 관리 맵퍼
+-->
+<mapper namespace="statistics.payWaySalesSttcs">
+    <sql id="selectPayWaySalesSttcsListWhere">
+            AND SITE_NO = #{siteNo}
+        <if test=' periodGb == "T" ' >
+        <!-- 시간별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            AND DT = #{dd}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR, MM, DT
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, DT, HR, EQPM_GB_CD
+            </if>
+        </if>
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR, MM
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, DT, EQPM_GB_CD
+            </if>
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, EQPM_GB_CD
+            </if>
+        </if>
+    </sql>
+    
+    <!-- 결재수단별 통계 전체조회 -->
+    <select id="selectPayWaySalesSttcsList" parameterType="payWaySalesSttcsSO" resultType="payWaySalesSttcsVO">
+        /* statistics.payWaySalesSttcs.selectPayWaySalesSttcsList */
+        SELECT A.*
+          FROM (
+                   SELECT ROUND(A.NOPB_DPST_CNT, 0) AS NOPB_DPST_CNT
+                        , ROUND(A.NOPB_DPST_AMT, 0) AS NOPB_DPST_AMT
+                        , ROUND(A.VIRT_ACT_DPST_CNT, 0) AS VIRT_ACT_DPST_CNT
+                        , ROUND(A.VIRT_ACT_DPST_AMT, 0) AS VIRT_ACT_DPST_AMT
+                        , ROUND(A.CRED_PAYMENT_CNT, 0) AS CRED_PAYMENT_CNT
+                        , ROUND(A.CRED_PAYMENT_AMT, 0) AS CRED_PAYMENT_AMT
+                        , ROUND(A.ACT_TRANS_CNT, 0) AS ACT_TRANS_CNT
+                        , ROUND(A.ACT_TRANS_AMT, 0) AS ACT_TRANS_AMT
+                        , ROUND(A.MOBILE_PAYMENT_CNT, 0) AS MOBILE_PAYMENT_CNT
+                        , ROUND(A.MOBILE_PAYMENT_AMT, 0) AS MOBILE_PAYMENT_AMT
+                        , ROUND(A.SIMP_PAYMENT_CNT, 0) AS SIMP_PAYMENT_CNT
+                        , ROUND(A.SIMP_PAYMENT_AMT, 0) AS SIMP_PAYMENT_AMT
+                        , ROUND(A.PAYPAL_CNT, 0) AS PAYPAL_CNT
+                        , ROUND(A.PAYPAL_AMT, 0) AS PAYPAL_AMT
+                        , ROUND(A.SBN_PAYMENT_CNT, 0) AS SBN_PAYMENT_CNT
+                        , ROUND(A.SBN_PAYMENT_AMT, 0) AS SBN_PAYMENT_AMT
+                        , ROUND(A.SVMN_PAYMENT_CNT, 0) AS SVMN_PAYMENT_CNT
+                        , ROUND(A.SVMN_PAYMENT_AMT, 0) AS SVMN_PAYMENT_AMT
+                        , ROUND(A.NOPB_DPST_CNT + A.VIRT_ACT_DPST_CNT + A.CRED_PAYMENT_CNT + A.ACT_TRANS_CNT + A.MOBILE_PAYMENT_CNT + A.SIMP_PAYMENT_CNT + A.PAYPAL_CNT + A.SBN_PAYMENT_CNT + A.SVMN_PAYMENT_CNT, 0) AS TOTAL_CNT
+                        , ROUND(A.NOPB_DPST_AMT + A.VIRT_ACT_DPST_AMT + A.CRED_PAYMENT_AMT + A.ACT_TRANS_AMT + A.MOBILE_PAYMENT_AMT + A.SIMP_PAYMENT_AMT + A.PAYPAL_AMT + A.SBN_PAYMENT_CNT + A.SVMN_PAYMENT_AMT, 0) AS TOTAL_AMT
+                     FROM (
+                              SELECT SUM(NVL(NOPB_DPST_CNT, 0)) AS NOPB_DPST_CNT
+                                   , SUM(NVL(NOPB_DPST_AMT, 0)) AS NOPB_DPST_AMT
+                                   , SUM(NVL(VIRT_ACT_DPST_CNT, 0)) AS VIRT_ACT_DPST_CNT
+                                   , SUM(NVL(VIRT_ACT_DPST_AMT, 0)) AS VIRT_ACT_DPST_AMT
+                                   , SUM(NVL(CRED_PAYMENT_CNT, 0)) AS CRED_PAYMENT_CNT
+                                   , SUM(NVL(CRED_PAYMENT_AMT, 0)) AS CRED_PAYMENT_AMT
+                                   , SUM(NVL(ACT_TRANS_CNT, 0)) AS ACT_TRANS_CNT
+                                   , SUM(NVL(ACT_TRANS_AMT, 0)) AS ACT_TRANS_AMT
+                                   , SUM(NVL(MOBILE_PAYMENT_CNT, 0)) AS MOBILE_PAYMENT_CNT
+                                   , SUM(NVL(MOBILE_PAYMENT_AMT, 0)) AS MOBILE_PAYMENT_AMT
+                                   , SUM(NVL(SIMP_PAYMENT_CNT, 0)) AS SIMP_PAYMENT_CNT
+                                   , SUM(NVL(SIMP_PAYMENT_AMT, 0)) AS SIMP_PAYMENT_AMT
+                                   , SUM(NVL(PAYPAL_CNT, 0)) AS PAYPAL_CNT
+                                   , SUM(NVL(PAYPAL_AMT, 0)) AS PAYPAL_AMT
+                                   , SUM(NVL(SBN_PAYMENT_CNT, 0)) AS SBN_PAYMENT_CNT
+                                   , SUM(NVL(SBN_PAYMENT_AMT, 0)) AS SBN_PAYMENT_AMT
+                                   , SUM(NVL(SVMN_PAYMENT_CNT, 0)) AS SVMN_PAYMENT_CNT
+                                   , SUM(NVL(SVMN_PAYMENT_AMT, 0)) AS SVMN_PAYMENT_AMT
+                                FROM TT_SALES_STTCS
+                               WHERE 1 = 1
+                              <include refid="selectPayWaySalesSttcsListWhere" />
+                           ) A
+               ) A
+    </select>
+    
+    <!-- 결재수단별 통계 총건수 조회 -->
+    <select id="selectPayWaySalesSttcsListTotalCount" parameterType="payWaySalesSttcsSO" resultType="Integer">
+        /* statistics.payWaySalesSttcs.selectPayWaySalesSttcsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+                   FROM TT_SALES_STTCS
+                  WHERE 1 = 1
+                ) TCNT
+    </select>
+    <!-- 결재수단별 통계 조건적용 총건수 조회 -->
+    <select id="selectPayWaySalesSttcsListCount" parameterType="payWaySalesSttcsSO" resultType="Integer">
+        /* statistics.payWaySalesSttcs.selectPayWaySalesSttcsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+                   FROM TT_SALES_STTCS
+                  WHERE 1 = 1
+                  <include refid="selectPayWaySalesSttcsListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

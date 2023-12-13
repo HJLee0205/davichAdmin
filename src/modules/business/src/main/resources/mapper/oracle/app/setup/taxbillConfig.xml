@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.taxbill.config">
+    <!-- 세금계산서 설정정보 조회 -->
+    <select id="selectTaxBillConfig" parameterType="long" resultType="taxbillConfigVO">
+        /* setup.taxbill.config.selectTaxBillConfig */
+            SELECT
+                ts.TAXBILL_TYPE_CD
+                , ts.TAXBILL_NOPB_USE_YN
+                , ts.TAXBILL_ACTTRANS_USE_YN
+                , ts.TAXBILL_VIRTACT_USE_YN
+                , ts.DLVRC_INCLUSION_YN
+                , ts.SVMN_INCLUSION_YN
+                , ts.ORD_AMT_YN
+                , ts.USE_GUIDE_WORDS
+                , ts.SEAL_IMG_PATH
+            FROM    TS_SITE ts
+            WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 세금계산서 설정정보 수정 -->
+    <update id="updateTaxBillConfig">
+    	/* setup.taxbill.config.updateTaxBillConfig */
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          TAXBILL_TYPE_CD = #{taxbillTypeCd}
+		        , TAXBILL_NOPB_USE_YN = #{taxbillNopbUseYn}
+		        , TAXBILL_ACTTRANS_USE_YN = #{taxbillActtransUseYn}
+		        , TAXBILL_VIRTACT_USE_YN = #{taxbillVirtactUseYn}
+		        , DLVRC_INCLUSION_YN = #{dlvrcInclusionYn}
+		        , SVMN_INCLUSION_YN = #{svmnInclusionYn}
+		        , ORD_AMT_YN = #{ordAmtYn}
+		        , USE_GUIDE_WORDS = #{useGuideWords}
+		        , SEAL_IMG_PATH = #{sealImgPath}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		        SITE_NO
+		        , TAXBILL_TYPE_CD
+		        , TAXBILL_NOPB_USE_YN
+		        , TAXBILL_ACTTRANS_USE_YN
+		        , TAXBILL_VIRTACT_USE_YN
+		        , DLVRC_INCLUSION_YN
+		        , SVMN_INCLUSION_YN
+		        , ORD_AMT_YN
+		        , USE_GUIDE_WORDS
+		        , SEAL_IMG_PATH
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{taxbillTypeCd}
+		        , #{taxbillNopbUseYn}
+		        , #{taxbillActtransUseYn}
+		        , #{taxbillVirtactUseYn}
+		        , #{dlvrcInclusionYn}
+		        , #{svmnInclusionYn}
+		        , #{ordAmtYn}
+		        , #{useGuideWords}
+		        , #{sealImgPath}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- 세금계산서 인감이미지 정보 삭제 -->
+    <update id="updateTaxBillImage">
+    /* setup.taxbill.config.updateTaxBillImage */
+        UPDATE TS_SITE SET
+            SEAL_IMG_PATH = ''
+        WHERE SITE_NO = #{siteNo}
+    </update>
+</mapper>

@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="push">
+
+    <!-- 푸시목록 검색 조건절 -->
+    <sql id="selectPushListWhere">
+        <!-- 등록일 조건 -->
+        <if test="searchDateFrom != null and searchDateFrom != ''">
+            <![CDATA[
+                AND push.SEND_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchDateTo != null and searchDateTo != ''">
+            <![CDATA[
+                AND push.SEND_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD')+1
+            ]]>
+        </if>
+        
+        <if test="pushStatus != null and pushStatus != ''">
+                AND push.PUSH_STATUS =  #{pushStatus}
+        </if>
+        
+        <if test="alarmGb != null and alarmGb != ''">
+                AND push.ALARM_GB =  #{alarmGb}
+        </if>
+        
+        <if test="sendMsg != null and sendMsg != ''">
+                AND push.SEND_MSG like '%'||#{sendMsg}||'%'
+        </if>
+        
+        <if test="pushNo != null and pushNo != ''">
+                AND push.PUSH_NO = #{pushNo}
+        </if>
+    </sql>
+
+    <sql id="selectMemberListWhere">
+		    <if test="joinStDttm != null and joinStDttm != ''">
+                AND A.SITE_NO = #{siteNo}
+            </if>
+            <if test="joinStDttm != null and joinStDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM >= TO_DATE(#{joinStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="joinEndDttm != null and joinEndDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM < TO_DATE(#{joinEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+
+            <if test="loginStDttm != null and loginStDttm != ''">
+                <![CDATA[
+                AND LOGIN_DTTM >= TO_DATE(#{loginStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="loginEndDttm != null and loginEndDttm != ''">
+                <![CDATA[
+                AND LOGIN_DTTM < TO_DATE(#{loginEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+            <if test="bornMonth != null and bornMonth != ''">
+                AND A.BORN_MONTH = #{bornMonth}
+            </if>
+            <if test="smsRecvYn != null and smsRecvYn != ''">
+                AND A.SMS_RECV_YN = #{smsRecvYn}
+            </if>
+            <if test="emailRecvYn != null and emailRecvYn != ''">
+                AND A.EMAIL_RECV_YN = #{emailRecvYn}
+            </if>
+            <if test="memberGradeNo != null and memberGradeNo != ''">
+                AND A.MEMBER_GRADE_NO = #{memberGradeNo}
+            </if>
+
+            <if test="genderGbCd != null and genderGbCd != ''">
+                AND A.GENDER_GB_CD = #{genderGbCd}
+            </if>
+            <if test="joinPathCd != null and joinPathCd.length > 0">
+                AND A.JOIN_PATH_CD IN
+                <foreach collection="joinPathCd" item="item" index="index" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="integrationMemberGbCd != null and integrationMemberGbCd != ''">
+               <![CDATA[
+                AND A.INTEGRATION_MEMBER_GB_CD = #{integrationMemberGbCd}
+                ]]>
+            </if>
+            <if test="searchWords != null and searchWords != ''">
+                <choose>
+                    <when test = "searchType eq 'name'">
+                        AND A.MEMBER_NM = #{searchName}
+                    </when>
+                    <when test = "searchType eq 'id'">
+                        AND A.LOGIN_ID LIKE '%'||#{searchLoginId}||'%'
+                    </when>
+                    <when test = "searchType eq 'email'">
+                        AND A.EMAIL LIKE '%'||#{searchWords}||'%'
+                    </when>
+                    <when test = "searchType eq 'tel'">
+                        AND A.TEL = #{searchTel}
+                    </when>
+                    <when test = "searchType eq 'mobile'">
+                        AND A.MOBILE = #{searchMobile}
+                    </when>
+                    <when test = "searchType eq 'memberNo'">
+                        AND A.MEMBER_NO = #{searchMemberNo}
+                    </when>
+                    <when test = "searchType eq 'all'">
+                        AND (
+                             A.MOBILE = #{searchMobile} OR
+                             A.TEL = #{searchTel} OR
+                             A.EMAIL LIKE '%'||#{searchWords}||'%' OR
+                             A.LOGIN_ID LIKE '%'||#{searchLoginId}||'%' OR
+                             A.MEMBER_NM = #{searchName} OR
+                             TO_CHAR(A.MEMBER_NO) = #{searchMemberNo}
+                             )
+                    </when>
+                </choose>
+            </if>
+            <if test="memberTypeCd != null and memberTypeCd != ''">
+                AND A.MEMBER_TYPE_CD = #{memberTypeCd}
+            </if>
+
+            <if test="stAge != null and stAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR >= #{stAge}
+                ]]>
+            </if>
+            <if test="endAge != null and endAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR <= #{endAge}
+                ]]>
+            </if>
+
+            <if test="searchAlarmGb != null and searchAlarmGb != ''">
+                <choose>
+                    <when test = "searchAlarmGb eq '01'">
+                        AND A.NOTI_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '02'">
+                        AND A.EVENT_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '03'">
+                        AND A.NEWS_GB = '1'
+                    </when>
+                </choose>
+            </if>
+            <if test="searchAlarmGb == null or searchAlarmGb == ''">
+                AND (NOTI_GB = '1' OR EVENT_GB = '1' OR NEWS_GB = '1')
+             </if>
+            <if test="stPrcAmt != null and stPrcAmt != ''">
+                <![CDATA[
+                AND PRC_AMT >= #{stPrcAmt}
+                ]]>
+            </if>
+			<if test="endPrcAmt != null and endPrcAmt != ''">
+                <![CDATA[
+                AND PRC_AMT <= #{endPrcAmt}
+                ]]>
+            </if>
+            <if test="stSaleAmt != null and stSaleAmt != ''">
+                <![CDATA[
+                AND SALE_AMT >= #{stSaleAmt}
+                ]]>
+            </if>
+            <if test="endSaleAmt != null and endSaleAmt != ''">
+                <![CDATA[
+                AND SALE_AMT <= #{endSaleAmt}
+                ]]>
+            </if>
+            <if test="stOrdCnt != null and stOrdCnt != ''">
+                <![CDATA[
+                AND ORD_CNT >= #{stOrdCnt}
+                ]]>
+            </if>
+            <if test="endOrdCnt != null and endOrdCnt != ''">
+                <![CDATA[
+                AND ORD_CNT <= #{endOrdCnt}
+                ]]>
+            </if>
+            <if test="stPrcPoint != null and stPrcPoint != ''">
+                <![CDATA[
+                AND PRC_POINT >= #{stPrcPoint}
+                ]]>
+            </if>
+            <if test="endPrcPoint != null and endPrcPoint != ''">
+                <![CDATA[
+                AND PRC_POINT <= #{endPrcPoint}
+                ]]>
+            </if>
+            <if test="stLoginCnt != null and stLoginCnt != ''">
+                <![CDATA[
+                AND LOGIN_CNT >= ${stLoginCnt}
+                ]]>
+            </if>
+            <if test="endLoginCnt != null and endLoginCnt != ''">
+                <![CDATA[
+                AND LOGIN_CNT <= ${endLoginCnt}
+                ]]>
+            </if>
+            <if test="stCommentCnt != null and stCommentCnt != ''">
+                <![CDATA[
+                AND COMMENT_CNT >= #{stCommentCnt}
+                ]]>
+            </if>
+            <if test="endCommentCnt != null and endCommentCnt != ''">
+                <![CDATA[
+                AND COMMENT_CNT <= #{endCommentCnt}
+                ]]>
+            </if>
+            <if test="(ordStDttm != null and ordStDttm != '') or (ordEndDttm != null and ordEndDttm != '') or (ordTypeCd != null and ordTypeCd != '')">
+            	AND exists (
+            		SELECT 1
+                    FROM TO_ORD ORD
+                    LEFT JOIN TO_ORD_DTL TOD ON ORD.ORD_NO = TOD.ORD_NO
+                    LEFT JOIN TG_GOODS TG ON TG.GOODS_NO = TOD.GOODS_NO
+                    WHERE ORD.MEMBER_NO = A.MEMBER_NO
+                    <if test="ordStDttm != null and ordStDttm != ''">
+		                <![CDATA[
+		                AND ORD.PAYMENT_CMPLT_DTTM >= TO_DATE(#{ordStDttm}, 'YYYY-MM-DD')
+		                ]]>
+		            </if>
+		            <if test="ordEndDttm != null and ordEndDttm != ''">
+		                <![CDATA[
+		                AND ORD.PAYMENT_CMPLT_DTTM < TO_DATE(#{ordEndDttm}, 'YYYY-MM-DD') + 1
+		                ]]>
+		            </if>
+                    <if test="ordTypeCd != null and ordTypeCd != ''">
+                    	<choose>
+                    		<when test="ordTypeCd eq '01'.toString() or ordTypeCd eq '02'.toString()">
+                    			AND TG.GOODS_TYPE_CD = #{ordTypeCd}
+                    		</when>
+                    		<otherwise>
+                    			AND TG.SELLER_NO != 1
+                    		</otherwise>
+                    	</choose>
+					</if>
+            	)
+            </if>
+	</sql>
+
+    <!-- 푸시목록 검색 조건절 -->
+    <sql id="selectMarketPushListWhere">
+        <!-- 등록일 조건 -->
+        <if test="stAppDate != null and stAppDate != ''">
+            <![CDATA[
+                AND B.SEND_DTTM >= TO_DATE(#{stAppDate}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="endAppDate != null and endAppDate != ''">
+            <![CDATA[
+                AND B.SEND_DTTM < TO_DATE(#{endAppDate}, 'YYYY-MM-DD')+1
+            ]]>
+        </if>
+    </sql>
+    <sql id="selectStorePushListWhere">
+        <!-- 등록일 조건 -->
+        <if test="stAppDate != null and stAppDate != ''">
+            <![CDATA[
+                AND A.SEND_DTTM >= TO_DATE(#{stAppDate}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="endAppDate != null and endAppDate != ''">
+            <![CDATA[
+                AND A.SEND_DTTM < TO_DATE(#{endAppDate}, 'YYYY-MM-DD')+1
+            ]]>
+        </if>
+    </sql>
+    
+    <!-- 푸시관리 목록(페이징) 조회 -->
+    <select id="selectPushListPaging" resultType="PushSendVO">
+        /* push.selectPushListPaging */
+        select *
+        from
+        (
+            SELECT rownum as PAGING_NUM, TT.tot_cnt - rownum + 1 as ROW_NUM, TT.*
+            FROM
+            (
+                SELECT T.*, count(*) over() as tot_cnt
+                FROM
+                (
+                    SELECT
+                            PUSH_NO,
+                            SEND_TYPE,
+                            ALARM_GB,
+                            ALARM_GB_NM,
+                            SENDER_NO,
+                            SENDER_NM,
+                            SEND_MSG,
+                            LINK,
+                            SEND_CNT,
+                            RECV_CNDT_GB,
+                            PUSH_STATUS,
+                            TO_CHAR(send_dttm, 'YYYY-MM-DD HH24:MI') send_dttm,
+                            CANCELER_NO,
+                            CANCEL_DTTM,
+                            REG_DTTM,
+                            CASE WHEN PUSH_STATUS = '01' THEN '발송완료'
+                                 WHEN PUSH_STATUS = '02' THEN '발송중'
+                                 WHEN PUSH_STATUS = '03' THEN '예약대기'
+                                 WHEN PUSH_STATUS = '04' THEN '발송취소' ELSE '' END PUSH_STATUS_NM
+                    FROM t_push_manager push
+                    WHERE 1 = 1
+                    <include refid="selectPushListWhere" />
+                    <include refid="common.sortSql" />
+                ) T
+            ) TT
+        )
+		<include refid="common.pageSql" />
+    </select>
+
+    <!-- 푸시 총건수 조회 -->
+    <select id="selectPushListPagingTotalCount" resultType="Integer">
+        /* push.selectPushListPagingTotalCount */
+        SELECT  count(*)
+        FROM    t_push_manager push
+        WHERE 1=1
+        <include refid="selectPushListWhere" />
+    </select>
+
+    <!-- 푸시 조건적용 총건수 조회 -->
+    <select id="selectPushListPagingCount" resultType="Integer">
+        /* push.selectPushListPagingCount */
+        SELECT  count(*)
+        FROM    t_push_manager push
+        WHERE 1=1
+        <include refid="selectPushListWhere" />
+    </select>
+    
+    <!-- 푸시관리 번호 조회 -->
+    <select id="selectPushNo" resultType="String">
+     	select NVL(max(push_no),0) + 1
+ 		  from t_push_manager	 
+    </select>    
+    
+    <!-- 푸시관리 목록 조회 -->
+    <select id="selectPushList" resultType="PushSendVO">
+     SELECT 
+			PUSH_NO, 
+			SEND_TYPE, 
+			ALARM_GB, 
+			ALARM_GB_NM, 
+			SENDER_NO, 
+			SENDER_NM, 
+			SEND_MSG, 
+			LINK, 
+			SEND_CNT, 
+			RECV_CNDT_GB, 
+			PUSH_STATUS,
+			TO_CHAR(SEND_DTTM, 'YYYY-MM-DD HH24:MI') SEND_DTTM,
+			TO_CHAR(REG_DTTM, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(UPD_DTTM, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			SEND_DATE,
+			SEND_TIME, 
+			CANCELER_NO, 
+			CANCEL_DTTM,
+			PUSH_STATUS,
+			IMG_URL,
+            <![CDATA[
+			(case when SEND_DTTM < SYSDATE then 1 else 0 end) exeYn,
+			]]>
+			(select count(*)
+ 			   from t_push_confirm c
+              where c.push_no = push.push_no  
+			) CONF_CNT,
+			round((select count(*)
+ 			   from t_push_confirm c
+              where c.push_no = push.push_no  
+			) / SEND_CNT * 100,2)  CONF_RATE,
+			CASE WHEN PUSH_STATUS = '01' THEN '발송완료' 
+			     WHEN PUSH_STATUS = '02' THEN '발송중'
+			     WHEN PUSH_STATUS = '03' THEN '예약대기'
+			     WHEN PUSH_STATUS = '04' THEN '발송취소' ELSE '' END PUSH_STATUS_NM 
+		FROM t_push_manager push
+		WHERE 1 = 1
+        <include refid="selectPushListWhere" />
+    </select>
+    
+    <!-- 푸시 조건  목록 조회 -->
+    <select id="selectPushConditionList" resultType="PushSendPO">
+     SELECT 
+			 PUSH_NO, 
+			 RECEIVER_NO, 
+			 RECEIVER_ID, 
+			 RECEIVER_NM, 
+			 TOKEN, 
+			 REPLACE(REPLACE(SRCH_CNDT, 'MemberManageSO(', ''), ')', '') SRCH_CNDT
+ 		FROM t_push_condition
+ 	    WHERE push_no = #{pushNo}
+    </select>    
+
+
+    <!-- 푸시관리 insert -->
+    <insert id="insertPushManager" >
+		INSERT INTO t_push_manager
+			(PUSH_NO, 
+			 SEND_TYPE, 
+			 ALARM_GB, 
+			 ALARM_GB_NM, 
+			 SENDER_NO, 
+			 SENDER_NM, 
+			 SEND_MSG, 
+			 LINK, 
+			 SEND_CNT, 
+			 RECV_CNDT_GB, 
+			 PUSH_STATUS,
+	        <if test="sendType != '' and sendType != null">
+		        <if test="sendType == 1">
+				 SEND_DTTM, 
+				</if>
+		        <if test="sendType == 2">
+				 SEND_DTTM, 
+				 SEND_DATE,
+				 SEND_TIME,
+				</if>
+			</if>				 
+			 REG_DTTM,
+			 FILE_PATH,
+			 FILE_NM,
+			 ORG_FILE_NM,
+			 IMG_URL
+			 )
+		VALUES (
+			#{pushNo}, 
+			#{sendType}, 
+			#{alarmGb}, 
+			#{alarmGbNm}, 
+			#{senderNo}, 
+			#{senderNm}, 
+			#{sendMsg}, 
+			#{link}, 
+			#{sendCnt}, 
+			#{recvCndtGb}, 
+			#{pushStatus},
+	        <if test="sendType != '' and sendType != null">
+		        <if test="sendType == 1">
+		        	SYSDATE,
+				</if>
+		        <if test="sendType == 2">
+					TO_DATE(#{sendDate}||' '||#{sendTime}, 'YYYY-MM-DD HH24:MI'),
+					#{sendDate}, 
+					#{sendTime},
+				</if>
+			</if>				
+			SYSDATE,
+			#{filePath}, 
+			#{fileNm}, 
+			#{orgFileNm},
+			#{imgUrl}
+		)    
+	</insert>
+	
+    <!-- 푸시조건 insert -->
+    <insert id="insertPushCondition" >
+		INSERT INTO t_push_condition
+		(
+			 PUSH_NO, 
+			 RECEIVER_NO, 
+			 RECEIVER_ID, 
+			 RECEIVER_NM, 
+			 TOKEN, 
+			 OS_TYPE,
+			 SRCH_CNDT
+		 )
+		VALUES 
+		(
+			 #{pushNo}, 
+			 #{receiverNo}, 
+			 #{receiverId}, 
+			 #{receiverNm}, 
+			 #{appToken}, 
+			 #{osType}, 
+			 #{srchCndt}
+		 )
+	</insert>
+
+	<!-- 푸시전체 insert-->
+    <insert id="insertPushConditionAll" >
+{CALL
+		DECLARE
+		CURSOR ALL_PUSH_MEMBER IS
+            SELECT
+                     A.MEMBER_NO AS MEMBER_NO,
+                     A.LOGIN_ID AS LOGIN_ID,
+                     A.MEMBER_NM AS MEMBER_NM,
+                     A.APP_TOKEN AS APP_TOKEN,
+                     A.OS_TYPE AS OS_TYPE
+            FROM TC_MEMBER A
+                        WHERE 1=1
+                        AND APP_TOKEN IS NOT NULL
+                        AND A.site_no = 1
+                        AND A.MEMBER_STATUS_CD = '01'
+                        AND A.MEMBER_NO >= 1000
+                        AND (NOTI_GB = '1' OR EVENT_GB = '1' OR NEWS_GB = '1')
+                        ;
+
+        TYPE MEMBER_NO IS TABLE OF TC_MEMBER.MEMBER_NO%TYPE;
+        TYPE LOGIN_ID IS TABLE OF TC_MEMBER.LOGIN_ID%TYPE;
+        TYPE MEMBER_NM IS TABLE OF TC_MEMBER.MEMBER_NM%TYPE;
+        TYPE APP_TOKEN IS TABLE OF TC_MEMBER.APP_TOKEN%TYPE;
+        TYPE OS_TYPE IS TABLE OF TC_MEMBER.OS_TYPE%TYPE;
+
+        MEMBER_NOS MEMBER_NO;
+        LOGIN_IDS LOGIN_ID;
+        MEMBER_NMS MEMBER_NM;
+        APP_TOKENS APP_TOKEN;
+        OS_TYPES OS_TYPE;
+
+		BEGIN
+		OPEN ALL_PUSH_MEMBER;
+		FETCH ALL_PUSH_MEMBER BULK COLLECT INTO  MEMBER_NOS, LOGIN_IDS,MEMBER_NMS,APP_TOKENS,OS_TYPES;
+        CLOSE ALL_PUSH_MEMBER;
+
+        FORALL J IN MEMBER_NOS.FIRST .. MEMBER_NOS.LAST
+         INSERT
+         INTO sms_push_test.t_push_condition
+         ( PUSH_NO,RECEIVER_NO,RECEIVER_ID,RECEIVER_NM,TOKEN,OS_TYPE,SRCH_CNDT)
+          VALUES(
+          #{pushNo},
+          MEMBER_NOS(J),
+          LOGIN_IDS(J),
+          MEMBER_NMS(J),
+          APP_TOKENS(J),
+          OS_TYPES(J),
+          #{srchCndt}
+          );
+  END
+		}
+	</insert>
+
+	<insert id="insertPushConditionSearch" >
+        {CALL
+		DECLARE
+		CURSOR ALL_PUSH_MEMBER IS
+            SELECT
+                     A.MEMBER_NO AS MEMBER_NO,
+                     A.LOGIN_ID AS LOGIN_ID,
+                     A.MEMBER_NM AS MEMBER_NM,
+                     A.APP_TOKEN AS APP_TOKEN,
+                     A.OS_TYPE AS OS_TYPE
+            FROM TC_MEMBER A
+                        WHERE 1=1
+                        AND APP_TOKEN IS NOT NULL
+                        AND A.site_no = 1
+                        AND A.MEMBER_STATUS_CD = '01'
+                        AND A.MEMBER_NO >= 1000
+                        <include refid="selectMemberListWhere" />
+                        ;
+
+        TYPE MEMBER_NO IS TABLE OF TC_MEMBER.MEMBER_NO%TYPE;
+        TYPE LOGIN_ID IS TABLE OF TC_MEMBER.LOGIN_ID%TYPE;
+        TYPE MEMBER_NM IS TABLE OF TC_MEMBER.MEMBER_NM%TYPE;
+        TYPE APP_TOKEN IS TABLE OF TC_MEMBER.APP_TOKEN%TYPE;
+        TYPE OS_TYPE IS TABLE OF TC_MEMBER.OS_TYPE%TYPE;
+
+        MEMBER_NOS MEMBER_NO;
+        LOGIN_IDS LOGIN_ID;
+        MEMBER_NMS MEMBER_NM;
+        APP_TOKENS APP_TOKEN;
+        OS_TYPES OS_TYPE;
+
+		BEGIN
+		OPEN ALL_PUSH_MEMBER;
+		FETCH ALL_PUSH_MEMBER BULK COLLECT INTO  MEMBER_NOS, LOGIN_IDS,MEMBER_NMS,APP_TOKENS,OS_TYPES;
+        CLOSE ALL_PUSH_MEMBER;
+
+        FORALL J IN MEMBER_NOS.FIRST .. MEMBER_NOS.LAST
+         INSERT
+         INTO sms_push_test.t_push_condition
+         ( PUSH_NO,RECEIVER_NO,RECEIVER_ID,RECEIVER_NM,TOKEN,OS_TYPE,SRCH_CNDT)
+          VALUES(
+          #{pushNo},
+          MEMBER_NOS(J),
+          LOGIN_IDS(J),
+          MEMBER_NMS(J),
+          APP_TOKENS(J),
+          OS_TYPES(J),
+          #{srchCndt}
+          );
+        END
+		}
+	</insert>
+	
+    <!-- 푸시발송 취소 -->
+    <update id="updatePushCancel" >
+		update t_push_manager
+		 set push_status = '04',
+			 canceler_no = #{cancelerNo},
+			 cancel_dttm = SYSDATE,
+			 updr_no = #{updrNo},
+			 upd_dttm = SYSDATE
+		where push_no = #{pushNo}    
+	</update>
+	
+    <!-- 푸시발송 내역 수정 -->
+    <update id="updatePushManager" >
+		update t_push_manager
+		  set alarm_gb = #{alarmGb},
+		      alarm_gb_nm = #{alarmGbNm},
+			  send_msg = #{sendMsg},
+			  link = #{link},
+	          <if test="sendDate != '' and sendDate != null">
+	          	send_dttm = TO_DATE(#{sendDate}||' '||#{sendTime}), 'YYYY-MM-DD HH24:MI'),
+				send_date = #{sendDate}, 
+				send_time = TO_CHAR(#{sendTime}, 'HH24:MI'),
+	          </if>
+			  updr_no = #{updrNo},
+			  upd_dttm = SYSDATE
+		where push_no = #{pushNo}    
+	</update>
+	
+    <delete id="deletePushCondition" >
+      delete from t_push_condition
+      where push_no = #{pushNo}
+    </delete>
+	
+    <delete id="deletePushManager" >
+      delete from t_push_manager
+      where push_no = #{pushNo}
+    </delete>
+    
+    
+    <!-- 푸시 확인 링크 조회 -->
+    <select id="selectPushCheck" resultType="PushSendVO">
+     SELECT  link
+ 		FROM t_davich_push_rev
+ 	    WHERE rsv_no = replace(#{pushNo}, 'S', '')
+    </select>
+
+    <!-- 푸시 확인 이력-->
+    <insert id="insertPushConfirm" >
+		insert into t_push_confirm
+		(push_no, receiver_no, receiver_id, check_dttm)
+		values (replace(#{pushNo}, 'S', ''), #{receiverNo}, #{receiverId}, SYSDATE)
+	</insert>
+    
+    <select id="selectMarketPushListPaging" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.info.selectMarketPushListPaging -- 마켓 푸쉬 메세지 조회 */
+        SELECT *
+		FROM
+		(
+			SELECT T.*  ,ROW_NUMBER() OVER(ORDER BY 1 ) PAGING_NUM
+			FROM
+			(
+
+							select
+							   A.RECEIVER_NO
+							,  A.RECEIVER_ID
+							,  A.PUSH_NO
+							,  B.SEND_MSG
+							,  B.LINK
+							,  B.SEND_DTTM
+							,  B.IMG_URL
+							,  TO_CHAR(SEND_DTTM, 'YYYY-MM-DD') APP_DATE
+							,  TO_CHAR(SEND_DTTM, 'HH24:MI:SS') APP_TIME
+							,CASE WHEN (SELECT count(1) FROM T_PUSH_CONFIRM S WHERE S.PUSH_NO = A.PUSH_NO AND S.RECEIVER_NO = #{memberNo}) > 0  THEN 'Y' ELSE 'N' END AS READ_YN
+							 FROM T_PUSH_CONDITION A LEFT OUTER JOIN T_PUSH_MANAGER B
+							 ON A.PUSH_NO=B.PUSH_NO
+							 AND  B.PUSH_STATUS='01'
+							 AND A.RECEIVER_NO =#{memberNo}
+							WHERE 1 = 1
+                            <include refid="selectMarketPushListWhere" />
+                            ORDER BY B.SEND_DTTM DESC
+                   ) T
+		)
+		<include refid="common.pageSql" />
+	</select>
+
+	<!-- 푸시메세지 총건수 조회 -->
+    <select id="selectMarketPushListPagingTotalCount" resultType="Integer">
+        /* member.info.selectMarketPushListPagingTotalCount */
+        SELECT
+			  COUNT(1)
+			 FROM T_PUSH_CONDITION A LEFT OUTER JOIN T_PUSH_MANAGER B
+			 ON A.PUSH_NO=B.PUSH_NO
+			 AND  B.PUSH_STATUS='01'
+			 AND A.RECEIVER_NO =#{memberNo}
+    </select>
+
+    <!-- 푸시메세지 조건적용 총건수 조회 -->
+    <select id="selectMarketPushListPagingCount" resultType="Integer">
+        /* member.info.selectMarketPushListPagingCount */
+        SELECT
+			  COUNT(1)
+			 FROM T_PUSH_CONDITION A LEFT OUTER JOIN T_PUSH_MANAGER B
+			 ON A.PUSH_NO=B.PUSH_NO
+			 AND  B.PUSH_STATUS='01'
+			 AND A.RECEIVER_NO = #{memberNo}
+        WHERE 1=1
+        <include refid="selectMarketPushListWhere" />
+    </select>
+    
+    <!-- 안읽은 푸시메세지수 조회 (마켓용) -->
+    <select id="selectNewMarketPushCnt" resultType="Integer">
+        /* member.info.selectNewMarketPushCnt */
+        SELECT
+			count(1)
+		FROM T_PUSH_CONDITION A LEFT OUTER JOIN T_PUSH_MANAGER B
+		ON A.PUSH_NO=B.PUSH_NO
+		AND  B.PUSH_STATUS='01'
+		AND A.RECEIVER_NO = #{memberNo}
+		WHERE 1 = 1
+		 AND SEND_DTTM is not null
+		 AND A.push_no not in(select push_no from t_push_confirm where receiver_no = #{memberNo})
+    </select>
+    
+    <!-- 안읽은 푸시메세지수 조회 (가맹점용) -->
+    <select id="selectNewStorePushCnt" resultType="Integer">
+        /* member.info.selectNewStorePushCnt */
+        SELECT 
+			count(1) cnt
+		FROM t_davich_push_rev A
+		WHERE 1 = 1
+		 AND MEMBER_NO = #{memberNo}
+		 AND A.push_no not in(select push_no from t_push_confirm where receiver_no = #{memberNo})
+    </select>
+    
+    <select id="selectStorePushListPaging" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectStorePushListPaging -- 가맹점 푸쉬 리스트 조회 */
+		SELECT *
+		FROM
+		(
+			SELECT T.*  ,ROW_NUMBER() OVER(ORDER BY 1 ) PAGING_NUM
+			FROM
+			(
+						SELECT
+							A.PUSH_NO
+							,TO_CHAR(A.SEND_DTTM, 'YYYY-MM-DD') APP_DATE
+							,TO_CHAR(A.SEND_DTTM, 'HH24:MI:SS') APP_TIME
+							,A.SEND_MSG AS MEMO
+							,A.STORE_CODE AS STR_CODE
+							,A.IMG_URL
+							,CASE WHEN (SELECT count(1) FROM T_PUSH_CONFIRM S WHERE S.PUSH_NO = A.PUSH_NO AND S.RECEIVER_NO = 1000) > 0  THEN 'Y' ELSE 'N' END AS READ_YN
+						 FROM t_davich_push_rev A
+						 WHERE A.PUSH_STATUS ='01'
+				 		 AND A.APP_YN='Y'
+				 		 AND A.MALL_NO_CARD = #{memberCardNo}
+                         <include refid="selectStorePushListWhere" />
+                         ORDER BY A.SEND_DTTM DESC
+                    ) T
+		)
+		<include refid="common.pageSql" />
+	</select>
+	
+	<!-- 푸시메세지 총건수 조회 -->
+    <select id="selectStorePushListPagingTotalCount" resultType="Integer">
+        /* member.info.selectStorePushListPagingTotalCount */
+        SELECT
+			  COUNT(1)
+			 FROM t_davich_push_rev A
+			 WHERE A.PUSH_STATUS ='01'
+	 		 AND A.APP_YN='Y'
+	 		 AND A.MALL_NO_CARD = #{memberCardNo}
+    </select>
+
+    <!-- 푸시메세지 조건적용 총건수 조회 -->
+    <select id="selectStorePushListPagingCount" resultType="Integer">
+        /* member.info.selectStorePushListPagingCount */
+        SELECT
+			  COUNT(1)
+			 FROM t_davich_push_rev A
+			 WHERE A.PUSH_STATUS ='01'
+	 		 AND A.APP_YN='Y'
+	 		 AND A.MALL_NO_CARD = #{memberCardNo}
+        	<include refid="selectStorePushListWhere" />
+    </select>
+    
+    <!-- 마켓 푸시메세지 확인 -->
+    <insert id="insertMarketPushMessageConfirm" >
+		INSERT INTO t_push_confirm
+			(PUSH_NO, 
+			 RECEIVER_NO, 
+			 RECEIVER_ID, 
+			 CHECK_DTTM
+			 )
+		VALUES (
+			#{pushNo}, 
+			#{memberNo}, 
+			#{loginId}, 
+			SYSDATE
+		)
+	</insert>
+		
+	<!-- 가맹점 푸시메세지 확인 -->
+    <insert id="insertStorePushMessageConfirm" >
+		INSERT INTO t_push_confirm
+			(PUSH_NO, 
+			 RECEIVER_NO, 
+			 RECEIVER_ID, 
+			 CHECK_DTTM
+			 )
+		VALUES (
+			#{pushNo}, 
+			#{memberNo}, 
+			#{loginId}, 
+			SYSDATE
+		)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress ALL -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="
+	   		http://www.springframework.org/schema/beans
+	   		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+
+	<!--  ### Main DB ### -->
+	<bean id="dataSourceMarket" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${database.market.driver}"/>
+		<property name="url" value="${database.market.url}"/>
+		<property name="username" value="${database.market.user}"/>
+		<property name="password" value="${database.market.password}"/>
+		<property name="maxTotal" value="${database.market.maxTotal}"/>
+		<property name="maxIdle" value="${database.market.maxIdle}"/>
+		<property name="maxWaitMillis" value="${database.market.maxWaitMillis}"/>
+	</bean>
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceMarket" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- 가맹점 PUSH DB -->
+	<bean id="dataSourcePushSt" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close" >
+		<property name="driverClassName" value="${database.store.driver}"/>
+		<property name="url" value="${database.store.url}"/>
+		<property name="username" value="${database.store.user}"/>
+		<property name="password" value="${database.store.password}"/>
+		<property name="maxTotal" value="${database.store.maxTotal}"/>
+		<property name="maxIdle" value="${database.store.maxIdle}"/>
+		<property name="maxWaitMillis" value="${database.store.maxWaitMillis}"/>
+	</bean>
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePushSt" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- PUSH DB -->
+	<bean id="dataSourcePush" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close" >
+		<property name="driverClassName" value="${database.push.driver}"/>
+		<property name="url" value="${database.push.url}"/>
+		<property name="username" value="${database.push.user}"/>
+		<property name="password" value="${database.push.password}"/>
+		<property name="maxTotal" value="${database.push.maxTotal}"/>
+		<property name="maxIdle" value="${database.push.maxIdle}"/>
+		<property name="maxWaitMillis" value="${database.push.maxWaitMillis}"/>
+	</bean>
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePush" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- ERP DB -->
+	<bean id="dataSourceErp" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close" >
+		<property name="driverClassName" value="${database.erp.driver}"/>
+		<property name="url" value="${database.erp.url}"/>
+		<property name="username" value="${database.erp.user}"/>
+		<property name="password" value="${database.erp.password}"/>
+		<property name="maxTotal" value="${database.erp.maxTotal}"/>
+		<property name="maxIdle" value="${database.erp.maxIdle}"/>
+		<property name="maxWaitMillis" value="${database.erp.maxWaitMillis}"/>
+	</bean>
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceErp" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+</beans>

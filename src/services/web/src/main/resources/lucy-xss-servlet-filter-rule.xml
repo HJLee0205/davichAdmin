@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config xmlns="http://www.navercorp.com/lucy-xss-servlet">
+    <defenders>
+        <!-- XssPreventer 등록 -->
+        <defender>
+            <name>xssPreventerDefender</name>
+            <class>com.navercorp.lucy.security.xss.servletfilter.defender.XssPreventerDefender</class>
+            <!-- HTML이 아닌 단순 텍스트 파라미터에 대해서는 XSS Preventer를 사용해 전체를 Escaping -->
+        </defender>
+
+        <!-- XssSaxFilter 등록 -->
+        <defender>
+            <name>xssSaxFilterDefender</name>
+            <class>com.navercorp.lucy.security.xss.servletfilter.defender.XssSaxFilterDefender</class>
+            <init-param>
+                <param-value>/config/lucy/lucy-xss-sax.xml</param-value>   <!-- lucy-xss-filter의 sax용 설정파일 -->
+                <param-value>true</param-value>        <!-- 필터링된 코멘트를 남길지 여부, true면 안남김 -->
+            </init-param>
+            <!-- 게시판, 메일, 방명록 등 HTML 태그 기능이 필요시, SAX 방식을 통해 XssFilterDefender 보다 메모리 소비가 적음 -->
+        </defender>
+
+        <!-- XssFilter 등록 -->
+        <defender>
+            <name>xssFilterDefender</name>
+            <class>com.navercorp.lucy.security.xss.servletfilter.defender.XssFilterDefender</class>
+            <init-param>
+                <param-value>/config/lucy/lucy-xss.xml</param-value>    <!-- lucy-xss-filter의 dom용 설정파일 -->
+                <param-value>true</param-value>         <!-- 필터링된 코멘트를 남길지 여부, true면 안남김 -->
+            </init-param>
+            <!-- 게시판, 메일, 방명록 등 HTML 태그 기능이 필요시 -->
+        </defender>
+    </defenders>
+
+    <!-- default defender 선언, 필터링 시 지정한 defender가 없으면 여기 정의된 default defender를 사용해 필터링 한다. -->
+    <default>
+        <defender>xssPreventerDefender</defender>
+    </default>
+
+    <!-- url 별 필터링 룰 선언 -->
+    <url-rule-set>
+
+        <!-- ================= 이 아래에 예외 처리할 url-rule 을 추가해 주세요 ================= -->
+        <url-rule>
+            <url>/front/login/loginprocess</url>
+            <params>
+                <param name="returnUrl" useDefender="false" />
+            </params>
+        </url-rule>
+
+         <!-- 비밀번호 변경 방지 -->
+        <url-rule>
+            <url>/front/member/update-password</url>
+            <params>
+                <param name="nowPw" useDefender="false" />
+                <param name="newPw" useDefender="false" />
+            </params>
+        </url-rule>
+        <!-- 비밀번호 변경 방지 -->
+        <url-rule>
+            <url>/front/member/member-insert</url>
+            <params>
+                <param name="pw" useDefender="false" />
+            </params>
+        </url-rule>
+
+        <url-rule>
+            <url>/front/community/letter-insert</url>
+            <params>
+                <param name="content">
+                    <defender>xssSaxFilterDefender</defender>
+                </param>
+            </params>
+        </url-rule>
+        <url-rule>
+            <url>/front/community/letter-update</url>
+            <params>
+                <param name="content">
+                    <defender>xssSaxFilterDefender</defender>
+                </param>
+            </params>
+        </url-rule>
+
+        <url-rule>
+            <url>/front/customer/letter-insert</url>
+            <params>
+                <param name="content">
+                    <defender>xssSaxFilterDefender</defender>
+                </param>
+            </params>
+        </url-rule>
+        <url-rule>
+            <url>/front/customer/letter-update</url>
+            <params>
+                <param name="content">
+                    <defender>xssSaxFilterDefender</defender>
+                </param>
+            </params>
+        </url-rule>
+
+        <url-rule>
+            <url disable="true">/front/goods/goods-detail-preview</url>
+        </url-rule>
+
+        <url-rule>
+            <url>/front/order/inicis-stdpay-return</url>
+        </url-rule>
+
+    </url-rule-set>
+</config>

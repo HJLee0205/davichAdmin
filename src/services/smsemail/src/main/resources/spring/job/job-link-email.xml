@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!-- 대량 메일 발송 발송 상태 업데이트  -->
+    
+    <bean id="emailTasklet" class="net.danvi.dmall.smsemail.batch.job.EmailTasklet" />
+    <batch:job id="emailSendResultRunJob" >
+        <batch:step id="emailSendResultRunJobStep" >
+            <batch:tasklet ref="emailTasklet"  transaction-manager="transactionManager" />
+        </batch:step>
+    </batch:job>
+</beans>

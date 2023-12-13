@@ -1,0 +1,37 @@
+<li>
+    <div class="product_list_typeB_image_area">
+        <a href="javascript:goods_preview('#[goodsNo]');"><span class="btn_img_view"></span></a>
+        <a href="javascript:goods_detail('#[goodsNo]');">
+            <img src="#[goodsDispImgB]" alt="">
+        </a>
+    </div>
+    <div class="product_list_typeB_title_area">
+        <div class="brand_title">
+            <a href="javascript:goods_detail('#[goodsNo]');">#[brandNm]</a>
+        </div>
+        <div class="goods_title">
+            <a href="javascript:goods_detail('#[goodsNo]');">#[goodsNm]</a>
+        </div>
+        <div class="label_area">
+            #[iconImgs]
+        </div>
+        <div class="product_info">
+            <a href="javascript:goods_detail('#[goodsNo]');">#[prWords]</a>
+        </div>
+    </div>
+    <div class="floatR floatC">
+        <ul class="product_list_typeB_price_info">
+            <li><del>#[customerPrice]</del><span class="sale_no">#[saleRate]%</span></li>
+            <li class="real_price">#[salePrice]</li>
+            <li>
+                #[starCnt]
+                <span class="check_point">#[accmGoodslettCnt]건</span>
+            </li>
+        </ul>
+        <div class="product_list_typeB_btn_area">
+            <button type="button" class="btn_cart" onclick="ListBtnUtil.insertBasket('#[goodsNo]')">장바구니</button>
+            <button type="button" class="btn_checkout" onclick="goods_detail('#[goodsNo]');">바로구매</button>
+            <button type="button" class="btn_favorite" onclick="ListBtnUtil.insertInterest('#[goodsNo]');">관심상품</button>
+        </div>
+    </div>
+</li>

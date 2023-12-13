@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/tx		http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+						http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+    <context:property-placeholder location="classpath:config/properties/datasource.xml"/>
+
+    <!--  ### Main DB ### -->
+    <jee:jndi-lookup id="dataSource" jndi-name="jdbc/dmallDB" resource-ref="true" />
+
+    <bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSource" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL         :  "/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:config/mybatis/myBatisConfig.xml" />
+        <property name="mapperLocations">
+            <list>
+                <value>classpath:mapper/${main.database.type}/**/*.xml</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg ref="sqlSessionFactory"/>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+	<!-- 가맹점 PUSH DB -->
+	<!--<bean id="dataSourcePushSt" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+		<property name="driverClassName" value="${store.jdbc.driver}"/>
+		<property name="url" value="${store.jdbc.url}"/>
+		<property name="username" value="${store.jdbc.user}"/>
+		<property name="password" value="${store.jdbc.password}"/>
+	</bean>-->
+	<jee:jndi-lookup id="dataSourcePushSt" jndi-name="jdbc/storeDB" resource-ref="true" />
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePushSt" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionFactoryPushSt" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourcePushSt" />
+		<property name="configLocation" value="classpath:config/mybatis/myBatisConfig.xml" />
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:mapper/${push.database.type}/**/*.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionTemplatePushSt" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactoryPushSt"/>
+	</bean>
+
+	<bean id="transactionManagerPushSt" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourcePushSt"/>
+	</bean>
+	
+	<bean id="proxyStorePushDao" class="dmall.framework.common.dao.ProxyStorePushDao" />
+	
+    <!-- PUSH DB -->
+	<!--<bean id="dataSourcePush" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+		<property name="driverClassName" value="${push.jdbc.driver}"/>
+		<property name="url" value="${push.jdbc.url}"/>
+		<property name="username" value="${push.jdbc.user}"/>
+		<property name="password" value="${push.jdbc.password}"/>
+	</bean>-->
+	<jee:jndi-lookup id="dataSourcePush" jndi-name="jdbc/pushDB" resource-ref="true" />
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePush" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionFactoryPush" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourcePush" />
+		<property name="configLocation" value="classpath:config/mybatis/myBatisConfig.xml" />
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:mapper/${push.database.type}/**/*.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionTemplatePush" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactoryPush"/>
+	</bean>
+
+	<bean id="transactionManagerPush" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourcePush"/>
+	</bean>
+
+	<bean id="proxyPushDao" class="dmall.framework.common.dao.ProxyPushDao" />
+
+	<!-- ERP DB -->
+	<!--<bean id="dataSourceErp" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+		<property name="driverClassName" value="${erp.jdbc.driver}"/>
+		<property name="url" value="${erp.jdbc.url}"/>
+		<property name="username" value="${erp.jdbc.user}"/>
+		<property name="password" value="${erp.jdbc.password}"/>
+	</bean>-->
+	<jee:jndi-lookup id="dataSourceErp" jndi-name="jdbc/mall_IF_DB" resource-ref="true" />
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceErp" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionFactoryErp" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceErp" />
+		<property name="configLocation" value="classpath:config/mybatis/myBatisConfig.xml" />
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:mapper/${erp.database.type}/**/*.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="sqlSessionTemplateErp" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactoryErp"/>
+	</bean>
+
+	<bean id="transactionManagerErp" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSourceErp"/>
+	</bean>
+	
+	<bean id="proxyErpDao" class="dmall.framework.common.dao.ProxyErpDao" />
+
+</beans>

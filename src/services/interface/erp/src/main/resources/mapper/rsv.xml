@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="rsv">
+
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreChaoticReqDTO" id="storeChaoticSearchDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreSearchReqDTO" id="storeSearchDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreDtlInfoReqDTO" id="storeDtlReqDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreVisitReserveRegReqDTO" id="storeVisitDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreVisitReserveRegReqDTO$ReservePrdDTO" id="storeVisitPrdDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreVisitReserveCancelReqDTO" id="storeVisitCancelDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreVisitReserveMdfyReqDTO" id="storeVisitMdfyDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.ReserveProductSearchReqDTO" id="rsvProductSearchDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.ReserveOrderSearchReqDTO" id="rsvOrderSearchDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.PreorderPromotionRegReqDTO" id="preorderPromotionDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.PreorderRegDTO" id="preorderDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.PreorderPromotionModReqDTO" id="preorderPromotionModDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.rsv.dto.StoreHolidayReqDTO" id="storeHolidaySearchDto"></parameterMap>
+	
+	<resultMap type="com.davichmall.ifapi.rsv.dto.StoreChaoticResDTO$StoreChaoticDTO" id="storeChaoticDto" autoMapping="true"></resultMap>
+	<resultMap type="com.davichmall.ifapi.rsv.dto.StoreSearchResDTO$StoreInfoDTO" id="storeInfoDto" autoMapping="true"></resultMap>
+	<resultMap type="com.davichmall.ifapi.rsv.dto.StoreDtlInfoResDTO" id="storeDtlResDto" autoMapping="true"></resultMap>
+	<resultMap type="com.davichmall.ifapi.rsv.dto.ReserveProductSearchResDTO$ReserveProductDTO" id="rsvProductDto" autoMapping="true"></resultMap>
+	<resultMap type="com.davichmall.ifapi.rsv.dto.ReserveOrderSearchResDTO$ReserveOrderDTO" id="rsvOrderDto" autoMapping="true"></resultMap>
+
+	<!-- 혼잡도 조회 -->
+	<select id="selectChaoticList" parameterMap="storeChaoticSearchDto" resultMap="storeChaoticDto">
+		select a.times_fr as hour
+			, a.chaotic as chaotic
+			, b.ctr_name as chaoticName
+		from mall_str_times a
+		inner join am700tbl b on a.chaotic = b.ctr_code and b.ctr_id = '076'
+		where a.str_code = #{strCode}
+		  and a.week = #{dow}
+		  and a.use_yn = 'Y'
+	</select>
+	
+	<!-- 다비젼 방문예약 데이터 등록시 이미 등록된 데이터 인지 확인 -->
+	<select id="countStoreVisitReserveInfo" parameterMap="storeVisitDto" resultType="int">
+		select count(*) as cnt
+		from mall_str_booking
+		where mall_rsv_no = TO_CHAR(#{mallRsvNo})
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 방문예약 테이블 등록을 위한 seq_no 조회 -->
+	<select id="getStoreVisitReserveMaxSeq" parameterMap="storeVisitDto" resultType="int">
+		select str_booking_seq.nextval as seqNo from dual
+	</select>
+	
+	<!-- 다비젼에 방문 예약 데이터 등록 -->
+	<insert id="insertStoreVisitReserveInfo" parameterMap="storeVisitDto">
+		insert into mall_str_booking (
+			dates
+			, str_code
+			, times_fr
+			, seq_no
+			, cd_cust
+			, nm_cust
+			, ct_telno
+			, ct_telno_h
+			, memo
+			, purpose
+			, mall_rsv_no
+			, checkup_yn
+			, event_gubun
+			, input_id
+		)
+		values (
+			to_date(#{rsvDate}, 'YYYYMMDD')
+			, #{strCode}
+			, #{rsvTime}
+			, #{seqNo}
+			, #{cdCust, jdbcType=VARCHAR}
+			, #{memName}
+			, #{telNo}
+			, #{telNoH}
+			, #{memo}
+			, #{purpose}
+			, #{mallRsvNo}
+			, #{checkupYn}
+			, #{eventGubun}
+			, 'mall'
+		) 
+	</insert>
+	
+	<!-- 다비젼 방문 예약 상세 정보(예약상품) 등록 -->
+	<insert id="insertStoreVisitReserveDtlInfo" parameterMap="storeVisitPrdDto">
+		insert into mall_str_booking_d (
+			dates
+			, seq_no
+			, seq
+			, itm_code
+			, itm_code_add
+			, qty
+			, memo
+			, input_id
+		) values (
+			to_date(#{rsvDate}, 'YYYYMMDD')
+			, #{seqNo}
+			, #{seq}
+			, #{erpItmCode}
+			, #{erpItmCodeAdd}
+			, #{qty}
+			, #{memo}
+			, 'mall'
+		)
+	</insert>
+	
+	<!-- 다비젼에 방문예약 데이터 삭제 -->
+	<update id="cancelErpStoreVisitReserveInfo" parameterMap="storeVisitCancelDto">
+		update mall_str_booking
+		set del_yn = 'Y'
+		  , cng_id = 'mall'
+		  , cng_date = sysdate
+		where mall_rsv_no = #{mallRsvNo}
+	</update>
+	
+	<!-- 쇼핑몰에 방문예약 취소 처리 -->
+	<update id="cancelMallStoreVisitReserveInfo" parameterMap="storeVisitCancelDto">
+		update to_visit_rsv
+		set cancel_yn = 'Y'
+		  , updr_no = #{updrNo}
+		  , upd_dttm = sysdate
+		where rsv_no = #{mallRsvNo}
+		  and cancel_yn = 'N'
+	</update>
+	
+	<!-- 쇼핑몰 방문예약 테이블 max rsv_no 조회 -->
+	<select id="getMaxRsvNo" resultType="string">
+		select NVL(MAX(TO_NUMBER(rsv_no)) + 1,1)
+		from to_visit_rsv
+	</select>
+	
+	<!-- 쇼핑몰 방문예약 데이터 변경 등록(기존 데이터에서 날짜/시간 변경해서 insert) -->
+	<insert id="insertModifiedStoreVisitReserveInfo" parameterMap="storeVisitMdfyDto">
+		insert into to_visit_rsv (
+			rsv_no
+			, store_no
+			, member_no
+			, rsv_date
+			, rsv_time
+			, req_matr
+			, visit_purpose_cd
+			, visit_purpose_nm
+			, cancel_yn
+			, regr_no
+			, reg_dttm
+		)
+		select #{rsvNo}
+			, store_no
+			, member_no
+			, to_date(#{rsvDate}, 'YYYYMMDD')
+			,  #{rsvTime}
+			, req_matr
+			, visit_purpose_cd
+			, visit_purpose_nm
+			, 'N'
+			, #{regrNo}
+			, sysdate
+		from to_visit_rsv
+		where rsv_no = #{mallRsvNo}
+	</insert>
+	
+	<!-- 쇼핑몰 방문예약 상세 데이터 변경 등록(기존 데이터에서 날짜/시간 변경해서 insert) -->
+	<insert id="insertModifiedStoreVisitReserveDtl" parameterMap="storeVisitMdfyDto">
+		insert into to_visit_rsv_dtl (
+			rsv_no
+			, rsv_dtl_seq
+			, rsv_gb
+			, ord_no
+			, ord_dtl_seq
+			, goods_no
+			, goods_nm
+			, item_no
+			, item_nm
+			, ord_qtt
+			, sale_amt
+			, dc_amt
+			, add_opt_yn
+			, add_opt_no
+			, add_opt_nm
+			, add_opt_dtl_seq
+			, regr_no
+			, reg_dttm
+		)
+		select #{rsvNo}
+			, rsv_dtl_seq
+			, rsv_gb
+			, ord_no
+			, ord_dtl_seq
+			, goods_no
+			, goods_nm
+			, item_no
+			, item_nm
+			, ord_qtt
+			, sale_amt
+			, dc_amt
+			, add_opt_yn
+			, add_opt_no
+			, add_opt_nm
+			, add_opt_dtl_seq
+			, #{regrNo}
+			, sysdate
+		from to_visit_rsv_dtl
+		where rsv_no = #{mallRsvNo}
+	</insert>
+	
+	<!-- 가맹점 목록 조회 검색 조건 -->
+	<sql id="storeSearchCondition">
+		where end_ind = '1'
+		  and chain_gbn = '0'
+		  and LOGIN_FLG ='1'
+		<choose>
+			<when test="strName != null and strName != ''">
+				<choose>
+					<when test="strName eq '테스트점'.toString()">
+						and a.str_code = '8888'
+					</when>
+					<otherwise>
+						and str_name like '%' || #{strName} || '%'
+						and chain_gbn4 = '0'
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+				and chain_gbn4 = '0'
+			</otherwise>
+		</choose>
+		
+		<choose>
+			<when test="gugunCode != null and gugunCode != ''">
+				and zone2_code = #{gugunCode}
+			</when>
+			<otherwise>
+				<if test="sidoCode != null and sidoCode != ''">
+					and zone2_code like #{sidoCode} || '%'
+				</if>
+			</otherwise>
+		</choose>
+		<if test="recvAllowYn != null and recvAllowYn != ''">
+			and mall_yn = #{recvAllowYn}
+		</if>
+		<choose>
+			<when test="hearingAidYn != null and hearingAidYn eq 'Y'.toString()">
+				and b.str_code is not null
+			</when>
+			<when test="hearingAidYn != null and hearingAidYn eq 'N'.toString()">
+				and b.str_code is null
+			</when>
+		</choose>
+		<if test="strCodeList != null and strCodeList != ''">
+			and a.str_code in (${strCodeList})
+		</if>
+	</sql>
+	
+	<!-- 가맹점 목록 검색 -->
+	<select id="selectStoreList" parameterMap="storeSearchDto" resultMap="storeInfoDto">
+		select * from (
+			select t.*, rownum as rn from (
+				select distinct(a.str_code) as strCode
+					, a.str_name as strName
+					, (select max(s.cont) from am019tbl s where a.str_code = s.str_code and to_char(sysdate, 'YYYYMMDD') between s.sdate and s.edate and ROWNUM = 1) as cont
+					, a.mall_yn as recvAllowYn
+					, a.addr1 as addr1
+					, a.addr2 as addr2
+					, a.tel_no as telNo
+		          , case when b.str_code is null then 'N' else 'Y' end as hearingAidYn
+				from am010tbl a
+        		left outer join am010tbl_test b on b.test_code = 'A006' and a.str_code = b.str_code and to_char(sysdate, 'YYYYMMDD') between b.s_date and b.e_date
+				<include refid="storeSearchCondition"></include>
+				order by strName
+			) t
+		)
+		where rn > #{pageNo} * #{cntPerPage}
+		  and rn &lt;= (#{pageNo} + 1) * #{cntPerPage}
+		order by rn
+	</select>
+	
+	<!-- 가맹점 목록 건수 조회 -->
+	<select id="countStoreList" parameterMap="storeSearchDto" resultType="int">
+		select count(*)
+		from am010tbl a
+		left outer join am010tbl_test b on b.test_code = 'A006' and a.str_code = b.str_code and to_char(sysdate, 'YYYYMMDD') between b.s_date and b.e_date
+		<include refid="storeSearchCondition"></include>
+	</select>
+	
+	<!-- 가맹점 상세 조회 -->
+	<select id="selectStoreDtlInfo" parameterMap="storeDtlReqDto" resultMap="storeDtlResDto">
+		select a.str_code as strCode
+			, a.str_name as strName
+			, a.mall_yn as recvAllowYn
+			, (select max(s.cont) from am019tbl s where a.str_code = s.str_code and to_char(sysdate, 'YYYYMMDD') between s.sdate and s.edate and ROWNUM = 1) as cont
+			, a.addr1 as addr1
+			, a.addr2 as addr2
+			, a.tel_no as telNo
+			, case when b.str_code is null then 'N' else 'Y' end as hearingAidYn
+		from am010tbl a
+        left outer join am010tbl_test b on b.test_code = 'A006' and a.str_code = b.str_code and to_char(sysdate, 'YYYYMMDD') between b.s_date and b.e_date
+		where a.end_ind = '1'
+		  and a.chain_gbn = '0'
+		  <!-- and a.chain_gbn4 = '0' -->
+		  and a.str_code = #{strCode}
+		  <if test="strCodeList != null and strCodeList != ''">
+			and a.str_code in (${strCodeList})
+		  </if>
+	</select>
+	
+	<!-- 가맹점 코드 조회 -->
+	<select id="selectStrCodeList" parameterMap="storeSearchDto" resultMap="storeInfoDto">
+		select str_code as strCode
+		from am010tbl_sample
+		where to_char(sysdate, 'YYYYMMDD') between s_date and e_date and itm_code IN 
+		<foreach collection="arrErpItmCode" open="(" close=")" separator="," item="erpItmCode">
+		  	#{erpItmCode}
+		  </foreach>
+	</select>
+	
+	<!-- 방문예약한 예약상품 목록 조회 -->
+	<select id="selectReserveProductList" parameterMap="rsvProductSearchDto" resultMap="rsvProductDto">
+		select item_no as mallItmCode
+			, goods_nm as mallPrdNm
+			, case when add_opt_yn = 'N' then item_nm else add_opt_nm end as mallPrdOptNm
+			, add_opt_yn as addOptYn
+		from to_visit_rsv_dtl
+		where rsv_no = #{mallRsvNo}
+	</select>
+	
+	<!-- 방문예약한 주문번호 목록 조회 -->
+	<select id="selectOrderList" parameterMap="rsvOrderSearchDto" resultMap="rsvOrderDto">
+		select distinct dtl.ord_no as mallOrdNo
+		from to_visit_rsv_dtl dtl
+		where rsv_no = #{mallRsvNo}
+		  and rsv_gb = '01'
+	</select>
+	
+	<!-- 공통코드 기획전 ctr_code max+1 조회 -->
+	<select id="getMaxPreorderCtrCode" resultType="string">
+		select nvl(max(to_number(ctr_code)), 0) + 1 as maxCtrCode
+		from am700tbl
+		where ctr_id = '601'
+	</select>
+	
+	<!-- 사전예약 기획전을 공통코드 테이블에 등록 -->
+	<insert id="insertPreorderCtrCode" parameterMap="preorderPromotionDto">
+		insert into am700tbl (
+			ctr_id
+			, ctr_code
+			, ctr_name
+			, ctr_desc
+		) values (
+			'601'
+			, #{erpPrmtNo}
+			, #{prmtName}
+			, 'Y' || lpad(#{erpPrmtNo}, 2, '0')
+		)
+	</insert>
+	
+	<!-- 사전예약 주문 등록을 위한 receiptSeq 조회 -->
+	<select id="getMaxReceiptSeqForPreorder" parameterType="string" resultType="int">
+		select nvl(max(receipt_seq), 0) + 1
+		from dt066tbl
+		where reserve_seq = #{erpPrmtNo}
+	</select>
+	
+	<!-- 사전예약 주문 상품 정보 조회 -->
+	<select id="selectProductInfoForPreorder" parameterType="string" resultType="map">
+		select sph as "sph"
+			, cyl as "cyl"
+			, bc as "bc"
+			, axis as "axis"
+		from am070tbl
+		where itm_code = #{erpItmCode}
+		  and use_ind = '0'
+	</select>
+	
+	<!-- 사전예약 주문 등록 -->
+	<insert id="insertPreorderInfo" parameterMap="preorderDto">
+		insert into dt066tbl (
+			reserve_seq
+			, receipt_seq
+			, itm_seq
+			, reserve_name
+			, reserve_sdate
+			, reserve_edate
+			, cust_name
+			, cust_hp
+			, cust_birthday
+			, cust_agree_yn
+			, store_Cd
+			, req_date
+			, itm_code_r
+			, sph_r
+			, cyl_r
+			, bc_r
+			, ax_r
+			, qty_r
+			, sph_l
+			, cyl_l
+			, bc_l
+			, ax_l
+			, qty_l
+			, itm_color
+			, insert_date
+		) values (
+			#{erpPrmtNo}
+			, #{receiptSeq}
+			, #{itmSeq}
+			, #{prmtName}
+			, to_date(#{prmtSDate}, 'YYYYMMDD')
+			, to_date(#{prmtEDate}, 'YYYYMMDD')
+			, #{custName}
+			, #{custHp}
+			, #{custBirthday, jdbcType=VARCHAR}
+			, #{custAgreeYn}
+			, #{strCode}
+			, to_date(#{reqDate}, 'YYYYMMDD')
+			, #{erpItmCode}
+			, nvl(#{sph, jdbcType=VARCHAR}, '0.00')
+			, nvl(#{cyl, jdbcType=VARCHAR}, '0.00')
+			, nvl(#{bc, jdbcType=VARCHAR}, '0')
+			, nvl(#{axis, jdbcType=VARCHAR}, '0')
+			, #{qty}
+			, '0.00'
+			, '0.00'
+			, '0'
+			, '0'
+			, '0'
+			, #{erpPrmtNo}
+			, sysdate
+		)
+	</insert>
+	
+	<!-- 사전예약 기획전 이름 수정 -->
+	<update id="updatePreorderCtrCode" parameterMap="preorderPromotionModDto">
+		update am700tbl
+		set ctr_name = #{prmtName}
+		where ctr_id = '601'
+		  and ctr_code = #{erpPrmtNo}
+	</update>
+	
+	<!-- 사전예약기획전 정보 변경에 따른 사전예약 주문 정보 수정(기획전명, 기간) -->
+	<update id="updatePreorderInfo" parameterMap="preorderPromotionModDto">
+		update dt066tbl
+		set reserve_name = #{prmtName}
+		  , reserve_sdate = to_date(#{prmtSDate},'YYYY-MM-DD HH24:MI')
+		  , reserve_edate = to_date(#{prmtEDate},'YYYY-MM-DD HH24:MI')
+		where reserve_seq = #{erpPrmtNo}
+	</update>
+	
+	<!-- 가맹점 휴일 정보 조회 -->
+	<select id="selectStoreHoliday" parameterMap="storeHolidaySearchDto" resultType="map">
+		select *
+		from ho010tbl
+		where str_code = #{strCode}
+		  and yyyymm = #{targetYM}
+	</select>
+	
+	<!-- 방문예약 방문 목적 수정 -->
+	<update id="updateErpStoreVisitReserveInfo" parameterMap="storeVisitMdfyDto">
+		update mall_str_booking
+		set purpose = #{purpose}
+		  , cng_id = 'mall'
+		  <if test="rsvDate != null and rsvDate != ''">
+ 		  , dates = to_date(#{rsvDate}, 'YYYYMMDD')
+		  </if>
+		  <if test="rsvTime != null and rsvTime != ''">
+   		  , times_fr = #{rsvTime}
+		  </if>
+		  , cng_date = sysdate
+		where mall_rsv_no = #{mallRsvNo}
+	</update>
+	
+</mapper>

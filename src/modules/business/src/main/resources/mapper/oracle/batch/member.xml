@@ -1,0 +1,586 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="batch.member">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<!-- 소멸 D포인트 조회 -->
+	<select id="selectMemberPoint" resultType="Map">
+		SELECT tmdl.CD_CUST ,
+			   tmdl.STR_CODE ,
+			   (SELECT sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+								WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 END) FROM TC_MEMBER_DPOINT_LOG WHERE MEMBERNO = tmdl.MEMBERNO) AS SAL_POINT,
+			   tmdl.CD_NO,
+			   tmdl.STR_CODE_TO,
+			   tmdl.MEMBERNO
+		FROM TC_MEMBER_DPOINT_LOG tmdl
+		WHERE tmdl.DTYPE IN ('00','01','02','03','06','07')
+		<![CDATA[
+		  AND to_char(tmdl.REG_DTTM + (INTERVAL '3' YEAR),'YYYYMMDD') < to_char(sysdate,'YYYYMMDD')
+		]]>
+	</select>
+	<!-- D포인트 소멸 정보 추가 -->
+	<insert id="insertPoint" parameterType="Map">
+		<![CDATA[
+		{ call
+		    declare
+			begin
+				DAVICH.davich_point@DAVISION(SYSDATE,#{CD_CUST},'2',SYSDATE,#{STR_CODE},'0',0,0,0,0,#{SAL_POINT},#{CD_NO},#{STR_CODE_TO});
+				INSERT INTO TC_MEMBER_DPOINT_LOG
+				(DTYPE,
+				 DATES,
+				 CD_CUST,
+				 IN_FLAG,
+				 PDATE,
+				 STR_CODE,
+				 CANC_TYPE,
+				 SAL_AMT,
+				 PAYAMT01,
+				 PAYAMT02,
+				 PAYAMT03,
+				 SAL_POINT,
+				 CD_NO,
+				 STR_CODE_TO,
+				 REG_DTTM,
+				 MEMBERNO,
+				 SEED
+				)
+				SELECT '04',
+					   sysdate,
+					   #{CD_CUST},
+					   '2',
+					   sysdate,
+					   #{STR_CODE},
+					   '0',
+					   0,
+					   0,
+					   0,
+					   0,
+					   #{SAL_POINT},
+					   #{CD_NO},
+					   #{STR_CODE_TO},
+					   sysdate,
+					   #{MEMBERNO},
+					   TC_MEMBER_DPOINT_LOG_SEQ.NEXTVAL
+				FROM TC_MEMBER_DPOINT_LOG;
+			end
+		}
+		]]>
+	</insert>
+
+    <select id="selectMemberSavedmn" resultType="Map">
+        SELECT MEMBER_NO,
+               SVMN_SEQ,
+               USE_PSB_AMT
+          FROM TC_MEMBER_SVMN_PVD
+         WHERE SVMN_USE_PSB_YN = 'Y'
+         <![CDATA[
+           AND VALID_PERIOD < to_char(sysdate, 'YYYYMMDD')
+         ]]>
+           AND VALID_PERIOD IS NOT NULL
+           AND USE_PSB_AMT != 0
+    </select>
+
+    <select id="memAdultCertifyReader" resultType="Map">
+        SELECT MEMBER_NO,
+               BIRTH,
+               BORN_YEAR
+          FROM TC_MEMBER
+          <![CDATA[
+         WHERE (TO_CHAR(sysdate,'YYYY') - BORN_YEAR) > 18
+         ]]>
+           AND MEMBER_DI IS NOT NULL
+           AND ADULT_CERTIFY_YN = 'N'
+    </select>
+
+    <select id="selectMemGradeRearrangeList" resultType="memberLevelVO">
+		SELECT SITE_NO,
+		       GRADE_STNDRD_CYCLE,
+		       GRADE_STNDRD_DATE,
+		       GRADE_CCLT_PERIOD,
+		       TO_CHAR(LAT_REARRANGE_DTTM,'YYYY-MM-DD') LAT_REARRANGE_DTTM
+		  FROM TC_MEMBER_GRADE_AUTO_REARRANGE
+		 WHERE (TO_CHAR(TO_DATE(GRADE_STNDRD_DATE,'DD'),'DD') = TO_CHAR(sysdate, 'DD')
+		 <![CDATA[
+		   AND ADD_MONTHS(LAT_REARRANGE_DTTM, GRADE_STNDRD_CYCLE ) < sysdate
+		 ]]>
+		        )
+		    OR LAT_REARRANGE_DTTM IS NULL
+    </select>
+
+    <select id="viewMemGradeList" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.viewMemGradeList */
+        SELECT A.SITE_NO,
+               A.MEMBER_GRADE_NO,
+               MEMBER_GRADE_NM,
+               NVL(TOT_BUY_AMT,0) TOT_BUY_AMT,
+               NVL(TOT_POINT,0) TOT_POINT,
+               NVL(TOT_BUY_CNT,0) TOT_BUY_CNT,
+               MEMBER_GRADE_MANAGE_CD,
+               TO_CHAR(A.REG_DTTM, 'YYYY-MM-DD HH24:MI:SS') MAKE_DTTM,
+               NVL(B.CNT,0) MEM_CNT,
+               CONCAT(NVL(ROUND((B.CNT / C.TOT_CNT) * 100),0),'%') MEM_STATISTIC,
+               CASE GRADE_AUTO_REARRANGE_YN WHEN 'Y' THEN '자동'
+                                            WHEN 'N' THEN '수동'
+                                                      END AUTO_YN_NM,
+               GRADE_AUTO_REARRANGE_YN AUTO_YN
+          FROM TC_MEMBER_GRADE A
+               LEFT JOIN(SELECT COUNT(MEMBER_GRADE_NO) CNT, MEMBER_GRADE_NO
+                               FROM TC_MEMBER
+                              WHERE SITE_NO = #{siteNo}
+                                AND MEMBER_STATUS_CD = '01'
+                                <![CDATA[
+                                AND MEMBER_NO >= 1000
+                                ]]>
+                              GROUP BY MEMBER_GRADE_NO)B ON A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO ,
+               (SELECT COUNT(*) TOT_CNT
+                  FROM TC_MEMBER
+                 WHERE SITE_NO = #{siteNo}
+                   AND MEMBER_STATUS_CD = '01'
+                   <![CDATA[
+                   AND MEMBER_NO >= 1000
+                   ]]> ) C
+         WHERE A.SITE_NO = #{siteNo}
+           AND A.DEL_YN = 'N'
+         ORDER BY MEMBER_GRADE_LVL ASC
+    </select>
+
+    <insert id="insertSavedmn" parameterType="Map">
+        INSERT INTO TC_MEMBER_SVMN_USE
+                    (
+	                 MEMBER_NO,
+	                 USE_NO,
+	                 SVMN_SEQ,
+	                 SVMN_TYPE_CD,
+	                 SVMN_REASON_CD,
+	                 PRC_AMT,
+	                 DEDUCT_GB_CD,
+	                 REGR_NO,
+	                 REG_DTTM
+	                 )
+              SELECT #{MEMBER_NO},
+                     MAX(USE_NO) + 1,
+                     #{SVMN_SEQ},
+                     'A',
+                     '04',
+                     #{USE_PSB_AMT},
+                     '03',
+                     140,
+                     sysdate
+                FROM TC_MEMBER_SVMN_USE
+
+    </insert>
+
+    <update id="memAdultCertifyWriter" parameterType="memberManageVO">
+        UPDATE  TC_MEMBER
+           SET ADULT_CERTIFY_YN = #{adultCertifyYn},
+               UPDR_NO = 140,
+               UPD_DTTM = sysdate
+         WHERE MEMBER_NO = #{memberNo}
+    </update>
+
+    <update id="updateMemGrade" parameterType="memberLevelPO">
+    <![CDATA[
+		UPDATE TC_MEMBER
+		   SET MEMBER_GRADE_NO = #{memberGradeNo},
+		       UPDR_NO = 140,
+		       UPD_DTTM = sysdate
+		 WHERE MEMBER_NO IN (
+		                     SELECT A.MEMBER_NO
+				               FROM (
+				                     SELECT A.MEMBER_NO,
+				                            A.SITE_NO,
+				                            A.MEMBER_GRADE_NO,
+				                            NVL(A.PRC_POINT,0) PRC_POINT,
+				                            NVL(B.SALE_AMT,0) SALE_AMT,
+				                            NVL(C.ORD_CNT,0) ORD_CNT
+				                       FROM (
+				                             SELECT A.*,
+				                                    B.PRC_POINT
+				                               FROM TC_MEMBER A
+				                                    LEFT JOIN(
+				                                              SELECT SUM(CASE WHEN POINT_GB_CD = '10' THEN PRC_POINT ELSE PRC_POINT * -1 END) PRC_POINT, MEMBER_NO
+				                                                FROM TC_MEMBER_POINT
+				                                               WHERE TO_CHAR(REG_DTTM,'YYYY-MM-DD') >= TO_CHAR(ADD_MONTHS(sysdate, -#{gradeCcltPeriod} ), 'YYYY-MM-DD')
+				                                               GROUP BY MEMBER_NO
+				                                              ) B ON A.MEMBER_NO = B.MEMBER_NO
+				                             ) A
+				                             LEFT JOIN(
+				                                       SELECT SUM(TO_ORD.PAYMENT_AMT) SALE_AMT, TO_ORD.MEMBER_NO
+				                                         FROM TO_ORD
+				                                        WHERE TO_ORD.ORD_STATUS_CD = '90'
+				                                          AND TO_CHAR(REG_DTTM,'YYYY-MM-DD') >= TO_CHAR(ADD_MONTHS(sysdate, -#{gradeCcltPeriod} ), 'YYYY-MM-DD')
+				                                        GROUP BY MEMBER_NO
+				                                       ) B ON A.MEMBER_NO = B.MEMBER_NO
+				                             LEFT JOIN(
+				                                       SELECT COUNT(*) ORD_CNT, MEMBER_NO
+				                                         FROM TO_ORD
+				                                        WHERE ORD_STATUS_CD = '90'
+				                                          AND TO_CHAR(REG_DTTM,'YYYY-MM-DD') >= TO_CHAR(ADD_MONTHS(sysdate, -#{gradeCcltPeriod} ), 'YYYY-MM-DD')
+				                                        GROUP BY MEMBER_NO
+				                                       ) C ON A.MEMBER_NO = C.MEMBER_NO
+				                      WHERE A.MEMBER_STATUS_CD = '01'
+				                        AND SITE_NO = #{siteNo}
+				                        AND A.MEMBER_NO >= 1000
+				                        AND A.INTEGRATION_MEMBER_GB_CD IN ('01','03')
+				                     ) A
+				               WHERE ${rearrangeWhere}
+				              )
+    ]]>
+    
+    </update>
+    <update id="updateMemGradeRearrange" parameterType="memberLevelPO">
+		 UPDATE TC_MEMBER_GRADE_AUTO_REARRANGE
+		    SET LAT_REARRANGE_DTTM = sysdate,
+		        UPDR_NO = 140,
+		        UPD_DTTM = sysdate
+		  WHERE SITE_NO = #{siteNo}
+    </update>
+
+    <update id="updateMailSendResult" parameterType="emailSendPO">
+        UPDATE TB_MAIL_SEND_HIST
+           SET RESULT_CD = #{resultCd},
+               UPDR_NO = 140,
+               UPD_DTTM = sysdate
+         WHERE MAIL_SEND_NO = #{mailSendNo}
+    </update>
+
+    <select id="selectDormantMemTargetAlam" resultType="memberManageVO">
+		SELECT A.MEMBER_NO
+		FROM
+			(
+				SELECT tmlh.MEMBER_NO , max(tmlh.LOGIN_DTTM) AS LOGIN_DTTM
+				FROM TC_MEMBER_LOGIN_HIST tmlh
+				GROUP BY tmlh.MEMBER_NO
+			) A
+				INNER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO AND tm.MEMBER_STATUS_CD = '01'
+		<![CDATA[
+		WHERE to_char(add_months(A.LOGIN_DTTM,12),'YYYYMMDD') = to_char(sysdate,'YYYYMMDD')
+		]]>
+    </select>
+
+    <select id="selectDormantMemTarget" resultType="memberManageVO">
+		SELECT tm.*, sysdate as DORMANT_DTTM
+		FROM
+			(
+				SELECT tmlh.MEMBER_NO , max(tmlh.LOGIN_DTTM) AS LOGIN_DTTM
+				FROM TC_MEMBER_LOGIN_HIST tmlh
+				GROUP BY tmlh.MEMBER_NO
+			) A
+				INNER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO AND tm.MEMBER_STATUS_CD = '01'
+		<![CDATA[
+		WHERE to_char(add_months(A.LOGIN_DTTM,13),'YYYYMMDD') = to_char(sysdate,'YYYYMMDD')
+		]]>
+    </select>
+
+    <!-- 휴면 회원 등록 -->
+    <insert id="insertDormantMem" parameterType="Map" >
+        /* batch.member.insertDormantMem */
+        INSERT INTO TC_DORMANT_MEMBER
+        (
+                DORMANT_DTTM
+                ,MEMBER_NO
+				,SITE_NO
+				,MEMBER_NM
+				,BIRTH
+				,BORN_YEAR
+				,BORN_MONTH
+				,GENDER_GB_CD
+				,NTN_GB_CD
+				,JOIN_DTTM
+				,CERTIFY_METHOD_CD
+				,EMAIL_RECV_YN
+				,SMS_RECV_YN
+				,MEMBER_STATUS_CD
+				,LOGIN_ID
+				,PW
+				,TEL
+				,MOBILE
+				,EMAIL
+				,JOIN_PATH_CD
+				,PW_CHG_DTTM
+				,LOGIN_FAIL_CNT
+				,STRTNB_ADDR
+				,ROAD_ADDR
+				,DTL_ADDR
+				,NEW_POST_NO
+				,MANAGER_MEMO
+				,REALNM_CERTIFY_YN
+				,MEMBER_GRADE_NO
+				,GRADE_AUTO_REARRANGE_YN
+				,MEMBER_CI
+				,MEMBER_DI
+				,MEMBER_GB_CD
+				,ADULT_CERTIFY_YN
+				,NEXT_PW_CHG_SCD_DTTM
+				,FRG_ADDR_COUNTRY
+				,FRG_ADDR_CITY
+				,FRG_ADDR_STATE
+				,FRG_ADDR_ZIP_CODE
+				,FRG_ADDR_DTL1
+				,FRG_ADDR_DTL2
+				,JOIN_DEVICE_TYPE
+				,RECV_RJT_YN
+				,REGR_NO
+				,REG_DTTM
+				,UPDR_NO
+				,UPD_DTTM
+				,MEMBER_TYPE_CD
+				,BIZ_REG_NO
+				,MANAGER_NM
+				,BIZ_FILE_PATH
+				,BIZ_FILE_NM
+				,BIZ_FILE_SIZE
+				,BIZ_ORG_FILE_NM
+				,EMAIL_CERTIFY_VALUE
+				,MEMBER_CARD_NO
+				,CUSTOM_STORE_NO
+				,CUSTOM_STORE_NM
+				,INTEGRATION_MEMBER_GB_CD
+				,MOBILE_SMR
+				,APP_TOKEN
+				,RECOM_MEMBER_NO
+				,APP_LAST_LOGIN_DTTM
+				,AUTO_LOGIN_GB
+				,LOCA_GB
+				,NOTI_GB
+				,EVENT_GB
+				,NEWS_GB
+				,MEMBER_INTEGRATION_DTTM
+				,STORE_JOIN_YN
+				,OS_TYPE
+				,CEO_NM
+				,ID_CHG_YN
+				,ID_CHG_DTTM
+				,APP_FIRST_LOGIN_DTTM
+				,MEMBER_NN
+				,IMG_PATH
+				,IMG_NM
+				,IMG_ORG_NM
+				,INF_DESC
+				,BIZ_APRV_YN
+        )
+        select sysdate
+                ,MEMBER_NO
+				,SITE_NO
+				,MEMBER_NM
+				,BIRTH
+				,BORN_YEAR
+				,BORN_MONTH
+				,GENDER_GB_CD
+				,NTN_GB_CD
+				,JOIN_DTTM
+				,CERTIFY_METHOD_CD
+				,EMAIL_RECV_YN
+				,SMS_RECV_YN
+				,MEMBER_STATUS_CD
+				,LOGIN_ID
+				,PW
+				,TEL
+				,MOBILE
+				,EMAIL
+				,JOIN_PATH_CD
+				,PW_CHG_DTTM
+				,LOGIN_FAIL_CNT
+				,STRTNB_ADDR
+				,ROAD_ADDR
+				,DTL_ADDR
+				,NEW_POST_NO
+				,MANAGER_MEMO
+				,REALNM_CERTIFY_YN
+				,MEMBER_GRADE_NO
+				,GRADE_AUTO_REARRANGE_YN
+				,MEMBER_CI
+				,MEMBER_DI
+				,MEMBER_GB_CD
+				,ADULT_CERTIFY_YN
+				,NEXT_PW_CHG_SCD_DTTM
+				,FRG_ADDR_COUNTRY
+				,FRG_ADDR_CITY
+				,FRG_ADDR_STATE
+				,FRG_ADDR_ZIP_CODE
+				,FRG_ADDR_DTL1
+				,FRG_ADDR_DTL2
+				,JOIN_DEVICE_TYPE
+				,RECV_RJT_YN
+				,REGR_NO
+				,REG_DTTM
+				,UPDR_NO
+				,UPD_DTTM
+				,MEMBER_TYPE_CD
+				,BIZ_REG_NO
+				,MANAGER_NM
+				,BIZ_FILE_PATH
+				,BIZ_FILE_NM
+				,BIZ_FILE_SIZE
+				,BIZ_ORG_FILE_NM
+				,EMAIL_CERTIFY_VALUE
+				,MEMBER_CARD_NO
+				,CUSTOM_STORE_NO
+				,CUSTOM_STORE_NM
+				,INTEGRATION_MEMBER_GB_CD
+				,MOBILE_SMR
+				,APP_TOKEN
+				,RECOM_MEMBER_NO
+				,APP_LAST_LOGIN_DTTM
+				,AUTO_LOGIN_GB
+				,LOCA_GB
+				,NOTI_GB
+				,EVENT_GB
+				,NEWS_GB
+				,MEMBER_INTEGRATION_DTTM
+				,STORE_JOIN_YN
+				,OS_TYPE
+				,CEO_NM
+				,ID_CHG_YN
+				,ID_CHG_DTTM
+				,APP_FIRST_LOGIN_DTTM
+				,MEMBER_NN
+				,IMG_PATH
+				,IMG_NM
+				,IMG_ORG_NM
+				,INF_DESC
+				,BIZ_APRV_YN
+        from TC_MEMBER
+
+        where 1=1
+
+        and MEMBER_NO = #{memberNo}
+    </insert>
+
+    <update id="updateMem" >
+        UPDATE  TC_MEMBER
+        SET BIRTH = NULL,
+            BORN_YEAR = NULL,
+            BORN_MONTH = NULL,
+            GENDER_GB_CD = NULL,
+            NTN_GB_CD = NULL,
+            JOIN_DTTM = NULL,
+            CERTIFY_METHOD_CD = NULL,
+            <!-- EMAIL_RECV_YN = NULL, -->
+            SMS_RECV_YN = NULL,
+            MEMBER_STATUS_CD  = '02',
+            TEL = NULL,
+            MOBILE = NULL,
+            <!-- EMAIL = NULL, -->
+            JOIN_PATH_CD = NULL,
+            PW_CHG_DTTM = NULL,
+            LOGIN_FAIL_CNT = NULL,
+            STRTNB_ADDR = NULL,
+            ROAD_ADDR = NULL,
+            DTL_ADDR = NULL,
+            NEW_POST_NO = NULL,
+            MANAGER_MEMO = NULL,
+            REALNM_CERTIFY_YN = NULL,
+            MEMBER_GRADE_NO = NULL,
+            GRADE_AUTO_REARRANGE_YN = NULL,
+            MEMBER_CI = NULL,
+            MEMBER_DI = NULL,
+            MEMBER_GB_CD = NULL,
+            ADULT_CERTIFY_YN = NULL,
+            FRG_ADDR_COUNTRY = NULL,
+            FRG_ADDR_CITY = NULL,
+            FRG_ADDR_STATE = NULL,
+            FRG_ADDR_ZIP_CODE = NULL,
+            FRG_ADDR_DTL1 = NULL,
+            FRG_ADDR_DTL2 = NULL,
+            REGR_NO = NULL,
+            REG_DTTM = NULL,
+            UPDR_NO = NULL,
+            UPD_DTTM = NULL,
+            BIZ_FILE_PATH = NULL,
+			BIZ_FILE_NM = NULL,
+			BIZ_FILE_SIZE = NULL,
+			BIZ_ORG_FILE_NM = NULL,
+			EMAIL_CERTIFY_VALUE = NULL,
+			MEMBER_CARD_NO = NULL,
+			CUSTOM_STORE_NO = NULL,
+			CUSTOM_STORE_NM = NULL,
+			<!-- INTEGRATION_MEMBER_GB_CD = NULL, -->
+			MOBILE_SMR = NULL,
+			APP_TOKEN = NULL,
+			RECOM_MEMBER_NO = NULL,
+			APP_LAST_LOGIN_DTTM = NULL,
+			AUTO_LOGIN_GB = NULL,
+			LOCA_GB = NULL,
+			NOTI_GB = NULL,
+			EVENT_GB = NULL,
+			NEWS_GB = NULL,
+			MEMBER_INTEGRATION_DTTM = NULL,
+			STORE_JOIN_YN = NULL,
+			OS_TYPE = NULL,
+			CEO_NM = NULL,
+			ID_CHG_YN = NULL,
+			ID_CHG_DTTM = NULL,
+			APP_FIRST_LOGIN_DTTM = NULL
+        WHERE MEMBER_NO = #{memberNo}
+    </update>
+
+    <select id="selectWithdrawalMemTargetBbs" resultType="memberManageVO">
+        /* batch.member.selectWithdrawalMemTargetBbs */
+        SELECT twm.MEMBER_NO , twm.SITE_NO
+        FROM TC_WITHDRAWAL_MEMBER twm
+        <![CDATA[
+        WHERE to_char(add_months(twm.WITHDRAWAL_DTTM,36),'YYYYMMDD') <= to_char(sysdate,'YYYYMMDD')
+        ]]>
+    </select>
+
+    <delete id="deleteMemberNoRelationBbsInfo" statementType="CALLABLE" parameterType="memberManageVO">
+    { CALL
+    		 DECLARE
+        	 BEGIN
+		        delete from TB_BBS_LETT where 1=1 and regr_no = #{memberNo} and site_no = #{siteNo};
+		        delete from TB_GOODS_BBS_LETT where 1=1 and regr_no = #{memberNo} and site_no = #{siteNo};
+		        delete from TB_MTM_INQUIRY_BBS_LETT where 1=1 and regr_no = #{memberNo} and site_no = #{siteNo};
+		     END
+	}
+    </delete>
+
+    <select id="selectWithdrawalMemTargetOrd" resultType="memberManageVO">
+        /* batch.member.selectWithdrawalMemTargetOrd */
+        SELECT twm.MEMBER_NO , twm.SITE_NO
+        FROM TC_WITHDRAWAL_MEMBER twm
+        <![CDATA[
+        WHERE to_char(add_months(twm.WITHDRAWAL_DTTM,60),'YYYYMMDD') <= to_char(sysdate,'YYYYMMDD')
+        ]]>
+    </select>
+
+    <delete id="deleteMemberNoRelationOrdInfo" statementType="CALLABLE"  parameterType="memberManageVO">
+    { CALL
+    		 DECLARE
+        	 BEGIN
+		        DELETE FROM TO_DLVR WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_COUPON_USE WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ADDED_AMOUNT WHERE MEMBER_NO = #{memberNo};
+		        DELETE FROM TO_ORD_DELIVERY WHERE MEMBER_NO = #{memberNo};
+		        DELETE FROM TO_ORD_DELIVERY_HIST WHERE MEMBER_NO = #{memberNo};
+		        DELETE FROM TO_ORD_DTL_STATUS_HIST WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ORD_FREEBIE WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ORD_MEMO WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ORD_MEMO_HIST WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_PAYMENT WHERE MEMBER_NO = #{memberNo};
+		        DELETE FROM TO_PAYMENT_CASH_REFUND WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_PAYMENT_STATUS_HIST WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ORD_DTL WHERE REGR_NO = #{memberNo};
+		        DELETE FROM TO_ORD WHERE MEMBER_NO = #{memberNo};		     
+		     END
+	}
+    </delete>
+    
+    <select id="selectVisitRsv" resultType="visitVO">
+        /* batch.member.selectVisitRsv */
+		SELECT A.MEMBER_NO, 
+               B.MEMBER_NM,
+               B.MOBILE,
+               B.EMAIL, 
+			   A.RSV_DATE, 
+			   TO_CHAR(TO_DATE(A.RSV_TIME, 'HH24:MI'), 'HH24:MI') RSV_TIME, 
+			   A.STORE_NM 
+		  FROM TO_VISIT_RSV A JOIN TC_MEMBER B ON A.MEMBER_NO = B.MEMBER_NO
+		 WHERE A.RSV_DATE = TO_DATE(TO_CHAR(SYSDATE - 1, 'YYYY-MM-DD'))
+		   AND A.CANCEL_YN = 'N'
+		   AND A.VISIT_YN = 'N'
+    </select>
+    
+</mapper>

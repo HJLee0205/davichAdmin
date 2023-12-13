@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.kiosk.monitor.mapper.MonitorMapper">
+	<select id="storeCallCheckCnt" parameterType="egovframework.kiosk.monitor.vo.MonitorVO" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM TC_STR_BOOKING_CALL
+		WHERE STR_CODE = #{str_code}
+		<if test="call_yn != null and call_yn != ''">
+			AND CALL_YN = #{call_yn}
+		</if>
+	</select>
+	<select id="storeCallCheck" parameterType="String" resultType="egovframework.kiosk.monitor.vo.MonitorVO">
+		SELECT 
+			STR_CODE, CALL_YN, CALL_TIME, AUTO_CLEAR 
+		FROM TC_STR_BOOKING_CALL
+		WHERE STR_CODE = #{str_code}
+	</select>
+	<insert id="insertBookingCall" parameterType="egovframework.kiosk.monitor.vo.MonitorVO">
+		INSERT INTO TC_STR_BOOKING_CALL(STR_CODE, CALL_YN, CALL_TIME, AUTO_CLEAR)
+		VALUES(#{str_code}, #{call_yn}, #{call_time}, #{auto_clear})		
+	</insert>
+	<update id="updateCallYn" parameterType="egovframework.kiosk.monitor.vo.MonitorVO">
+		UPDATE TC_STR_BOOKING_CALL
+		SET CALL_YN = #{call_yn}
+		WHERE STR_CODE = #{str_code}
+	</update>
+	<update id="updateCallTime" parameterType="egovframework.kiosk.monitor.vo.MonitorVO">
+		UPDATE TC_STR_BOOKING_CALL
+		SET 
+			CALL_TIME = #{call_time},
+			AUTO_CLEAR = #{auto_clear}
+		WHERE STR_CODE = #{str_code}
+	</update>
+	<select id="selectStrCount" parameterType="String" resultType="int">
+		SELECT COUNT(*) AS CNT FROM TC_STR_BOOKING_MSG WHERE STR_CODE = #{str_code}
+	</select>
+	<select id="selectBookingMsg" parameterType="String" resultType="egovframework.kiosk.monitor.vo.MessageVO">
+		SELECT STR_CODE, MSG1, MSG2, MSG3, MSG4, MSG5 FROM TC_STR_BOOKING_MSG WHERE STR_CODE = #{str_code}
+	</select>
+	<insert id="insertBookingMsg" parameterType="egovframework.kiosk.monitor.vo.MessageVO">
+		INSERT INTO TC_STR_BOOKING_MSG(STR_CODE, MSG1, MSG2, MSG3, MSG4, MSG5)
+		VALUES(#{str_code}, #{msg1}, #{msg2}, #{msg3}, #{msg4}, #{msg5})
+	</insert>
+	<update id="updateBookingMsg" parameterType="egovframework.kiosk.monitor.vo.MessageVO">
+		UPDATE TC_STR_BOOKING_MSG
+		SET
+			MSG1 = #{msg1}, 
+			MSG2 = #{msg2}, 
+			MSG3 = #{msg3}, 
+			MSG4 = #{msg4}, 
+			MSG5 = #{msg5}
+		WHERE STR_CODE = #{str_code}
+	</update>
+</mapper>

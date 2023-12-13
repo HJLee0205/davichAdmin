@@ -1,0 +1,61 @@
+<li>
+    <a href="javascript:goods_detail('#[goodsNo]');">
+        <div class="img_area">
+            <img src="#[_IMAGE_DOMAIN]#[goodsDispImgB]" alt="#[goodsNm]"  title="#[goodsNm]" width="285px" height="270px" onerror="this.src='/front/img/product/product_180_180.gif'">
+            #[best4]
+        </div>
+        <div class="img_area2" style="display:none;">
+            <img src="#[_IMAGE_DOMAIN]/image/image-view?type=GOODSDTL&id1=#[goodsThumImg]" data-img="#[goodsThumImg]" alt="#[goodsNm]"  title="#[goodsNm]" width="285px" height="270px" onerror="this.src='/front/img/product/product_180_180.gif'">
+        </div>
+        <div class="text_area">
+            <p class="name"><a href="javascript:goods_detail('#[goodsNo]');">#[goodsNm]</a></p>
+            <p class="price">
+                #[salePrice]
+                <span class="discount">
+                   #[customerPrice]
+                   #[saleRate]
+                </span>
+            </p>
+        </div>
+        <div class="label_area">
+            #[iconImgs]
+        </div>
+    </a>
+    <!-- 버튼영역 -->
+    <div class="img_menu">
+        <button type="button" class="menu01" onclick="javascript:goods_preview('#[goodsNo]');">크게보기</button>
+        <button type="button" class="menu02" onclick="javascript:ListBtnUtil.insertInterest('#[goodsNo]');">좋아요</button>
+        <button type="button" class="menu03" onclick="javascript:ListBtnUtil.insertBasket('#[goodsNo]', '#[rsvOnlyYn]');">장바구니</button>
+    </div>
+    <!--// 버튼영역 -->
+</li>
+
+<!--
+<li>
+    <div class="goods_image_area">
+        <div class="img_menu">
+            <a href="javascript:goods_preview('#[goodsNo]');"><span class="menu01" title="미리보기"></span></a>
+            <a href="javascript:ListBtnUtil.insertBasket('#[goodsNo]');"><span class="menu02" title="장바구니"></span></a>
+            <a href="javascript:ListBtnUtil.insertInterest('#[goodsNo]');"><span class="menu03" title="관심상품"></span></a>
+        </div>
+        <a href="javascript:goods_detail('#[goodsNo]');"><img src="#[goodsDispImgA]" alt=""></a>
+    </div>
+    <div class="brand_title">
+        <a href="javascript:goods_detail('#[goodsNo]');">#[brandNm]</a>
+    </div>
+    <div class="goods_title">
+        <a href="javascript:goods_detail('#[goodsNo]');">#[goodsNm]</a>
+    </div>
+    <div class="product_info">
+        <a href="javascript:goods_detail('#[goodsNo]');">#[prWords]</a>
+    </div>
+    <div class="price_info">
+        <a href="javascript:goods_detail('#[goodsNo]');">
+        <del>#[customerPrice]</del>
+        #[salePrice]
+        </a>
+    </div>
+    <div class="label_area">
+        #[iconImgs]
+    </div>
+</li>-->

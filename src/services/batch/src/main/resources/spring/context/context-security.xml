@@ -1,0 +1,86 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <bean id="cookieSecurityContextRepository"
+          class="net.danvi.dmall.biz.system.security.CookieSecurityContextRepository">
+    </bean>
+
+    <!-- 스프링 시큐리티 비적용 URL 패턴 정의 -->
+    <security:http pattern="/**/css/**" security="none" />
+    <security:http pattern="/**/daumeditor/**" security="none" />
+    <security:http pattern="/**/font/**" security="none" />
+    <security:http pattern="/**/img/**" security="none" />
+    <security:http pattern="/**/js/**" security="none" />
+
+    <security:http auto-config="true" create-session="stateless" use-expressions="true"
+                   security-context-repository-ref="cookieSecurityContextRepository">
+        <security:intercept-url pattern="/admin/login/**" access="permitAll"/>
+        <security:intercept-url pattern="/admin/example/**" access="permitAll"/>
+        <security:intercept-url pattern="/admin/remote/**" access="permitAll"/>
+        <security:intercept-url pattern="/admin/common/capcha" access="permitAll"/>
+        <security:intercept-url pattern="/admin/interfaces/payment/**" access="permitAll"/>
+        <security:intercept-url pattern="/admin/**/npay-item-info" access="permitAll"/>
+        <security:intercept-url pattern="/admin/order/refund/refund-check-popup" access="permitAll"/>
+        <security:intercept-url pattern="/admin/order/refund/refund-check-update" access="permitAll"/>
+        <security:intercept-url pattern="/admin/order/refund/claim-reason" access="permitAll"/>
+        <security:intercept-url pattern="/admin/seller/main/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/seller/setup/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/seller/goods/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/seller/order/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/seller/calc/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/seller/download" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/common/editor-image-upload" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/goods/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/order/**" access="hasAnyRole('ROLE_ADMIN','ROLE_SELLER')"/>
+        <security:intercept-url pattern="/admin/**" access="hasRole('ROLE_ADMIN')"/>
+        <security:form-login username-parameter="loginId" password-parameter="password"
+                             login-page="/admin/login/member-login" login-processing-url="/admin/login/loginprocess"
+                             authentication-failure-handler-ref="loginFailureHandler"
+                             authentication-success-handler-ref="loginSuccessHandler" />
+        <security:logout logout-url="/admin/login/logout" success-handler-ref="logoutSuccessHandler"/>
+        <security:csrf request-matcher-ref="csrfSecurityRequestMatcher" />
+        <security:access-denied-handler error-page="/admin/login/member-login" />
+
+        <!-- X-Frame-Options:DENY 설정을 해제하기 위한 설정 - 결제모듈의 iframe 호출 관련 제한 해제 -->
+        <security:headers>
+            <security:frame-options disabled="true" />
+            <security:hsts disabled="true" />
+        </security:headers>
+        <security:custom-filter after="EXCEPTION_TRANSLATION_FILTER" ref="ajaxSessionTimeoutFilter"/>
+    </security:http>
+
+    <bean id="ajaxSessionTimeoutFilter" class="net.danvi.dmall.biz.system.security.AjaxSessionTimeoutFilter" />
+
+    <bean id="loginSuccessHandler" class="net.danvi.dmall.admin.web.security.AdminLoginSuccessHandler">
+        <property name="returnUrl" value="/admin/main/main-view" />
+    </bean>
+    <bean id="loginFailureHandler" class="net.danvi.dmall.biz.system.security.LoginFailureHandler">
+        <!--<property name="returnUrl" value="/admin/main/main-view" />-->
+    </bean>
+    <bean id="logoutSuccessHandler" class="net.danvi.dmall.biz.system.security.LogoutSuccessHandler">
+        <property name="defaultTargetUrl" value="/admin/login/member-login" />
+    </bean>
+    <bean id="accessDeniedHadnelr" class="net.danvi.dmall.admin.web.security.CustomAccessDeniedHandler"/>
+
+    <bean id="csrfSecurityRequestMatcher" class="net.danvi.dmall.biz.system.security.CsrfSecurityRequestMatcher">
+        <constructor-arg>
+            <!-- CSRF 필터 예외 처리 URL 리스트 -->
+            <list>
+                <value>/admin/payment/sampleReturnurl.do</value>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <security:authentication-manager alias="authenticationManager">
+        <security:authentication-provider ref="authenticationProvider"/>
+    </security:authentication-manager>
+
+    <bean id="authenticationProvider" class="net.danvi.dmall.biz.system.security.CustomAuthenticationProvider"/>
+</beans>

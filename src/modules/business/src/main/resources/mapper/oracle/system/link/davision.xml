@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 05.CJ대한통운 관련쿼리 -->
+<mapper namespace="system.link.davision">
+    <select id="selectDavisionItmList" resultType="davisionItmVo" parameterType="davisionItmSO">
+        SELECT A.ITM_CODE
+             ,A.ITM_NAME
+             ,A.MAK_CODE
+             ,B.VEN_NAME
+             ,A.USE_IND
+             ,A.BRAND_CODE
+             ,C.BRAND_NAME
+             ,A.SIZE_MARK
+             ,(SELECT CTR_NAME
+                 FROM AM700TBL@DAVISION
+                WHERE CTR_ID = '440'
+                  AND CTR_CODE = A.SIZE_MARK
+             ) AS SIZE_NAME
+             ,A.SHAPE_CODE
+             ,(SELECT CTR_NAME
+                 FROM AM700TBL@DAVISION
+                WHERE CTR_ID = '703'
+                  AND CTR_CODE = A.SHAPE_CODE
+             ) AS SHAPE_NAME
+             ,A.MATERIAL_CODE
+             ,(SELECT CTR_NAME
+                 FROM AM700TBL@DAVISION
+                WHERE CTR_ID = '702'
+                  AND CTR_CODE = A.MATERIAL_CODE
+             ) AS MATERIAL_NAME
+             ,A.GLASS_TYPE
+        FROM AM070TBL@DAVISION A,
+             AM050TBL@DAVISION B,
+             AM055TBL@DAVISION C
+        WHERE 1=1
+          AND A.MAK_CODE = B.VEN_CODE
+          AND A.BRAND_CODE = C.BRAND_CODE
+    </select>
+
+    <select id="selectDavisionItm" resultType="davisionItmVo" parameterType="davisionItmSO">
+        SELECT A.ITM_CODE
+             ,A.ITM_NAME
+             ,A.MAK_CODE
+             ,B.VEN_NAME
+             ,A.USE_IND
+             ,A.BRAND_CODE
+             ,C.BRAND_NAME
+             ,A.SIZE_MARK
+             ,(SELECT CTR_NAME
+               FROM AM700TBL@DAVISION
+               WHERE CTR_ID = '440'
+                 AND CTR_CODE = A.SIZE_MARK
+        ) AS SIZE_NAME
+             ,A.SHAPE_CODE
+             ,(SELECT CTR_NAME
+               FROM AM700TBL@DAVISION
+               WHERE CTR_ID = '703'
+                 AND CTR_CODE = A.SHAPE_CODE
+        ) AS SHAPE_NAME
+             ,A.MATERIAL_CODE
+             ,(SELECT CTR_NAME
+               FROM AM700TBL@DAVISION
+               WHERE CTR_ID = '702'
+                 AND CTR_CODE = A.MATERIAL_CODE
+        ) AS MATERIAL_NAME
+             ,A.GLASS_TYPE
+        FROM AM070TBL@DAVISION A,
+             AM050TBL@DAVISION B,
+             AM055TBL@DAVISION C
+        WHERE 1=1
+          AND A.MAK_CODE = B.VEN_CODE
+          AND A.BRAND_CODE = C.BRAND_CODE
+          AND A.USE_IND = '0'
+          AND A.ITM_CODE = #{itmCode}
+    </select>
+</mapper>

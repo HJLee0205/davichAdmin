@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!-- 1.방문자분석 집계 등록 Job -->
+    <bean id="vstrAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.VstrAnlsRegiTasklet" />
+    <batch:job id="vstrAnlsRegiJob">
+        <batch:step id="vstrAnlsRegiStep1">
+            <batch:tasklet ref="vstrAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 2.방문경로분석 집계 등록 Job -->
+    <bean id="visitPathAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.VisitPathAnlsRegiTasklet" />
+    <batch:job id="visitPathAnlsRegiJob">
+        <batch:step id="visitPathAnlsRegiStep1">
+            <batch:tasklet ref="visitPathAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 3.방문자IP분석 집계 등록 Job -->
+    <bean id="vstrIpAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.VstrIpAnlsRegiTasklet" />
+    <batch:job id="vstrIpAnlsRegiJob">
+        <batch:step id="vstrIpAnlsRegiStep1">
+            <batch:tasklet ref="vstrIpAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 4.신규회원분석 집계 등록 Job -->
+    <bean id="nwMemberAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.NwMemberAnlsRegiTasklet" />
+    <batch:job id="nwMemberAnlsRegiJob">
+        <batch:step id="nwMemberAnlsRegiStep1">
+            <batch:tasklet ref="nwMemberAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 5.회원D-머니분석 집계 등록 Job -->
+    <bean id="memberSvmnAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.MemberSvmnAnlsRegiTasklet" />
+    <batch:job id="memberSvmnAnlsRegiJob">
+        <batch:step id="memberSvmnAnlsRegiStep1">
+            <batch:tasklet ref="memberSvmnAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 6.카테고리상품분석 집계 등록 Job -->
+    <bean id="ctgGoodsAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.CtgGoodsAnlsRegiTasklet" />
+    <batch:job id="ctgGoodsAnlsRegiJob">
+        <batch:step id="ctgGoodsAnlsRegiStep1">
+            <batch:tasklet ref="ctgGoodsAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 7.판매순위 상품분석 집계 등록 Job -->
+    <bean id="saleRankGoodsAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.SaleRankGoodsAnlsRegiTasklet" />
+    <batch:job id="saleRankGoodsAnlsRegiJob">
+        <batch:step id="saleRankGoodsAnlsRegiStep1">
+            <batch:tasklet ref="saleRankGoodsAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 8.장바구니 상품분석 집계 등록 Job -->
+    <bean id="basketGoodsAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.BasketGoodsAnlsRegiTasklet" />
+    <batch:job id="basketGoodsAnlsRegiJob">
+        <batch:step id="basketGoodsAnlsRegiStep1">
+            <batch:tasklet ref="basketGoodsAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 9.주문통계분석 집계 등록 Job -->
+    <bean id="ordSttcsAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.OrdSttcsAnlsRegiTasklet" />
+    <batch:job id="ordSttcsAnlsRegiJob">
+        <batch:step id="ordSttcsAnlsRegiStep1">
+            <batch:tasklet ref="ordSttcsAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 10.매출통계분석 집계 등록 Job -->
+    <bean id="salesSttcsAnlsRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.SalesSttcsAnlsRegiTasklet" />
+    <batch:job id="salesSttcsAnlsRegiJob">
+        <batch:step id="salesSttcsAnlsRegiStep1">
+            <batch:tasklet ref="salesSttcsAnlsRegiTasklet" />
+        </batch:step>
+    </batch:job>
+
+    <!-- 11.로그인현황분석 Job -->
+    <bean id="loginCurrentStatusRegiTasklet" class="net.danvi.dmall.biz.batch.sttcs.job.LoginCurrentStatusRegiTasklet"/>
+    <batch:job id="loginCurrentStatusRegiJob">
+        <batch:step id="loginCurrentStatusRegiStep1">
+            <batch:tasklet ref="loginCurrentStatusRegiTasklet"/>
+        </batch:step>
+    </batch:job>
+</beans>

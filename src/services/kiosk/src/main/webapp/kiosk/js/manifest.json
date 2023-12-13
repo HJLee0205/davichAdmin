@@ -1,0 +1,7 @@
+{
+  "short_name": "KIOSK",
+  "name": "davich KIOSK",
+  "start_url": "/kiosk/index.do",
+  "display": "standalone",
+  "orientation": "portrait"
+}

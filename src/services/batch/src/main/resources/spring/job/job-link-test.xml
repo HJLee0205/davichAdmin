@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!--
+    <bean id="xmlItemWriter" class="org.springframework.batch.item.xml.StaxEventItemWriter">
+        <property name="resource" value="file:c:/dmall/report.xml" />
+        <property name="marshaller" ref="goodsRegiMarshaller" />
+        <property name="rootTagName" value="SABANG_GOODS_REGI" />
+    </bean>
+
+    <bean id="goodsRegiMarshaller" class="org.springframework.oxm.jaxb.Jaxb2Marshaller">
+        <property name="classesToBeBound">
+            <list>
+                <value>net.danvi.dmall.biz.system.link.sample.batch.job.model.GoodsRequest</value>
+                &lt;!&ndash;<value>net.danvi.dmall.biz.system.link.sample.batch.job.model.Goods</value>&ndash;&gt;
+            </list>
+        </property>
+    </bean>
+    -->
+
+
+    <!-- 마이바티스를 이용한 DB-to-DB 작업 : 커서 리더 사용 -->
+    <!-- Mybatis 커서 리더 -->
+    <bean id="testReader" class="org.mybatis.spring.batch.MyBatisCursorItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="system.link.sample.selectTest" />
+    </bean>
+    <!-- Mybatis 라이터 -->
+    <bean id="testWriter" class="org.mybatis.spring.batch.MyBatisBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="system.link.sample.insertTest" />
+    </bean>
+    <batch:job id="testJob">
+        <batch:step id="testStep">
+            <batch:tasklet>
+                <batch:chunk reader="testReader" writer="testWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- 마이바티스를 이용한 DB-to-DB 작업 : 페이징 리더 사용 -->
+    <!-- Mybatis 페이징 리더 -->
+    <bean id="testPagingReader" class="org.mybatis.spring.batch.MyBatisPagingItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="system.link.sample.selectTestPaging" />
+    </bean>
+    <batch:job id="testPagingJob">
+        <batch:step id="testPagingStep">
+            <batch:tasklet>
+                <batch:chunk reader="testPagingReader" writer="testWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+
+    <!-- 자바 빈즈를 이용한 DB-to-Text 작업 -->
+    <bean id="testBeanReader" class="org.mybatis.spring.batch.MyBatisPagingItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="system.link.sample.selectTestPagingToBean" />
+    </bean>
+    <bean id="cvsFileItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">
+        <!-- write to this csv file -->
+        <property name="resource" value="file:/dmall/reportBean.txt" />
+        <property name="shouldDeleteIfExists" value="true" />
+        <property name="encoding" value="UTF-8" />
+
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+                <property name="delimiter" value="," />
+                <property name="fieldExtractor">
+                    <bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+                        <property name="names" value="grpCd, dtlCd, dtlNm" /><!-- 파일에 매핑할 데이터 -->
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <batch:job id="testTextJob">
+        <batch:step id="testTextStep">
+            <batch:tasklet>
+                <batch:chunk reader="testBeanReader" writer="cvsFileItemWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- Map을 자바 빈즈로 변환하는 DB-to-Text File 작업 -->
+    <!-- Map에서 값을 꺼내 자바 Beans 에 담는 프로세서 -->
+    <bean id="testBeanProcessor" class="net.danvi.dmall.admin.batch.sample.MapToBizCodeVOProcessor"></bean>
+    <bean id="cvsFileItemWriter2" class="org.springframework.batch.item.file.FlatFileItemWriter">
+        <!-- write to this csv file -->
+        <property name="resource" value="file:/dmall/reportBean2.txt" />
+        <property name="shouldDeleteIfExists" value="true" />
+        <property name="encoding" value="UTF-8" />
+
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+                <property name="delimiter" value="," />
+                <property name="fieldExtractor">
+                    <bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor">
+                        <property name="names" value="grpCd, dtlCd, dtlNm" /><!-- 파일에 매핑할 데이터 -->
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <batch:job id="testTextJob2">
+        <batch:step id="testTextStep2">
+            <batch:tasklet>
+                <batch:chunk reader="testReader" processor="testBeanProcessor" writer="cvsFileItemWriter2" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- Map 을 이용한 DB-to-Text File 작업 -->
+    <bean id="fileItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter">
+        <!-- write to this csv file -->
+        <property name="resource" value="file:/dmall/reportMap.txt" />
+        <property name="shouldDeleteIfExists" value="true" />
+        <property name="encoding" value="UTF-8" />
+
+        <property name="lineAggregator">
+            <bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator">
+                <property name="delimiter" value="|" />
+                <property name="fieldExtractor">
+                    <bean class="net.danvi.dmall.admin.batch.MapWrapperFieldExtractor">
+                        <property name="names" value="GRP_CD, CD, CD_NM" /><!-- 파일에 매핑할 데이터 -->
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <batch:job id="testTextMapJob">
+        <batch:step id="testTextMapStep">
+            <batch:tasklet>
+                <batch:chunk reader="testReader" writer="fileItemWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+
+    <!-- File to DB 작업 -->
+    <bean id="code" class="net.danvi.dmall.biz.common.model.BizCodeVO" scope="prototype" /><!-- scope값에 주의 -->
+    <!-- BizCodeVO로 INSERT하는 마이바티스 구문 만들기 귀찮아서 BizCodeVO를 MAP으로 매핑하는 프로세서 -->
+    <bean id="bizCodeVO2MapProcessor" class="net.danvi.dmall.admin.batch.sample.BizCodeVOToMapProcessor" />
+    <bean id="fileReader" class="org.springframework.batch.item.file.FlatFileItemReader" scope="step"> <!-- scope 값이 step이어야 잡파라미터를 가저옴 -->
+        <!-- Read a csv file -->
+        <property name="resource" value="#{jobParameters['fileName']}" />
+
+        <property name="lineMapper">
+            <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                <!-- split it -->
+                <property name="lineTokenizer">
+                    <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+                        <property name="delimiter" value="|" />
+                        <property name="names" value="grpCd, dtlCd, dtlNm" />
+                    </bean>
+                </property>
+                <property name="fieldSetMapper">
+                    <!-- map to an object -->
+                    <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+                        <property name="prototypeBeanName" value="code" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <batch:job id="testText2DBJob">
+        <batch:step id="testText2DBStep">
+            <batch:tasklet>
+                <batch:chunk reader="fileReader" processor="bizCodeVO2MapProcessor" writer="testWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+</beans>

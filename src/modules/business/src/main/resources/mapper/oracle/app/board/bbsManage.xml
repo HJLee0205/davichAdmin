@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.bbsManage">
+
+    <sql id="selectBbsInfoWhere">
+        AND SITE_NO = #{siteNo}
+        AND bbs.USE_YN = 'Y'
+        AND BBS_GB_CD not in ('3', '4')
+        <if test="bbsId != null and bbsId != ''">
+            AND BBS_ID = #{bbsId}
+        </if>
+        <if test="searchKind == 'searchBbsId'">
+            AND BBS_ID like '%'||#{searchVal}||'%'
+        </if>
+        <if test="searchKind == 'searchBbsNm'">
+            AND BBS_Nm like '%'||#{searchVal}||'%'
+        </if>
+        <if test="bbsGbCd != null and bbsGbCd != ''">
+            AND BBS_GB_CD = #{bbsGbCd}
+        </if>
+        <if test="useYn != null and useYn != ''">
+            AND bbs.USE_YN = #{useYn}
+        </if>
+    </sql>
+
+    <select id="selectBbsListPaging" resultType="bbsManageVO">
+        /* board.bbsManage.selectBbsListPaging */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+						        SELECT  BBS_ID,
+						                SITE_NO,
+	                                    BBS_NM,
+	                                    BBS_KIND_CD,
+	                                    fn_getCodeNm('BBS_KIND_CD', BBS_KIND_CD) as BBS_KIND_CD_NM,
+	                                    USE_YN,
+	                                    TITLE_USE_YN,
+	                                    BBS_ADDR,
+	                                    READ_LIST_USE_YN,
+	                                    READ_LETT_CONTENT_USE_YN,
+	                                    WRITE_LETT_USE_YN,
+	                                    WRITE_COMMENT_USE_YN,
+	                                    WRITE_REPLY_USE_YN,
+	                                    REGR_DISP_CD,
+	                                    ICON_SET_USE_YN,
+	                                    ICON_USE_YN_HOT,
+	                                    ICON_CHECK_VALUE_HOT,
+	                                    ICON_USE_YN_NEW,
+	                                    ICON_CHECK_VALUE_NEW,
+	                                    SECT_LETT_SET_YN,
+	                                    NOTICE_LETT_SET_YN,
+	                                    BBS_SPAM_PRVNT_YN,
+	                                    TOP_HTML_SET,
+	                                    BOTTOM_HTML_SET,
+	                                    BBS_GB_CD,
+	                                    bbs.REG_DTTM,
+	                                    bbs.REGR_NO,
+	                                    bbs.UPD_DTTM,
+	                                    bbs.UPDR_NO,
+						                case when bbs_id = 'inquiry'  then ((select count(*) from TB_MTM_INQUIRY_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID and TO_CHAR(sysdate, 'YYYYMMDD') = TO_CHAR(lett.REG_DTTM, 'YYYYMMDD') AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo} and NVL(lett.GRP_NO, '') = '')||
+						                                                           '/'||
+						                                                           (select count(*) from TB_MTM_INQUIRY_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo} and NVL(lett.GRP_NO, '') = '')
+						                                                          )
+						                     when bbs_id = 'question' then ((select count(*) from TB_GOODS_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID and TO_CHAR(sysdate, 'YYYYMMDD') = TO_CHAR(lett.REG_DTTM, 'YYYYMMDD') AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})||
+						                                                           '/'||
+						                                                           (select count(*) from TB_GOODS_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})
+						                                                          )
+						                     when bbs_id = 'review'   then ((select count(*) from TB_GOODS_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID and TO_CHAR(sysdate, 'YYYYMMDD') = TO_CHAR(lett.REG_DTTM, 'YYYYMMDD') AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})||
+						                                                           '/'||
+						                                                           (select count(*) from TB_GOODS_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})
+						                                                          )
+						                     when bbs_id = 'faq'      then ((select count(*) from TB_FAQ lett where lett.BBS_ID = bbs.BBS_ID and TO_CHAR(sysdate, 'YYYYMMDD') = TO_CHAR(lett.REG_DTTM, 'YYYYMMDD') AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})||
+						                                                           '/'||
+						                                                           (select count(*) from TB_FAQ lett where lett.BBS_ID = bbs.BBS_ID AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})
+						                                                          )
+						                     else ((select count(*) from TB_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID and TO_CHAR(sysdate, 'YYYYMMDD') = TO_CHAR(lett.REG_DTTM, 'YYYYMMDD') AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})||
+						                                   '/'||
+						                                   (select count(*) from TB_BBS_LETT lett where lett.BBS_ID = bbs.BBS_ID AND lett.DEL_YN != 'Y' AND lett.SITE_NO = #{siteNo})
+						                                  )
+						                end as BBS_LETT_CNT
+
+						        FROM    TB_BBS bbs
+						        WHERE 1=1
+						        <include refid="selectBbsInfoWhere" />
+						        <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectBbsListPagingCount" resultType="Integer">
+        /* board.bbsManage.selectBbsListPagingCount */
+        SELECT  count(*)
+        FROM    TB_BBS bbs inner join TA_CMN_CD_DTL bbsKindCd on (bbs.BBS_KIND_CD = bbsKindCd.CD and bbsKindCd.GRP_CD = 'BBS_KIND_CD')
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <select id="selectBbsListPagingTotalCount" resultType="Integer">
+        /* board.bbsManage.selectBbsListPagingTotalCount */
+        SELECT  count(*)
+        FROM    TB_BBS bbs inner join TA_CMN_CD_DTL bbsKindCd on (bbs.BBS_KIND_CD = bbsKindCd.CD and bbsKindCd.GRP_CD = 'BBS_KIND_CD')
+        WHERE 1=1
+        AND   SITE_NO = #{siteNo}
+        AND   BBS_GB_CD != '3'
+    </select>
+
+    <select id="selectBbsDtl" resultType="bbsManageVO">
+        /* board.bbsManage.selectBbsDtl */
+        SELECT  BBS_ID,
+                BBS_ID AS BBS_ID_TEXT,
+                SITE_NO,
+                BBS_NM,
+                BBS_KIND_CD,
+                BBS_GB_CD,
+                USE_YN,
+                TITLE_USE_YN,
+                BBS_ADDR,
+                READ_LIST_USE_YN,
+                READ_LETT_CONTENT_USE_YN,
+                WRITE_LETT_USE_YN,
+                WRITE_COMMENT_USE_YN,
+                WRITE_REPLY_USE_YN,
+                REGR_DISP_CD,
+                ICON_SET_USE_YN,
+                ICON_USE_YN_HOT,
+                ICON_CHECK_VALUE_HOT,
+                ICON_USE_YN_NEW,
+                ICON_CHECK_VALUE_NEW,
+                SECT_LETT_SET_YN,
+                NOTICE_LETT_SET_YN,
+                BBS_SPAM_PRVNT_YN,
+                TOP_HTML_YN,
+                BOTTOM_HTML_YN,
+                TOP_HTML_SET,
+                BOTTOM_HTML_SET,
+                bbs.REG_DTTM,
+                bbs.REGR_NO,
+                bbs.UPD_DTTM,
+                bbs.UPDR_NO
+
+        FROM    TB_BBS bbs
+        where   1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <insert id="insertBbs">
+        /* board.bbsManage.insertBbs */
+        INSERT INTO TB_BBS
+            (
+                BBS_ID,
+                SITE_NO,
+                BBS_NM,
+                BBS_KIND_CD,
+                BBS_GB_CD,
+                TITLE_USE_YN,
+                BBS_ADDR,
+                READ_LIST_USE_YN,
+                READ_LETT_CONTENT_USE_YN,
+                WRITE_LETT_USE_YN,
+                WRITE_COMMENT_USE_YN,
+                WRITE_REPLY_USE_YN,
+                REGR_DISP_CD,
+                ICON_SET_USE_YN,
+                ICON_USE_YN_HOT,
+                ICON_CHECK_VALUE_HOT,
+                ICON_USE_YN_NEW,
+                ICON_CHECK_VALUE_NEW,
+                SECT_LETT_SET_YN,
+                NOTICE_LETT_SET_YN,
+                BBS_SPAM_PRVNT_YN,
+                TOP_HTML_YN,
+                BOTTOM_HTML_YN,
+                TOP_HTML_SET,
+                BOTTOM_HTML_SET,
+                REG_DTTM,
+                REGR_NO
+
+            )
+            VALUES
+            (
+                #{bbsId},
+                #{siteNo},
+                #{bbsNm},
+                #{bbsKindCd},
+                #{bbsGbCd},
+                #{titleUseYn},
+                #{bbsAddr}||#{bbsId},
+                #{readListUseYn},
+                #{readLettContentUseYn},
+                #{writeLettUseYn},
+                #{writeCommentUseYn},
+                #{writeReplyUseYn},
+                #{regrDispCd},
+                #{iconSetUseYn},
+                #{iconUseYnHot},
+                #{iconCheckValueHot},
+                #{iconUseYnNew},
+                #{iconCheckValueNew},
+                #{sectLettSetYn},
+                #{noticeLettSetYn},
+                #{bbsSpamPrvntYn},
+                #{topHtmlYn},
+                #{bottomHtmlYn},
+                #{topHtmlSet:CLOB},
+                #{bottomHtmlSet:CLOB},
+                sysdate,
+                #{regrNo}
+            )
+    </insert>
+
+    <update id="updateBbs">
+         /* board.bbsManage.updateBbs */
+        UPDATE  TB_BBS
+        SET     BBS_NM = #{bbsNm},
+                BBS_KIND_CD = #{bbsKindCd},
+                BBS_GB_CD = #{bbsGbCd},
+                USE_YN = #{useYn},
+                TITLE_USE_YN = #{titleUseYn},
+                BBS_ADDR = #{bbsAddr}||#{bbsId},
+                READ_LIST_USE_YN = #{readListUseYn},
+                READ_LETT_CONTENT_USE_YN = #{readLettContentUseYn},
+                WRITE_LETT_USE_YN = #{writeLettUseYn},
+                WRITE_COMMENT_USE_YN = #{writeCommentUseYn},
+                WRITE_REPLY_USE_YN = #{writeReplyUseYn},
+                REGR_DISP_CD = #{regrDispCd},
+                ICON_SET_USE_YN = #{iconSetUseYn},
+                ICON_USE_YN_HOT = #{iconUseYnHot},
+                ICON_CHECK_VALUE_HOT = #{iconCheckValueHot},
+                ICON_USE_YN_NEW = #{iconUseYnNew},
+                ICON_CHECK_VALUE_NEW = #{iconCheckValueNew},
+                SECT_LETT_SET_YN = #{sectLettSetYn},
+                NOTICE_LETT_SET_YN = #{noticeLettSetYn},
+                BBS_SPAM_PRVNT_YN = #{bbsSpamPrvntYn},
+                TOP_HTML_Yn = #{topHtmlYn} ,
+                BOTTOM_HTML_Yn =  #{bottomHtmlYn},
+                TOP_HTML_SET = #{topHtmlSet:CLOB} ,
+                BOTTOM_HTML_SET =  #{bottomHtmlSet:CLOB},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+
+        WHERE   BBS_ID = #{bbsId}
+        AND     SITE_NO = #{siteNo}
+    </update>
+</mapper>

@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	예제 매퍼
+-->
+<mapper namespace="order.refund">
+    <!-- 클레임 결제 현금 환불 정보 등록 -->
+    <insert id="insertPaymerCashRefund" parameterType="claimPayRefundPO">
+    /* order.orderRefund.insertPaymerCashRefund - 클레임 결제 현금 환불 정보 등록*/
+		INSERT INTO TO_PAYMENT_CASH_REFUND(
+		    CASH_REFUND_NO, -- 현금환불번호
+		    PAYMENT_NO, -- 결제번호
+		    REFUND_TYPE_CD, -- 환불유형코드
+		    REFUND_STATUS_CD, -- 환불상태코드
+		    BANK_CD, -- 은행코드
+		    ACT_NO, -- 계좌번호
+		    HOLDER_NM, -- 예금주
+		    SCD_AMT, -- 예정금액
+		    REFUND_AMT, -- 환불금액
+		    CMS_AMT, -- 수수료금액
+		    SCD_DT, -- 예정일자
+		    SMS_SEND_YN, -- sms발송여부
+		    PRC_RESP_CD, -- 처리응답코드
+		    PRC_RESP_CONTENT, -- 처리응답내용
+		    ACCEPT_NO, -- 접수자번호
+		    ACCEPT_DTTM, -- 접수일자
+		    STNBY_NO, -- 대기자번호
+		    STNBY_DTTM, -- 대기 일시
+		    CMPLT_NO, -- 완료자번호
+		    CMPLT_DTTM, -- 완료일자
+		    ERR_DTTM, -- 에러일시
+		    MEMO, -- 메모
+		    REGR_NO, -- 등록자번호
+		    REG_DTTM, -- 등록일시
+		    UPDR_NO, -- 수정자번호
+		    UPD_DTTM -- 수정일시
+		) VALUES (
+		    ( SELECT fn_getSeq(0, 'CASH_REFUND_NO') FROM DUAL ),
+		    #{paymentNo},
+		    #{refundTypeCd},
+		    #{refundStatusCd},
+		    #{bankCd},
+		    #{actNo},
+		    #{holderNm},
+		    #{scdAmt},
+		    #{refundAmt},
+		    #{cmsAmt},
+		    #{scdDt},
+		    #{smsSendYn},
+		    #{prcRespCd},
+		    #{prcRespContent},
+		    #{acceptNo},
+		    #{acceptDttm},
+		    #{stnbyNo},
+		    #{stnbyDttm},
+		    #{cmpltNo},
+		    #{cmpltDttm},
+		    #{errDttm},
+		    #{refundMemo},
+            #{regrNo},
+            sysdate,
+            #{regrNo},
+            sysdate
+		)
+    </insert>
+    <!-- 주문 번호별 환불 정보  -->
+    <select id="selectOrdDtlRefund" resultType="claimGoodsPO">
+		SELECT /* order.orderRefund.selectOrdDtlRefund - 주문 번호별 환불 정보*/
+			B.ORD_NO,
+			B.GOODS_NM,
+			B.ITEM_NM,
+			B.GOODS_NO,
+			B.ADD_OPT_NM,
+			B.ORD_QTT,
+			TC.ACCEPT_DTTM,
+			TC.CMPLT_DTTM,
+			TC.CANCEL_DTTM,
+			TC.SALE_CHANNEL_CD,
+			TC.ACCEPT_NO,
+			TC.CANCEL_NO,
+			TC.CMPLT_NO,
+			TCD.CLAIM_NO,
+			TCD.CLAIM_DTL_SEQ,
+			TCD.CLAIM_TYPE_CD,
+			TCD.CLAIM_REASON_CD,
+			TCD.CLAIM_STATUS_CD,
+			TCD.ORD_NO,
+			TCD.ORD_DTL_SEQ,
+			TCD.PKUP_CMD_DTTM,
+			TCD.PKUP_CMPLT_DTTM,
+			TCD.GOODS_READY_DTTM,
+			TCD.RLS_CMD_DTTM,
+			TCD.RLS_CMPLT_DTTM,
+			TCD.DLVR_CMPLT_DTTM,
+			TCD.CLAIM_ACCEPT_DTTM,
+			TCD.CLAIM_CMPLT_DTTM,
+			TCD.CLAIM_CANCEL_DTTM,
+			TC.CLAIM_MEMO,
+			TCD.DLVR_WISH_DT,
+			TC.REGR_NO,
+			TC.REG_DTTM,
+			TC.UPDR_NO,
+			TC.UPD_DTTM
+		FROM
+		    TO_ORD A, TO_ORD_DTL B
+		    LEFT JOIN
+		    (
+		    SELECT      ORD_NO, ACCEPT_DTTM, CMPLT_DTTM, CANCEL_DTTM, SALE_CHANNEL_CD, ACCEPT_NO, CANCEL_NO, CMPLT_NO,
+                        CLAIM_MEMO, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM
+		    FROM        TO_CLAIM
+		    ) TC ON B.ORD_NO = TC.ORD_NO
+		    LEFT JOIN
+		    (
+		    SELECT
+		                CLAIM_NO, CLAIM_DTL_SEQ, CLAIM_TYPE_CD, CLAIM_REASON_CD, CLAIM_STATUS_CD, ORD_NO, ORD_DTL_SEQ,
+		                PKUP_CMD_DTTM, PKUP_CMPLT_DTTM, GOODS_READY_DTTM, RLS_CMD_DTTM,RLS_CMPLT_DTTM, DLVR_CMPLT_DTTM,
+		                CLAIM_ACCEPT_DTTM, CLAIM_CMPLT_DTTM, CLAIM_CANCEL_DTTM, DLVR_WISH_DT
+		    FROM        TO_CLAIM_DTL
+		    ) TCD ON B.ORD_NO = TCD.ORD_NO AND B.ORD_DTL_SEQ = TCD.ORD_DTL_SEQ
+
+		WHERE
+		    A.ORD_NO = B.ORD_NO
+		    AND B.ADD_OPT_YN = 'N'
+		    AND A.ORD_NO = #{ordNo}
+    </select>
+
+    <!-- 페이징 조회 검색 조건-->
+    <sql id="selectRefundListWhere">
+        <choose>
+            <when test="dayTypeCd == '01' ">
+                <if test="refundDayS != null and refundDayS != ''">
+                    <![CDATA[
+                    AND C.CLAIM_ACCEPT_DTTM >= TO_DATE(#{refundDayS}, 'YYYY-MM-DD')
+                    ]]>
+                </if>
+                <if test="refundDayE != null and refundDayE != ''">
+                    <![CDATA[
+                    AND C.CLAIM_ACCEPT_DTTM < TO_DATE(#{refundDayE}, 'YYYY-MM-DD') + 1
+                    ]]>
+                </if>
+            </when>
+        </choose>
+        <if test="returnCd != null and returnCd != ''">
+            AND C.RETURN_CD IN <foreach collection="returnCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test="claimCd != null and claimCd != ''">
+            AND C.CLAIM_CD IN <foreach collection="claimCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test="searchSeller != null and searchSeller != ''">
+            AND SELLER_NO= #{searchSeller}
+        </if>
+        <if test="searchCd != null and searchCd != '' and searchWord != null and searchWord !=''">
+            AND
+            <choose>
+                <when test="searchCd eq '01'">
+                    C.CLAIM_NO LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchCd eq '02'">
+                    C.ORD_NO LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchCd eq '03'">
+                    A.LOGIN_ID LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchCd eq '04'">
+                    mem.MEMBER_NM = #{searchWord}
+                </when>
+                <when test="searchCd eq '05'">
+                    A.ORDR_NM = #{searchWord}
+                </when>
+                <when test="searchCd eq '06'">
+                    D.ADRS_NM = #{searchWord}
+                </when>
+                <when test="searchCd eq '07'">
+                    B.GOODS_NM LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchCd eq '08'">
+                    B.GOODS_NO LIKE '%'||#{searchWord}||'%'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 반품/환불 목록  -->
+    <select id="selectRefundListPaging" resultType="claimGoodsVO">
+        /* order.refund.selectRefundListPaging - 환불 교환 목록*/
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+	            SELECT
+	                C.CLAIM_NO,
+	                C.CLAIM_ACCEPT_DTTM,
+	                C.ORD_NO,
+	                C.ORD_DTL_SEQ,
+	                A.LOGIN_ID,
+	                E.SELLER_NO,
+	                (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO =E.SELLER_NO) AS SELLER_NM,
+	                A.ORDR_NM,
+	                NVL(fn_getMemberGradeNm(#{siteNo}, A.MEMBER_NO), '') MEMBER_GRADE_NM,
+	                pay.PAYMENT_WAY_NM,
+	                B.ORD_QTT,
+                    C.CLAIM_QTT,
+	                fn_getAdminName(#{siteNo}, B.UPDR_NO) REGR_NM,
+	                C.CLAIM_CMPLT_DTTM,
+                    fn_getCodeNm('RETURN_CD', C.RETURN_CD) RETURN_NM,
+                    fn_getCodeNm('CLAIM_CD', C.CLAIM_CD) CLAIM_NM,
+                    C.RETURN_CD,
+                    C.CLAIM_CD,
+	                B.ORD_DTL_STATUS_CD,
+	                C.REG_DTTM,
+	                C.UPD_DTTM,
+	                NVL(ROUND(B.SALE_AMT,0),0) AS SALE_AMT,
+	                NVL(ROUND(B.SUPPLY_AMT,0),0) AS SUPPLY_AMT
+	            FROM
+	                TO_ORD A
+	                LEFT JOIN (
+	                    SELECT
+	                      A.ORD_NO
+	                    ,utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PAYMENT_WAY_CD', A.PAYMENT_WAY_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS PAYMENT_WAY_NM
+	                    , SUM(A.PAYMENT_AMT) PAYMENT_AMT
+	                    FROM
+	                    TO_PAYMENT A,
+	                    (
+	                        SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+	                        FROM TO_PAYMENT
+	                        WHERE SITE_NO = #{siteNo}
+	                        GROUP BY ORD_NO
+	                    ) B
+	                    WHERE A.ORD_NO = B.ORD_NO
+	                        AND A.PAYMENT_TURN = B.PAYMENT_TURN
+	                        GROUP BY A.ORD_NO
+	                ) pay ON (pay.ORD_NO = A.ORD_NO OR pay.ORD_NO = A.ORG_ORD_NO)
+	                <if test="searchCd eq '04'">
+	                LEFT JOIN (
+	                    SELECT MEMBER_NO, MEMBER_NM
+	                    FROM TC_MEMBER
+	                    WHERE SITE_NO =#{siteNo}
+	                ) mem ON (mem.MEMBER_NO = A.MEMBER_NO)
+	                </if>
+                    , TO_CLAIM C
+                    , TO_ORD_DELIVERY D
+                    , TO_ORD_DTL B
+                    LEFT JOIN TG_GOODS E
+                    ON E.GOODS_NO = B.GOODS_NO
+	            WHERE
+	                A.ORD_NO = B.ORD_NO
+	                AND A.SITE_NO = #{siteNo}
+	                AND B.ADD_OPT_YN = 'N'
+                    AND A.ORD_NO = C.ORD_NO
+                    AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+	                AND A.ORD_NO = D.ORD_NO
+                    <if test="sellerNo != null and sellerNo != ''">
+                        AND EXISTS (SELECT 1 FROM TG_GOODS TG
+                        WHERE TG.GOODS_NO = B.GOODS_NO
+                        AND SELLER_NO = #{sellerNo})
+                    </if>
+	                
+	                <if test="cancelSearchType eq '01'">
+		                AND C.CLAIM_CD IN  ('11','12')
+					</if>	                
+	                <if test="cancelSearchType eq '02'">
+		                AND C.CLAIM_CD IN  ('31','32')
+					</if>	                
+	                
+	                <include refid="selectRefundListWhere" />
+	                <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+     </select>
+
+    <!-- 환불목록 페이징 조회를 위한 카운트 -->
+    <select id="selectRefundListPagingCount" resultType="Integer">
+        /* biz.app.order.exchange.selectRefundListPagingCount - 환불목록 페이징 조회를 위한 카운트*/
+            SELECT COUNT(1)
+            FROM
+                TO_ORD A
+                LEFT JOIN (
+                    SELECT A.ORD_NO
+                      ,utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PAYMENT_WAY_CD', A.PAYMENT_WAY_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS PAYMENT_WAY_NM
+                      , SUM(A.PAYMENT_AMT) PAYMENT_AMT
+                    FROM
+                    TO_PAYMENT A,
+                    (
+                        SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+                        FROM TO_PAYMENT
+                        WHERE SITE_NO = #{siteNo}
+                        GROUP BY ORD_NO
+                    ) B
+                    WHERE A.ORD_NO = B.ORD_NO
+                        AND A.PAYMENT_TURN = B.PAYMENT_TURN
+                        GROUP BY A.ORD_NO
+                ) pay ON (pay.ORD_NO = A.ORD_NO OR pay.ORD_NO = A.ORG_ORD_NO)
+                <if test="searchCd eq '04'">
+                LEFT JOIN (
+                    SELECT MEMBER_NO, MEMBER_NM
+                    FROM TC_MEMBER
+                    WHERE SITE_NO = #{siteNo}
+                ) mem ON (mem.MEMBER_NO = A.MEMBER_NO)
+                </if>
+                , TO_CLAIM C
+                , TO_ORD_DELIVERY D
+                , TO_ORD_DTL B
+                    LEFT JOIN TG_GOODS E
+                    ON E.GOODS_NO = B.GOODS_NO
+            WHERE A.ORD_NO = B.ORD_NO
+                AND A.ORD_NO = C.ORD_NO
+                AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+                AND A.SITE_NO = #{siteNo}
+                AND B.ADD_OPT_YN = 'N'
+                AND A.ORD_NO = D.ORD_NO
+                <if test="sellerNo != null and sellerNo != ''">
+                    AND EXISTS (SELECT 1 FROM TG_GOODS TG
+                    WHERE TG.GOODS_NO = B.GOODS_NO
+                    AND SELLER_NO = #{sellerNo})
+                </if>
+                
+                <if test="cancelSearchType eq '01'">
+	                AND C.CLAIM_CD IN  ('11','12')
+				</if>	                
+                <if test="cancelSearchType eq '02'">
+	                AND C.CLAIM_CD IN  ('31','32')
+				</if>	                
+                
+        <include refid="selectRefundListWhere" />
+    </select>
+
+    <select id="selectRefundListPagingTotalCount" resultType="Integer">
+        /* biz.app.order.exchange.selectRefundListPagingTotalCount - 환불목록 페이징 조회를 위한 카운트*/
+            SELECT COUNT(1)
+            FROM
+                TO_ORD A, TO_ORD_DTL B, TO_CLAIM C
+            WHERE
+                A.ORD_NO = B.ORD_NO
+                AND A.SITE_NO = #{siteNo}
+                AND B.ADD_OPT_YN = 'N'
+                AND A.ORD_NO = C.ORD_NO
+                AND B.ORD_DTL_SEQ = C.ORD_DTL_SEQ
+                
+                <if test="cancelSearchType eq '01'">
+	                AND C.CLAIM_CD IN  ('11','12')
+				</if>	                
+                <if test="cancelSearchType eq '02'">
+	                AND C.CLAIM_CD IN  ('31','32')
+				</if>
+                <if test="sellerNo != null and sellerNo != ''">
+                    AND EXISTS (SELECT 1 FROM TG_GOODS TG
+                    WHERE TG.GOODS_NO = B.GOODS_NO
+                    AND SELLER_NO = #{sellerNo})
+                </if>
+    </select>
+
+    <!-- 클레임 처리 -->
+    <update id="updateClaimAllRefund" parameterType="claimGoodsPO">
+    /* order.refund.updateClaimAllRefund - 환불처리*/
+	    UPDATE TO_ORD_DTL
+	    SET
+            CLAIM_NO = #{claimNo},
+            RETURN_CD = #{returnCd},
+            CLAIM_QTT = #{claimQtt},
+            CLAIM_CD = #{claimCd},
+            ORD_DTL_STATUS_CD = #{ordDtlStatusCd},
+            CLAIM_ACCEPT_DTTM = sysdate,
+            CLAIM_REASON_CD = #{claimReasonCd},
+            CLAIM_DTL_REASON = #{claimDtlReason},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE ORD_NO = #{ordNo}
+        AND ORD_DTL_SEQ = #{ordDtlSeq}
+    </update>
+
+    <insert id="insertClaimRefund" parameterType="claimGoodsPO">
+        /* order.refund.insertClaimRefund - 반품/환불 등록*/
+        MERGE INTO TO_CLAIM tc
+		USING (
+            SELECT max(claim_no) as claim_no  FROM TO_CLAIM WHERE
+            CLAIM_NO = #{claimNo} AND ORD_NO = #{ordNo} AND ORD_DTL_SEQ = #{ordDtlSeq}
+            <if test="claimCd eq '12'">
+                /*환불완료(12)  */
+                AND CLAIM_CD = '11'
+            </if>
+            <if test="claimCd eq '22'">
+              /*교환완료(22) */
+                AND CLAIM_CD = '21'
+            </if>
+            <if test="claimCd eq '32'">
+                /* 결제취소(32) */
+                AND CLAIM_CD = '31'
+            </if>
+		) TCS
+		ON (TC.claim_no = TCS.claim_no AND TC.ORD_DTL_SEQ = #{ordDtlSeq})
+		WHEN MATCHED THEN
+        UPDATE SET
+            RETURN_CD = #{returnCd},
+            CLAIM_CD = #{claimCd},
+            CLAIM_ACCEPT_DTTM = NVL(CLAIM_ACCEPT_DTTM, sysdate),
+            <if test="claimCd eq '22' or claimCd eq '32' or claimCd eq '12' "  >
+                /*교환완료(22) , 결제취소(32), 환불완료(12)  */
+                CLAIM_CMPLT_DTTM = sysdate,
+            </if>
+            CLAIM_REASON_CD = #{claimReasonCd},
+            CLAIM_DTL_REASON = #{claimDtlReason},
+            CLAIM_MEMO = #{claimMemo},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+       INSERT
+        (
+         CLAIM_NO
+        ,ORD_NO
+        ,ORD_DTL_SEQ
+        ,RETURN_CD
+        ,CLAIM_QTT
+        ,CLAIM_CD
+        ,CLAIM_ACCEPT_DTTM
+        <if test="claimCd eq '22' or claimCd eq '32' or claimCd eq '12' "  >
+            /*교환완료(22) , 결제취소(32), 환불완료(12)  */
+            ,CLAIM_CMPLT_DTTM
+        </if>
+        ,CLAIM_REASON_CD
+        ,CLAIM_DTL_REASON
+        ,REGR_NO
+		,REG_DTTM
+        )
+        VALUES
+        (
+         #{claimNo}
+        ,#{ordNo}
+        ,#{ordDtlSeq}
+        ,#{returnCd}
+        ,#{claimQtt}
+        ,#{claimCd}
+        ,sysdate
+        <if test="claimCd eq '22' or claimCd eq '32' or claimCd eq '12' "  >
+            /*교환완료(22) , 결제취소(32), 환불완료(12)  */
+            ,sysdate
+        </if>
+        ,#{claimReasonCd}
+        ,#{claimDtlReason}
+        ,#{regrNo}
+        ,sysdate
+        )
+    </insert>
+
+    <select id="selectOrdDtlPayCancelInfo" resultType="claimPayRefundVO" >
+        /* order.refund.selectOrdDtlPayCancelInfo - 주문결제, 환불, 결제취소*/
+        SELECT
+    <choose>
+        <when test='refundType!=null and refundType!="V"'>
+            /* 관리자 수량입력 반품신청 */
+            '' as CLAIM_NO,
+            '' as ORD_NO,
+            '' as CLAIM_CD,
+            '' as RETURN_CD,
+            '' as CLAIM_MEMO,
+            '' as CLAIM_DTL_REASON,
+            SUM(B.SALE_AMT * #{claimQtt} -B.DC_AMT -NVL(C.REFUND_AMT,0)) eamt,
+        </when>
+        <otherwise>
+            A.CLAIM_NO,
+            A.ORD_NO,
+            A.CLAIM_CD,
+            A.RETURN_CD,
+            A.CLAIM_MEMO,
+            A.CLAIM_DTL_REASON,
+            CASE WHEN A.CLAIM_CD='12'
+            THEN
+              0
+            ELSE
+            CASE WHEN C.REFUND_AMT > 0 THEN
+            SUM((B.SALE_AMT * B.ORD_QTT -B.DC_AMT -NVL(C.REFUND_AMT,0))-(B.SALE_AMT * A.CLAIM_QTT -B.DC_AMT -NVL(C.REFUND_AMT,0)))
+            ELSE
+            SUM(B.SALE_AMT * A.CLAIM_QTT -B.DC_AMT)
+            END
+            END AS eamt,
+        </otherwise>
+    </choose>
+            C.PAY_UNPG_CD,
+            C.PAY_UNPG_WAY_CD,
+            NVL(C.PAY_UNPG_AMT,0) PAY_UNPG_AMT,
+            NVL(C.ORG_PAY_UNPG_AMT,0) ORG_PAY_UNPG_AMT,
+            D.PAY_PG_CD,
+            D.PAY_PG_WAY_CD,
+            NVL(D.PAY_PG_AMT,0) PAY_PG_AMT,
+            NVL(D.ORG_PAY_PG_AMT,0) ORG_PAY_PG_AMT,
+            D.ESCROW_YN,
+            E.PAY_RESERVE_CD,
+            E.PAY_RESERVE_WAY_CD,
+            NVL(E.PAY_RESERVE_AMT,0) PAY_RESERVE_AMT,
+            C.BANK_CD,
+            C.ACT_NO,
+            C.HOLDER_NM,
+            NVL(C.SCD_AMT,0) SCD_AMT,
+            NVL(C.REFUND_AMT,0) REFUND_AMT,
+            NVL(C.CMS_AMT,0) CMS_AMT,
+            NVL(F.REST_AMT,0) + NVL(#{totalDlvrAmt},0) REST_AMT,
+            NVL(#{totalDlvrAmt},0) TOTAL_DLVR_AMT,
+            B.DLVR_AMT,
+            G.ORDR_NM,
+            G.ORDR_MOBILE,
+            H.REAL_DLVR_AMT,
+            B.DC_AMT,
+            B.GOODS_DMONEY_USE_AMT,
+            B.PVD_SVMN,
+            B.DLVR_ADD_AMT,
+            (SELECT DISTINCT A.RSV_NO
+            FROM TO_VISIT_RSV A,TO_VISIT_RSV_DTL B
+            WHERE A.RSV_NO= B.RSV_NO
+            AND B.ORD_NO = #{ordNo}) AS RSV_NO
+        FROM TO_ORD_DTL B
+            LEFT JOIN (
+                    SELECT  /* 최종 결제확인 무통장, 가상계좌*/
+                            TP.PAYMENT_PG_CD PAY_UNPG_CD,       -- PG 코드
+                            TP.PAYMENT_WAY_CD PAY_UNPG_WAY_CD,  -- PG 수단 코드
+                            TP.PAYMENT_AMT PAY_UNPG_AMT,        -- 결제 금액
+                            TPCR.REFUND_TYPE_CD,    -- 환불 유형 코드
+                            TPCR.REFUND_STATUS_CD,  -- 환불 상태 코드
+                            TP.ORD_NO,
+                            TPCR.BANK_CD,           -- 은행 코드
+                            TPCR.ACT_NO,            -- 계좌 번호
+                            TPCR.HOLDER_NM,         -- 예금주
+                            TPCR.SCD_AMT,           -- 예정 금액
+                            TPCR.REFUND_AMT,        -- 환불 금액
+                            TPCR.CMS_AMT,            -- 수수료 금액
+                            (SELECT PAYMENT_AMT
+                                FROM TO_PAYMENT
+                                WHERE PAYMENT_TURN=
+                                (SELECT MIN(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO = TP.ORD_NO)
+                                    AND PAYMENT_WAY_CD IN (11, 22)
+                                    AND ORD_NO=TP.ORD_NO
+                            ) ORG_PAY_UNPG_AMT
+                    FROM
+                            TO_PAYMENT TP
+                            LEFT OUTER JOIN
+                            TO_PAYMENT_CASH_REFUND TPCR
+                            ON TP.PAYMENT_NO = TPCR.PAYMENT_NO
+                    WHERE
+                            TP.PAYMENT_WAY_CD IN (11, 22) AND TP.ORD_NO = #{ordNo}
+                            AND PAYMENT_TURN = (SELECT MAX(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO = #{ordNo})
+                            AND TP.PAYMENT_NO =
+                            (SELECT PAYMENT_NO
+                                FROM TO_PAYMENT
+                               WHERE PAYMENT_TURN=
+                                    (SELECT MAX(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO =  #{ordNo})
+                                    AND PAYMENT_WAY_CD IN (11, 22)
+                                    AND ORD_NO= #{ordNo}
+                            )
+            ) C ON B.ORD_NO = C.ORD_NO
+            LEFT JOIN (
+                    SELECT  /* 최종 결제 확인 실시간계좌이체, 신용카드, 휴대폰결제, 간편결제, PAYPAL */
+                            TP.PAYMENT_PG_CD PAY_PG_CD,         -- PG 코드
+                            TP.PAYMENT_WAY_CD PAY_PG_WAY_CD,    -- PG 수단 코드
+                            TP.PAYMENT_AMT PAY_PG_AMT,          -- 결제 금액
+                            TP.ESCROW_YN,                       -- 에스크로 여부
+                            TP.ORD_NO,
+                            (SELECT PAYMENT_AMT
+                              FROM TO_PAYMENT
+                              WHERE PAYMENT_TURN=(SELECT MIN(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO = TP.ORD_NO )
+                              AND PAYMENT_WAY_CD IN (21, 23, 24, 31, 41)
+                              AND ORD_NO=TP.ORD_NO
+                            ) ORG_PAY_PG_AMT
+                    FROM
+                            TO_PAYMENT TP
+                    WHERE
+                            TP.PAYMENT_WAY_CD IN (21, 23, 24, 31, 41) AND TP.ORD_NO = #{ordNo}
+                            AND PAYMENT_TURN = (SELECT MAX(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO = #{ordNo})
+            ) D ON B.ORD_NO = D.ORD_NO
+            LEFT JOIN (
+                    SELECT  /* 최종 결제 확인 마켓포인트  */
+                            TP.PAYMENT_PG_CD PAY_RESERVE_CD,        -- PG 코드
+                            TP.PAYMENT_WAY_CD PAY_RESERVE_WAY_CD,   -- PG 수단 코드
+                            TP.PAYMENT_AMT PAY_RESERVE_AMT,         -- 결제 금액
+                            TP.ORD_NO
+                    FROM
+                            TO_PAYMENT TP
+                    WHERE
+                            TP.PAYMENT_WAY_CD IN (01) AND TP.ORD_NO = #{ordNo}
+                            AND PAYMENT_TURN = (SELECT MAX(PAYMENT_TURN) FROM TO_PAYMENT WHERE ORD_NO = #{ordNo})
+            ) E ON B.ORD_NO = E.ORD_NO
+            LEFT JOIN (
+                    SELECT /* 배송비 제외한 실제 결제금액 (배송비는 재계산하여 데이터로다시 계산 )*/
+                            AA.ORD_NO, SUM(AA.PAY_AMT) REST_AMT
+                    FROM(
+                            SELECT A.ORD_NO, A.ITEM_NO, SUM(SALE_AMT * ORD_QTT - DC_AMT) PAY_AMT, max(B.REAL_DLVR_AMT) as REAL_DLVR_AMT
+                            FROM TO_ORD_DTL A, (SELECT * FROM TO_DLVR
+					                            WHERE DLVR_NO IN (
+					                              SELECT MAX(DLVR_NO) FROM TO_ORD_DTL A, TO_DLVR B
+					                              WHERE A.ORD_NO = B.ORD_NO
+					                              AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+					                              AND A.ORD_NO = #{ordNo}
+					                              GROUP BY B.ORD_NO, B.ORD_DTL_SEQ
+					                            )) B
+                            WHERE A.ORD_NO = B.ORD_NO AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ AND A.ORD_NO = #{ordNo} AND ADD_OPT_YN = 'N'
+                            AND A.ORD_DTL_STATUS_CD NOT IN ( 11, 21, 66, 74 )
+                            AND A.ORD_DTL_SEQ <![CDATA[<>]]> #{ordDtlSeq}
+                            GROUP BY A.ORD_NO, A.ITEM_NO
+                            UNION ALL
+                            SELECT ORD_NO, ITEM_NO, SUM(SALE_AMT * ORD_QTT) PAY_AMT, 0 REAL_DLVR_AMT
+                              FROM TO_ORD_DTL
+                             WHERE ORD_NO = #{ordNo} AND ADD_OPT_YN = 'Y'
+                               AND ORD_DTL_STATUS_CD NOT IN ( 11, 21, 66, 74 )
+                               AND ITEM_NO NOT IN ( SELECT ITEM_NO FROM TO_ORD_DTL WHERE ORD_NO = #{ordNo} AND ORD_DTL_SEQ = #{ordDtlSeq})
+                            GROUP BY ORD_NO, ITEM_NO
+                    ) AA
+                    GROUP  BY AA.ORD_NO
+            ) F ON B.ORD_NO = F.ORD_NO
+        LEFT JOIN (SELECT A.ORD_NO,
+                          A.ORDR_NM,
+                          A.ORDR_MOBILE
+                     FROM TO_ORD A
+                    WHERE A.ORD_NO = #{ordNo}) G ON B.ORD_NO = G.ORD_NO
+        LEFT JOIN (SELECT REAL_DLVR_AMT, ORD_NO
+                    FROM TO_DLVR A
+                    WHERE A.ORD_NO = #{ordNo}
+                    AND A.ORD_DTL_SEQ = #{ordDtlSeq}) H ON B.ORD_NO = H.ORD_NO
+        <choose>
+            <when test='refundType!=null and refundType!="V"'>
+                /* 관리자 수량입력 반품신청 */
+            </when>
+            <otherwise>
+                LEFT OUTER JOIN TO_CLAIM A
+                ON A.ORD_NO = B.ORD_NO
+                AND A.ORD_DTL_SEQ= B.ORD_DTL_SEQ
+                <choose>
+                    <when test='cancelSearchType !=null and cancelSearchType!=""'>
+                        <![CDATA[
+                        AND A.RETURN_CD <> '13'
+                        AND A.CLAIM_CD IN ('31','32')
+                        ]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[
+                        AND A.RETURN_CD <> '13'
+                        AND A.CLAIM_CD IN ('11','12')
+                        ]]>
+                    </otherwise>
+                </choose>
+
+            </otherwise>
+        </choose>
+        WHERE B.ADD_OPT_YN = 'N'
+            AND B.ORD_NO = #{ordNo}
+            AND B.ORD_DTL_SEQ = #{ordDtlSeq}
+        <choose>
+            <when test='refundType!=null and refundType!="V"'>
+                /* 관리자 수량입력 반품신청 */
+            </when>
+            <otherwise>
+                <if test='refundType!=null and refundType=="V"'>
+                AND A.CLAIM_NO IS NOT NULL
+                </if>
+            </otherwise>
+        </choose>
+        <if test="claimGoodsNo != null and claimGoodsNo != ''">
+            AND B.GOODS_NO = #{claimGoodsNo}
+        </if>
+        GROUP BY
+        <choose>
+            <when test='refundType!=null and refundType!="V"'>
+                /* 관리자 수량입력 반품신청 */
+            </when>
+            <otherwise>
+                A.CLAIM_NO,
+                A.ORD_NO,
+                A.CLAIM_CD,
+                A.RETURN_CD,
+                A.CLAIM_MEMO,
+                A.CLAIM_DTL_REASON,
+            </otherwise>
+        </choose>
+            C.PAY_UNPG_CD,
+            C.PAY_UNPG_WAY_CD,
+            C.ORG_PAY_UNPG_AMT,
+            C.PAY_UNPG_AMT,
+            D.PAY_PG_CD,
+            D.PAY_PG_WAY_CD,
+            D.PAY_PG_AMT,
+            D.ORG_PAY_PG_AMT,
+            D.ESCROW_YN,
+            E.PAY_RESERVE_CD,
+            E.PAY_RESERVE_WAY_CD,
+            E.PAY_RESERVE_AMT,
+            C.BANK_CD,
+            C.ACT_NO,
+            C.HOLDER_NM,
+            C.SCD_AMT,
+            C.REFUND_AMT,
+            C.CMS_AMT,
+            REST_AMT,
+            DLVR_AMT,
+            ORDR_NM,
+            ORDR_MOBILE,
+            REAL_DLVR_AMT,
+            DC_AMT,
+            GOODS_DMONEY_USE_AMT,
+            PVD_SVMN,
+            DLVR_ADD_AMT
+    </select>
+
+    <update id="updatePaymerCashRefund" parameterType="claimPayRefundPO">
+    /* order.refund.updatePaymerCashRefund - 클레임 결제 현금 환불 정보 등록*/
+		UPDATE TO_PAYMENT_CASH_REFUND
+		SET
+		    <if test="refundTypeCd != null and refundTypeCd != ''">
+			REFUND_TYPE_CD = #{refundTypeCd},
+			</if>
+			<if test="refundStatusCd != null and refundStatusCd != ''">
+			REFUND_STATUS_CD = #{refundStatusCd},
+			</if>
+			BANK_CD = #{bankCd},
+			ACT_NO = #{actNo},
+			HOLDER_NM = #{holderNm},
+        <if test="scdAmt != null and scdAmt != ''">
+			SCD_AMT = #{scdAmt},
+        </if>
+        <if test="refundAmt != null and refundAmt != ''">
+            REFUND_AMT = #{refundAmt},
+        </if>
+			MEMO = #{refundMemo},
+			UPDR_NO = #{regrNo},
+			UPD_DTTM = sysdate
+		WHERE PAYMENT_NO = #{paymentNo}
+    </update>
+
+    <select id="selectCashRefundCount" resultType="Integer">
+        /* biz.app.order.exchange.selectCashRefundCount - 현금 환불정보 등록확인 */
+        SELECT COUNT(1) FROM TO_PAYMENT_CASH_REFUND WHERE PAYMENT_NO = #{paymentNo}
+    </select>
+    
+    <!-- 물류 반품 체크 팝업 -->
+    <select id="selectRefundChk" resultType="ClaimVO">
+        /* biz.app.order.refund.selectChkRefund - 물류 반품 체크 */
+        SELECT 
+        	A.CLAIM_NO,
+        	A.ORD_NO,
+        	A.ORD_DTL_SEQ,
+        	A.CLAIM_CONTENT_CHK,
+        	B.GOODS_NM,
+        	C.ITEM_NM 
+        FROM 
+        	TO_CLAIM A
+		LEFT JOIN 
+			TO_ORD_DTL B ON A.ORD_NO = B.ORD_NO AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+		LEFT JOIN 
+			TG_ITEM C ON B.ITEM_NO = C.ITEM_NO
+		WHERE 
+			A.CLAIM_NO = #{claimNo}
+    		AND A.ORD_NO = #{ordNo}
+    		AND A.ORD_DTL_SEQ = #{ordDtlSeq}
+    </select>
+    
+    <!-- 물류 반품 체크 수정 -->
+    <update id="updateRefundChk" parameterType="ClaimVO">
+    	/* biz.app.order.refund.updateRefundChk - 물류 반품 체크 수정 */
+		UPDATE TO_CLAIM
+	    SET
+            CLAIM_CONTENT_CHK = #{claimContentChk}
+        WHERE CLAIM_NO = #{claimNo}
+        	AND ORD_NO = #{ordNo}
+        	AND ORD_DTL_SEQ = #{ordDtlSeq}
+    </update>
+    
+    <!-- 반품 신청 정보 조회(다비젼에서 표시) -->
+    <select id="selectClaimDetail" resultType="ClaimGoodsVO">
+    	SELECT A.CLAIM_NO
+    		, A.ORD_NO
+    		, A.ORD_DTL_SEQ 
+    		, NVL(A.CLAIM_REASON_CD, '') AS CLAIM_REASON_CD
+			, FN_GETCODENM('CLAIM_REASON_CD', A.CLAIM_REASON_CD) AS CLAIM_REASON_NM
+			, A.CLAIM_DTL_REASON
+			, B.GOODS_NM
+			, NVL(B.ITEM_NM, '') AS ITEM_NM
+			, A.CLAIM_QTT
+		FROM TO_CLAIM A
+		INNER JOIN TO_ORD_DTL B ON A.ORD_NO = B.ORD_NO AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ AND B.ADD_OPT_YN = 'N'
+		WHERE A.CLAIM_NO = #{claimNo}
+		  AND A.ORD_NO = #{ordNo}
+		  AND A.ORD_DTL_SEQ = #{ordDtlSeq}
+    </select>
+    
+    <!-- 인터페이스 호출시 파라미터로 사용할 반품 상세 정보  -->
+    <select id="selectClaimDetailListForInterface" resultType="map">
+    	select a.ord_dtl_seq as "orderDtlSeq"
+		from to_claim a
+		inner join to_ord_dtl b on a.ord_no = b.ord_no and a.ord_dtl_seq = b.ord_dtl_seq
+		inner join tg_goods c on b.goods_no = c.goods_no and c.seller_no = '1'
+		where a.claim_no = #{claimNo}
+		    and a.claim_cd not in ('12','22','32')
+		  and a.ord_no = #{ordNo}
+    </select>
+
+    <!-- 반품신청시 신청되어있는 클레임 수량 조회  -->
+    <select id="selectRefundClaimQtt" resultType="int">
+        SELECT NVL(SUM(A.CLAIM_QTT),0) AS "preClaimQtt"
+        FROM TO_CLAIM A
+        WHERE A.ORD_NO = #{ordNo}
+        AND A.ORD_DTL_SEQ=#{ordDtlSeq}
+        AND A.RETURN_CD NOT IN  ('13')
+    </select>
+    <!-- 클레임 신청시 주문 수량 조회  -->
+    <select id="selectOrdQtt" resultType="int">
+        SELECT NVL(SUM(A.ORD_QTT),0) AS "preOrdQtt"
+        FROM TO_ORD_DTL A
+        WHERE A.ORD_NO = #{ordNo}
+        AND A.ORD_DTL_SEQ=#{ordDtlSeq}
+    </select>
+
+    <select id="selectTotalOrdQtt" resultType="int">
+        SELECT NVL(SUM(A.ORD_QTT),0) AS "preOrdQtt"
+        FROM TO_ORD_DTL A
+        WHERE A.ORD_NO = #{ordNo}
+    </select>
+
+    <select id="selectRefundRequestList" resultType="net.danvi.dmall.biz.app.order.manage.model.OrderGoodsVO">
+        SELECT A.* ,
+               ((A.SALE_AMT - A.DC_AMT + A.REAL_DLVR_AMT) * A.ORD_QTT) as PAYMENT_AMT
+        FROM
+            (
+                SELECT to2.ORD_NO ,
+                       tod.ORD_DTL_SEQ ,
+                       fn_getGoodsImgPath(tod.GOODS_NO, '02') AS IMG_PATH,
+                       tod.GOODS_NM ,
+                       ti.ITEM_NM ,
+                       tod.GOODS_NO ,
+                       (tod.ORD_QTT - nvl(tc.CLAIM_QTT, 0)) AS ORD_QTT,
+                       tod.SALE_AMT ,
+                       tod.DC_AMT ,
+                       nvl(to2.POINT_AMT, 0) AS POINT_AMT ,
+                       td.REAL_DLVR_AMT ,
+                       fn_getCodeNm('DLVRC_PAYMENT_CD', td.DLVRC_PAYMENT_CD) AS DLVRC_PAYMENT_NM,
+                       fn_getCodeNm('ORD_DTL_STATUS_CD', tod.ORD_DTL_STATUS_CD) AS ORD_DTL_STATUS_NM
+                FROM TO_ORD to2
+                         INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+                         INNER JOIN (SELECT DISTINCT ORD_NO, ORD_DTL_SEQ, DLVRC_PAYMENT_CD, REAL_DLVR_AMT FROM TO_DLVR) td ON tod.ORD_NO = td.ORD_NO AND tod.ORD_DTL_SEQ = td.ORD_DTL_SEQ
+                         INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+                         INNER JOIN TG_ITEM ti ON tod.ITEM_NO = ti.ITEM_NO
+                         LEFT OUTER JOIN TO_CLAIM tc ON tod.ORD_NO = tc.ORD_NO AND tod.ORD_DTL_SEQ = tc.ORD_DTL_SEQ
+                WHERE 1=1
+                and to2.ORD_NO = #{ordNo}
+                ORDER BY tod.ORD_DTL_SEQ
+            ) A
+        WHERE A.ORD_QTT > 0
+    </select>
+</mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd" updateCheck="false">
+
+	<defaultCache
+		eternal="false"
+		maxElementsInMemory="20000"
+		overflowToDisk="false"
+		diskPersistent="false"
+		timeToIdleSeconds="0"
+		timeToLiveSeconds="600"
+		memoryStoreEvictionPolicy="LRU">
+	</defaultCache>
+
+	<!-- message 용 cache -->
+	<!--
+		1. 필수 설정
+		name=cache 이름
+		eternal= true or false : 영속성 설정, true이면 time out 등으로 소멸되지 않음
+		maxElementsInMemory= 메모리에 생성되는 최대 객체의 수
+		overflowToDisk= true or false : 인-메모리(In-Memory) 캐시가 maxInMemory 한계값에 도달하게 될 때 엘리먼트들이 유출될 수 있음을 설정
+
+		2. 옵션 설정
+		diskPersistent="false" - 캐시를 디스크에 저장 여부
+		timeToIdleSeconds= eternal이 false 일때만 설정 가능, 0 이면 무한하게 idle 상태로 유지 됨
+		timeToLiveSeconds=소멸될때 까지 최대 시간, 0이면 무한하게 설정
+		memoryStoreEvictionPolicy="LRU" -Least Recently Used
+	-->
+	<cache
+		name="commonCache"
+		eternal="false"
+		maxElementsInMemory="100"
+		overflowToDisk="false"
+		diskPersistent="false"
+		timeToIdleSeconds="0"
+		timeToLiveSeconds="0"
+		memoryStoreEvictionPolicy="LRU">
+		<cacheEventListenerFactory
+				class="net.sf.ehcache.distribution.RMICacheReplicatorFactory" />
+		<bootstrapCacheLoaderFactory
+				class="net.sf.ehcache.distribution.RMIBootstrapCacheLoaderFactory"
+				properties="bootstrapAsynchronously=true,
+                       maximumChunkSizeBytes=5000000" />
+	</cache>
+
+	<cacheManagerPeerProviderFactory
+			class="net.sf.ehcache.distribution.RMICacheManagerPeerProviderFactory"
+			properties="peerDiscovery=automatic, multicastGroupAddress=230.1.1.2,
+			multicastGroupPort=4446, timeToLive=32"/>
+
+	<cacheManagerPeerListenerFactory
+			class="net.sf.ehcache.distribution.RMICacheManagerPeerListenerFactory"
+			properties="port=40004, socketTimeoutMillis=120000" />
+</ehcache>

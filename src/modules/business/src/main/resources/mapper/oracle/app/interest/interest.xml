@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="member.interest">
+<!-- 관심상품 조회 조건절 -->
+    <sql id="selectInterstInfoWhere">
+        <where>
+	        TI.ITEM_NO = TG.ITEM_NO
+	        AND TG.GOODS_NO = TMFG.GOODS_NO
+            <if test="siteNo != null and siteNo != ''">
+                AND TMFG.SITE_NO = #{siteNo}
+            </if>
+            <if test="memberNo != null and memberNo != ''">
+                AND TMFG.MEMBER_NO = #{memberNo}
+            </if>
+			<if test="stRegDttm != null and stRegDttm != ''">
+				<![CDATA[
+	              AND TMFG.REG_DTTM >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+	              ]]>
+			</if>
+			<if test="endRegDttm != null and endRegDttm != ''">
+				<![CDATA[
+	              AND TMFG.REG_DTTM < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+	              ]]>
+			</if>
+        </where>
+    </sql>
+    <!-- 관심상품 목록조회 -->
+    <select id="selectInterestListPaging" resultType="goodsVO">
+        /* interest.selectInterstListPaging */
+		SELECT *
+		FROM
+		(
+		        SELECT
+		        	ROW_NUMBER() OVER(ORDER BY ${sidx} ${sord}) PAGING_NUM ,
+		            TG.GOODS_NO,
+		            TG.GOODS_NM,
+		            TG.GOODS_SALE_STATUS_CD,
+		            TG.DISP_YN,
+		            TG.GOODSEACH_DLVRC,
+		            TG.MODEL_NM,
+		            TG.PR_WORDS,
+		            TG.MMFT,
+		            TG.SALE_YN,
+		            fn_getGoodsImgPath(TG.GOODS_NO, '01') AS GOODS_IMG_01,
+		            fn_getGoodsImgPath(TG.GOODS_NO, '02') AS GOODS_IMG_02,
+		            fn_getGoodsImgPath(TG.GOODS_NO, '03') AS GOODS_IMG_03,
+		            fn_getGoodsDispImgPath(TG.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+		            fn_getGoodsDispImgPath(TG.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+		            fn_getGoodsDispImgPath(TG.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+		            fn_getGoodsDispImgPath(TG.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+		            fn_getGoodsDispImgPath(TG.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+					fn_getGoodsDispImgPath(TG.GOODS_NO, 'F') AS GOODS_DISP_IMG_F,
+					fn_getGoodsDispImgPath(TG.GOODS_NO, 'G') AS GOODS_DISP_IMG_G,
+					fn_getGoodsDispImgPath(TG.GOODS_NO, 'S') AS GOODS_DISP_IMG_S,
+		            fn_getGoodsIcon(TG.GOODS_NO, '5') AS ICON_IMGS,
+		            TG.REG_DTTM,
+		            TG.UPD_DTTM,
+		            NVL(TG.ACCM_SALE_AMT,0) AS ACCM_SALE_AMT,
+		            NVL(TG.ACCM_SALE_CNT,0) AS ACCM_SALE_CNT,
+		            NVL(TG.ACCM_GOODSLETT_CNT,0) AS ACCM_GOODSLETT_CNT,
+		            NVL(TG.GOODS_SVMN_AMT,0) AS GOODS_SVMN_AMT,
+		            NVL(TG.GOODS_SCORE,0) AS GOODS_SCORE,
+		            (SELECT BRAND_NM FROM TG_BRAND WHERE BRAND_NO = TG.BRAND_NO) AS BRAND_NM ,
+		            NVL(TI.CUSTOMER_PRICE,0) AS CUSTOMER_PRICE,
+		            NVL(TI.SALE_PRICE,0) AS SALE_PRICE,
+                	decode(nvl(TI.CUSTOMER_PRICE,0), 0, 0, 100-(TI.SALE_PRICE/TI.CUSTOMER_PRICE)*100) as SALE_RATE,
+		            TI.ITEM_NM,
+		            TI.ITEM_NO,
+		            TI.USE_YN,
+					TG.DEL_YN AS TG_DEL_YN,
+		            TI.DEL_YN AS TI_DEL_YN,
+		            NVL(TI.STOCK_QTT,0) AS STOCK_QTT,
+		            TG.RSV_ONLY_YN
+		        FROM TG_GOODS TG, TG_ITEM TI, TC_MEMBER_FAV_GOODS TMFG
+		        <include refid="selectInterstInfoWhere" />
+		        <!--<include refid="common.sortSql" />-->
+        )
+        <include refid="common.pageSql" />
+    </select>
+    <select id="selectInterest" resultType="goodsVO">
+        /* interest.selectInterest */
+        SELECT
+            NVL(ITEM_NO, 0) AS ITEM_NO
+        FROM TG_GOODS
+        WHERE GOODS_NO=#{goodsNo}
+    </select>
+    <!-- 관심상품조회카운트 -->
+    <select id="selectInterestListPagingCount" resultType="Integer">
+        /* interest.selectInterstPagingCount */
+        SELECT count(*)
+        FROM TG_GOODS TG,TG_ITEM TI,TC_MEMBER_FAV_GOODS TMFG
+        <include refid="selectInterstInfoWhere" />
+    </select>
+    <!-- 관심상품조회카운트 -->
+    <select id="selectInterestListPagingTotalCount" resultType="Integer">
+        /* interest.selectInterstPagingCount */
+        SELECT  count(*)
+        FROM TG_GOODS TG,TG_ITEM TI,TC_MEMBER_FAV_GOODS TMFG
+        <include refid="selectInterstInfoWhere" />
+    </select>
+
+    <select id="duplicationCheck" resultType="Integer">
+    SELECT  count(*)
+        FROM    TC_MEMBER_FAV_GOODS
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+        AND GOODS_NO = #{goodsNo}
+    </select>
+    <!-- 관심상품 상품정보 등록 -->
+    <insert id="insertInterest">
+        /* interest.insertInterest */
+		INSERT INTO TC_MEMBER_FAV_GOODS(
+		  MEMBER_NO
+		  , CTG_NO
+		  , GOODS_NO
+		  , ITEM_NO
+		  , SITE_NO
+		  , REGR_NO
+		  , REG_DTTM
+		) VALUES (
+		  #{memberNo}
+		  , #{ctgNo}
+		  , #{goodsNo}
+		  , #{itemNo}
+		  , #{siteNo}
+		  , #{regrNo}
+		  ,sysdate
+		)
+    </insert>
+    <!-- 관심상품 상품정보 삭제 -->
+    <delete id="deleteInterest">
+	    /* interest.deleteInterest */
+		DELETE FROM TC_MEMBER_FAV_GOODS
+		WHERE SITE_NO = #{siteNo}
+		AND MEMBER_NO = #{memberNo}
+		AND GOODS_NO = #{goodsNo}
+    </delete>
+</mapper>

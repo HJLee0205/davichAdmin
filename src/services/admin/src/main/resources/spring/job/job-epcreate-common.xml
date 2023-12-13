@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+    
+    <!-- 네이버 지식쇼핑 상품 파일 생성  -->
+    <bean id="epFileCreateTasklet" class="net.danvi.dmall.biz.batch.goods.salestatus.job.GoodsEpCreateInfoTasklet" />
+    <batch:job id="epFileCreateJob">
+        <batch:step id="epFileCreateJobStep">
+            <batch:tasklet ref="epFileCreateTasklet" />
+        </batch:step>
+    </batch:job>
+</beans>

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   방문 경로 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.visitPathAnls">
+    <sql id="selectVisitPathListWhere">
+        AND tvpa.SITE_NO = #{siteNo}
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND A.YR = #{yr}
+            AND A.MM = #{mm}
+            AND A.DT = #{dd}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY A.SITE_NO, A.YR, A.MM, A.DT, A.VISIT_PATH_CD
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND A.EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY A.SITE_NO, A.YR, A.MM, A.DT, A.EQPM_GB_CD, A.VISIT_PATH_CD
+            </if>
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND A.YR = #{yr}
+            AND A.MM = #{mm}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY A.SITE_NO, A.YR, A.MM, A.VISIT_PATH_CD
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND A.EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY A.SITE_NO, A.YR, A.MM, A.EQPM_GB_CD, A.VISIT_PATH_CD
+            </if>
+        </if>
+
+        <if test="searchFrom != null and searchFrom != ''">
+        <![CDATA[
+        and to_date(#{searchFrom}, 'YYYY-MM-DD') < to_date(tvpa.YR||'-'||tvpa.MM||'-'||tvpa.DT, 'YYYY-MM-DD')
+        ]]>
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+        <![CDATA[
+        and to_date(#{searchTo}, 'YYYY-MM-DD') > to_date(tvpa.YR||'-'||tvpa.MM||'-'||tvpa.DT, 'YYYY-MM-DD') + 1
+        ]]>
+        </if>
+    </sql>
+
+    <!-- 방문 경로 분석 전체조회 -->
+    <select id="selectVisitPathList" parameterType="visitPathSO" resultType="visitPathVO">
+        /* statistics.visitPathAnls.selectVisitPathList */
+        SELECT fn_getCodeNm('VISIT_PATH_CD', tvpa.VISIT_PATH_CD) AS VISIT_PATH_NM ,
+               (select USER_DEFINE1 from TA_CMN_CD_DTL where GRP_CD='VISIT_PATH_CD' and CD = tvpa.VISIT_PATH_CD) as CLA,
+               sum(tvpa.VSTR_CNT) AS VSTR_CNT,
+               round(sum(tvpa.VSTR_CNT) / sum(sum(tvpa.VSTR_CNT)) over() * 100, 2) AS rto
+        FROM TT_VISIT_PATH_ANLS tvpa
+        where 1=1
+        <include refid="selectVisitPathListWhere"/>
+        GROUP BY tvpa.VISIT_PATH_CD
+        ORDER BY VSTR_CNT desc
+    </select>
+    <!-- 방문 경로 분석 총건수 조회 -->
+    <select id="selectVisitPathListTotalCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitPathListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) TCNT
+    </select>
+    <!-- 방문 경로 분석 조건적용 총건수 조회 -->
+    <select id="selectVisitPathListCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitPathListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) PGCNT
+    </select>
+
+
+    <!-- 방문예약 경로 분석 전체조회 -->
+    <select id="selectVisitRsvPathList" parameterType="visitPathSO" resultType="visitPathVO">
+        /* statistics.visitPathAnls.selectVisitRsvPathList */
+        SELECT ROWNUM AS RANK
+             , A.VISIT_PATH_NM
+             , NVL(A.VSTR_CNT,0) AS VSTR_CNT
+             , ROUND(NVL(RTO,0), 2) AS RTO
+          FROM (
+                   SELECT fn_getCodeNm('VISIT_PATH_CD', A.VISIT_PATH_CD) AS VISIT_PATH_NM
+                        , ROUND(SUM(A.VSTR_CNT),0) AS VSTR_CNT
+                        , SUM(A.VSTR_CNT) / SUM(SUM(A.VSTR_CNT)) OVER() * 100 AS RTO
+                     FROM TT_VISIT_RSV_PATH_ANLS A
+                    WHERE 1 = 1
+                    <include refid="selectVisitPathListWhere" />
+                ) A
+                    <include refid="common.sortSql" />
+    </select>
+    <!-- 방문예약 경로 분석 총건수 조회 -->
+    <select id="selectVisitRsvPathListTotalCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitRsvPathListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_RSV_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) TCNT
+    </select>
+    <!-- 방문예약 경로 분석 조건적용 총건수 조회 -->
+    <select id="selectVisitRsvPathListCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitRsvPathListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_RSV_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) PGCNT
+    </select>
+
+    <!-- 방문접수 경로 분석 전체조회 -->
+    <select id="selectVisitRsvComPathList" parameterType="visitPathSO" resultType="visitPathVO">
+        /* statistics.visitPathAnls.selectVisitRsvComPathList */
+        SELECT ROWNUM AS RANK
+             , A.VISIT_PATH_NM
+             , A.VSTR_CNT
+             , ROUND(RTO, 2) AS RTO
+          FROM (
+                   SELECT fn_getCodeNm('VISIT_PATH_CD', A.VISIT_PATH_CD) AS VISIT_PATH_NM
+                        , ROUND(SUM(A.VSTR_CNT),0) AS VSTR_CNT
+                        , SUM(A.VSTR_CNT) / SUM(SUM(A.VSTR_CNT)) OVER() * 100 AS RTO
+                     FROM TT_VISIT_RSVCOM_PATH_ANLS A
+                    WHERE 1 = 1
+                    <include refid="selectVisitPathListWhere" />
+                ) A
+                    <include refid="common.sortSql" />
+    </select>
+    <!-- 방문접수 경로 분석 총건수 조회 -->
+    <select id="selectVisitRsvComPathListTotalCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitRsvComPathListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_RSVCOM_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) TCNT
+    </select>
+    <!-- 방문접수 경로 분석 조건적용 총건수 조회 -->
+    <select id="selectVisitRsvComPathListCount" parameterType="visitPathSO" resultType="Integer">
+        /* statistics.visitPathAnls.selectVisitRsvComPathListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.VISIT_PATH_CD
+                      , SUM(A.VSTR_CNT) AS VSTR_CNT
+                   FROM TT_VISIT_RSVCOM_PATH_ANLS A
+                  WHERE 1 = 1
+                  <include refid="selectVisitPathListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

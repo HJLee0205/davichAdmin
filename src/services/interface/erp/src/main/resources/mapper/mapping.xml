@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapping">
+
+	<parameterMap type="com.davichmall.ifapi.cmmn.mapp.dto.OrderMapDTO" id="orderMapDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cmmn.mapp.dto.OffPointMapDTO" id="offPntMapDto"></parameterMap>
+	<resultMap type="com.davichmall.ifapi.cmmn.mapp.dto.OrderMapDTO" id="orderMapResultDto" autoMapping="true"></resultMap>
+	<resultMap type="com.davichmall.ifapi.cmmn.mapp.dto.OffPointMapDTO" id="offPntMapResultDto">
+		<result column="mallOrderNo" property="mallOrderNo" />
+		<result column="mallOrderType" property="mallOrderType" />
+		<result column="erpDates" property="erpDates" />
+		<result column="erpMemberNo" property="erpMemberNo" />
+		<collection property="erpSeqNoList" ofType="string">
+			<result column="erpSeqNo"  />
+		</collection>
+	</resultMap>
+
+	<!-- ERP 상품코드로 쇼핑몰 상품 코드(옵션코드) 조회 -->
+	<select id="selectMallItemCode" parameterType="string" resultType="string">
+		select mall_itm_code from TI_ERP_PRD_MAPPING
+		where erp_itm_code = #{erpItmCode}
+	</select>
+
+	<!-- 쇼핑몰 상품코드(옵션코드)로 ERP상품코드 조회 -->
+	<select id="selectErpItemCode" parameterType="string" resultType="string">
+		select erp_itm_code from TI_ERP_PRD_MAPPING
+		where mall_itm_code = #{mallItmCode}
+	</select>
+	
+	<!-- 쇼핑몰-ERP 상품코드 매핑 정보 등록 -->
+	<insert id="insertItemCodeMap" parameterType="map">
+		<!-- MERGE INTO TI_ERP_PRD_MAPPING
+		USING DUAL
+		ON (erp_itm_code = #{erpItmCode})
+		WHEN MATCHED THEN
+			UPDATE SET
+				 mall_goods_no=#{mallGoodsNo}
+				,mall_itm_code=#{mallItmCode}
+		WHEN NOT MATCHED THEN
+			insert (mall_goods_no, mall_itm_code, erp_itm_code)
+			values (#{mallGoodsNo}, #{mallItmCode}, #{erpItmCode}) -->
+			
+		insert into TI_ERP_PRD_MAPPING (mall_goods_no, mall_itm_code, erp_itm_code)
+			values (#{mallGoodsNo}, #{mallItmCode}, #{erpItmCode})
+	</insert>
+	
+	<!-- 쇼핑몰-ERP 상품코드 매핑 정보 삭제 -->
+	<delete id="deleteItemCodeMap" parameterType="map">
+		delete from TI_ERP_PRD_MAPPING
+		where mall_goods_no = #{mallGoodsNo}
+		<if test="mallItmCode != null and mallItmCode != ''">
+		  and mall_itm_code = #{mallItmCode}
+		</if>
+	</delete>
+	
+	<!-- ERP 주문번호로 쇼핑몰 주문번호 조회 -->
+	<select id="selectMallOrderNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select mall_order_no as mallOrderNo
+			, mall_claim_no as mallClaimNo
+		from TI_ERP_ORD_MAPPING
+		where erp_ord_date = #{erpOrdDate}
+		  and erp_str_code = #{erpStrCode}
+		  and erp_ord_slip = #{erpOrdSlip}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰 주문번호로 ERP 주문번호 조회 -->
+	<select id="selectErpOrderNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select erp_ord_date as erpOrdDate
+			, erp_str_code as erpStrCode
+			, erp_ord_slip as erpOrdSlip
+		from TI_ERP_ORD_MAPPING
+		where mall_order_no = #{mallOrderNo}
+		<choose>
+			<when test="ordRute != null and ordRute != ''">
+				and ord_rute = #{ordRute}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="mallClaimNo != null and mallClaimNo != ''">
+				and mall_claim_no = #{mallClaimNo}
+			</when>
+			<otherwise>
+				and mall_claim_no is null
+			</otherwise>
+		</choose>
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰 주문번호로 반품재발주 포함 마지막 주문번호 매핑 조회(교환 재발주는 제회) -->
+	<select id="selectLatestOrderMapWithoutChangeReorder" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select * from (
+			select * from (
+				select a.mall_order_no as mallOrderNo
+					, a.mall_claim_no as mallClaimNo
+					, a.erp_ord_date as erpOrdDate
+					, a.erp_str_code as erpStrCode
+					, a.erp_ord_slip as erpOrdSlip
+			        , (select claim_cd from to_claim where claim_no = a.mall_claim_no and ord_no = mall_order_no and rownum = 1) as claim_cd
+			        , a.reg_dttm
+				from TI_ERP_ORD_MAPPING a
+				where a.mall_order_no = #{mallOrderNo}
+		  		and a.del_yn = 'N'
+		  	)
+		  	where claim_cd is null
+		  	   or claim_cd in (11, 12)
+			order by reg_dttm desc
+		)
+		where rownum = 1
+	</select>
+	
+	<!-- 쇼핑몰-ERP 주문번호 매핑 정보 등록 -->
+	<insert id="insertOrderNoMap" parameterMap="orderMapDto">
+		insert into TI_ERP_ORD_MAPPING (
+			mall_order_no
+			, mall_claim_no
+			, erp_ord_date
+			, erp_str_code
+			, erp_ord_slip
+			, ord_rute
+			, del_yn
+		) values (
+			#{mallOrderNo}
+			, #{mallClaimNo, jdbcType=VARCHAR}
+			, #{erpOrdDate}
+			, #{erpStrCode}
+			, #{erpOrdSlip}
+			, #{ordRute}
+			, 'N'
+		)
+	</insert>
+	
+	<!-- ERP 주문상세번호로 쇼핑몰 주문상세번호 조회 -->
+	<select id="selectMallOrderDtlNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select mall_order_no as mallOrderNo
+			, mall_order_dtl_no as mallOrderDtlNo
+			, mall_claim_no as mallClaimNo
+		from TI_ERP_ORD_DTL_MAPPING
+		where erp_ord_date = #{erpOrdDate}
+		  and erp_str_code = #{erpStrCode}
+		  and erp_ord_slip = #{erpOrdSlip}
+		  and erp_order_dtl_no = #{erpOrderDtlNo}
+		  and erp_order_add_no = #{erpOrderAddNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰 주문상세번호로 ERP주문상세번호 조회 -->
+	<select id="selectErpOrderDtlNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select erp_ord_date as erpOrdDate
+			, erp_str_code as erpStrCode
+			, erp_ord_slip as erpOrdSlip
+			, erp_order_dtl_no as erpOrderDtlNo
+			, erp_order_add_no as erpOrderAddNo
+		from TI_ERP_ORD_DTL_MAPPING
+		where mall_order_no = #{mallOrderNo}
+		  and mall_order_dtl_no = #{mallOrderDtlNo}
+		<choose>
+			<when test="mallClaimNo != null and mallClaimNo != ''">
+				and mall_claim_no = #{mallClaimNo}
+			</when>
+			<otherwise>
+				and mall_claim_no is null
+			</otherwise>
+		</choose>
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰-ERP 주문상세번호 매핑 정보 등록 -->
+	<insert id="insertOrderDtlNoMap" parameterMap="orderMapDto">
+		insert into TI_ERP_ORD_DTL_MAPPING (
+			mall_order_no
+			, mall_claim_no
+			, mall_order_dtl_no
+			, erp_ord_date
+			, erp_str_code
+			, erp_ord_slip
+			, erp_order_dtl_no
+			, erp_order_add_no
+			, del_yn
+		) values (
+			#{mallOrderNo}
+			, #{mallClaimNo, jdbcType=VARCHAR}
+			, #{mallOrderDtlNo}
+			, #{erpOrdDate}
+			, #{erpStrCode}
+			, #{erpOrdSlip}
+			, #{erpOrderDtlNo}
+			, #{erpOrderAddNo}
+			, 'N'
+		)
+	</insert>
+	
+	<!-- 쇼핑몰 주문번호로 주문 번호 매핑 지우기 -->
+	<update id="deleteOrderMap" parameterMap="orderMapDto">
+		update TI_ERP_ORD_MAPPING
+		set del_yn = 'Y'
+		  , upd_dttm = sysdate
+		where mall_order_no = #{mallOrderNo}
+		  and del_yn = 'N'
+	</update>
+	
+	<!-- ERP 주문번호 기준으로 주문 상세 번호 매핑 지우기 -->
+	<update id="deleteOrderDtlMap" parameterMap="orderMapDto">
+		update TI_ERP_ORD_DTL_MAPPING
+		set del_yn = 'Y'
+		  , upd_dttm = sysdate
+		where mall_order_no = #{mallOrderNo}
+		  and del_yn = 'N'
+	</update>
+	
+	<!-- 쇼핑몰-ERP 반품번호 매핑 정보 등록 -->
+	<insert id="insertClaimNoMap" parameterMap="orderMapDto">
+		insert into TI_ERP_RTN_MAPPING (
+			mall_claim_no
+			, mall_order_no
+			, mall_order_dtl_no
+			, erp_ord_date
+			, erp_str_code
+			, erp_ord_slip
+			, erp_order_dtl_no
+			, erp_order_add_no
+			, del_yn
+		) values (
+			#{mallClaimNo}
+			, #{mallOrderNo}
+			, #{mallOrderDtlNo}
+			, #{erpOrdDate}
+			, #{erpStrCode}
+			, #{erpOrdSlip}
+			, #{erpOrderDtlNo}
+			, #{erpOrderAddNo}
+			, 'N'
+		)
+	</insert>
+	
+	<!-- 쇼핑몰 반품번호로 ERP 주문 상세 번호 조회 -->
+	<select id="selectErpClaimNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select erp_ord_date as erpOrdDate
+			, erp_str_code as erpStrCode
+			, erp_ord_slip as erpOrdSlip
+			, erp_order_dtl_no as erpOrderDtlNo
+			, erp_order_add_no as erpOrderAddNo
+		from TI_ERP_RTN_MAPPING
+		where mall_claim_no = #{mallClaimNo}
+		<if test="mallOrderNo != null and mallOrderNo != ''">
+		  and mall_order_no = #{mallOrderNo}
+		</if>
+		<if test="mallOrderDtlNo != null and mallOrderDtlNo != ''">
+		  and mall_order_dtl_no = #{mallOrderDtlNo}
+		</if>
+		  and del_yn = 'N'
+		  and rownum = 1
+	</select>
+	
+	<!-- ERP 주문상세 번호로 쇼핑몰 반품번호 조회 -->
+	<select id="selectMallClaimNo" parameterMap="orderMapDto" resultMap="orderMapResultDto">
+		select mall_claim_no as mallClaimNo
+			, mall_order_no as mallOrderNo
+			, mall_order_dtl_no as mallOrderDtlNo
+		from TI_ERP_RTN_MAPPING
+		where erp_ord_date = #{erpOrdDate}
+		  and erp_str_code = #{erpStrCode}
+		  and erp_ord_slip = #{erpOrdSlip}
+		  and erp_order_dtl_no = #{erpOrderDtlNo}
+		  and erp_order_add_no = #{erpOrderAddNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰 회원번호로 ERP 회원번호 조회 -->
+	<select id="selectErpMemberNo" parameterType="string" resultType="string">
+		select erp_member_no from TI_ERP_MEM_MAPPING
+		where mall_member_no = #{mallMemberNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- ERP 회원번호로 쇼핑몰 회원번호 조회 -->
+	<select id="selectMallMemberNo" parameterType="string" resultType="string">
+		select mall_member_no from TI_ERP_MEM_MAPPING
+		where erp_member_no = #{erpMemberNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰-ERP 회원번호 매핑 정보 등록 -->
+	<insert id="insertMemberMap" parameterType="map">
+		insert into TI_ERP_MEM_MAPPING (mall_member_no, erp_member_no, erp_member_lvl, del_yn)
+		values (#{mallMemberNo}, #{erpMemberNo}, #{erpMemberLvl}, 'N')
+	</insert>
+	
+	<!-- 쇼핑몰-ERP 회원번호 매핑 정보 삭제 (쇼핑몰 회원번호 기준) -->
+	<update id="deleteMemberMapByMall" parameterType="string">
+		update TI_ERP_MEM_MAPPING
+		set del_yn = 'Y'
+		  , upd_dttm = sysdate
+		where mall_member_no = #{mallMemberNo}
+	</update>
+	
+	<!-- 쇼핑몰-ERP 회원번호 매핑 정보 삭제 (ERP 회원번호 기준) -->
+	<update id="deleteMemberMapByErp" parameterType="string">
+		update TI_ERP_MEM_MAPPING
+		set del_yn = 'Y'
+		  , upd_dttm = sysdate
+		where erp_member_no = #{erpMemberNo}
+	</update>
+	
+	<!-- 쇼핑몰 -ERP 사전예약 매핑정보 등록 -->
+	<insert id="insertPOMap" parameterType="map">
+		insert into TI_ERP_PO_MAPPING (mall_prmt_no, erp_prmt_no)
+		values (#{mallPrmtNo}, #{erpPrmtNo})
+	</insert>
+	
+	<!-- 쇼핑몰 기획전 번호로 ERP 사전예약 번호 조회  -->
+	<select id="selectErpPrmtNo" parameterType="string" resultType="string">
+		select erp_prmt_no
+		from TI_ERP_PO_MAPPING
+		where mall_prmt_no = #{mallPrmtNo}
+	</select>
+	
+	<!-- ERP 기획전 번호로 쇼핑몰 사전예약 번호 조회 -->
+	<select id="selectMallPrmtNo" parameterType="string" resultType="string">
+		select mall_prmt_no
+		from TI_ERP_PO_MAPPING
+		where erp_prmt_no = #{mallPrmtNo}
+	</select>
+	
+	<!-- 쇼핑몰-ERP 오프라인포인트 매핑 정보 등록 -->
+	<insert id="insertOfflinePointMap" parameterMap="offPntMapDto">
+		insert into TI_ERP_OFFLINE_PNT_MAPPING (
+			mall_order_no
+			, mall_order_type
+			, erp_dates
+			, erp_member_no
+			, erp_seq_no
+		) values (
+			#{mallOrderNo}
+			, #{mallOrderType}
+			, #{erpDates}
+			, #{erpMemberNo}
+			, #{erpSeqNo}
+		)
+	</insert>
+	
+	<!-- 쇼핑몰 주문번호로 ERP 포인트 로그번호 조회 -->
+	<select id="selectOfflinePointMapByMall" parameterMap="offPntMapDto" resultMap="offPntMapResultDto">
+		select mall_order_no as "mallOrderNo"
+			, mall_order_type as "mallOrderType"
+			, erp_dates as "erpDates"
+			, erp_member_no as "erpMemberNo"
+			, erp_seq_no as "erpSeqNo"
+		from TI_ERP_OFFLINE_PNT_MAPPING
+		where mall_order_no = #{mallOrderNo}
+		  and mall_order_type = #{mallOrderType}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 쇼핑몰 주문번호로 ERP 포인트 로그 삭제 -->
+	<update id="deleteOfflinePointMapByMall" parameterMap="offPntMapDto">
+		update TI_ERP_OFFLINE_PNT_MAPPING
+		set del_yn = 'Y'
+		  , upd_dttm = sysdate
+		where mall_order_no = #{mallOrderNo}
+		  and mall_order_type = #{mallOrderType}
+		  and del_yn = 'N'
+	</update>
+	
+</mapper>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 백오피스 관련 프로퍼티 설정 -->
+<properties>
+    <entry key="system.upload.file.size">52428800</entry><!-- 업로드 파일 용량 50MB -->
+    <!--<entry key="system.homepage.url">http://www.danvistory.com</entry>&lt;!&ndash; 홈페이지 서버 URL &ndash;&gt;-->
+    <entry key="system.homepage.url">http://www.danvistory.com</entry><!-- 홈페이지 서버 URL --><!-- 리모트는 아님 -->
+</properties>

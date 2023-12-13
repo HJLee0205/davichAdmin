@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.delivery">
+
+    <sql id="selectCourierListWhere">
+        <!-- 등록일자 시작일 조건 -->
+        <if test="searchDateFrom != null and searchDateFrom != ''">
+          <![CDATA[
+            AND REG_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+          ]]>
+          </if>
+
+        <!-- 등록일자 종료일 조건 -->
+        <if test="searchDateTo != null and searchDateTo != ''">
+          <![CDATA[
+            AND REG_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD') + 1
+          ]]>
+        </if>
+
+        <!-- 검색어 조건 (현재 택배사 명 밖에 없음)-->
+        <if test="searchWord != null and searchWord != ''">
+            <choose>
+                <when test = "searchType == 1">
+                    AND COURIER_NM LIKE '%'||#{searchWord}||'%'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 택배사 목록 정보 조회 -->
+    <select id="selectCourierListPaging" resultType="net.danvi.dmall.biz.app.setup.delivery.model.CourierVO">
+        /* setup.delivery.selectCourierListPaging - 택배사 목록 조회 */
+        SELECT *
+        FROM
+        (
+        	select ROWNUM AS PAGING_NUM, T.*, tot_cnt - NUM + 1 as ROW_NUM
+        	FROM
+        	(
+				select SORT_NUM AS NUM, AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+		               SELECT
+			              COURIER_CD
+			            , COURIER_NM
+			            , USE_YN
+			            , CASE USE_YN WHEN 'Y' THEN '사용'
+							ELSE '사용안함' END AS VIEW_USE_YN
+			            , DLVRC
+						, LINK_USE_YN
+						, LINK_ID
+						, LINK_PW
+						, LINK_STORE_ID
+						, LINK_CUSTNO
+						, LINK_CONTRT_PT_NM
+						, PRIVACY_CLCT_APPLY_YN
+						, PRIVACY_USE_APPLY_YN
+			            , REGR_NO
+			            , REG_DTTM
+			            , UPDR_NO
+			            , UPD_DTTM
+			           FROM TS_COURIER
+			           WHERE SITE_NO = #{siteNo}
+			           <!-- AND USE_YN = 'Y' -->
+		               <include refid="selectCourierListWhere" />
+					   <include refid="common.sortSql" />
+					) A
+				) AA
+			) T
+		)
+        <include refid="common.pageSql" />
+    </select>
+
+
+    <select id="selectCourierList" resultType="String">
+        /* setup.delivery.selectCourierList - 택배사 목록 조회 */
+        SELECT
+            COURIER_CD
+        FROM TS_COURIER
+        WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectCourierListPagingTotalCount" resultType="Integer">
+        /* setup.delivery.selectCourierListPagingTotalCount - 택배사 목록 조회 */
+        SELECT  count(*)
+        FROM    TS_COURIER
+        WHERE   SITE_NO = #{siteNo}
+        <!-- AND     USE_YN = 'Y' -->
+    </select>
+
+    <select id="selectCourierListPagingCount" resultType="Integer">
+        /* setup.delivery.selectCourierListPagingCount - - 택배사 목록 조회 */
+        SELECT  count(*)
+        FROM    TS_COURIER
+        WHERE   SITE_NO = #{siteNo}
+        <!-- AND     USE_YN = 'Y' -->
+        <include refid="selectCourierListWhere" />
+    </select>
+
+    <!-- 택배사 정보 조회 -->
+    <select id="selectCourier" parameterType="net.danvi.dmall.biz.app.setup.delivery.model.CourierVO" resultType="net.danvi.dmall.biz.app.setup.delivery.model.CourierVO">
+        /* setup.delivery.selectCourier - - 택배사 정보 조회 */
+        SELECT
+              SITE_NO
+            , COURIER_CD
+            , COURIER_NM
+            , USE_YN
+            , DLVRC
+			, LINK_USE_YN
+			, LINK_ID
+			, LINK_PW
+			, LINK_STORE_ID
+			, LINK_CUSTNO
+			, LINK_CONTRT_PT_NM
+			, PRIVACY_CLCT_APPLY_YN
+			, PRIVACY_USE_APPLY_YN
+            , REGR_NO
+            , TO_DATE(REG_DTTM, 'YYYY-MM-DD') AS REG_DTTM
+            , UPDR_NO
+            , UPD_DTTM
+        FROM TS_COURIER
+        WHERE SITE_NO = #{siteNo}
+          <if test="courierCd != null and courierCd != ''">
+			  AND COURIER_CD = #{courierCd}
+		  </if>
+          <if test="courierNm != null and courierNm != ''">
+			  AND COURIER_NM = #{courierNm}
+		  </if>
+    </select>
+
+    <!-- 택배사 추가 신규 등록 -->
+    <insert id="insertCourier">
+        /* setup.delivery.insertCourier - - 택배사 정보 등록 수정 */
+    	MERGE INTO TS_COURIER
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND COURIER_CD = #{courierCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          COURIER_NM = #{courierNm}
+		        , USE_YN = #{useYn}
+		        , DLVRC = #{dlvrc}
+	            , LINK_USE_YN = #{linkUseYn}
+	            , LINK_ID = #{linkID}
+	            , LINK_PW = #{linkPw}
+	            , LINK_STORE_ID = #{linkStoreID}
+	            , LINK_CUSTNO = #{linkCustno}
+	            , LINK_CONTRT_PT_NM = #{linkContrtPtNm}
+	            , PRIVACY_CLCT_APPLY_YN = #{privacyClctApplyYn}
+	            , PRIVACY_USE_APPLY_YN = #{privacyUseApplyYn}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	              SITE_NO
+	            , COURIER_CD
+	            , COURIER_NM
+	            , USE_YN
+	            , DLVRC
+	            , LINK_USE_YN
+	            , LINK_ID
+	            , LINK_PW
+	            , LINK_STORE_ID
+	            , LINK_CUSTNO
+	            , LINK_CONTRT_PT_NM
+	            , PRIVACY_CLCT_APPLY_YN
+	            , PRIVACY_USE_APPLY_YN
+	            , REGR_NO
+	            , REG_DTTM
+		    ) VALUES (
+				 #{siteNo}
+				,#{chgCourierCd}
+				,#{courierNm}
+				,#{useYn}
+				,#{dlvrc}
+				,#{linkUseYn}
+	            ,#{linkID}
+	            ,#{linkPw}
+	            ,#{linkStoreID}
+	            ,#{linkCustno}
+	            ,#{linkContrtPtNm}
+	            ,#{privacyClctApplyYn}
+	            ,#{privacyUseApplyYn}
+				,#{regrNo}
+		        ,sysdate
+		    )
+    </insert>
+
+    <update id="updateCourierForUse">
+    /* setup.delivery.updateCourierForUse - - 택배사 사용여부 수정 */
+    UPDATE TS_COURIER
+    SET
+          COURIER_NM = #{courierNm}
+        , USE_YN = #{useYn}
+        , DLVRC = #{dlvrc}
+        , REG_DTTM = #{regDttm}
+        , UPDR_NO = #{updrNo}
+        , UPD_DTTM = sysdate
+    WHERE SITE_NO = #{siteNo}
+    AND COURIER_CD = #{courierCd}
+    </update>
+
+    <delete id="deleteCourier">
+        /* setup.delivery.deleteCourier - - 택배사 정보 삭제 */
+        DELETE FROM TS_COURIER
+        WHERE SITE_NO = #{siteNo}
+        AND COURIER_CD = #{courierCd}
+    </delete>
+
+
+
+
+    <!-- 배송관련 설정정보 조회 -->
+    <select id="selectDeliveryConfig" parameterType="long" resultType="deliveryConfigVO">
+        /* setup.delivery.selectDeliveryConfig - 배송관련 설정정보 조회 */
+            SELECT
+                  ts.SITE_NO
+				, ts.COURI_USE_YN
+				, ts.DIRECT_VISIT_RECPT_YN
+				, ts.DEFAULT_DLVRC_TYPE_CD
+				, ts.DEFAULT_DLVRC
+				, ts.DEFAULT_DLVR_MIN_AMT
+				, ts.DEFAULT_DLVR_MIN_DLVRC
+				, ts.DLVR_PAYMENT_KIND_CD
+				, ts.REG_DTTM
+            FROM    TS_SITE ts
+            WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 배송관련 설정정보 수정 -->
+    <update id="updateDeliveryConfig">
+    	/* setup.delivery.updateDeliveryConfig - 배송관련 설정정보 등록 수정 */
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          COURI_USE_YN = #{couriUseYn}
+		        , DIRECT_VISIT_RECPT_YN = #{directVisitRecptYn}
+		        , DEFAULT_DLVRC_TYPE_CD = #{defaultDlvrcTypeCd}
+		        , DEFAULT_DLVRC = #{defaultDlvrc}
+		        , DEFAULT_DLVR_MIN_AMT = #{defaultDlvrMinAmt}
+		        , DEFAULT_DLVR_MIN_DLVRC = #{defaultDlvrMinDlvrc}
+		        , DLVR_PAYMENT_KIND_CD = #{dlvrPaymentKindCd}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+				, COURI_USE_YN
+				, DIRECT_VISIT_RECPT_YN
+				, DEFAULT_DLVRC_TYPE_CD
+				, DEFAULT_DLVRC
+				, DEFAULT_DLVR_MIN_AMT
+				, DEFAULT_DLVR_MIN_DLVRC
+				, DLVR_PAYMENT_KIND_CD
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{couriUseYn}
+				, #{directVisitRecptYn}
+				, #{defaultDlvrcTypeCd}
+				, #{defaultDlvrc}
+				, #{defaultDlvrMinAmt}
+				, #{defaultDlvrMinDlvrc}
+				, #{dlvrPaymentKindCd}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+
+    <!-- 배송지역 설정목록 조회(페이징) -->
+    <select id="selectDeliveryListPaging" parameterType="long" resultType="deliveryAreaVO">
+        /* goods.delivery.selectDeliveryListPaging - 배송지역 설정목록 조회(페이징) */
+        SELECT *
+        FROM
+        (
+		    select A.*,  count(*) over() as tot_cnt, ROWNUM AS PAGING_NUM, ROWNUM
+		    from
+		    (
+	             SELECT
+	                      SITE_NO
+						, AREA_DLVR_SET_NO
+						, POST_NO
+						, DLVRC
+						, NUM_ADDR
+						, ROADNM_ADDR
+						, AREA_NM
+						, REG_DTTM
+                    FROM  TS_AREA_DLVR_SET tad
+                    WHERE SITE_NO = #{siteNo}
+              <include refid="common.sortSql" />
+			) A
+		)
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 배송지역 설정목록 조회(전체) -->
+    <select id="selectDeliveryList" parameterType="long" resultType="deliveryAreaVO">
+        /* goods.delivery.selectDeliveryList - 배송지역 설정목록 조회(전체) */
+        SELECT *
+        FROM
+        (
+		    select A.*,  count(*) over() as tot_cnt, ROWNUM AS PAGING_NUM, ROWNUM
+		    from
+		    (
+		    <if test="fsellerNo != null and fsellerNo != ''">
+		    	<foreach collection="fsellerNo" item="a" separator="UNION ALL">
+                SELECT
+                         SITE_NO
+                       , AREA_DLVR_SET_NO
+                       , POST_NO
+                       , DLVRC
+                       , NUM_ADDR
+                       , ROADNM_ADDR
+                       , AREA_NM
+                       , REG_DTTM
+                       , SELLER_NO
+                   FROM  TS_AREA_DLVR_SET tad
+                   WHERE SITE_NO = #{siteNo}
+
+				   AND SELLER_NO =#{a}
+
+
+				   AND POST_NO = #{postNo}
+
+             		</foreach>
+              </if>
+              <if test="fsellerNo == null and fsellerNo == ''">
+              SELECT
+                         SITE_NO
+                       , AREA_DLVR_SET_NO
+                       , POST_NO
+                       , DLVRC
+                       , NUM_ADDR
+                       , ROADNM_ADDR
+                       , AREA_NM
+                       , REG_DTTM
+                       , SELLER_NO
+                   FROM  TS_AREA_DLVR_SET tad
+                   WHERE SITE_NO = #{siteNo}
+              </if>
+              <include refid="common.sortSql" />
+			) A
+		)
+    </select>
+
+    <select id="selectDeliveryListPagingTotalCount" resultType="Integer">
+        /* goods.delivery.selectDeliveryListPagingTotalCount - 배송지역 설정목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_AREA_DLVR_SET tad
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectDeliveryListPagingCount" resultType="Integer">
+        /* goods.delivery.selectDeliveryListPagingCount - 배송지역 설정목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_AREA_DLVR_SET tad
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectCountDeliveryArea" resultType="Integer">
+        /* goods.delivery.selectCountDeliveryArea - 배송지역 설정여부 확인 */
+            SELECT count(1)
+              FROM  TS_AREA_DLVR_SET
+             WHERE SITE_NO = #{siteNo}
+               AND POST_NO = #{postNo}
+
+    </select>
+
+    <!-- 배송지역 설정정보 수정 -->
+    <update id="updateDeliveryArea">
+    	/* setup.delivery.updateDeliveryArea - 배송지역 설정정보 등록 수정 */
+    	MERGE INTO TS_AREA_DLVR_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND AREA_DLVR_SET_NO = #{areaDlvrSetNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          POST_NO = #{postNo}
+				, DLVRC = #{dlvrc}
+				, NUM_ADDR = #{numAddr}
+				, ROADNM_ADDR = #{roadnmAddr}
+				, AREA_NM = #{areaNm}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+				, AREA_DLVR_SET_NO
+				, POST_NO
+				, DLVRC
+				, NUM_ADDR
+				, ROADNM_ADDR
+				, AREA_NM
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+				  #{siteNo}
+				, #{areaDlvrSetNo}
+<!--
+				  <if test="areaDlvrSetNo == null or areaDlvrSetNo == ''">
+					, fn_getSeq(#{siteNo}, 'TS_AREA_DLVR_SET')
+			      </if>
+			      <if test="areaDlvrSetNo != null and areaDlvrSetNo != ''">
+		            , #{areaDlvrSetNo}
+		          </if>
+-->
+				, #{postNo}
+				, #{dlvrc}
+				, #{numAddr}
+				, #{roadnmAddr}
+				, #{areaNm}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- 기본 배송지역 설정정보 적용 -->
+    <update id="updateApplyDefaultDeliveryArea">
+    /* setup.delivery.updateApplyDefaultDeliveryArea - 기본 배송지역 설정정보 적용 */
+    <!--  -->
+    <!--
+	UPDATE TS_AREA_DLVR_SET A JOIN (
+	    SELECT POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM
+	          FROM TS_AREA_DLVR_DEFAULT
+	) B ON SITE_NO = #{siteNo} AND A.POST_NO = B.POST_NO
+	SET A.DLVRC = B.DLVRC
+      , A.NUM_ADDR = B.NUM_ADDR
+      , A.ROADNM_ADDR = B.ROADNM_ADDR
+      , A.AREA_NM = B.AREA_NM
+      , A.UPDR_NO =  #{updrNo}
+      , A.UPD_DTTM = sysdate
+
+	INSERT INTO TS_AREA_DLVR_SET
+	 (SITE_NO, AREA_DLVR_SET_NO, POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, REGR_NO, REG_DTTM)
+	    SELECT #{siteNo}, fn_getSeq(#{siteNo}, 'TS_AREA_DLVR_SET'), POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, #{regrNo}, sysdate
+	      FROM TS_AREA_DLVR_DEFAULT A
+	     WHERE NOT EXISTS (SELECT * FROM TS_AREA_DLVR_SET B WHERE B.SITE_NO = #{siteNo} AND B.POST_NO = A.POST_NO)
+
+	 -->
+
+	 DELETE FROM TS_AREA_DLVR_SET WHERE SITE_NO = #{siteNo}
+
+	 INSERT INTO TS_AREA_DLVR_SET
+     (SITE_NO, AREA_DLVR_SET_NO, POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, REGR_NO, REG_DTTM)
+        SELECT #{siteNo}, fn_getSeq(#{siteNo}, 'TS_AREA_DLVR_SET'), POST_NO, DLVRC, NUM_ADDR, ROADNM_ADDR, AREA_NM, #{regrNo}, sysdate
+          FROM TA_AREA_DLVR_DEFAULT
+
+    </update>
+
+    <!-- 배송지역 설정정보 모두 삭제 -->
+    <delete id="deleteAllDeliveryArea">
+        /* setup.delivery.deleteAllDeliveryArea - 배송지역 설정정보 모두 삭제 */
+        DELETE  FROM TS_AREA_DLVR_SET
+        WHERE   SITE_NO = #{siteNo}
+    </delete>
+
+    <!-- 배송지역 설정정보 삭제 -->
+    <delete id="deleteDeliveryArea">
+        /* setup.delivery.deleteDeliveryArea - 배송지역 설정정보 삭제 */
+        DELETE  FROM TS_AREA_DLVR_SET
+        WHERE   SITE_NO = #{siteNo}
+        AND     AREA_DLVR_SET_NO = #{areaDlvrSetNo}
+    </delete>
+
+    <sql id="selectHscdListPagingWhere">
+        <!-- 검색어 조건 -->
+        <if test="searchWordType != null and searchWordType != '' and searchWord != null and searchWord != ''">
+            <choose>
+                <when test="searchWordType == 1">
+                    AND ITEM LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchWordType == 2">
+                    AND HSCD LIKE '%'||#{searchWord}||'%'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- HS코드 목록 조회(페이징) -->
+    <select id="selectHscdListPaging" parameterType="net.danvi.dmall.biz.app.setup.delivery.model.HscdSO" resultType="net.danvi.dmall.biz.app.setup.delivery.model.HscdVO">
+        /* goods.delivery.selectHscdListPaging - HS코드 목록 조회(페이징) */
+        SELECT *
+        FROM
+        (
+		    select A.*,  count(*) over() as tot_cnt, ROWNUM AS PAGING_NUM, ROWNUM
+		    from
+		    (
+                 SELECT
+                          SITE_NO
+                        , HSCD_SEQ
+                        , HSCD
+                        , ITEM
+                        , REG_DTTM
+                    FROM  TS_HSCD
+                    WHERE SITE_NO = #{siteNo}
+              <include refid="selectHscdListPagingWhere" />
+              <include refid="common.sortSql" />
+			) A
+		)
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectHscdListPagingTotalCount" resultType="Integer">
+        /* goods.delivery.selectHscdListPagingTotalCount - HS코드 목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_HSCD
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectHscdListPagingCount" resultType="Integer">
+        /* goods.delivery.selectHscdListPagingCount - HS코드 목록 조회(페이징) */
+        SELECT  count(*)
+          FROM  TS_HSCD
+         WHERE SITE_NO = #{siteNo}
+         <include refid="selectHscdListPagingWhere" />
+    </select>
+
+    <!-- HS코드 정보 수정 -->
+    <update id="updateHscd">
+    	/* setup.delivery.updateHscd - HS코드 정보 등록 수정 */
+    	MERGE INTO TS_HSCD
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND HSCD_SEQ = #{hscdSeq})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          HSCD = #{hscd}
+		        , ITEM = #{item}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+		        , HSCD_SEQ
+		        , HSCD
+		        , ITEM
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{hscdSeq}
+		        , #{hscd}
+		        , #{item}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- HS코드 정보 삭제 -->
+    <delete id="deleteHscd">
+        /* setup.delivery.deleteHscd - HS코드 정보 삭제 */
+        DELETE  FROM TS_HSCD
+        WHERE   SITE_NO = #{siteNo}
+        AND     HSCD_SEQ = #{hscdSeq}
+    </delete>
+
+</mapper>

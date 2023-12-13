@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   방문자 IP 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.visitIpAnls">
+    <sql id="selectVisitIpListWhere">
+        AND tvia.SITE_NO = #{siteNo}
+        <if test="searchFrom != null and searchFrom != ''">
+        <![CDATA[
+        and to_date(#{searchFrom}, 'YYYY-MM-DD') < to_date(tvia.YR||tvia.MM||tvia.DT, 'YYYYMMDD')
+        ]]>
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+        <![CDATA[
+        and to_date(#{searchTo}, 'YYYY-MM-DD') > to_date(tvia.YR||tvia.MM||tvia.DT, 'YYYYMMDD') + 1
+        ]]>
+        </if>
+    </sql>
+
+    <!-- 방문자 IP 분석 전체조회 -->
+    <select id="selectVisitIpList" parameterType="visitIpSO" resultType="visitIpVO">
+        /* statistics.visitIpAnls.selectVisitIpList */
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, rownum as RANK, A.*
+                FROM
+                    (
+                        SELECT tvia.VISIT_IP ,
+                               fn_getCodeNm('VISIT_PATH_CD', tvia.VISIT_PATH_CD) AS VISIT_PATH_NM ,
+                               sum(tvia.VISIT_CNT) AS VISIT_CNT,
+                               sum(tvia.PAGE_VW) AS PAGE_VW,
+                               to_char(to_date(max(tvia.CONNECT_TIME) , 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') AS CONNECT_TIME
+                        FROM TT_VSTR_IP_ANLS tvia
+                        WHERE 1=1
+                        <include refid="selectVisitIpListWhere"/>
+                        GROUP BY tvia.VISIT_IP, tvia.VISIT_PATH_CD
+                        ORDER BY VISIT_CNT DESC
+                    ) A
+            ) AA
+        <include refid="common.pageSql"/>
+    </select>
+    <!-- 방문자 IP 분석 총건수 조회 -->
+    <select id="selectVisitIpListTotalCount" parameterType="visitIpSO" resultType="Integer">
+        /* statistics.visitIpAnls.selectVisitIpListTotalCount */
+        SELECT COUNT(*)
+        FROM (
+                SELECT tvia.VISIT_IP ,
+                        fn_getCodeNm('VISIT_PATH_CD', tvia.VISIT_PATH_CD) AS VISIT_PATH_NM ,
+                        sum(tvia.VISIT_CNT) AS VISIT_CNT,
+                        sum(tvia.PAGE_VW) AS PAGE_VW,
+                        to_char(to_date(max(tvia.CONNECT_TIME) , 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') AS CONNECT_TIME
+                FROM TT_VSTR_IP_ANLS tvia
+                GROUP BY tvia.VISIT_IP, tvia.VISIT_PATH_CD
+                ORDER BY VISIT_CNT DESC
+            ) TCNT
+    </select>
+    <!-- 방문자 IP 분석 조건적용 총건수 조회 -->
+    <select id="selectVisitIpListCount" parameterType="visitIpSO" resultType="Integer">
+        /* statistics.visitIpAnls.selectVisitIpListCount */
+        SELECT COUNT(*)
+        FROM (
+                SELECT tvia.VISIT_IP ,
+                fn_getCodeNm('VISIT_PATH_CD', tvia.VISIT_PATH_CD) AS VISIT_PATH_NM ,
+                sum(tvia.VISIT_CNT) AS VISIT_CNT,
+                sum(tvia.PAGE_VW) AS PAGE_VW,
+                to_char(to_date(max(tvia.CONNECT_TIME) , 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') AS CONNECT_TIME
+                FROM TT_VSTR_IP_ANLS tvia
+                where 1=1
+                <include refid="selectVisitIpListWhere" />
+                GROUP BY tvia.VISIT_IP, tvia.VISIT_PATH_CD
+                ORDER BY VISIT_CNT DESC
+            ) PGCNT
+    </select>
+</mapper>

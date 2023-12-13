@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+
+-->
+<mapper namespace="design.bannerManage">
+
+
+    <select id="selectBannerSkin" resultType="SkinVO">
+        /* design.bannerManage.selectBannerSkin */
+        SELECT  SKIN_NO,
+                SKIN_ID,
+                SKIN_NM,
+                PC_GB_CD
+        FROM    TD_SKIN
+        WHERE   SITE_NO = #{siteNo}
+        AND DEL_YN='N'
+    </select>
+
+    <sql id="selectDispInfoWhere">
+        <where>
+            SITE_NO = #{siteNo}
+            <if test="skinNo != null and skinNo != ''">
+                AND SKIN_NO = #{skinNo}
+            </if>
+            <if test="bannerMenuCd != null and bannerMenuCd != ''">
+                AND BANNER_MENU_CD = #{bannerMenuCd}
+            </if>
+            <if test="bannerAreaCd != null and bannerAreaCd != ''">
+                AND BANNER_AREA_CD = #{bannerAreaCd}
+            </if>
+            <if test="dispYn != null and dispYn != ''">
+                AND DISP_YN = #{dispYn}
+            </if>
+            <if test="bannerNm != null and bannerNm != ''">
+                AND INSTR (BANNER_NM,#{bannerNm}) > 0
+            </if>
+            <if test="applyAlwaysYn != null and applyAlwaysYn != '' and applyAlwaysYn != 'N'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND (DISP_START_DTTM <= concat(replace(#{toRegDt},'-',''),'235960') OR APPLY_ALWAYS_YN = #{applyAlwaysYn})
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND (DISP_END_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000') OR APPLY_ALWAYS_YN = #{applyAlwaysYn})
+                    ]]>
+                </if>
+            </if>
+            <if test="applyAlwaysYn == null or applyAlwaysYn == '' or applyAlwaysYn == 'N'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND DISP_START_DTTM <= concat(replace(#{toRegDt},'-',''),'235960')
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND DISP_END_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000')
+                    ]]>
+                </if>
+            </if>
+            <if test="todayYn != null and todayYn != ''">
+                <![CDATA[
+                AND sysdate+0 BETWEEN to_date(DISP_START_DTTM, 'yyyymmddhh24miss') AND to_date(DISP_END_DTTM, 'yyyymmddhh24miss')
+                ]]>
+            </if>
+            <if test="goodsTypeCd != null and goodsTypeCd != ''">
+                AND GOODS_TYPE_CD = #{goodsTypeCd}
+            </if>
+            <if test="goodsTypeCds != null and goodsTypeCds.length > 0">
+                AND GOODS_TYPE_CD IN <foreach collection="goodsTypeCds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="applyAlwaysYn != null and applyAlwaysYn != '' and applyAlwaysYn != 'N'.toString()">
+                AND APPLY_ALWAYS_YN = #{applyAlwaysYn}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectBannerList" resultType="BannerVO">
+    /* design.bannerManage.selectBannerList */
+        SELECT  BANNER_NO,
+                SKIN_NO,
+                (SELECT SKIN_NM FROM TD_SKIN TS WHERE TS.SKIN_NO = TB.SKIN_NO AND TS.SITE_NO = TB.SITE_NO) AS SKIN_NM,
+                SITE_NO,
+                PC_GB_CD,
+                BANNER_MENU_CD,
+                fn_getCodeNm('BANNER_MENU_CD', BANNER_MENU_CD) AS BANNER_MENU_NM,
+                BANNER_AREA_CD,
+                GOODS_TYPE_CD,
+                CASE WHEN TB.BANNER_MENU_CD = 'CT' OR TB.BANNER_MENU_CD = 'MCT' THEN
+					(select CTG.CTG_NM FROM TG_CTG CTG WHERE CTG.CTG_NO = REPLACE(TB.BANNER_AREA_CD,TB.BANNER_MENU_CD,''))
+				ELSE 
+					(fn_getCodeNm('BANNER_AREA_CD', BANNER_AREA_CD)) 
+				END AS BANNER_AREA_NM,
+                BANNER_NM,
+                BANNER_DSCRT,
+                DISP_START_DTTM,
+                DISP_END_DTTM,
+                APPLY_ALWAYS_YN,
+                TO_CHAR(TO_DATE(DISP_START_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_START_DTTM_VIEW,
+                TO_CHAR(TO_DATE(DISP_END_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_END_DTTM_VIEW,
+                LINK_URL,
+                DISP_LINK_CD,
+                FILE_PATH,
+                replace(replace(FILE_PATH,'\',''),'/','')||'_'||FILE_NM AS IMG_FILE_INFO,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                FILE_PATH_M,
+                replace(replace(FILE_PATH_M,'\',''),'/','')||'_'||FILE_NM_M AS IMG_FILE_INFO_M,
+                ORG_FILE_NM_M,
+                FILE_NM_M,
+                FILE_SIZE_M,
+                SORT_SEQ,
+                DISP_YN,
+                CASE WHEN DISP_YN = 'Y' THEN '사용' WHEN DISP_YN = 'N' THEN '미사용' ELSE '' END AS DISP_YN_NM,
+                REG_DTTM,
+                fn_getMemberName(SITE_NO, REGR_NO) AS REGR_NM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+        FROM    TD_BANNER TB
+        <include refid="selectDispInfoWhere" />
+    </select>
+
+
+    <select id="selectBannerPaging" resultType="BannerVO">
+        /* design.bannerManage.selectBannerPaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+		        SELECT  BANNER_NO,
+		                SKIN_NO,
+		                (SELECT SKIN_NM FROM TD_SKIN TS WHERE TS.SKIN_NO = TB.SKIN_NO AND TS.SITE_NO = TB.SITE_NO) AS SKIN_NM,
+		                SITE_NO,
+		                PC_GB_CD,
+		                BANNER_MENU_CD,
+		                fn_getCodeNm('BANNER_MENU_CD', BANNER_MENU_CD) AS BANNER_MENU_NM,
+		                BANNER_AREA_CD,
+                        GOODS_TYPE_CD,
+		                CASE WHEN TB.BANNER_MENU_CD = 'CT' OR TB.BANNER_MENU_CD = 'MCT' THEN
+							(select CTG.CTG_NM FROM TG_CTG CTG WHERE CTG.CTG_NO = REPLACE(TB.BANNER_AREA_CD,TB.BANNER_MENU_CD,''))
+						ELSE 
+							(fn_getCodeNm('BANNER_AREA_CD', BANNER_AREA_CD)) 
+						END AS BANNER_AREA_NM,
+		                BANNER_NM,
+		                BANNER_DSCRT,
+		                DISP_START_DTTM,
+		                DISP_END_DTTM,
+                        APPLY_ALWAYS_YN,
+		                TO_CHAR(TO_DATE(DISP_START_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_START_DTTM_VIEW,
+		                TO_CHAR(TO_DATE(DISP_END_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_END_DTTM_VIEW,
+		                LINK_URL,
+		                DISP_LINK_CD,
+		                FILE_PATH,
+		                replace(replace(FILE_PATH,'\',''),'/','')||'_'||FILE_NM AS IMG_FILE_INFO,
+		                ORG_FILE_NM,
+		                FILE_NM,
+		                FILE_SIZE,
+                        FILE_PATH_M,
+                        replace(replace(FILE_PATH_M,'\',''),'/','')||'_'||FILE_NM_M AS IMG_FILE_INFO_M,
+                        ORG_FILE_NM_M,
+                        FILE_NM_M,
+                        FILE_SIZE_M,
+		                SORT_SEQ,
+		                DISP_YN,
+		                CASE WHEN DISP_YN = 'Y' THEN '사용' WHEN DISP_YN = 'N' THEN '미사용' ELSE '' END AS DISP_YN_NM,
+		                <if test="bannerMenuCd != null and bannerAreaCd != null and bannerMenuCd eq'CM'.toString() and bannerAreaCd eq'TB'.toString()">
+		                	TOP_BANNER_COLOR_VALUE,
+            			</if>
+		                REG_DTTM,
+		                fn_getMemberName(SITE_NO, REGR_NO) AS REGR_NM,
+		                REGR_NO,
+		                UPD_DTTM,
+		                UPDR_NO
+		        FROM    TD_BANNER TB
+		        <include refid="selectDispInfoWhere" />
+        <if test="bannerMenuCd != null and bannerAreaCd != null and bannerMenuCd eq 'MN'.toString() and bannerAreaCd eq 'MB3'.toString()">
+		        order by REG_DTTM DESC
+        </if>
+        <if test="bannerMenuCd != null and bannerAreaCd != null and bannerMenuCd neq 'MN'.toString() and bannerAreaCd neq 'MB3'.toString()">
+		        order by SORT_SEQ DESC
+        </if>
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectBannerPagingTotalCount" resultType="Integer">
+        /* design.bannerManage.selectBannerPagingTotalCount */
+        SELECT  count(*)
+        FROM    TD_BANNER
+        WHERE   SITE_NO = #{siteNo}
+        <!--
+        WHERE   SITE_NO = #{siteNo}
+        <include refid="selectDispInfoWhere" />
+        -->
+    </select>
+
+    <select id="selectBannerPagingCount" resultType="Integer">
+        /* design.bannerManage.selectBannerPagingCount */
+        SELECT  count(*)
+        FROM    TD_BANNER
+        <include refid="selectDispInfoWhere" />
+    </select>
+
+    <select id="selectBanner" resultType="BannerVO">
+        /* design.bannerManage.selectBanner */
+        SELECT  BANNER_NO,
+                SKIN_NO,
+                SITE_NO,
+                PC_GB_CD,
+                BANNER_MENU_CD,
+                BANNER_AREA_CD,
+                GOODS_TYPE_CD,
+                BANNER_NM,
+                BANNER_DSCRT,
+                DISP_START_DTTM,
+                DISP_END_DTTM,
+                APPLY_ALWAYS_YN,
+                LINK_URL,
+                DISP_LINK_CD,
+                FILE_PATH,
+                replace(replace(FILE_PATH,'\',''),'/','')||'_'||FILE_NM AS IMG_FILE_INFO,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                FILE_PATH_M,
+                replace(replace(FILE_PATH_M,'\',''),'/','')||'_'||FILE_NM_M AS IMG_FILE_INFO_M,
+                ORG_FILE_NM_M,
+                FILE_NM_M,
+                FILE_SIZE_M,
+                SORT_SEQ,
+                DISP_YN,
+                TOP_BANNER_COLOR_VALUE,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+        FROM    TD_BANNER TB
+        WHERE   SITE_NO = #{siteNo}
+        AND     BANNER_NO = #{bannerNo}
+    </select>
+
+    <select id="selectBannerGoodsList" resultType="goodsVO" >
+        /* design.bannerManage.selectBannerGoodsList */
+        SELECT *
+        FROM
+            (
+                SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+                FROM
+                    (
+                    SELECT BB.GOODS_NO
+                         , MAX(BB.ERP_ITM_CODE)         as ERP_ITM_CODE
+                         , MAX(BB.GOODS_TYPE_CD)        AS GOODS_TYPE_CD
+                         , MAX(BB.GOODS_NM)             AS GOODS_NM
+                         , MAX(BB.GOODS_IMG_02)         AS GOODS_IMG_02
+                         , MAX(BB.BRAND_NM)             AS BRAND_NM
+                         , MAX(BB.SALE_PRICE)           AS SALE_PRICE
+                         , MAX(BB.STOCK_QTT)            AS STOCK_QTT
+                         , MAX(BB.SELLER_NM)            AS SELLER_NM
+                         , MAX(BB.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_CD
+                         , MAX(BB.GOODS_SALE_STATUS_NM) AS GOODS_SALE_STATUS_NM
+                    FROM (SELECT (SELECT MAX(ERP_ITM_CODE)
+                                    FROM TI_ERP_PRD_MAPPING TPM
+                                   WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                     AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS ERP_ITM_CODE,
+                                 GDS.GOODS_NO,
+                                 GDS.GOODS_TYPE_CD,
+                                 GDS.GOODS_SALE_STATUS_CD,
+                                 (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                                 GDS.GOODS_NM,
+                                 fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD)    AS GOODS_SALE_STATUS_NM,
+                                 fn_getGoodsImgPath(GDS.GOODS_NO, '02')                            AS GOODS_IMG_02,
+                                 fn_getBrandNm(GDS.BRAND_NO)                                     AS BRAND_NM,
+                                 NVL(ITM.SALE_PRICE, 0)                                            AS SALE_PRICE,
+                                 (SELECT SUM(STOCK_QTT)
+                                  FROM TG_ITEM
+                                  WHERE GOODS_NO = GDS.GOODS_NO
+                                    AND USE_YN = 'Y')                                              AS STOCK_QTT
+                          FROM TG_GOODS GDS
+                             , TS_SITE TS
+                             , TD_BANNER_GOODS TBG
+                             , TG_ITEM ITM
+                                   LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                                                   ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                                       AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+                          WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                            AND GDS.SITE_NO = TS.SITE_NO
+                            AND GDS.SITE_NO = #{siteNo}
+                            AND GDS.DEL_YN = 'N'
+                            AND ITM.DEL_YN = 'N'
+                            AND TBG.GOODS_NO = GDS.GOODS_NO
+                            AND TBG.BANNER_NO = #{bannerNo}
+                         ) BB
+                    GROUP BY BB.GOODS_NO
+                ) T
+            )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectBannerGoodsListTotalCount" resultType="Integer">
+        /* design.bannerManage.selectBannerPagingTotalCount */
+        SELECT count(*)
+        FROM (
+            SELECT (SELECT MAX(ERP_ITM_CODE)
+                    FROM TI_ERP_PRD_MAPPING TPM
+                    WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                    AND TPM.MALL_ITM_CODE = ITM.ITEM_NO) AS ERP_ITM_CODE,
+                    GDS.GOODS_NO,
+                    GDS.GOODS_TYPE_CD,
+                    GDS.GOODS_SALE_STATUS_CD,
+                    (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                    GDS.GOODS_NM,
+                    fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                    fn_getGoodsImgPath(GDS.GOODS_NO, '02') AS GOODS_IMG_02,
+                    fn_getBrandNm(GDS.BRAND_NO) AS BRAND_NM,
+                    NVL(ITM.SALE_PRICE, 0) AS SALE_PRICE,
+                    (SELECT SUM(STOCK_QTT)
+            FROM TG_ITEM
+            WHERE GOODS_NO = GDS.GOODS_NO
+              AND USE_YN = 'Y') AS STOCK_QTT
+            FROM TG_GOODS GDS
+                , TS_SITE TS
+                , TD_BANNER_GOODS TBG
+                , TG_ITEM ITM
+            LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+            WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                AND GDS.SITE_NO = TS.SITE_NO
+                AND GDS.SITE_NO = #{siteNo}
+                AND GDS.DEL_YN = 'N'
+                AND ITM.DEL_YN = 'N'
+                AND TBG.GOODS_NO = GDS.GOODS_NO
+                AND TBG.BANNER_NO = #{bannerNo}
+        )
+        <!--
+        WHERE   SITE_NO = #{siteNo}
+        <include refid="selectDispInfoWhere" />
+        -->
+    </select>
+
+    <select id="selectBannerGoodsListCount" resultType="Integer">
+        /* design.bannerManage.selectBannerPagingCount */
+        SELECT count(*)
+        FROM ( SELECT (SELECT MAX(ERP_ITM_CODE)
+        FROM TI_ERP_PRD_MAPPING TPM
+        WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO) AS ERP_ITM_CODE,
+        GDS.GOODS_NO,
+        GDS.GOODS_TYPE_CD,
+        GDS.GOODS_SALE_STATUS_CD,
+        (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+        GDS.GOODS_NM,
+        fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+        fn_getGoodsImgPath(GDS.GOODS_NO, '02') AS GOODS_IMG_02,
+        fn_getBrandNm(GDS.BRAND_NO) AS BRAND_NM,
+        NVL(ITM.SALE_PRICE, 0) AS SALE_PRICE,
+        (SELECT SUM(STOCK_QTT)
+        FROM TG_ITEM
+        WHERE GOODS_NO = GDS.GOODS_NO
+        AND USE_YN = 'Y') AS STOCK_QTT
+        FROM TG_GOODS GDS
+        , TS_SITE TS
+        , TD_BANNER_GOODS TBG
+        , TG_ITEM ITM
+        LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+        ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+        WHERE GDS.ITEM_NO = ITM.ITEM_NO
+        AND GDS.SITE_NO = TS.SITE_NO
+        AND GDS.SITE_NO = #{siteNo}
+        AND GDS.DEL_YN = 'N'
+        AND ITM.DEL_YN = 'N'
+        AND TBG.GOODS_NO = GDS.GOODS_NO
+        AND TBG.BANNER_NO = #{bannerNo}
+        )
+    </select>
+
+    <insert id="insertBanner">
+        /* design.bannerManage.insertBanner */
+        INSERT INTO TD_BANNER
+            (
+                BANNER_NO,
+                SKIN_NO,
+                SITE_NO,
+                PC_GB_CD,
+                GOODS_TYPE_CD,
+                BANNER_MENU_CD,
+                BANNER_AREA_CD,
+                BANNER_NM,
+                BANNER_DSCRT,
+                DISP_START_DTTM,
+                DISP_END_DTTM,
+                APPLY_ALWAYS_YN,
+                LINK_URL,
+                DISP_LINK_CD,
+                FILE_PATH,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                FILE_PATH_M,
+                ORG_FILE_NM_M,
+                FILE_NM_M,
+                FILE_SIZE_M,
+                SORT_SEQ,
+                DISP_YN,
+                TOP_BANNER_COLOR_VALUE,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+                #{bannerNo},
+                #{skinNo},
+                #{siteNo},
+                #{pcGbCd},
+                #{goodsTypeCd},
+                #{bannerMenuCd},
+                #{bannerAreaCd},
+                #{bannerNm},
+                #{bannerDscrt},
+                #{dispStartDttm},
+                #{dispEndDttm},
+                #{applyAlwaysYn},
+                #{linkUrl},
+                #{dispLinkCd},
+                #{filePath},
+                #{orgFileNm},
+                #{fileNm},
+                #{fileSize},
+                #{filePathM},
+                #{orgFileNmM},
+                #{fileNmM},
+                #{fileSizeM},
+                (SELECT NVL(MAX(SORT_SEQ),0)+1
+                 FROM TD_BANNER
+                 WHERE SITE_NO = #{siteNo}
+                   AND SKIN_NO = #{skinNo}
+                   AND BANNER_MENU_CD = #{bannerMenuCd}
+                   AND BANNER_AREA_CD = #{bannerAreaCd}
+                   AND GOODS_TYPE_CD = #{goodsTypeCd}),
+                #{dispYn},
+                #{topBannerColorValue},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <insert id="insertBannerGoods">
+        /* design.bannerManage.insertBannerGoods */
+        INSERT INTO TD_BANNER_GOODS
+            (BANNER_NO,
+             SITE_NO,
+             GOODS_NO,
+             REGR_NO,
+             REG_DTTM)
+        VALUES (#{bannerNo},
+                #{siteNo},
+                #{goodsNo},
+                #{regrNo},
+                sysdate)
+    </insert>
+
+    <!-- 베너 상품 정보 등록 -->
+    <insert id="insertBannerGoodsItems">
+        /* design.bannerManage.insertGoodsRecommendItems */
+        MERGE INTO TG_GOODS_BANNER
+            USING DUAL
+            ON (GOODS_NO = #{goodsNo} AND BANNER_NO = #{bannerNo})
+            WHEN NOT MATCHED THEN
+                INSERT ( GOODS_NO
+                    , SITE_NO
+                    , BANNER_NO
+                    , REGR_NO
+                    , REG_DTTM)
+                    VALUES ( #{goodsNo}
+                           , #{siteNo}
+                           , #{bannerNo}
+                           , #{regrNo}
+                           , sysdate)
+    </insert>
+
+    <delete id="deleteBannerGoods">
+        /* design.bannerManage.deleteBannerGoods */
+        DELETE FROM TD_BANNER_GOODS
+        WHERE BANNER_NO = #{bannerNo}
+          AND SITE_NO = #{siteNo}
+    </delete>
+
+    <update id="updateBanner">
+        /* design.bannerManage.updateBanner */
+        UPDATE  TD_BANNER
+        SET
+                SKIN_NO         = #{skinNo},
+                PC_GB_CD        = #{pcGbCd},
+                BANNER_MENU_CD  = #{bannerMenuCd},
+                BANNER_AREA_CD  = #{bannerAreaCd},
+                GOODS_TYPE_CD   = #{goodsTypeCd},
+                BANNER_NM       = #{bannerNm},
+                BANNER_DSCRT    = #{bannerDscrt},
+                DISP_START_DTTM = #{dispStartDttm},
+                DISP_END_DTTM   = #{dispEndDttm},
+                APPLY_ALWAYS_YN= #{applyAlwaysYn},
+                LINK_URL        = #{linkUrl},
+                DISP_LINK_CD    = #{dispLinkCd},
+            <if test="fileSize != null and fileSize != ''">
+                FILE_PATH       = #{filePath},
+                ORG_FILE_NM     = #{orgFileNm},
+                FILE_NM         = #{fileNm},
+                FILE_SIZE       = #{fileSize},
+            </if>
+            <if test="fileSizeM != null and fileSizeM != ''">
+                FILE_PATH_M     = #{filePathM},
+                ORG_FILE_NM_M   = #{orgFileNmM},
+                FILE_NM_M       = #{fileNmM},
+                FILE_SIZE_M     = #{fileSizeM},
+            </if>
+            <if test="sortSeq != null and sortSeq != ''">
+                SORT_SEQ        = #{sortSeq},
+            </if>
+                DISP_YN         = #{dispYn},
+                TOP_BANNER_COLOR_VALUE = #{topBannerColorValue},
+                UPDR_NO         = #{updrNo},
+                UPD_DTTM        = sysdate
+        WHERE   SITE_NO     = #{siteNo}
+        AND     BANNER_NO   = #{bannerNo}
+    </update>
+
+    <update id="updateBannerView">
+        /* design.bannerManage.updateBannerView */
+        UPDATE  TD_BANNER
+        SET     DISP_YN     = #{dispYn},
+                UPDR_NO     = #{updrNo},
+                UPD_DTTM    = sysdate
+        WHERE   SITE_NO     = #{siteNo}
+        AND     BANNER_NO   = #{bannerNo}
+    </update>
+
+    <update id="updateBannerSort">
+        /* design.bannerManage.updateBannerSort */
+        UPDATE  TD_BANNER
+        SET     SORT_SEQ    = #{sortSeq},
+                UPDR_NO     = #{updrNo},
+                UPD_DTTM    = sysdate
+        WHERE   SITE_NO     = #{siteNo}
+        AND     BANNER_NO   = #{orgBannerNo}
+    </update>
+
+    <delete id="deleteBanner">
+        /* design.bannerManage.deleteBanner */
+        DELETE FROM  TD_BANNER
+        WHERE   SITE_NO     = #{siteNo}
+        AND     BANNER_NO   = #{bannerNo}
+    </delete>
+</mapper>

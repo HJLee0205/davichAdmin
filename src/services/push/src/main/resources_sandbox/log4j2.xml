@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %5p [%c] %m%n" />
+        </Console>
+    </Appenders>
+    <Loggers>
+
+
+        <Logger name="org.apache.http" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="org.mybatis" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="org.apache.commons" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="org.springframework" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="jdbc.resultsettable" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+
+        <Logger name="jdbc.resultset" level="ERROR" additivity="false">
+              <AppenderRef ref="console" />
+        </Logger>
+
+        <Logger name="jdbc.connection" level="ERROR" additivity="false">
+            <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="java.sql" level="ERROR" additivity="false">
+            <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="egovframework" level="ERROR" additivity="false">
+            <AppenderRef ref="console" />
+        </Logger>
+		  <!-- log SQL with timing information, post execution -->
+	    <Logger name="jdbc.sqltiming" level="OFF" additivity="false">
+	        <AppenderRef ref="console" />
+	    </Logger>
+	    <Logger name="org.springframework" level="ERROR" additivity="false">
+	        <AppenderRef ref="console" />
+	    </Logger>
+	    <Logger name="jdbc.audit" level="OFF" additivity="false">
+            <AppenderRef ref="console" />
+        </Logger>
+        <Logger name="jdbc.sqlonly" level="ERROR" additivity="false">
+            <AppenderRef ref="console" />
+        </Logger>
+        <Root level="ERROR">
+            <AppenderRef ref="console" />
+        </Root>
+    </Loggers>
+</Configuration>

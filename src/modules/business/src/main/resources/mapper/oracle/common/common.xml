@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	biz Mapper
+	작성자 		snw
+	작성일자  	2015.06.15
+-->
+
+<mapper namespace="common">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<sql id="sortSql">
+		<if test="sidx != null and sidx != ''">
+		ORDER BY	${sidx} ${sord}
+		</if>
+	</sql>
+
+	<sql id="pageSql">
+		WHERE PAGING_NUM BETWEEN #{limit} + 1 AND #{limit} + #{offset}
+	</sql>
+</mapper>

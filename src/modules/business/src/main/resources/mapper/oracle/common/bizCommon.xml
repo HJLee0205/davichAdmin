@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	biz Mapper
+	작성자 		snw
+	작성일자  	2015.06.15
+-->
+
+<mapper namespace="common.bizCommon">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<select id="getSiteNo" resultType="Long" useCache="false">
+		/* common.bizCommon.getSiteNo */
+		SELECT SITE_NO
+		FROM TS_SITE
+		WHERE 1=1
+		AND (DLGT_DOMAIN = 'davichmarket.com'
+		OR DLGT_DOMAIN = REPLACE('davichmarket.com', 'www.', '')
+		OR DLGT_DOMAIN = CONCAT('www.', 'davichmarket.com'))
+	</select>
+
+	<!-- 시퀀스 번호 조회 -->
+	<select id="getSequence" resultType="Integer" useCache="false">
+		select	fn_getSeq(#{siteNo}, #{seqGb}) from dual
+	</select>
+
+	<resultMap type="net.danvi.dmall.biz.system.model.CmnCdGrpVO" id="listCodeAllMap">
+		<id		property="grpCd"			column="GRP_CD"/>			<!-- 그룹 코드 -->
+		<result property="grpNm"			column="GRP_NM"/>			<!-- 그룹 명 -->
+		<result property="userDefine1Nm"		column="USER_DEFINE1_NM"/>		<!-- 사용자 정의1 명 -->
+		<result property="userDefine2Nm"		column="USER_DEFINE2_NM"/>		<!-- 사용자 정의2 명 -->
+		<result property="userDefine3Nm"		column="USER_DEFINE3_NM"/>		<!-- 사용자 정의3 명 -->
+		<result property="userDefine4Nm"		column="USER_DEFINE4_NM"/>		<!-- 사용자 정의4 명 -->
+		<result property="userDefine5Nm"		column="USER_DEFINE5_NM"/>		<!-- 사용자 정의5 명 -->
+		<collection property="listCmnCdDtlVO" ofType="net.danvi.dmall.biz.system.model.CmnCdDtlVO">
+			<id		property="dtlCd"			column="CD"/>			<!-- 상세 코드 -->
+			<result property="dtlNm"			column="CD_NM"/>			<!-- 상세 명 -->
+			<result property="dtlShtNm"			column="CD_SHORT_NM"/>		<!-- 상세 약어 명 -->
+			<result property="sortSeq"			column="SORT_SEQ"/>			<!-- 정렬 순서 -->
+			<result property="useYn"			column="USE_YN"/>			<!-- 사용 여부 -->
+			<result property="userDefien1"		column="USER_DEFINE1"/>		<!-- 사용자 정의1 값 -->
+			<result property="userDefien2"		column="USER_DEFINE2"/>		<!-- 사용자 정의2 값 -->
+			<result property="userDefien3"		column="USER_DEFINE3"/>		<!-- 사용자 정의3 값 -->
+			<result property="userDefien4"		column="USER_DEFINE4"/>		<!-- 사용자 정의4 값 -->
+			<result property="userDefien5"		column="USER_DEFINE5"/>		<!-- 사용자 정의5 값 -->
+			<result property="dtlDscrt"			column="CD_DSCRT"/>		<!-- 코드 설명 값 -->
+		</collection>
+	</resultMap>
+
+	<select id="listCodeAll" resultMap="common.bizCommon.listCodeAllMap">
+		/* common.bizCommon.listCodeAll */
+		SELECT
+				CCG.GRP_CD,				/* 그룹 코드 */
+				CCG.GRP_NM,				/* 그룹 명 */
+				CCG.USER_DEFINE1_NM,	/* 사용자 정의1 명 */
+				CCG.USER_DEFINE2_NM,	/* 사용자 정의2 명 */
+				CCG.USER_DEFINE3_NM,	/* 사용자 정의3 명 */
+				CCG.USER_DEFINE4_NM,	/* 사용자 정의4 명 */
+				CCG.USER_DEFINE5_NM,	/* 사용자 정의5 명 */
+				CCD.CD,					/* 상세 코드 */
+				CCD.CD_NM,				/* 상세 명 */
+				CCD.CD_SHORT_NM,		/* 상세 약어 명 */
+				CCD.SORT_SEQ,			/* 정렬 순서 */
+				CCD.USE_YN,				/* 사용 여부 */
+				CCD.USER_DEFINE1,		/* 사용자 정의1 값 */
+				CCD.USER_DEFINE2,		/* 사용자 정의2 값 */
+				CCD.USER_DEFINE3,		/* 사용자 정의3 값 */
+				CCD.USER_DEFINE4,		/* 사용자 정의4 값 */
+				CCD.USER_DEFINE5,		/* 사용자 정의5 값 */
+				CCD.CD_DSCRT			/* 코드 설명 */
+		FROM	TA_CMN_CD_GRP CCG, TA_CMN_CD_DTL CCD
+		WHERE	1 = 1
+		AND		CCG.GRP_CD = CCD.GRP_CD
+		AND		CCG.DEL_YN = 'N'
+		AND		CCD.DEL_YN = 'N'
+		AND		CCG.USE_YN = 'Y'
+		AND		CCD.USE_YN = 'Y'
+		ORDER BY CCG.GRP_CD, CCD.SORT_SEQ
+	</select>
+
+	<resultMap id="siteInfoMap" type="net.danvi.dmall.biz.system.model.SiteCacheVO">
+		<id column="SITE_NO" property="siteNo" />
+		<collection column="SITE_NO" property="blockIpList" javaType="ArrayList" ofType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpPO" select="common.bizCommon.selectConnectLimitIp"/>
+		<collection column="SITE_NO" property="bannedWordList" javaType="ArrayList" ofType="String" select="common.bizCommon.selectBannedWord"/>
+	</resultMap>
+
+	<select id="selectSiteInfo" resultMap="common.bizCommon.siteInfoMap" useCache="false">
+		/* common.bizCommon.selectSiteInfo */
+		SELECT
+				SITE.COMPANY_NO,
+				SITE.SITE_NO,
+				SITE.SITE_ID,
+				SITE.SITE_STATUS_CD,
+				TSD.SITE_NM,
+				TSD.DEFAULT_SRCH_WORD,
+				NVL(TSD.SITE_TYPE_CD, '1') AS SITE_TYPE_CD, /* SITE_TYPE_CD */
+				NVL(AUTO_LOGOUT_TIME, 30) AS AUTO_LOGOUT_TIME,
+				/*SECURITY_SERV_USE_TYPE_CD,*/
+				SECURITY_SERV_STATUS_CD,
+				to_date(APPLY_END_DT, 'YYYYMMDD') AS APPLY_END_DT,
+				CERTIFY_MARK_DISP_YN,
+				MOUSE_RCLICK_USE_YN,
+				DRAG_COPY_USE_YN,
+				PW_CHG_GUIDE_YN,
+				PW_CHG_GUIDE_CYCLE,
+				PW_CHG_NEXT_CHG_DCNT,
+				DORMANT_MEMBER_CANCEL_METHOD,
+				SITE.DLGT_DOMAIN,
+				SITE.TEMP_DOMAIN,
+				TISS.ID AS IMG_ID,
+				NVL(SITE.CERT_KEY, 'NO_CERT_KEY') AS CERT_KEY,
+				(SELECT SKIN_NO FROM TD_SKIN TDS WHERE SITE.SITE_NO = TDS.SITE_NO AND TDS.APPLY_SKIN_YN = 'Y' AND PC_GB_CD = 'C') AS PC_SKIN_NO,
+				(SELECT SKIN_NO FROM TD_SKIN TDS WHERE SITE.SITE_NO = TDS.SITE_NO AND TDS.APPLY_SKIN_YN = 'Y' AND PC_GB_CD = 'M') AS MOBILE_SKIN_NO,
+				SITE.APP_VERSION_IOS,
+                SITE.APP_VERSION_ANDROID,
+                SITE.FORCE_UPDATE_YN_IOS,
+                SITE.FORCE_UPDATE_YN_ANDROID
+		FROM	TS_SITE SITE LEFT OUTER JOIN TS_SECURITY_SERV_SET TSSS
+						ON 	SITE.SITE_NO = TSSS.SITE_NO
+					LEFT OUTER JOIN TS_IMG_SERV_SET TISS
+						ON 	SITE.SITE_NO = TISS.SITE_NO
+						AND SVC_START_DTTM &lt;= sysdate
+						AND SVC_END_DTTM + 1 &gt; sysdate
+					,
+				TS_SITE_DTL TSD
+		WHERE	SITE.SITE_NO = #{siteNo}
+		AND		SITE.SITE_NO = TSD.SITE_NO
+	</select>
+	<!-- 제한 IP 정보 조회 -->
+	<select id="selectConnectLimitIp" resultType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpPO" useCache="false">
+		/* common.bizCommon.selectConnectLimitIp */
+		SELECT *
+		FROM TS_CONNECT_LIMIT_IP TCLI, TS_SITE TS
+		WHERE TS.SITE_NO = #{siteNo}
+		AND TS.SITE_NO = TCLI.SITE_NO
+		AND TS.IP_CONNECT_LIMIT_USE_YN = 'Y'
+	</select>
+
+	<select id="selectBannedWord" resultType="String" useCache="false">
+		/* common.bizCommon.selectBannedWord */
+		SELECT BANNED_WORD
+		FROM TB_BANNED_WORD
+		WHERE SITE_NO = #{siteNo}
+		AND DEL_YN = 'N'
+	</select>
+
+	<select id="getCmnAtchFileList" parameterType="dmall.framework.common.model.CmnAtchFileSO" resultType="dmall.framework.common.model.CmnAtchFilePO">
+		/* common.bizCommon.getCmnAtchFileList */
+		SELECT  FILE_PATH,
+				ORG_FILE_NM,
+				FILE_NM,
+				FILE_SIZE
+		FROM 	TB_CMN_ATCH_FILE
+		WHERE 	SITE_NO = #{siteNo}
+		AND REF_NO = #{refNo}
+		AND FILE_GB = #{fileGb}
+		<if test="fileNo != null">
+			AND FILE_NO = #{fileNo}
+		</if>
+	</select>
+
+	<insert id="insertCmnAtchFile" parameterType="dmall.framework.common.model.CmnAtchFilePO">
+		/* common.bizCommon.insertCmnAtchFile */
+		INSERT INTO TB_CMN_ATCH_FILE (
+			FILE_NO, REF_NO, SITE_NO, FILE_GB, FILE_PATH, ORG_FILE_NM,
+			FILE_NM, FILE_SIZE, REGR_NO, REG_DTTM
+		) VALUES (
+			fn_getSeq(0, 'CMN_FILE_NO'), #{refNo}, #{siteNo}, #{fileGb}, #{filePath}, #{orgFileNm},
+			#{fileNm}, #{fileSize}, #{regrNo}, sysdate
+		)
+	</insert>
+
+	<delete id="deleteCmnAtchFileByFileNm" parameterType="dmall.framework.common.model.CmnAtchFilePO">
+		/* common.bizCommon.deleteCmnAtchFileByFileNm */
+		DELETE FROM TB_CMN_ATCH_FILE
+		WHERE FILE_NM = #{fileNm}
+		AND   REF_NO = #{refNo}
+		AND   SITE_NO = #{siteNo}
+	</delete>
+
+	<delete id="deleteCmnAtachFileByFileNo" parameterType="dmall.framework.common.model.CmnAtchFilePO">
+		/* common.bizCommon.deleteCmnAtachFileByFileNo */
+		DELETE FROM TB_CMN_ATCH_FILE
+		WHERE FILE_NO = #{fileNo}
+		AND SITE_NO = #{siteNo}
+	</delete>
+
+	<delete id="deleteAllCmnAtchFile" parameterType="dmall.framework.common.model.CmnAtchFilePO">
+		/* common.bizCommon.deleteAllCmnAtchFile */
+		DELETE FROM TB_CMN_ATCH_FILE
+		WHERE REF_NO = #{refNo}
+		AND SITE_NO = #{siteNo}
+	</delete>
+
+</mapper>

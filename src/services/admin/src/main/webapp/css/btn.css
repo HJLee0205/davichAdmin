@@ -1,0 +1,115 @@
+@charset "utf-8";
+
+button { cursor: pointer;vertical-align:middle;color:#222; }
+
+.buttonSS,
+.buttonS,
+.buttonM,
+.buttonB {
+	letter-spacing:-0.75px;
+    display: inline-block;
+}
+
+.buttonSS { font-size:11px;line-height:17px; }
+.buttonS { font-size:12px;line-height:17px; }
+.buttonM { font-size:14px;line-height:17px; }
+.buttonB { font-size:14px;line-height: 22px; }
+
+.buttonSS { padding:3px 3px 2px; }
+.buttonS { padding:6px 12px 5px; }
+.buttonM { padding:6px 16px 5px; }
+.buttonB { padding:7px 0 7px; width:120px}
+
+.bWhite {
+    border: 1px solid #c4c4c4;	
+	border-radius:1px;
+    background: #fff;
+	color:#222;
+}
+.bWhite:active {
+    background:#a2a2a2;
+	color:#fff;
+}
+.bGray {
+	border-radius:2px;
+	color:#fff;	
+    background:#585b5e;
+	border:1px solid #585b5e;
+	box-shadow:1px 1px 1px #7c8085 inset
+}
+.bGray:active {
+    background:#7c8085;
+	color:#fff;
+	box-shadow: none
+}
+.bDarkGray {
+    border: 1px solid #999;
+	border-radius:2px;
+    background: #888888;
+	color:#fff;
+}
+.bDarkGray:active {
+    background:#5e5e5e;
+	color:#fff;
+}
+.bBlack {
+    border:1px solid #383838;
+	border-radius:2px;
+	box-shadow: 0 1px 0 0 #5e5e5e inset;
+    background: #484848;
+	color:#fff;
+}
+.bBlack:active {
+    background:#5e5e5e;
+	color:#fff;
+	box-shadow: none
+}
+.bRed {
+    border:1px solid #c36666;
+	border-radius:2px;
+	box-shadow: 0 1px 0 0 #feafaf inset;
+    background: #f48d8d;
+	color:#fff;
+}
+.bRed:active {
+    background:#c36666;
+	color:#fff;
+	box-shadow: none
+}
+.bYellow {
+    border:1px solid #dfa85b;
+	border-radius:2px;
+	box-shadow: 0 1px 0 0 #fed9a4 inset;
+    background: #fdcb82;
+	color:#8b6345;
+}
+.bYellow:active {
+    background:#dfa85b;
+	color:#fff;
+	box-shadow: none
+}
+.bOrange {
+    border: 1px solid #ff5c33;
+	border-radius:2px;
+    background: #f37000;
+	color:#fff;
+}
+.bOrange:active {
+    background:#ff5c33;
+	color:#fff;
+}
+.bBlue {
+    border:1px solid #2a4891;
+	border-radius:2px;
+    background:#2a4891;
+	color:#fff;
+}
+.bBlue:active {
+    background:#1f356b;
+	color:#fff;
+}
+[class^=button][disabled] {
+	background:#C1C8D2;
+	border:1px solid #9CA4AF;
+	cursor: default
+}

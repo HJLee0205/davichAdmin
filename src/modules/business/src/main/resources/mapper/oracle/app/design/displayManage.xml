@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="design.displayManage">
+
+
+    <select id="selectDisplayOption" resultType="DisplayVO">
+        /* design.displayManage.selectDisplayOption */
+        SELECT  DISP_NO,
+				DISP_NM,
+                DISP_CD,
+				DISP_CD_NM
+        FROM    TD_DISP
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <sql id="selectDispInfoWhere">
+        <where>
+            SITE_NO = #{siteNo}
+            AND FILE_SIZE > 0
+            <if test="dispNo != null and dispNo != ''">
+                AND DISP_NO = #{dispNo}
+            </if>
+            <if test="dispNm != null and dispNm != ''">
+                AND INSTR (DISP_NM,#{dispNm}) > 0
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectDisplayPaging" resultType="DisplayVO">
+        /* design.displayManage.selectDisplayPaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+		        SELECT  DISP_NO,
+		                SITE_NO,
+		                DISP_NM,
+		                DISP_CD,
+		                DISP_CD_NM,
+		                LINK_URL,
+		                DISP_LINK_CD,
+		                FILE_PATH,
+		                ORG_FILE_NM,
+		                FILE_NM,
+		                FILE_SIZE,
+		                SORT_SEQ,
+		                DISP_YN
+		        FROM    TD_DISP
+		        <include refid="selectDispInfoWhere" />
+		        <include refid="common.sortSql" />
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectDisplayPagingTotalCount" resultType="Integer">
+        /* design.displayManage.selectDisplayPagingTotalCount */
+        SELECT  count(*)
+        FROM    TD_DISP
+        WHERE   SITE_NO = #{siteNo}
+        <!--
+        WHERE   SITE_NO = #{siteNo}
+        <include refid="selectDispInfoWhere" />
+        -->
+    </select>
+
+    <select id="selectDisplayPagingCount" resultType="Integer">
+        /* design.displayManage.selectDisplayPagingCount */
+        SELECT  count(*)
+        FROM    TD_DISP
+        <include refid="selectDispInfoWhere" />
+    </select>
+
+    <select id="selectDisplay" resultType="DisplayVO">
+        /* design.displayManage.selectDisplay */
+        SELECT  DISP_NO,
+                SITE_NO,
+                DISP_NM,
+                DISP_CD,
+                DISP_CD_NM,
+                LINK_URL,
+                DISP_LINK_CD,
+                FILE_PATH,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                SORT_SEQ,
+                DISP_YN,
+                REG_DTTM,
+                REGR_NO,
+                fn_getMemberName(SITE_NO, REGR_NO) AS REGR_NM,
+                UPD_DTTM,
+                fn_getMemberName(SITE_NO, UPDR_NO) AS UPDR_NM,
+                UPDR_NO
+        FROM    TD_DISP
+        WHERE   SITE_NO = #{siteNo}
+        AND     DISP_NO = #{dispNo}
+    </select>
+
+    <insert id="insertDisplay">
+        /* design.displayManage.insertDisplay */
+        INSERT INTO TD_DISP
+            (
+                DISP_NO,
+				SITE_NO,
+				DISP_NM,
+				DISP_CD,
+				DISP_CD_NM,
+				SORT_SEQ,
+				DISP_YN,
+				REG_DTTM,
+				REGR_NO,
+				UPD_DTTM,
+				UPDR_NO
+            )
+            VALUES
+            (
+                #{dispNo},
+                #{siteNo},
+                #{dispNm},
+                #{dispCd},
+                #{dispCdNm},
+                #{sortSeq},
+                #{dispYn},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <update id="updateDisplay">
+        /* design.displayManage.updateDisplay */
+        UPDATE  TD_DISP
+        SET     DISP_NM       = #{dispNm},
+                LINK_URL      = #{linkUrl},
+                DISP_LINK_CD  = #{dispLinkCd},
+            <if test="fileSize != null and fileSize != ''">
+                FILE_PATH     = #{filePath},
+                ORG_FILE_NM   = #{orgFileNm},
+                FILE_NM       = #{fileNm},
+                FILE_SIZE     = #{fileSize},
+            </if>
+                DISP_YN       = #{dispYn},
+                UPDR_NO       = #{updrNo},
+                UPD_DTTM      = sysdate
+        WHERE   SITE_NO   = #{siteNo}
+        AND     DISP_NO   = #{dispNo}
+    </update>
+
+    <update id="updateDisplayBanner">
+        /* design.displayManage.updateDisplayBanner */
+        UPDATE  TD_DISP
+        SET     DISP_CD_NM = #{dispCdNm},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        AND     DISP_NO = #{dispNo}
+    </update>
+
+    <update id="deleteDisplay">
+        /* design.displayManage.deleteDisplay */
+        UPDATE  TD_DISP
+        SET     DISP_YN     = #{dispYn},
+                FILE_PATH   = '',
+                ORG_FILE_NM = '',
+                FILE_NM     = '',
+                FILE_SIZE   = 0,
+                UPDR_NO     = #{updrNo},
+                UPD_DTTM    = sysdate
+        WHERE   SITE_NO     = #{siteNo}
+        AND     DISP_NO     = #{dispNo}
+    </update>
+
+</mapper>

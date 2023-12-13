@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="erp.point">
+
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.OffPointSearchReqDTO" id="offPointSearchDto"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberDPointErpSO" id="memberDPointErpSo"/>
+    <parameterMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberStoreGroupDPointErpSO" id="memberStoreGroupDPointErpSO"/>
+
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.AdminPointConfigVO" id="adminPointConfigVo" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberDPointErpVO" id="memberDPointErpVo" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberDPointErpDTO" id="memberDPointErpDTO" autoMapping="true"/>
+    <resultMap type="net.danvi.dmall.biz.ifapi.mem.dto.MemberStoreGroupDPointErpVO" id="memberStoreGroupDPointErpVO" autoMapping="true"/>
+
+
+    <!--
+    2023-05-28 210 통합포인트 사용
+     a_dates         date,       /* 영업일자 */
+     a_cd_cust       varchar2,   /* 회원번호 */
+     a_in_flag       varchar2,   /* 입력구분 0:적립,1:통합,2:소멸,3:변경,4:사용 */
+     a_pdate         date,       /* 적용일자 */
+     a_str_code      varchar2,       /* 가맹점코드 */
+     a_canc_type     varchar2,       /* 0:정상/2:반품 */
+     a_sal_amt       number,     /* 구매총금액 */
+     a_payamt01      number,     /* [현금]정산금액 */
+     a_payamt02      number,     /* [카드]정산금액 */
+     a_payamt03      number,     /* 포인트사용 금액 */
+     a_sal_point     number,     /* 발생포인트*/
+     a_cd_no         number,     /* 카드번호 */
+     a_str_code_to   varchar2    /* 포인트 사용 체인점 코드 */
+     exec davich_point( '20230523','13244225',  '0',   '20230523',  '8888',  '0',  50000,   0,     50000,   0,    5000,   '12312344', '8888'  );
+    -->
+    <!--TO_DATE(#{a_dates}, 'YYYY-MM-DD HH24:MI:SS'),-->
+    <!--TO_DATE(#{a_pdate}, 'YYYY-MM-DD HH24:MI:SS'),-->
+    <select id="ErpMemberDPoint"  parameterType="hashmap" statementType="CALLABLE">
+        /* erp.point.ErpMemberDPoint */
+        <![CDATA[
+        { call  DAVICH.davich_point@DAVISION (
+            TO_DATE(TO_CHAR(SYSDATE, 'YYMMDD'), 'YYMMDD'),
+            #{a_cd_cust},
+            #{a_in_flag},
+            TO_DATE(TO_CHAR(SYSDATE, 'YYMMDD'), 'YYMMDD'),
+            #{a_str_code},
+            #{a_canc_type},
+            #{a_sal_amt},
+            #{a_payamt01},
+            #{a_payamt02},
+            #{a_payamt03},
+            #{a_sal_point},
+            #{a_cd_no},
+            #{a_str_code_to}
+            )}
+        ]]>
+    </select>
+    <!--2023-05-28 210 erp 쪽데이터 뿐아니라 마켓쪽에서 로그를 쌓아서 이중 추적-->
+    <insert id="insertMallDPointLog" parameterType="hashmap">
+        /* erp.point.insertMallDPointLog */
+        INSERT INTO TC_MEMBER_DPOINT_LOG
+        (
+        DTYPE
+        ,DATES
+        ,CD_CUST
+        ,IN_FLAG
+        ,PDATE
+        ,STR_CODE
+        ,CANC_TYPE
+        ,SAL_AMT
+        ,PAYAMT01
+        ,PAYAMT02
+        ,PAYAMT03
+        ,SAL_POINT
+        ,CD_NO
+        ,STR_CODE_TO
+        ,REG_DTTM
+        ,GOODSNO
+        ,ORDNO
+        ,MEMBERNO
+        ,seed
+        ,ERP_SEQ_NO
+        ,ORD_SEQ
+        )
+        VALUES(
+        #{dtype},
+        TO_DATE(TO_CHAR(SYSDATE, 'YYMMDD'), 'YYMMDD'), <!--TO_DATE(#{a_dates}, 'YYYY-MM-DD HH24:MI:SS'),-->
+        #{a_cd_cust},
+        #{a_in_flag},
+        TO_DATE(TO_CHAR(SYSDATE, 'YYMMDD'), 'YYMMDD'),  <!--TO_DATE(#{a_pdate}, 'YYYY-MM-DD HH24:MI:SS'),-->
+        #{a_str_code},
+        #{a_canc_type},
+        #{a_sal_amt},
+        #{a_payamt01},
+        #{a_payamt02},
+        #{a_payamt03},
+        #{a_sal_point},
+        #{a_cd_no},
+        #{a_str_code_to},
+        TO_DATE(TO_CHAR(SYSDATE, 'YYMMDD'), 'YYMMDD'),
+        #{goodsno},
+        #{ordno},
+        #{memberno},
+        TC_MEMBER_DPOINT_LOG_SEQ.NEXTVAL,
+        #{erpseqno},
+        #{ordseq}
+        )
+    </insert>
+    <!-- 보유 포인트 조회 (ERP) -->
+    <select id="selectOfflineAvailPoint" parameterMap="offPointSearchDto" resultType="int">
+        /* erp.point.selectOfflineAvailPoint */
+        select nvl(max(mt_point1), 0)
+        from eaa07@DAVISION
+        where cd_cust = #{cdCust}
+    </select>
+
+    <!-- 관리자포인트설정 가져오기 -->
+    <select id="selectAdminPointSetting"  parameterType="long" resultMap="adminPointConfigVo">
+        /* erp.point.selectAdminPointSetting */
+        select nvl(A.FIRST_SIGNUP_POINT, 0) as FIRST_SIGNUP_POINT <!-- 회원가입시 포인트 -->
+            ,A.POINT_PVD_GOODS_TYPE_CDS <!-- 포인트 적립가능 상품군들 -->
+            ,nvl(A.BUY_EPLG_WRITE_POINT, 0) as BUY_EPLG_WRITE_POINT <!-- 후기작성 포인트 -->
+            ,nvl(A.BUY_EPLG_WRITE_PM_POINT, 0) as BUY_EPLG_WRITE_PM_POINT <!-- 이미지 후기작성 포인트 -->
+
+            ,nvl(A.SVMN_USE_PSB_POSS_AMT, 0) as SVMN_USE_PSB_POSS_AMT <!-- 적립금 최소 사용 금액 -->
+            ,nvl(A.SVMN_MIN_USE_AMT, 0) as SVMN_MIN_USE_AMT <!-- 적립금 최소 사용 금액 -->
+            ,SVMN_MAX_USE_GB_CD as SVMN_MAX_USE_GB_CD <!--적립금 최대 사용 율/금액 1,2-->
+            ,nvl(A.SVMN_MAX_USE_AMT, 0) as SVMN_MAX_USE_AMT <!-- 적립금 최대 사용 율/금액 -->
+            ,A.SVMN_USE_UNIT_CD as SVMN_USE_UNIT_CD <!-- 적립금 사용 단위 코드 -->
+            ,nvl(A.SVMN_USE_LIMITDAY, 0) as SVMN_USE_LIMITDAY <!-- 적립금 사용 기한(월)-->
+            ,A.SVMN_CP_DUPLT_APPLY_YN as SVMN_CP_DUPLT_APPLY_YN <!-- 적립금 쿠폰 중복 적용 여부YN -->
+            ,(select CD_NM from TA_CMN_CD_DTL where GRP_CD = 'SVMN_USE_UNIT_CD' AND cd = A.SVMN_USE_UNIT_CD AND use_yn = 'Y') SVMN_USE_UNIT_NM
+            ,COURI_USE_YN
+            ,DIRECT_VISIT_RECPT_YN
+            ,DEFAULT_DLVRC_TYPE_CD
+            ,DEFAULT_DLVRC
+            ,DEFAULT_DLVR_MIN_AMT
+            ,DEFAULT_DLVR_MIN_DLVRC
+            ,DLVR_PAYMENT_KIND_CD
+            ,NVL(FIRST_SIGNUP_COUPON_YN, 'N') as FIRST_SIGNUP_COUPON_YN
+        from TS_SITE A
+        where A.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 리뷰포인트 제공시 가능한지 실구매한 상품(구매완료상태)의개수와 상품의 리뷰개수를 비교 -->
+    <select id="getGoodsReviewIsPoint"  parameterType="hashmap" resultType="int">
+        /* erp.point.getGoodsReviewIsPoint */
+        select
+                CASE WHEN (A.ordcnt - A.rvcnt) <![CDATA[ < ]]> 0 THEN 0
+                ELSE (A.ordcnt - A.rvcnt)
+                END AS isCnt
+            from(
+            select
+                count(od.ORD_NO) as ordcnt
+                ,(select count(LETT_NO) from TB_GOODS_BBS_LETT where MEMBER_NO=od.REGR_NO and GOODS_NO = od.GOODS_NO) as rvcnt
+                ,od.REGR_NO
+                ,od.GOODS_NO
+            from TO_ORD_DTL od
+            where od.REGR_NO = #{memberno}
+            AND od.ORD_DTL_STATUS_CD = '20'
+            AND od.GOODS_NO = #{goodsno}
+            GROUP By od.GOODS_NO, od.REGR_NO
+        )A
+    </select>
+
+    <!-- erp 에서 dpoint 조회 -->
+    <select id="getErpMemberDPointList"  parameterType="hashmap" resultMap="memberDPointErpDTO">
+        /* erp.point.getErpMemberDPointList */
+        <![CDATA[
+        select T.*
+            from(
+                SELECT
+                DATES ,
+                STR_CODE ,
+                POS_NO ,
+                TRXN_NO ,
+                CANC_TYPE ,
+                IN_FLAG ,
+                SAL_AMT , /*구매금액*/
+                CASH_PAY , /*현금지불*/
+                CASH_POINT as CASHPOINT,
+                CARD_PAY , /*카드지불*/
+                CARD_POINT as CARDPOINT,
+                SAL_POINT , /*적립포인트*/
+                NM_CUST ,
+                USE_POINT , /*사용포인트*/
+                USE_CD_CUST,
+                USE_NM_CUST,
+                SUM(SAL_POINT - USE_POINT) OVER (PARTITION BY CD_CUST
+                ORDER BY DATES, CD_CUST, SEQ_NO) AS POINT_TOTAL,
+                SUM(SAL_POINT - USE_POINT) OVER (PARTITION BY CD_CUST) AS POINT_TOTAL2,
+                SUM(SAL_POINT - USE_POINT) OVER () AS POINT_TOTAL3
+                FROM (SELECT A.DATES,
+                A.STR_CODE,
+                A.POS_NO,
+                A.TRXN_NO,
+                A.CANC_TYPE,
+                A.IN_FLAG ,
+                A.SAL_AMT ,
+                A.PAYAMT01 AS CASH_PAY,
+                FNC_POINT_CAL_NEW00@DAVISION(A.STR_CODE, A.MEMBER_NO, A.PDATES, B.CLS_CODE, A.PAYAMT01, 0 ) AS CASH_POINT ,
+                A.PAYAMT02 AS CARD_PAY,
+                FNC_POINT_CAL_NEW00@DAVISION(A.STR_CODE, A.MEMBER_NO, A.PDATES, B.CLS_CODE, 0 , A.PAYAMT02) AS CARD_POINT ,
+                DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT ,
+                DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT ,
+                A.MEMBER_NO AS CD_CUST ,
+                FNC_GET_NM_CUST@DAVISION(A.MEMBER_NO) AS NM_CUST ,
+                A.USE_CUST_CD AS USE_CD_CUST,
+                FNC_GET_NM_CUST@DAVISION(A.USE_CUST_CD) AS USE_NM_CUST ,
+                A.SEQ_NO
+                FROM GT040TBL@DAVISION A ,
+                (
+                    SELECT A.DATES,
+                    A.STR_CODE,
+                    A.POS_NO,
+                    A.TRXN_NO,
+                    A.MEMBER_NO,
+                    MAX(
+                    CASE
+                    WHEN TO_DATE(A.DATES) >= '2013-03-01'
+                    AND B.TOT_AMT / DECODE(B.QTY, 0, 1, B.QTY) >= 5000 THEN B.SUB_CLASS
+                    ELSE ''
+                    END) AS CLS_CODE
+                    FROM DT060TBL@DAVISION A ,
+                    DT061TBL@DAVISION B
+                    WHERE A.DATES = B.DATES
+                    AND A.STR_CODE = B.STR_CODE
+                    AND A.POS_NO = B.POS_NO
+                    AND A.TRXN_NO = B.TRXN_NO
+                    and A.TRXN_GUBUN = '1'
+                    and A.PNT_APP = '1'
+                    AND A.MEMBER_NO = #{cd_cust}
+                    GROUP BY A.DATES,
+                    A.STR_CODE,
+                    A.POS_NO,
+                    A.TRXN_NO ,
+                    A.MEMBER_NO
+                ) B
+                WHERE A.PDATES = B.DATES (+)
+                AND A.STR_CODE = B.STR_CODE(+)
+                AND A.POS_NO = B.POS_NO (+)
+                AND A.TRXN_NO = B.TRXN_NO (+)
+                AND A.MEMBER_NO = #{cd_cust}
+            )
+            ORDER BY DATES desc /*CD_CUST desc, DATES desc, SEQ_NO desc*/
+        )T
+        Where ROWNUM <= 1
+        ]]>
+    </select>
+
+    <!-- 디포인트 내역 조회 -->
+    <select id="getErpMemberDPointListPaging" parameterMap="memberDPointErpSo" resultMap="memberDPointErpVo">
+        /* erp.point.getErpMemberDPointListPaging */
+        SELECT *
+        FROM
+        (
+            SELECT ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+            from
+            (
+                select T.*,  count(*) over() as tot_cnt
+                from
+                (
+                    SELECT
+                    CD_CUST,
+                    DATES ,
+                    SEQ_NO,
+                    STR_CODE ,
+                    STR_NM,
+                    NM_CUST ,
+                    IN_FLAG ,
+                    SAL_AMT ,
+                    SAL_POINT ,
+                    USE_POINT,
+                    DTYPE,
+                    GOODSNO,
+                    ORDNO,
+                    CASE WHEN DTYPE ='00' THEN '테스트'
+                    WHEN DTYPE ='01' THEN '회원가입'
+                    WHEN DTYPE ='02' THEN '[' || GOODS_NM || ']' || '후기 작성'
+                    WHEN DTYPE ='03' THEN '[프리미엄] [' || GOODS_NM || ']' || '후기 작성'
+                    WHEN DTYPE ='04' THEN '회원 탈퇴'
+                    WHEN DTYPE ='05' THEN '[' || GOODS_NM || ']' || ' 상품 결제 포인트 사용'
+                    WHEN DTYPE ='06' THEN '[' || GOODS_NM || ']' || ' 상품 결제 포인트 취소'
+                    WHEN DTYPE ='07' THEN '[' || GOODS_NM || ']' || ' 상품 결제 포인트 적립'
+                    WHEN DTYPE ='08' THEN '[' || GOODS_NM || ']' || ' 상품 결제 포인트 회수'
+                    END AS DTYPENM
+                    ,CASE WHEN IN_FLAG ='0' THEN '적립'
+                    WHEN IN_FLAG ='1' THEN '통합'
+                    WHEN IN_FLAG ='2' THEN '소멸'
+                    WHEN IN_FLAG ='3' THEN '변경'
+                    WHEN IN_FLAG ='4' THEN '사용'
+                    END AS INFLAGNM
+                FROM (SELECT A.DATES,
+                    A.STR_CODE,
+                    (SELECT S.str_name from DAVI_HOME.STORE_MASTER@DAVISION S WHERE S.end_ind = '1' AND S.str_code=A.STR_CODE AND ROWNUM  <![CDATA[ <= ]]> 1) AS STR_NM,
+                    A.IN_FLAG ,
+                    A.SAL_AMT ,
+                    DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT ,
+                    DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT ,
+                    A.MEMBER_NO AS CD_CUST ,
+                    FNC_GET_NM_CUST@DAVISION(A.MEMBER_NO) AS NM_CUST ,
+                    A.SEQ_NO,
+                    B.DTYPE,
+                    C.GOODS_NM,
+                    B.GOODSNO,
+                    B.ORDNO
+                    FROM GT040TBL@DAVISION A
+                    LEFT JOIN TC_MEMBER_DPOINT_LOG B
+                    ON TO_CHAR(A.DATES) = TO_CHAR(B.DATES) AND A.SEQ_NO = B.ERP_SEQ_NO AND A.MEMBER_NO = B.CD_CUST
+                    LEFT JOIN TG_GOODS C
+                    ON B.GOODSNO = C.GOODS_NO
+                    WHERE
+                    A.MEMBER_NO = #{cdCust}
+                    <if test="stRegDttm != null and stRegDttm != ''">
+                        <![CDATA[
+                                          AND A.DATES >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+                                          ]]>
+                    </if>
+                    <if test="endRegDttm != null and endRegDttm != ''">
+                        <![CDATA[
+                                          AND A.DATES < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+                                          ]]>
+                    </if>
+                )D
+                ORDER BY DATES desc, SEQ_NO desc /*CD_CUST desc, DATES desc, SEQ_NO desc*/
+                )T
+            )AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+    <select id="getErpMemberDPointListPagingCount" resultType="Integer">
+        /* erp.point.getErpMemberDPointListPagingCount */
+        <!--
+       SELECT COUNT(*)
+       FROM (
+                SELECT A.*
+                FROM (
+                         SELECT B.*
+                         FROM TC_MEMBER_DPOINT_LOG B
+                           <if test="cdCust != null and cdCust != ''">
+                               WHERE B.CD_CUST = #{cdCust}
+                           </if>
+                           <if test="memberNo != null and memberNo != ''">
+                               WHERE B.MEMBERNO = #{memberNo}
+                           </if>
+
+                     ) A
+                WHERE 1=1
+               <if test="stRegDttm != null and stRegDttm != ''">
+                   <![CDATA[
+                                     AND REG_DTTM >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+                                     ]]>
+               </if>
+               <if test="endRegDttm != null and endRegDttm != ''">
+                   <![CDATA[
+                                     AND REG_DTTM < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+                                     ]]>
+               </if>
+            ) B
+            -->
+        SELECT COUNT(*)
+        FROM (
+            SELECT A.*
+            FROM (
+                SELECT A.MEMBER_NO
+                FROM GT040TBL@DAVISION A
+                WHERE A.MEMBER_NO = #{cdCust}
+                <if test="stRegDttm != null and stRegDttm != ''">
+                    <![CDATA[
+                                                  AND A.DATES >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+                                                  ]]>
+                </if>
+                <if test="endRegDttm != null and endRegDttm != ''">
+                    <![CDATA[
+                                                  AND A.DATES < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+                                                  ]]>
+                </if>
+            ) A
+            WHERE 1=1
+        ) B
+   </select>
+   <select id="getErpMemberDPointListPagingTotalCount" resultType="Integer">
+       /* erp.point.getErpMemberDPointListPagingTotalCount */
+       <!--
+       SELECT COUNT(*)
+       FROM (
+                SELECT A.*
+                FROM (
+                         SELECT B.*
+                         FROM TC_MEMBER_DPOINT_LOG B
+                           <if test="cdCust != null and cdCust != ''">
+                               WHERE B.CD_CUST = #{cdCust}
+                           </if>
+                           <if test="memberNo != null and memberNo != ''">
+                               WHERE B.MEMBERNO = #{memberNo}
+                           </if>
+
+                     ) A
+                WHERE 1=1
+            ) B
+            -->
+       SELECT COUNT(*)
+           FROM (
+           SELECT A.*
+            FROM (
+               SELECT A.MEMBER_NO
+               FROM GT040TBL@DAVISION A
+                WHERE A.MEMBER_NO = #{cdCust}
+           ) A
+           WHERE 1=1
+       ) B
+    </select>
+
+    <!-- 디포인트 시퀀스생성 -->
+    <select id="selectDPointSeqCreate" parameterType="hashmap" resultType="int">
+        /* erp.point.selectDPointSeqCreate */
+        SELECT NVL(MAX(A.ERP_SEQ_NO), 0) + 1
+        FROM TC_MEMBER_DPOINT_LOG A
+        WHERE A.CD_CUST = #{a_cd_cust}
+        AND TO_DATE(A.DATES)     = TO_DATE(SYSDATE, 'YY/MM/DD')
+    </select>
+    <!-- 이알피에 마지막으로 넣은 데이터 시퀀스 조회 -->
+    <select id="selectERPDPointSeqCreate" parameterType="hashmap" resultType="int">
+        /* erp.point.selectDPointSeqCreate */
+        SELECT NVL(MAX(SEQ_NO), 0)
+        FROM GT040TBL@DAVISION
+        WHERE MEMBER_NO = #{a_cd_cust}
+          AND TO_DATE(DATES)     = TO_DATE(SYSDATE, 'YY/MM/DD')
+        ORDER BY DATES DESC, SEQ_NO DESC
+    </select>
+
+    <!-- 회원의 적립과 사용을 총 계산한 지점별 총 포인트 조회 -->
+    <select id="getErpMemberStoreGroupDPoint" parameterMap="memberStoreGroupDPointErpSO" resultMap="memberStoreGroupDPointErpVO">
+        /* erp.point.getErpMemberStoreGroupDPoint */
+        select T.*
+        from(
+                SELECT
+                    B.STR_CODE
+                     ,SUM(SAL_POINT - USE_POINT) AS POINT_TOTAL
+                FROM (SELECT
+                          A.SEQ_NO,
+                          A.DATES,
+                          A.STR_CODE,
+                          A.IN_FLAG ,
+                          DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT ,
+                          DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT,
+                          A.MEMBER_NO AS CD_CUST
+                      FROM GT040TBL@DAVISION A
+                      WHERE
+                          A.MEMBER_NO = #{cdCust}
+                     )B
+                GROUP BY B.STR_CODE
+
+            )T
+        WHERE T.POINT_TOTAL > 0
+    </select>
+    <!-- 회원의 적립과 사용을 총 계산한 지점별 총 포인트 에서 세부별 선입 조회 -->
+    <select id="getErpMemberStoreDetalHeadDPoint" parameterMap="memberStoreGroupDPointErpSO" resultMap="memberStoreGroupDPointErpVO">
+        /* erp.point.getErpMemberStoreGroupDPoint */
+        select T.*
+        from(
+                SELECT
+                    B.DATES
+                     ,B.CD_CUST
+                     ,B.IN_FLAG
+                     ,B.STR_CODE
+                     ,B.SAL_POINT
+                     ,SUM(USE_POINT) OVER (PARTITION BY STR_CODE) AS STR_USE_TOTAL
+                FROM (SELECT
+                          A.SEQ_NO,
+                          A.DATES,
+                          A.STR_CODE,
+                          A.IN_FLAG ,
+                          DECODE(A.IN_FLAG, '0', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), '3', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS SAL_POINT ,
+                          DECODE(A.IN_FLAG, '4', DECODE(A.CANC_TYPE, '2', A.SAL_POINT*(-1), A.SAL_POINT), 0) AS USE_POINT,
+                          A.MEMBER_NO AS CD_CUST
+                      FROM GT040TBL@DAVISION A
+                      WHERE
+                          A.MEMBER_NO = #{cdCust}
+                     )B
+
+                ORDER BY CD_CUST, DATES, SEQ_NO
+            )T
+        WHERE T.IN_FLAG = 0
+    </select>
+
+    <!-- 결제취소시 포인트를 사용한 지점과 사용한 포인트 조회 -->
+    <select id="getOrdStoreUseDPoint" parameterMap="memberDPointErpSo" resultMap="memberDPointErpVo">
+        /* erp.point.getOrdStoreUseDPoint */
+        SELECT A.STR_CODE, A.SAL_POINT
+        FROM TC_MEMBER_DPOINT_LOG A
+        WHERE 1=1
+        <if test="cdCust != null and cdCust != ''">
+            AND A.CD_CUST = #{cdCust}
+        </if>
+        <if test="memberNo != null and memberNo != ''">
+            AND A.MEMBERNO = #{memberNo}
+        </if>
+        AND A.IN_FLAG = '4'
+        AND A.ORDNO = #{ordNo}
+        AND A.GOODSNO = #{goodsNo}
+        AND A.ORD_SEQ = #{ordSeq}
+    </select>
+</mapper>

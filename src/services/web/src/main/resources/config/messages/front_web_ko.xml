@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+
+    <comment>프론트 FO message</comment>
+
+    <!--
+    업무별 메시지
+    -->
+    <!-- 공통 : COM-->
+    <entry key="front.web.common.insert">등록되었습니다.</entry>
+    <entry key="front.web.common.update">수정되었습니다.</entry>
+    <entry key="front.web.common.delete">삭제되었습니다.</entry>
+    <entry key="front.web.common.wrongapproach">잘못된 접근 입니다.</entry>
+
+    <!-- 로그인 : LGN-->
+
+    <!-- 기본관리 : SYS-->
+
+
+    <!-- 사용자 : USR-->
+
+
+    <!-- 회원 : MBR-->
+    <entry key="front.web.mypage.delivery.insert">자주쓰는 배송지가 등록되었습니다.</entry>
+    <entry key="front.web.mypage.delivery.update">자주쓰는 배송지 정보가 수정되었습니다.</entry>
+    <entry key="front.web.mypage.delivery.delete">자주쓰는 배송지 정보가 삭제되었습니다.</entry>
+
+    <entry key="front.web.mypage.refund.insert">환불계좌가 등록되었습니다.</entry>
+    <entry key="front.web.mypage.refund.update">환불계좌 정보가 수정되었습니다.</entry>
+    <entry key="front.web.mypage.refund.delete">환불계좌 정보가 삭제되었습니다.</entry>
+    
+    <entry key="front.exception.eyesight.onlyCombinedMember">통합멤버쉽 회원만 가져오기 할 수 있습니다.</entry>
+    <entry key="front.exception.prescription.overmax">최대 10개까지만 등록 할 수 있습니다.</entry>
+
+    <!-- 회원 : MBR 회원가입 -->
+    <entry key="front.web.member.certify.key">인증번호가 유효하지 않습니다.</entry>
+    <entry key="front.web.member.abnormal.path">본인 인증후 정상적인 경로로 접근하여야합니다.</entry>
+    <entry key="front.web.member.email.path">이메일 인증후 정상적인 경로로 접근하여야합니다.</entry>
+    <entry key="front.web.member.apply.terms">필수약관에 모두 동의하셔야합니다.</entry>
+    <entry key="front.web.member.exist.email">이미 가입되어 있는 이메일 계정입니다.</entry>
+    <entry key="front.web.member.exist.bizNo">이미 가입되어 있는 사업자 등록 번호 입니다.</entry>
+
+    <!-- 전시 : DSP-->
+
+
+    <!-- 마케팅 : PRO-->
+
+
+    <!-- 상품 : GDS-->
+    <entry key="front.web.goods.noSale">판매중인 상품이 아닙니다.</entry>
+    <entry key="front.web.goods.coupon.wrongCoupon">유효하지 않은 쿠폰입니다.</entry>
+
+
+    <!-- 주문 : ORD-->
+    <entry key="front.web.order.insert.error">주문 등록시 오류가 발생하였습니다.</entry>
+
+    <!-- 정산 : ADJ-->
+
+    <!-- 방문예약 -->
+    <entry key="ifapi.exception.reserve.insert.already">이미 등록된 방문예약정보 입니다.</entry>
+
+
+    <!-- 통계 : STA-->
+
+</properties>

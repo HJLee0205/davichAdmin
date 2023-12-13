@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.login"> 
+
+	<select id="getUser" resultType="net.danvi.dmall.biz.system.model.LoginVO">
+		SELECT	/* QUERYID(adminLogin.getUser) */
+				MEM.MEMBER_NO,
+				MEM.MEMBER_CARD_NO,
+				MEM.SITE_NO,
+				MEMBER_NM,
+				MEMBER_TYPE_CD,
+				BIRTH,
+				GENDER_GB_CD,
+				NTN_GB_CD,
+				JOIN_DTTM,
+				CERTIFY_METHOD_CD,
+				EMAIL_RECV_YN,
+				SMS_RECV_YN,
+				MEMBER_STATUS_CD,
+				LOGIN_ID,
+				PW,
+				TEL,
+				MOBILE,
+				EMAIL,
+				JOIN_PATH_CD,
+				NVL(PW_CHG_DTTM, JOIN_DTTM) AS PW_CHG_DTTM,
+				NEXT_PW_CHG_SCD_DTTM,
+				NVL(LOGIN_FAIL_CNT, 0) AS LOGIN_FAIL_CNT,
+				ADULT_CERTIFY_YN,
+				MEM.ROAD_ADDR,
+				MEM.DTL_ADDR,
+				MEM.NEW_POST_NO,
+				(SELECT AUTH_GB_CD FROM TA_MANAGER_AUTH_GRP WHERE SITE_NO = MEM.SITE_NO AND AUTH_GRP_NO = MGR.AUTH_GRP_NO) AS AUTH_GB_CD,
+		        MEM.MEMBER_GRADE_NO,
+		        (SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE MEMBER_GRADE_NO = MEM.MEMBER_GRADE_NO AND SITE_NO = MEM.SITE_NO) AS MEMBER_GRADE_NM,
+		        (
+		        SELECT COUNT(*) CP_CNT
+		          FROM TC_MEMBER_CP
+		         WHERE USE_YN = 'Y'
+		           <![CDATA[
+		           AND CP_APPLY_START_DTTM <= sysdate
+		           AND CP_APPLY_END_DTTM >= sysdate
+		           ]]>
+		           AND MEMBER_NO = MEM.MEMBER_NO
+		        ) AS COUPON_COUNT,
+		        'N' SELLER_LOGIN_YN,
+		        ''  SELLER_NM,
+		        ''  SELLER_ID,
+		        NULL SELLER_NO,
+		        MEM.INTEGRATION_MEMBER_GB_CD
+		FROM	TC_MEMBER MEM LEFT OUTER JOIN TA_MANAGER MGR
+					ON MEM.SITE_NO = MGR.SITE_NO
+					AND MEM.MEMBER_NO = MGR.MEMBER_NO
+		WHERE	1 = 1
+		AND		MEM.SITE_NO = #{siteNo}
+		AND		MEM.LOGIN_ID = #{loginId}
+
+		UNION ALL
+
+		SELECT	/* QUERYID(adminLogin.getUser) */
+				SELLER_NO MEMBER_NO,
+				'' MEMBER_CARD_NO,
+				SEL.SITE_NO,
+				SELLER_NM MEMBER_NM,
+				'' MEMBER_TYPE_CD,
+				'' BIRTH,
+				'' GENDER_GB_CD,
+				'' NTN_GB_CD,
+				null JOIN_DTTM,
+				'' CERTIFY_METHOD_CD,
+				'' EMAIL_RECV_YN,
+				'' SMS_RECV_YN,
+				'01' MEMBER_STATUS_CD,
+				'',
+				SEL.PW,
+				'' TEL,
+				'' MOBILE,
+				'' EMAIL,
+				'' JOIN_PATH_CD,
+				null PW_CHG_DTTM,
+				null NEXT_PW_CHG_SCD_DTTM,
+				0 LOGIN_FAIL_CNT,
+				'' ADULT_CERTIFY_YN,
+				'' ROAD_ADDR,
+				'' DTL_ADDR,
+				'' NEW_POST_NO,
+				'S' AUTH_GB_CD,
+		      0 MEMBER_GRADE_NO,
+		      '' MEMBER_GRADE_NM,
+		      0 AS COUPON_COUNT,
+	          'Y' SELLER_LOGIN_YN,
+		      SEL.SELLER_NM,
+		      SEL.SELLER_ID,
+		      SEL.SELLER_NO,
+		      '' INTEGRATION_MEMBER_GB_CD
+		FROM	TS_SELLER SEL
+		WHERE	1 = 1
+		AND		SEL.SITE_NO = #{siteNo}
+		AND		SEL.SELLER_ID = #{loginId}
+		AND     SEL.del_yn = 'N'
+        AND     SEL.status_cd in ('01','02','03')
+
+	</select>
+
+	<update id="updateUserFailCnt">
+		UPDATE
+
+			/*+ INDEX(TC_MEMBER IDX_TC_MEMBER_001) */
+			TC_MEMBER SET
+				LOGIN_FAIL_CNT= NVL(LOGIN_FAIL_CNT, 0) + 1,
+				UPD_DTTM = sysdate
+		WHERE	1 = 1
+		AND		SITE_NO = #{siteNo}
+		AND		LOGIN_ID = #{loginId}
+	</update>
+
+	<update id="resetUserFailCnt">
+		UPDATE
+
+			/*+ INDEX(TC_MEMBER IDX_TC_MEMBER_001) */
+			TC_MEMBER SET
+				LOGIN_FAIL_CNT	= 0,
+				UPD_DTTM = sysdate
+		WHERE	1 = 1
+		AND		SITE_NO = #{siteNo}
+		AND		LOGIN_ID = #{loginId}
+	</update>
+
+	<insert id="insertUserLoginHist" parameterType="net.danvi.dmall.biz.system.login.model.MemberLoginHistPO">
+		<selectKey keyProperty="loginNo" order="BEFORE" resultType="java.lang.Long">
+			SELECT NVL(MAX(LOGIN_NO), 0) + 1 AS LOGIN_NO FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = #{memberNo}
+		</selectKey>
+		INSERT INTO TC_MEMBER_LOGIN_HIST (
+			MEMBER_NO,		/* 사용자 번호 */
+			LOGIN_NO,		/* 로그인 순번 */
+			LOGIN_IP,		/* 로그인 IP */
+			REGR_NO,		/* 시스템 등록자 번호 */
+			REG_DTTM,		/* 시스템 등록 일시 */
+			LOGIN_DTTM		/* 로그인 일시 */
+		) VALUES (
+			  #{memberNo}	/* 사용자 번호 */
+			, #{loginNo}	/* 로그인 순번 */
+			, #{loginIp}	/* 로그인 IP */
+			, #{regrNo}		/* 시스템 등록자 번호 */
+			, sysdate			/* 시스템 등록 일시 */
+			, sysdate			/* 로그인 일시 */
+		)
+	</insert>
+
+	<select id="getUserForEmailAuth" parameterType="memberManagePO" resultType="memberManagePO">
+		SELECT	*
+		FROM 	TC_MEMBER
+		WHERE	SITE_NO = #{siteNo}
+		AND		EMAIL = #{email}
+		AND 	BIRTH = #{birth}
+		AND 	MEMBER_NM = #{memberNm}
+	</select>
+
+	<update id="updateUserActive" parameterType="memberManagePO">
+		UPDATE  TC_MEMBER SET
+				MEMBER_STATUS_CD = '01',
+				UPDR_NO = #{memberNo},
+				UPD_DTTM = sysdate
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	MEMBER_NO = #{memberNo}
+	</update>
+
+	<update id="updateChangePwNext" parameterType="memberManagePO">
+		UPDATE  TC_MEMBER SET
+				NEXT_PW_CHG_SCD_DTTM = #{nextPwChgScdDttm},
+				<choose>
+	                <when test = "updrNo != null and updrNo != ''">
+	                    UPDR_NO = #{updrNo},
+	                </when>
+	                <otherwise>
+						UPDR_NO = #{memberNo},
+	                </otherwise>
+                </choose>
+				UPD_DTTM = sysdate
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	MEMBER_NO = #{memberNo}
+	</update>
+
+	<update id="updateAuthEmail" parameterType="memberManagePO">
+		UPDATE  TC_MEMBER SET
+		EMAIL_CERTIFY_VALUE= #{emailCertifyValue},
+		<choose>
+			<when test = "updrNo != null and updrNo != ''">
+				UPDR_NO = #{updrNo},
+			</when>
+			<otherwise>
+				UPDR_NO = #{memberNo},
+			</otherwise>
+		</choose>
+		UPD_DTTM = SYSDATE
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	MEMBER_NO = #{memberNo}
+	</update>
+	<select id="getEmailAuthKey" resultType="memberManageVO">
+		SELECT EMAIL_CERTIFY_VALUE FROM TC_MEMBER
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	MEMBER_NO = #{memberNo}
+	</select>
+</mapper>

@@ -1,0 +1,62 @@
+@charset "euc-kr";
+/*
+ * Nanum Square Web Fonts
+ * https://github.com/hiun/NanumSquare
+ * Copyright (c) 2010, NAVER Corporation (http://www.nhncorp.com)
+ */
+
+@font-face {
+	font-family: 'Nanum Square';
+	font-style: normal;
+	font-weight: 400;
+	src:url('../font/NanumSquareR.eot');
+	src:url('../font/NanumSquareR.eot?#iefix') format('embedded-opentype'),
+	url('../font/NanumSquareR.woff') format('woff'),
+	url('../font/NanumSquareR.ttf') format('truetype');
+	url('../font/NanumSquareR.svg#NanumSquareR') format('svg');
+	/*src:local('『'), url('../font/NanumSquareR.woff') format('woff');*/
+}
+
+@font-face {
+	font-family: 'Nanum Square';
+	font-style: bold;
+	font-weight: 700;
+	src:url('../font/NanumSquareB.eot');
+	src:url('../font/NanumSquareB.eot?#iefix') format('embedded-opentype'),
+	url('../font/NanumSquareB.woff') format('woff'),
+	url('../font/NanumSquareB.ttf') format('truetype');
+	url('../font/NanumSquareB.svg#NanumSquareB') format('svg');
+	/*src:local('『'), url('../font/NanumSquareB.woff') format('woff');*/
+}
+@font-face {
+	font-family:"Nanum Gothic";
+	src:url('../font/NanumGothic.eot');
+	src:url('../font/NanumGothic.eot?#iefix') format('embedded-opentype'),
+	url('../font/NanumGothic.woff') format('woff'),
+	url('../font/NanumGothic.ttf') format('truetype');
+	url('../font/NanumGothic.svg#NanumGothic') format('svg');
+	/*src:local('『'), url('../font/NanumGothic.woff') format('woff');*/
+}
+
+@font-face {
+    font-family:'Nanum Gothic';
+    font-style: bold;
+	font-weight: 700;
+	src:url('../font/NanumGothicBold.eot');
+	src:url('../font/NanumGothicBold.eot?#iefix') format('embedded-opentype'),
+	url('../font/NanumGothicBold.woff') format('woff'),
+	url('../font/NanumGothicBold.ttf') format('truetype');
+	url('../font/NanumGothicBold.svg#NanumGothicBold') format('svg');
+	/*src:local('『'), url('../font/NanumGothicBold.woff') format('woff');*/
+}
+@font-face {
+    font-family:'Nanum Gothic';
+    font-style: bold;
+	font-weight: 800;
+	src:url('../font/NanumGothicExtraBold.eot');
+	src:url('../font/NanumGothicExtraBold.eot?#iefix') format('embedded-opentype'),
+	url('../font/NanumGothicExtraBold.woff') format('woff'),
+	url('../font/NanumGothicExtraBold.ttf') format('truetype');
+	url('../font/NanumGothicExtraBold.svg#NanumGothicExtraBold') format('svg');
+	/*src:local('『'), url('../font/NanumGothicExtraBold.woff') format('woff');*/
+}

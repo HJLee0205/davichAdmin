@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mypage.eyesight">
+
+	<!-- 시력 정보 조회 -->
+	<select id="selectEyesightInfo" parameterType="long" resultType="net.danvi.dmall.biz.app.eyesight.model.EyesightVO">
+		select to_char(checkup_dt, 'YYYY-MM-DD') as checkupDt
+			, checkup_institute_nm
+			, sph_l
+			, sph_r
+			, cyl_l
+			, cyl_r
+			, axis_l
+			, axis_r
+			, add_l
+			, add_r
+			, prism_l
+			, prism_r
+			, base_l
+			, base_r
+			, pd_l
+			, pd_r
+			, to_char(nvl(upd_dttm, reg_dttm), 'YYYY-MM-DD HH24:MI:SS') as lastUpdDttm
+		from tc_es_info
+		where member_no = #{memberNo}
+	</select>
+	
+	<!-- 시력 정보가 등록되어 있는지 확인 -->
+	<select id="countEyesightInfo" parameterType="long" resultType="int">
+		select count(*) as cnt
+		from tc_es_info
+		where member_no = #{memberNo}
+	</select>
+	
+	<!-- 시력 정보 등록 -->
+	<insert id="insertEyesightInfo" parameterType="net.danvi.dmall.biz.app.eyesight.model.EyesightPO">
+		insert into tc_es_info (
+			member_no
+			, sph_l
+			, sph_r
+			, cyl_l
+			, cyl_r
+			, axis_l
+			, axis_r
+			, add_l
+			, add_r
+			, prism_l
+			, prism_r
+			, base_l
+			, base_r
+			, pd_l
+			, pd_r
+			, checkup_dt
+			, checkup_institute_nm
+			, regr_no
+			, reg_dttm
+		) values (
+			#{memberNo}
+			, #{sphL}
+			, #{sphR}
+			, #{cylL}
+			, #{cylR}
+			, #{axisL}
+			, #{axisR}
+			, #{addL}
+			, #{addR}
+			, #{prismL}
+			, #{prismR}
+			, #{baseL}
+			, #{baseR}
+			, #{pdL}
+			, #{pdR}
+			, to_date(#{checkupDt}, 'YYYY-MM-DD')
+			, #{checkupInstituteNm}
+			, #{regrNo}
+			, sysdate
+		)
+	</insert>
+	
+	<!-- 시력 정보 수정 -->
+	<update id="updateEyesightInfo" parameterType="net.danvi.dmall.biz.app.eyesight.model.EyesightPO">
+		update tc_es_info
+		  set sph_l = #{sphL}
+			, sph_r = #{sphR}
+			, cyl_l = #{cylL}
+			, cyl_r = #{cylR}
+			, axis_l = #{axisL}
+			, axis_r = #{axisR}
+			, add_l = #{addL}
+			, add_r = #{addR}
+			, prism_l = #{prismL}
+			, prism_r = #{prismR}
+			, base_l = #{baseL}
+			, base_r = #{baseR}
+			, pd_l = #{pdL}
+			, pd_r = #{pdR}
+			, checkup_dt = to_date(#{checkupDt}, 'YYYY-MM-DD')
+			, checkup_institute_nm = #{checkupInstituteNm}
+			, updr_no = #{updrNo}
+			, upd_dttm = sysdate
+		where member_no = #{memberNo}
+	</update>
+	
+</mapper>

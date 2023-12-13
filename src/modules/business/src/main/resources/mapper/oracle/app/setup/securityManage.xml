@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.securityManage">
+
+	<select id="selectSecurityConfig" resultType="net.danvi.dmall.biz.app.setup.securitymanage.model.SecurityManagePO">
+		/* setup.securityManage.selectSecurityConfig - 보안 서버 설정 조회 */
+		SELECT
+				SECURITY_SERV_USE_TYPE_CD,
+				SECURITY_SERV_STATUS_CD,
+				TO_DATE(APPLY_START_DT, 'YYYYMMDD') AS APPLY_START_DT,
+				TO_DATE(APPLY_END_DT, 'YYYYMMDD') AS APPLY_END_DT,
+				DOMAIN,
+				PORT,
+				CERTIFY_MARK_DISP_YN
+		FROM 	TS_SECURITY_SERV_SET
+		WHERE 	SITE_NO = #{siteNo}
+	</select>
+
+	<insert id="insertSecurityConfig" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.SecurityManagePO">
+		/* setup.securityManage.insertSecurityConfig - 보안서버 설정 등록 */
+		INSERT INTO TS_SECURITY_SERV_SET (
+			SITE_NO, SECURITY_SERV_USE_TYPE_CD, SECURITY_SERV_STATUS_CD, APPLY_START_DT, APPLY_END_DT,
+			DOMAIN, PORT, CERTIFY_MARK_DISP_YN, REGR_NO, REG_DTTM
+		) VALUES (
+			#{siteNo}, #{securityServUseTypeCd},  #{securityServStatusCd},  #{applyStartDt},  #{applyEndDt},
+			#{domain}, #{port}, #{certifyMarkDispYn}, #{regrNo}, sysdate
+		)
+	</insert>
+
+	<update id="updateSecurityConfig" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.SecurityManagePO">
+		/* setup.securityManage.updateSecurityConfig - 보안서버 설정 변경 */
+		UPDATE TS_SECURITY_SERV_SET SET
+				SECURITY_SERV_USE_TYPE_CD = #{securityServUseTypeCd},
+				SECURITY_SERV_STATUS_CD = DECODE(SECURITY_SERV_STATUS_CD, 3, 2, SECURITY_SERV_STATUS_CD),
+				CERTIFY_MARK_DISP_YN = #{certifyMarkDispYn},
+				UPDR_NO = #{regrNo},
+				UPD_DTTM = sysdate
+		WHERE 	SITE_NO = #{siteNo}
+	</update>
+
+	<update id="updateSecurityConfigStatus" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.SecurityManagePO">
+		/* setup.securityManage.updateSecurityConfigStatus - 보안서버 상태 변경 */
+		UPDATE TS_SECURITY_SERV_SET SET
+		<if test="securityServStatusCd = '1'">
+				SECURITY_SERV_USE_TYPE_CD = '2',
+		</if>
+				SECURITY_SERV_STATUS_CD = #{securityServStatusCd},
+		<if test="applyStartDt != null">
+				APPLY_START_DT = #{applyStartDt},
+				APPLY_END_DT = #{applyEndDt},
+				DOMAIN = #{domain},
+				PORT = #{port},
+		</if>
+				UPDR_NO = #{updrNo},
+				UPD_DTTM = sysdate
+		WHERE 	SITE_NO = #{siteNo}
+	</update>
+
+    <resultMap id="accessBlockIpConfigMap" type="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpConfigPO">
+        <id column="SITE_NO" property="siteNo" />
+        <result column="IP_CONNECT_LIMIT_USE_YN" property="ipConnectLimitUseYn" />
+        <collection column="SITE_NO" property="ipList" javaType="ArrayList" select="setup.securityManage.selectAccessBlockIpList"
+                    ofType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpPO">
+            <id column="SET_NO" property="setNo" />
+            <result column="SITE_NO" property="siteNo" />
+            <result column="IP_ADDR1" property="ipAddr1" />
+            <result column="IP_ADDR2" property="ipAddr2" />
+            <result column="IP_ADDR3" property="ipAddr3" />
+            <result column="IP_ADDR4" property="ipAddr4" />
+        </collection>
+    </resultMap>
+	<select id="selectAccessBlockIpConfig" resultMap="setup.securityManage.accessBlockIpConfigMap">
+		/* setup.securityManage.selectAccessBlockIpConfig - 접속차단 IP 설정 조회 */
+		SELECT
+				TS.SITE_NO,
+				TS.IP_CONNECT_LIMIT_USE_YN
+		FROM 	TS_SITE TS
+		WHERE 	TS.SITE_NO = #{siteNo}
+	</select>
+	<select id="selectAccessBlockIpList" resultType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpPO">
+		/* setup.securityManage.selectAccessBlockIpList - 접속 차단 IP 조회 */
+		SELECT
+				TCLI.SET_NO,
+				TCLI.IP_ADDR1,
+				NVL(TCLI.IP_ADDR2, '*') AS IP_ADDR2,
+				NVL(TCLI.IP_ADDR3, '*') AS IP_ADDR3,
+				NVL(TCLI.IP_ADDR4, '*') AS IP_ADDR4
+		FROM 	TS_CONNECT_LIMIT_IP TCLI
+		WHERE 	SITE_NO = #{siteNo}
+	</select>
+
+    <update id="updateAccessBlockIpConfig">
+		/* setup.securityManage.selectAccessBlockIpList - 접속 차단 설정 변경 */
+        UPDATE  TS_SITE SET
+                IP_CONNECT_LIMIT_USE_YN = #{ipConnectLimitUseYn},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+    </update>
+    <insert id="insertAccessBlockIp" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpConfigPO">
+        /* setup.securityManage.insertAccessBlockIp - 접속 차단 IP 등록 */
+        INSERT INTO TS_CONNECT_LIMIT_IP (
+            SET_NO, SITE_NO, IP_ADDR1, IP_ADDR2, IP_ADDR3, IP_ADDR4, REGR_NO, REG_DTTM
+        ) VALUES
+        <foreach collection="ipList" item="ip" separator=",">
+        (fn_getSeq(0, 'SET_NO'), #{siteNo}, #{ip.ipAddr1}, #{ip.ipAddr2}, #{ip.ipAddr3}, #{ip.ipAddr4}, #{regrNo}, sysdate)
+        </foreach>
+    </insert>
+
+    <delete id="deleteAccessBlockIp" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.AccessBlockIpConfigPO">
+        /* setup.securityManage.deleteAccessBlockIp - 접속 차단 IP 삭제 */
+        DELETE FROM TS_CONNECT_LIMIT_IP
+        WHERE   SITE_NO = #{siteNo}
+        AND     SET_NO IN <foreach collection="ipList" item="po" open="(" separator="," close=")">#{po.setNo}</foreach>
+    </delete>
+
+    <select id="selectContentsProtection" resultType="net.danvi.dmall.biz.app.setup.securitymanage.model.ContentsProtectionPO">
+        /* setup.securityManage.selectContentsProtection - 컨텐츠 무단 복사 보호 정보 조회 */
+        SELECT
+                SITE_NO,
+                NVL(MOUSE_RCLICK_USE_YN, 'N') AS MOUSE_RCLICK_USE_YN,
+                NVL(DRAG_COPY_USE_YN, 'N') AS DRAG_COPY_USE_YN
+        FROM 	TS_SITE TS
+        WHERE 	TS.SITE_NO = #{siteNo}
+    </select>
+
+    <update id="updateContentsProtection" parameterType="net.danvi.dmall.biz.app.setup.securitymanage.model.ContentsProtectionPO">
+        /* setup.securityManage.selectContentsProtection - 컨텐츠 무단 복사 보호 정보 변경 */
+        UPDATE  TS_SITE SET
+                MOUSE_RCLICK_USE_YN = #{mouseRclickUseYn},
+                DRAG_COPY_USE_YN = #{dragCopyUseYn},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+    </update>
+</mapper>

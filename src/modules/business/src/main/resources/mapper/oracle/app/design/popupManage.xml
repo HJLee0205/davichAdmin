@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="design.popupManage">
+
+    <sql id="selectPopInfoWhere">
+        <where>
+            SITE_NO = #{siteNo}
+            <if test="dateGubn eq 'I'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND REG_DTTM >= TO_DATE(#{fromRegDt},'YYYY-MM-DD')
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND REG_DTTM < TO_DATE(#{toRegDt},'YYYY-MM-DD') + 1
+                    ]]>
+                </if>
+            </if>
+            <if test="dateGubn eq 'S'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND DISP_START_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000')
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND DISP_START_DTTM <= concat(replace(#{toRegDt},'-',''),'235960')
+                    ]]>
+                </if>
+            </if>
+            <if test="dateGubn eq 'E'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND DISP_END_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000')
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND DISP_END_DTTM <= concat(replace(#{toRegDt},'-',''),'235960')
+                    ]]>
+                </if>
+            </if>
+            <if test="dateGubn eq 'Front'.toString()">
+                <![CDATA[
+                AND     sysdate >= TO_DATE(DISP_START_DTTM, 'YYYYMMDDHH24MISS')
+                AND     sysdate < TO_DATE(DISP_END_DTTM, 'YYYYMMDDHH24MISS')
+                ]]>
+            </if>
+            <if test="applyAlwaysYn != null and applyAlwaysYn != '' and applyAlwaysYn != 'N'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND (DISP_START_DTTM <= concat(replace(#{toRegDt},'-',''),'235960') OR APPLY_ALWAYS_YN = #{applyAlwaysYn})
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND (DISP_END_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000') OR APPLY_ALWAYS_YN = #{applyAlwaysYn})
+                    ]]>
+                </if>
+            </if>
+            <if test="applyAlwaysYn == null or applyAlwaysYn == '' or applyAlwaysYn == 'N'.toString()">
+                <if test="fromRegDt != null and fromRegDt != ''">
+                    <![CDATA[
+                    AND DISP_START_DTTM <= concat(replace(#{toRegDt},'-',''),'235960')
+                    ]]>
+                </if>
+                <if test="toRegDt != null and toRegDt != ''">
+                    <![CDATA[
+                    AND DISP_END_DTTM >= concat(replace(#{fromRegDt},'-',''),'000000')
+                    ]]>
+                </if>
+            </if>
+            <if test="pcGbCd != null and pcGbCd != ''">
+                AND PC_GB_CD = #{pcGbCd}
+            </if>
+            <if test="popupGrpCd != null and popupGrpCd != ''">
+                AND POPUP_GRP_CD = #{popupGrpCd}
+            </if>
+            <if test="popupGbCd != null and popupGbCd != ''">
+                AND POPUP_GB_CD = #{popupGbCd}
+            </if>
+            <if test="dispYn != null and dispYn != ''">
+                AND DISP_YN = #{dispYn}
+            </if>
+            <if test="popupNm != null and popupNm != ''">
+                AND INSTR (POPUP_NM,#{popupNm}) > 0
+            </if>
+            <if test="applyAlwaysYn != null and applyAlwaysYn != ''">
+                AND APPLY_ALWAYS_YN = #{applyAlwaysYn}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPopManagePaging" resultType="popManageVO">
+        /* design.popupManage.selectPopManagePaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+		        SELECT  POPUP_NO,
+		                SITE_NO,
+		                FILE_NO,
+                        FILE_PATH,
+                        ORG_FILE_NM,
+                        FILE_NM,
+                        FILE_SIZE,
+		                PC_GB_CD,
+		                POPUP_NM,
+		                CONTENT,
+		                WIDTH_SIZE,
+		                HEIGHT_SIZE,
+		                PST_TOP,
+		                PST_LEFT,
+		                SORT_SEQ,
+		                TO_CHAR(TO_DATE(DISP_START_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_START_DTTM,
+		                TO_CHAR(TO_DATE(DISP_END_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS') AS DISP_END_DTTM,
+		                APPLY_ALWAYS_YN,
+                        LINK_URL,
+		                POPUP_GRP_CD,
+		                POPUP_GB_CD,
+		                COOKIE_VALID_PERIOD,
+		                DISP_YN,
+		                REG_DTTM,
+		                fn_getMemberName(SITE_NO, REGR_NO) AS REGR_NM,
+		                REGR_NO,
+		                UPD_DTTM,
+		                UPDR_NO
+		        FROM    TD_POPUP
+		        <include refid="selectPopInfoWhere" />
+		        <include refid="common.sortSql" />
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectPopManagePagingTotalCount" resultType="Integer">
+        /* design.popupManage.selectPopManagePagingTotalCount */
+        SELECT  count(*)
+        FROM    TD_POPUP
+        WHERE   SITE_NO = #{siteNo}
+        <!--
+        WHERE   SITE_NO = #{siteNo}
+        <include refid="selectPopInfoWhere" />
+        -->
+    </select>
+
+    <select id="selectPopManagePagingCount" resultType="Integer">
+        /* design.popupManage.selectPopManagePagingCount */
+        SELECT  count(*)
+        FROM    TD_POPUP
+        <include refid="selectPopInfoWhere" />
+    </select>
+
+    <select id="selectPopManage" resultType="popManageVO">
+        /* design.popupManage.selectPopManage */
+        SELECT  POPUP_NO,
+                SITE_NO,
+                FILE_NO,
+                FILE_PATH,
+                replace(replace(FILE_PATH,'\',''),'/','')||'_'||FILE_NM AS IMG_FILE_INFO,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                PC_GB_CD,
+                POPUP_NM,
+                CONTENT,
+                WIDTH_SIZE,
+                HEIGHT_SIZE,
+                PST_TOP,
+                PST_LEFT,
+                SORT_SEQ,
+                DISP_START_DTTM,
+                DISP_END_DTTM,
+                POPUP_GRP_CD,
+                POPUP_GB_CD,
+                COOKIE_VALID_PERIOD,
+                DISP_YN,
+                APPLY_ALWAYS_YN,
+                LINK_URL,
+                REG_DTTM,
+                REGR_NO,
+                fn_getMemberName(SITE_NO, REGR_NO) AS REGR_NM,
+                UPD_DTTM,
+                fn_getMemberName(SITE_NO, UPDR_NO) AS UPDR_NM,
+                UPDR_NO
+        FROM    TD_POPUP
+        WHERE   SITE_NO = #{siteNo}
+        AND     POPUP_NO = #{popupNo}
+    </select>
+
+    <insert id="insertPopManage">
+        /* design.popupManage.insertPopManage */
+        INSERT INTO TD_POPUP
+            (
+                POPUP_NO,
+                SITE_NO,
+                FILE_NO,
+                FILE_PATH,
+                ORG_FILE_NM,
+                FILE_NM,
+                FILE_SIZE,
+                PC_GB_CD,
+                POPUP_NM,
+                CONTENT,
+                WIDTH_SIZE,
+                HEIGHT_SIZE,
+                PST_TOP,
+                PST_LEFT,
+                SORT_SEQ,
+                DISP_START_DTTM,
+                DISP_END_DTTM,
+                POPUP_GRP_CD,
+                POPUP_GB_CD,
+                COOKIE_VALID_PERIOD,
+                DISP_YN,
+                APPLY_ALWAYS_YN,
+                LINK_URL,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+                #{popupNo},
+                #{siteNo},
+                #{fileNo},
+                #{filePath},
+                #{orgFileNm},
+                #{fileNm},
+                #{fileSize},
+                #{pcGbCd},
+                #{popupNm},
+                #{content:CLOB},
+                #{widthSize},
+                #{heightSize},
+                #{pstTop},
+                #{pstLeft},
+                #{sortSeq},
+                #{dispStartDttm},
+                #{dispEndDttm},
+                #{popupGrpCd},
+                #{popupGbCd},
+                #{cookieValidPeriod},
+                #{dispYn},
+                #{applyAlwaysYn},
+                #{linkUrl},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <update id="updatePopManage">
+        /* design.popupManage.updatePopManage */
+        UPDATE  TD_POPUP
+        SET     PC_GB_CD              = #{pcGbCd},
+                POPUP_NM              = #{popupNm},
+        <if test="fileSize != null and fileSize != ''">
+                FILE_PATH             = #{filePath},
+                ORG_FILE_NM           = #{orgFileNm},
+                FILE_NM               = #{fileNm},
+                FILE_SIZE             = #{fileSize},
+        </if>
+                CONTENT               = #{content:CLOB},
+                WIDTH_SIZE            = #{widthSize},
+                HEIGHT_SIZE           = #{heightSize},
+                PST_TOP               = #{pstTop},
+                PST_LEFT              = #{pstLeft},
+                SORT_SEQ              = #{sortSeq},
+                DISP_START_DTTM       = #{dispStartDttm},
+                DISP_END_DTTM         = #{dispEndDttm},
+                POPUP_GRP_CD          = #{popupGrpCd},
+                POPUP_GB_CD           = #{popupGbCd},
+                COOKIE_VALID_PERIOD   = #{cookieValidPeriod},
+                DISP_YN               = #{dispYn},
+                APPLY_ALWAYS_YN       = #{applyAlwaysYn},
+                LINK_URL              = #{linkUrl},
+                UPDR_NO               = #{updrNo},
+                UPD_DTTM              = sysdate
+        WHERE   SITE_NO   = #{siteNo}
+        AND     POPUP_NO  = #{popupNo}
+    </update>
+
+    <delete id="deletePopManage">
+        /* design.popupManage.deletePopManage */
+        DELETE FROM TD_POPUP
+        WHERE   SITE_NO = #{siteNo}
+        AND     POPUP_NO = #{popupNo}
+    </delete>
+
+    <update id="updatePopManageView">
+        /* design.popupManage.updatePopManageView */
+        UPDATE  TD_POPUP
+        SET     DISP_YN = #{dispYn},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        AND     POPUP_NO = #{popupNo}
+    </update>
+
+</mapper>

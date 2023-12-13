@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="batch.banner">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <!-- 배너 종료일 지난데이터 자동 미전시 처리-->
+    <update id="updateBannerDispNone">
+        <![CDATA[
+        UPDATE TD_BANNER
+           SET DISP_YN = 'N'
+             , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+             , UPD_DTTM = sysdate
+         WHERE TO_CHAR(TO_DATE(DISP_END_DTTM, 'YYYYMMDDHH24MISS') ,'YYYY-MM-DD HH24:MI:SS')  < TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')
+         AND DISP_YN='Y'
+         ]]>
+    </update>
+</mapper>

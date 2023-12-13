@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="email">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <sql id="selectEmailInfoWhere">
+        <if test="startDt != null and startDt != ''">
+            <![CDATA[
+            AND SEND_DTTM >= STR_TO_DATE(#{startDt}, '%Y-%m-%d')
+            ]]>
+        </if>
+        <if test="endDt != null and endDt != ''">
+            <![CDATA[
+            AND SEND_DTTM < DATE_ADD(STR_TO_DATE(#{endDt}, '%Y-%m-%d'), INTERVAL 1 DAY)
+            ]]>
+        </if>
+        <if test="searchWords != null and searchWords != ''">
+            <if test="searchType == 'all'">
+                AND (SEND_TITLE like concat('%',#{searchWords},'%') or SEND_CONTENT like concat('%',#{searchWords},'%') )
+            </if>
+            <if test="searchType == 'searchSendTitle'">
+                AND SEND_TITLE like concat('%',#{searchWords},'%')
+            </if>
+            <if test="searchType == 'searchSendContent'">
+                AND SEND_CONTENT like concat('%',#{searchWords},'%')
+            </if>
+            <if test="searchType == 'searchBbsNm'">
+                AND BBS_Nm like concat('%',#{searchWords},'%')
+            </if>
+        </if>
+        <if test="resultCd != null and resultCd != ''">
+            AND RESULT_CD = #{resultCd}
+        </if>
+    </sql>
+	<!-- 포인트 관련 시작 -->
+	<select id="getPoint" resultType="Integer">
+		/* email.getPoint - 이메일 포인트 조회 */
+	  	SELECT IFNULL((SELECT	POINT
+				FROM	MAIL_POINT
+				WHERE	SITE_NO = #{siteNo}), 0) AS POINT
+	</select>
+	
+	<update id="updatePoint" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointPO">
+		/* email.updatePoint - 이메일 포인트 값 변경 */
+		INSERT INTO MAIL_POINT
+		(SITE_NO, POINT, REG_DTTM)
+		VALUES (#{siteNo}, #{point}, NOW())
+		ON DUPLICATE KEY UPDATE
+			POINT = POINT + #{point},
+			UPD_DTTM = NOW()
+	</update>
+	
+	<insert id="insertPointHist" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointHistPO">
+		/* email.insertPointHist - 이메일 포인트 이력 등록 */
+		INSERT INTO MAIL_POINT_HIST
+		(SITE_NO, REG_DTTM, GB_CD, POINT)
+		VALUES (#{siteNo}, now(6), #{gbCd}, #{point})
+	</insert>
+	<!-- 포인트 관련 끝-->
+
+	<!-- 전송 정보 저장 관련 시작 -->
+	<insert id="insertCustomerInfo" parameterType="net.danvi.dmall.smsemail.model.email.CustomerInfoPO">
+		/* email.insertCustomerInfo - 메일정보 등록 */
+		<selectKey resultType="java.lang.Long" keyColumn="id" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID() AS id
+		</selectKey>
+		INSERT INTO tm001.customer_info (
+			id, 
+			user_id, 
+			title, 
+			content, 
+			sender, 
+			sender_alias, 
+			send_time, 
+			file_contents,
+			wasRead, 
+			needRetry, 
+			retryCount, 
+			regist_date, 
+			linkYn, 
+			total_count
+		) VALUES (
+			#{id}, 
+			#{userId}, 
+			#{title}, 
+			#{content}, 
+			#{sender}, 
+			#{senderAlias},
+			<choose>
+			    <when test="sendTimeSel == 'reservation'">
+			        STR_TO_DATE(#{reservationDttm}, '%Y%m%d%H'),
+			    </when>
+			    <otherwise>
+			        NOW(), 
+			    </otherwise>
+			</choose> 
+			'',
+			'O', 
+			#{needRetry}, 
+			#{retryCount}, 
+			now(), 
+			#{linkYn}, 
+			#{totalCount}
+		)
+	</insert>
+
+	<insert id="insertCustomerData" parameterType="net.danvi.dmall.smsemail.model.email.CustomerDataPO">
+		/* email.insertCustomerData - 대상자 정보 등록*/
+		INSERT INTO tm001.customer_data (
+			id, email, first, second, third, fourth, fifth,
+			sixth, seventh, eighth, ninth, tenth, eleventh,
+			twelfth, thirteenth, fourteenth, fifteenth, sixteenth, seventeenth,
+			eighteenth, nineteenth, regist_date
+		) VALUES
+		<foreach collection="list" item="item" separator=",">
+		(
+			#{item.id}, #{item.email}, #{item.first}, #{item.second}, #{item.third}, #{item.fourth}, #{item.fifth},
+			#{item.sixth}, #{item.seventh}, #{item.eighth}, #{item.ninth}, #{item.tenth}, #{item.eleventh},
+			#{item.twelfth}, #{item.thirteenth}, #{item.fourteenth}, #{item.fifteenth}, #{item.sixteenth}, #{item.seventeenth},
+			#{item.eighteenth}, #{item.nineteenth}, NOW()
+		)
+		</foreach>
+	</insert>
+
+	<update id="updateCustomerInfo" parameterType="net.danvi.dmall.smsemail.model.email.CustomerInfoPO">
+		/* email.updateCustomerInfo -  발송대기 상태로 변경 */
+		UPDATE tm001.customer_info SET
+		 	wasRead = 'X'
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insertMailSendHist" parameterType="net.danvi.dmall.smsemail.model.email.MailSendHistPO">
+		/* email.insertMailSendHist - 메일 방송 이력 등록 */
+		INSERT INTO smsemail.MAIL_SEND_HIST (
+			MAIL_SEND_NO, SEND_TARGET_CD, SEND_EMAIL, SEND_TITLE, SEND_CONTENT,
+			SENDER_NO, SENDER_NM, SEND_DTTM, SEND_STNDRD, SITE_NO, REG_DTTM, RESULT_CD
+ 		) VALUES (
+			#{mailSendNo}, 
+			#{sendTargetCd}, 
+			#{sendEmail}, 
+			#{sendTitle}, 
+			#{sendContent},
+			#{senderNo}, 
+			#{senderNm},
+			<choose>
+                <when test="sendTimeSel == 'reservation'">
+                    STR_TO_DATE(#{reservationDttm}, '%Y%m%d%H'),
+                </when>
+                <otherwise>
+			        NOW(), 
+                </otherwise>
+            </choose>  
+			#{sendStndrd}, 
+			#{siteNo}, 
+			NOW(),
+			<choose>
+                <when test="sendTimeSel == 'reservation'">
+                    '04'
+                </when>
+                <otherwise>
+			        '03'
+                </otherwise>
+            </choose>  
+		)
+	</insert>
+	<!-- 메일 발송 이력 상세 등록 -->
+	<!--<insert id="insertMailSendDtlHist" parameterType="MailSendHistDtlPO">-->
+		<!--/* email.insertMailSendDtlHist */-->
+		<!--INSERT INTO MAIL_SEND_DTL_HIST (-->
+			<!--MAIL_SEND_NO, MAIL_SEND_DTL_NO, RECEIVER_EMAIL, SITE_NO, RECEIVER_NO, RECEIVER_NM, REG_DTTM-->
+		<!--) VALUES (-->
+			<!--#{mailSendNo}, #{mailSendDtlNo}, #{receiverEmail}, #{siteNo}, #{receiverNo}, #{receiverNm}, NOW()-->
+		<!--)-->
+	<!--</insert>-->
+	<insert id="insertMailSendDtlHist" parameterType="net.danvi.dmall.smsemail.model.email.MailSendHistDtlPO">
+		/* email.insertMailSendDtlHist - 메일 발송 이력 상세 등록 */
+		INSERT INTO smsemail.MAIL_SEND_DTL_HIST (
+			MAIL_SEND_NO, MAIL_SEND_DTL_NO, RECEIVER_EMAIL, SITE_NO, RECEIVER_NO, RECEIVER_NM, REG_DTTM
+		) VALUES
+		<foreach collection="list" item="item" separator=",">
+			(
+			#{item.mailSendNo}, #{item.mailSendDtlNo}, #{item.receiverEmail}, #{item.siteNo}, #{item.receiverNo}, #{item.receiverNm}, NOW()
+			)
+		</foreach>
+	</insert>
+	<!-- 전송 정보 저장 관련 끝 -->
+	
+	<select id="selectSendHistoryPaging" parameterType="net.danvi.dmall.smsemail.model.email.InnerEmailSendHistSO"
+			resultType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO">
+		/* email.selectSendHistoryPaging - 메일 발송 이력 페이징 조회 */
+		SELECT @ROWNUM := @ROWNUM + 1 AS ROW_NUM, AA.*
+          FROM ( SELECT @ROWNUM := 0 ) R,
+               ( SELECT @NUM := @NUM + 1 AS NUM, A.*
+                   FROM ( SELECT @NUM := 0 ) R,
+                        (
+						  SELECT A.MAIL_SEND_NO,
+						         A.SEND_TARGET_CD,
+						         A.RESULT_CD,
+						         A.SEND_EMAIL,
+						         A.SEND_TITLE,
+						         A.SEND_CONTENT,
+						         A.SENDER_NO,
+						         A.SENDER_NM,
+						         DATE_FORMAT(A.SEND_DTTM, '%Y-%m-%d %H:%i:%s') SEND_DTTM,
+						         A.SEND_STNDRD,
+						         A.SITE_NO,
+						         IFNULL(A.SUCS_CNT, '-') SUCS_CNT,
+						         B.GROUP_CNT
+							FROM smsemail.MAIL_SEND_HIST A
+							LEFT JOIN(SELECT COUNT(*) GROUP_CNT, MAIL_SEND_NO FROM smsemail.MAIL_SEND_DTL_HIST GROUP BY MAIL_SEND_NO) B ON B.MAIL_SEND_NO = A.MAIL_SEND_NO
+						   WHERE SITE_NO = #{siteNo}
+							 AND DEL_YN = 'N'
+						  <include refid="selectEmailInfoWhere" />
+						  ORDER BY REG_DTTM DESC
+						 ) A order by NUM DESC
+                )AA order by ROW_NUM DESC
+<!-- 		<include refid="common.sortSql" /> -->
+		<include refid="common.pageSql" />
+	</select>
+	
+	<select id="viewSendHistory" parameterType="net.danvi.dmall.smsemail.model.email.InnerEmailSendHistSO"
+            resultType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO">
+        /* email.viewSendHistory - 메일 발송 이력 상세 조회 */
+        SELECT MAIL_SEND_NO,
+               SEND_TARGET_CD,
+               RESULT_CD,
+               SEND_EMAIL,
+               SEND_TITLE,
+               SEND_CONTENT,
+               SENDER_NO,
+               SENDER_NM,
+               DATE_FORMAT(SEND_DTTM, '%Y-%m-%d %H:%i:%s') SEND_DTTM,
+               SEND_STNDRD,
+               SITE_NO,
+               SUCS_CNT,
+               REG_DTTM,
+               UPD_DTTM,
+               DEL_YN,
+               DEL_DTTM
+          FROM smsemail.MAIL_SEND_HIST
+         WHERE MAIL_SEND_NO = #{mailSendNo}
+    </select>
+
+	<!-- 전송 정보 조회 관련 시작 -->
+	<select id="selectSendHistoryPagingCount" resultType="Integer">
+		/* email.selectSendHistoryPagingCount - 메일 발송이력 페이징 전체 카운트 */
+		SELECT	count(*)
+		FROM	MAIL_SEND_HIST
+		WHERE  SITE_NO = #{siteNo}
+		AND    DEL_YN = 'N'
+		<include refid="selectEmailInfoWhere" />
+	</select>
+
+	<select id="selectSendHistoryPagingTotalCount" resultType="Integer">
+		/* email.selectSendHistoryPagingTotalCount - 메일 발송이력 페이징 전체 */
+		SELECT	count(*)
+		FROM	MAIL_SEND_HIST
+		WHERE  SITE_NO = #{siteNo}
+		AND    DEL_YN = 'N'
+	</select>
+
+	<update id="updateDelYn" parameterType="net.danvi.dmall.smsemail.model.EmailHistDelPO">
+		/* email.updateDelYn - 메일 발송 이력 삭제 */
+		UPDATE MAIL_SEND_HIST SET
+				DEL_YN = 'Y',
+				DEL_DTTM = NOW()
+		WHERE 	MAIL_SEND_NO IN
+		<foreach collection="delEmailShotHst" item="item" open="(" separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 전송 정보 조회 관련 끝 -->
+	
+	<select id="selectEmailSendingList" resultType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO">
+        /* email.selectEmailSendingList - 발송중인 메일 목록 조회 */
+        SELECT MAIL_SEND_NO 
+          FROM MAIL_SEND_HIST
+         WHERE RESULT_CD in ('03','04') 
+    </select>
+    
+	<select id="emailSendCompletList" resultType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO" parameterType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO">
+        /* email.emailSendCompletList - 발송중인 메일 목록들의 발송상태 조회(솔루션 DB) */
+        SELECT id MAIL_SEND_NO,
+               real_id CAMPAIGN_NO
+		  FROM tm001.customer_info
+		 WHERE wasRead = 'O'
+		   AND wasSend = 'O'
+		   AND wasComplete = 'O'
+		   AND id IN 
+           <foreach collection="list" item="item" open="(" separator="," close=")">
+	           #{item.mailSendNo}
+	       </foreach>
+    </select>
+    
+    <update id="updateEmailSendResult">
+        /* email.updateEmailSendResult - 발송완료된 메일 목록 업데이트 */
+        UPDATE MAIL_SEND_HIST SET
+               RESULT_CD = '06',
+               SUCS_CNT = #{sucsCnt}
+        WHERE MAIL_SEND_NO = #{mailSendNo}
+    </update>
+    
+    <select id="selectEmailSucsCnt" resultType="String" parameterType="net.danvi.dmall.smsemail.model.email.EmailSendHistVO">
+        /* email.selectEmailSucsCnt - 대량 메일 발송 성공 건수 조회(솔루션 DB) */
+        SELECT count(*) SUCS_CNT
+          FROM ${campaignTbNm}
+         WHERE send_success = 'O'
+    </select>
+</mapper>

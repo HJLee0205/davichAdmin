@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!--
+    ## 주문그룹 배치 목록 ##
+    BA-O-001 입금누락 주문무효처리
+    BA-O-002 배송완료누락 배송완료처리
+    BA-O-003 구매확정누락 구매확정처리
+    BA-O-004 입금누락 주문무효 안내 SMS발송
+    BA-O-005 구매확정누락 구매확정 안내 SMS발송
+    BA-O-006 입금누락 주문무효 안내 이메일발송
+    BA-O-007 구매확정누락 구매확정 안내 이메일발송
+    -->
+
+    <!-- BA-O-001 입금누락 주문무효처리 : DB-to-DB Mybatis 커서 사용 -->
+    <bean id="BA-O-001_Reader" class="net.danvi.dmall.biz.batch.order.job.DmallCursorItemReader" scope="step">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="batch.order.selectNoneDepositOrdList" />
+        <property name="parameterValues">
+            <map>
+                <entry key="stdDate" value="#{jobParameters['stdDate']}" />
+                <entry key="intCnt" value="#{jobParameters['intCnt']}" />
+                <entry key="jobId" value="#{jobParameters['jobId']}" />
+                <entry key="sendDate" value="#{jobParameters['sendDate']}" />
+                <entry key="ordNo" value="#{jobParameters['ordNo']}" />
+            </map>
+        </property>
+    </bean>
+    <bean id="BA-O-001_Writer" class="net.danvi.dmall.biz.batch.order.job.DmallBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.order.updateOrdStatusByNoneDeposit" />
+        <property name="assertUpdates" value="false" />
+    </bean>
+    <batch:job id="BA-O-001_Job">
+        <batch:step id="BA-O-001_Step1">
+            <batch:tasklet>
+                <batch:chunk reader="BA-O-001_Reader" writer="BA-O-001_Writer" commit-interval="1" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+
+    <!-- BA-O-002 배송완료누락 배송완료처리 : DB-to-DB Mybatis 커서 사용  -->
+    <bean id="BA-O-002_Reader" class="net.danvi.dmall.biz.batch.order.job.DmallCursorItemReader" scope="step">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="batch.order.selectNoneDeliveryFinishList" />
+        <property name="parameterValues">           
+            <map>
+                <entry key="stdDate" value="#{jobParameters['stdDate']}" />
+                <entry key="intCnt" value="#{jobParameters['intCnt']}" />
+                <entry key="ordNo" value="#{jobParameters['ordNo']}" />
+            </map>
+        </property>        
+    </bean>
+
+    <bean id="BA-O-002_Writer" class="net.danvi.dmall.biz.batch.order.job.DmallBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.order.updateOrdStatusByNoneDeliveryFinish" />
+    </bean>
+    <bean id="BA-O-002_Writer2" class="net.danvi.dmall.biz.batch.order.job.DmallBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.order.updateOrdStatusByNoneDeliveryFinish2" />
+    </bean>
+    
+    
+	<bean id="BA-O-002_CompositeItemWriter" class="org.springframework.batch.item.support.CompositeItemWriter">
+		<property name="delegates">
+			<list>
+				<ref bean="BA-O-002_Writer" />
+				<ref bean="BA-O-002_Writer2" />
+			</list>
+		</property>
+	</bean>
+    
+    <batch:job id="BA-O-002_Job" >
+        <batch:step id="BA-O-002_Step1">
+            <batch:tasklet>
+                <batch:chunk reader="BA-O-002_Reader" writer="BA-O-002_CompositeItemWriter" commit-interval="1" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+    
+    
+    <!-- BA-O-003 구매확정누락 구매확정처리 : Tasklet 사용 Job -->
+    <bean id="BA-O-003_Tasklet" class="net.danvi.dmall.biz.batch.order.job.BaO003Tasklet" />
+    <batch:job id="BA-O-003_Job">
+        <batch:step id="BA-O-003_Step1">
+            <batch:tasklet ref="BA-O-003_Tasklet" />
+        </batch:step>
+    </batch:job>
+
+    
+    <!-- BA-O-004 입금누락 주문무효 안내 SMS발송 : DB-to-DB Mybatis 커서 사용 -->
+    <bean id="BA-O-004_Tasklet" class="net.danvi.dmall.biz.batch.order.job.BaO004Tasklet" />
+    <batch:job id="BA-O-004_Job">
+        <batch:step id="BA-O-004_Step1">
+            <batch:tasklet ref="BA-O-004_Tasklet" />
+        </batch:step>
+    </batch:job>        
+    
+    <!-- BA-O-005 구매확정누락 구매확정 안내 SMS발송 : DB-to-DB Mybatis 커서 사용 => 기획에서 배치 삭제 처리-->
+<!--     <bean id="BA-O-005_Reader" class="DmallCursorItemReader" scope="step"> -->
+<!--         <property name="sqlSessionFactory" ref="sqlSessionFactory" /> -->
+<!--         <property name="queryId" value="batch.order.selectTest" /> -->
+<!--     </bean> -->
+<!--     <bean id="BA-O-005_Writer" class="DmallBatchItemWriter"> -->
+<!--         <property name="sqlSessionFactory" ref="sqlSessionFactory" /> -->
+<!--         <property name="statementId" value="batch.order.insertTest" /> -->
+<!--     </bean> -->
+<!--     <batch:job id="BA-O-005_Job" > -->
+<!--         <batch:step id="BA-O-005_Step1"> -->
+<!--             <batch:tasklet> -->
+<!--                 <batch:chunk reader="BA-O-005_Reader" writer="BA-O-005_Writer" commit-interval="1" /> -->
+<!--             </batch:tasklet> -->
+<!--         </batch:step> -->
+<!--     </batch:job> -->
+    
+    <!-- BA-O-006 입금누락 주문무효 안내 이메일발송 : DB-to-DB Mybatis 커서 사용 -->
+    <bean id="BA-O-006_Tasklet" class="net.danvi.dmall.biz.batch.order.job.BaO006Tasklet" />
+    <batch:job id="BA-O-006_Job">
+        <batch:step id="BA-O-006_Step1">
+            <batch:tasklet ref="BA-O-006_Tasklet" />
+        </batch:step>
+    </batch:job>    
+    
+    <!-- BA-O-007 구매확정누락 구매확정 안내 이메일발송 : DB-to-DB Mybatis 커서 사용 => 기획에서 배치 삭제 처리-->
+<!--     <bean id="BA-O-007_Reader" class="DmallCursorItemReader" scope="step"> -->
+<!--         <property name="sqlSessionFactory" ref="sqlSessionFactory" /> -->
+<!--         <property name="queryId" value="batch.order.selectTest" /> -->
+<!--     </bean> -->
+<!--     <bean id="BA-O-007_Writer" class="DmallBatchItemWriter"> -->
+<!--         <property name="sqlSessionFactory" ref="sqlSessionFactory" /> -->
+<!--         <property name="statementId" value="batch.order.insertTest" /> -->
+<!--     </bean> -->
+<!--     <batch:job id="BA-O-007_Job" > -->
+<!--         <batch:step id="BA-O-007_Step1"> -->
+<!--             <batch:tasklet> -->
+<!--                 <batch:chunk reader="BA-O-007_Reader" writer="BA-O-007_Writer" commit-interval="1" /> -->
+<!--             </batch:tasklet> -->
+<!--         </batch:step> -->
+<!--     </batch:job> -->
+
+    <!-- 우체국택배 배송상태 업데이트 ( File to DB 작업 ) -->
+    <bean id="code" class="net.danvi.dmall.biz.common.model.BizCodeVO" scope="prototype" /><!-- scope값에 주의 -->
+    <!-- BizCodeVO로 INSERT하는 마이바티스 구문 만들기 귀찮아서 BizCodeVO를 MAP으로 매핑하는 프로세서 -->
+    <bean id="bizCodeVO2MapProcessor" class="net.danvi.dmall.admin.batch.sample.BizCodeVOToMapProcessor" />
+    <bean id="fileReader" class="org.springframework.batch.item.file.FlatFileItemReader" scope="step"> <!-- scope 값이 step이어야 잡파라미터를 가저옴 -->
+        <!-- Read a csv file -->
+        <property name="resource" value="#{jobParameters['fileName']}" />
+
+        <property name="lineMapper">
+            <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+                <!-- split it -->
+                <property name="lineTokenizer">
+                    <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+                        <property name="delimiter" value="|" />
+                        <property name="names" value="sendreqdivCd, deligdNo, regiNo, reqYmd, compdivCd, treatyMd, treathMs, treathMs, treatregipoNm, treatCd, treatcdNm, treatdtailCd, treatdtailcdNm, recvprsnNm, relrecprsncdNm, pmanNm, pantelNo, delvYn" />
+                    </bean>
+                </property>
+                <property name="fieldSetMapper">
+                    <!-- map to an object -->
+                    <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+                        <property name="prototypeBeanName" value="code" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <batch:job id="epostText2DBJob">
+        <batch:step id="epostText2DBStep">
+            <batch:tasklet>
+                <batch:chunk reader="fileReader" processor="bizCodeVO2MapProcessor" writer="testWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>    
+          
+    <!-- 1. 우체국 택배 수신 Job -->
+    <bean id="epostReceiveTasklet" class="net.danvi.dmall.biz.batch.order.epost.job.EpostReceiveTasklet" />
+    <batch:job id="epostReceiveJob">
+        <batch:step id="epostReceiveStep1">
+            <batch:tasklet ref="epostReceiveTasklet" />
+        </batch:step>
+    </batch:job>     
+          
+    <!-- 1. 우체국 택배 송신 Job -->
+    <bean id="epostSendTasklet" class="net.danvi.dmall.biz.batch.order.epost.job.EpostSendTasklet" />
+    <batch:job id="epostSendJob">
+        <batch:step id="epostSendStep1">
+            <batch:tasklet ref="epostSendTasklet" />
+        </batch:step>
+    </batch:job>
+    
+</beans>

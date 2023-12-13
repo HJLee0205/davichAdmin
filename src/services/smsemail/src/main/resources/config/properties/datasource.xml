@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+	<entry key="main.database.type">oracle</entry>
+	<entry key="main.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<!-- 개발 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.2.166:21359:davich</entry>-->
+	<!-- 운영 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.2.144:21359:davich</entry>-->
+
+	<!-- 리눅스 운영 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@140.238.12.153:1521:davich</entry>
+	<entry key="main.jdbc.user">davich_mall</entry>
+	<entry key="main.jdbc.password">danvi2018</entry>-->
+
+	<!-- 리눅스 개발 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@211.253.11.151:1521:xe</entry>
+	<entry key="main.jdbc.user">MALL_TEST</entry>
+	<entry key="main.jdbc.password">MALL_TEST</entry>-->
+	<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>-->
+	<entry key="main.jdbc.user">DAVICH_MALL</entry>
+	<entry key="main.jdbc.password">danvi2018</entry>
+
+	<entry key="push.database.type">oracle</entry>
+ 	<entry key="push.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+ 	<!-- 개발 -->
+ 	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://182.162.104.153:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>-->
+ 	<!-- 운영 mariadb -->
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://10.102.2.140:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="push.jdbc.user">root</entry>
+	<entry key="push.jdbc.password">1234</entry>
+	-->
+
+	<!-- 운영 oracle -->
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:oracle:thin:@140.238.12.153:1521:davich</entry>
+	<entry key="push.jdbc.user">sms_push</entry>
+	<entry key="push.jdbc.password">sms_push</entry>-->
+
+	<!-- 개발 -->
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>-->
+	<entry key="push.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>
+	<entry key="push.jdbc.user">sms_push</entry>
+	<entry key="push.jdbc.password">sms_push</entry>
+
+
+</properties>

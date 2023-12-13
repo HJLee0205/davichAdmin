@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemesh>
+	<mapping name="kiosk" 		path="/kiosk/*" 				decorator="/WEB-INF/config/sitemesh/decorators/kiosk.jsp"/>
+	<mapping name="monitor"  	path="/kiosk/monitor.do" 		decorator="/WEB-INF/config/sitemesh/decorators/monitor.jsp"/>
+	<mapping name="kioskTest"  	path="/kiosk/tts_monitor_test.do" 		decorator="/WEB-INF/config/sitemesh/decorators/kioskTest.jsp"/>
+	<mapping name="simpeMonitor" 	path="/kiosk/simpleMonitor.do" 		decorator="/WEB-INF/config/sitemesh/decorators/monitor.jsp"/>
+	<mapping name="login"  		path="/kiosk/login.do" 			decorator="/WEB-INF/config/sitemesh/decorators/login.jsp"/>
+	<mapping name="loginProc" 	path="/keeper/loginProc.do" 	exclue="true"/>
+	<mapping name="mobileMonitor" 		path="/kiosk/mobileMonitor.do" 	exclue="true"/>
+</sitemesh>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 05.CJ대한통운 관련쿼리 -->
+<mapper namespace="system.link.doortodoor">
+    <insert id="insertDeliverySend" parameterType="Map">
+    /* core.parcel.doortodoor.insertDeliverySend */
+    INSERT INTO V_RCPT_BELLINS
+        (CUST_ID              ,RCPT_YMD              ,CUST_USE_NO           ,RCPT_DV               ,WORK_DV_CD            ,
+        REQ_DV_CD             ,MPCK_KEY              ,MPCK_SEQ              ,CAL_DV_CD             ,FRT_DV_CD             ,
+        CNTR_ITEM_CD          ,BOX_TYPE_CD           ,BOX_QTY               ,FRT                   ,CUST_MGMT_DLCM_CD     ,
+        SENDR_NM              ,SENDR_TEL_NO1         ,SENDR_TEL_NO2         ,SENDR_TEL_NO3         ,SENDR_CELL_NO1        ,
+        SENDR_CELL_NO2        ,SENDR_CELL_NO3        ,SENDR_SAFE_NO1        ,SENDR_SAFE_NO2        ,SENDR_SAFE_NO3        ,
+        SENDR_ZIP_NO          ,SENDR_ADDR            ,SENDR_DETAIL_ADDR     ,RCVR_NM               ,RCVR_TEL_NO1          ,
+        RCVR_TEL_NO2          ,RCVR_TEL_NO3          ,RCVR_CELL_NO1         ,RCVR_CELL_NO2         ,RCVR_CELL_NO3         ,
+        RCVR_SAFE_NO1         ,RCVR_SAFE_NO2         ,RCVR_SAFE_NO3         ,RCVR_ZIP_NO           ,RCVR_ADDR             ,
+        RCVR_DETAIL_ADDR      ,ORDRR_NM              ,ORDRR_TEL_NO1         ,ORDRR_TEL_NO2         ,ORDRR_TEL_NO3         ,
+        ORDRR_CELL_NO1        ,ORDRR_CELL_NO2        ,ORDRR_CELL_NO3        ,ORDRR_SAFE_NO1        ,ORDRR_SAFE_NO2        ,
+        ORDRR_SAFE_NO3        ,ORDRR_ZIP_NO          ,ORDRR_ADDR            ,ORDRR_DETAIL_ADDR     ,INVC_NO               ,
+        ORI_INVC_NO           ,ORI_ORD_NO            ,COLCT_EXPCT_YMD       ,COLCT_EXPCT_HOUR      ,SHIP_EXPCT_YMD        ,
+        SHIP_EXPCT_HOUR       ,PRT_ST                ,ARTICLE_AMT           ,REMARK_1              ,REMARK_2              ,
+        REMARK_3              ,COD_YN                ,GDS_CD                ,GDS_NM                ,GDS_QTY               ,
+        UNIT_CD               ,UNIT_NM               ,GDS_AMT               ,ETC_1                 ,ETC_2                 ,
+        ETC_3                 ,ETC_4                 ,ETC_5                 ,DLV_DV                ,RCPT_ERR_YN           ,
+        RCPT_ERR_MSG          ,EAI_PRGS_ST           ,EAI_ERR_MSG           ,REG_EMP_ID            ,REG_DTIME             ,
+        MODI_EMP_ID           ,MODI_DTIME)
+    VALUES
+        (#{CUST_ID}           ,#{RCPT_YMD}           ,#{CUST_USE_NO}        ,#{RCPT_DV}            ,#{WORK_DV_CD}         ,
+        #{REQ_DV_CD}          ,#{MPCK_KEY}           ,#{MPCK_SEQ}           ,#{CAL_DV_CD}          ,#{FRT_DV_CD}          ,
+        #{CNTR_ITEM_CD}       ,#{BOX_TYPE_CD}        ,#{BOX_QTY}            ,#{FRT}                ,#{CUST_MGMT_DLCM_CD}  ,
+        #{SENDR_NM}           ,#{SENDR_TEL_NO1}      ,#{SENDR_TEL_NO2}      ,#{SENDR_TEL_NO3}      ,#{SENDR_CELL_NO1}     ,
+        #{SENDR_CELL_NO2}     ,#{SENDR_CELL_NO3}     ,#{SENDR_SAFE_NO1}     ,#{SENDR_SAFE_NO2}     ,#{SENDR_SAFE_NO3}     ,
+        #{SENDR_ZIP_NO}       ,#{SENDR_ADDR}         ,#{SENDR_DETAIL_ADDR}  ,#{RCVR_NM}            ,#{RCVR_TEL_NO1}       ,
+        #{RCVR_TEL_NO2}       ,#{RCVR_TEL_NO3}       ,#{RCVR_CELL_NO1}      ,#{RCVR_CELL_NO2}      ,#{RCVR_CELL_NO3}      ,
+        #{RCVR_SAFE_NO1}      ,#{RCVR_SAFE_NO2}      ,#{RCVR_SAFE_NO3}      ,#{RCVR_ZIP_NO}        ,#{RCVR_ADDR}          ,
+        #{RCVR_DETAIL_ADDR}   ,#{ORDRR_NM}           ,#{ORDRR_TEL_NO1}      ,#{ORDRR_TEL_NO2}      ,#{ORDRR_TEL_NO3}      ,
+        #{ORDRR_CELL_NO1}     ,#{ORDRR_CELL_NO2}     ,#{ORDRR_CELL_NO3}     ,#{ORDRR_SAFE_NO1}     ,#{ORDRR_SAFE_NO2}     ,
+        #{ORDRR_SAFE_NO3}     ,#{ORDRR_ZIP_NO}       ,#{ORDRR_ADDR}         ,#{ORDRR_DETAIL_ADDR}  ,#{INVC_NO}            ,
+        #{ORI_INVC_NO}        ,#{ORI_ORD_NO}         ,#{COLCT_EXPCT_YMD}    ,#{COLCT_EXPCT_HOUR}   ,#{SHIP_EXPCT_YMD}     ,
+        #{SHIP_EXPCT_HOUR}    ,#{PRT_ST}             ,#{ARTICLE_AMT}        ,#{REMARK_1}           ,#{REMARK_2}           ,
+        #{REMARK_3}           ,#{COD_YN}             ,#{GDS_CD}             ,#{GDS_NM}             ,#{GDS_QTY}            ,
+        #{UNIT_CD}            ,#{UNIT_NM}            ,#{GDS_AMT}            ,#{ETC_1}              ,#{ETC_2}              ,
+        #{ETC_3}              ,#{ETC_4}              ,#{ETC_5}              ,#{DLV_DV}             ,#{RCPT_ERR_YN}        ,
+        #{RCPT_ERR_MSG}       ,#{EAI_PRGS_ST}        ,#{EAI_ERR_MSG}        ,#{REG_EMP_ID}         ,#{REG_DTIME}          ,
+        #{MODI_EMP_ID}        ,#{MODI_DTIME})
+    </insert>
+</mapper>

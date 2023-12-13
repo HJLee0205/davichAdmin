@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <!-- Default set of monitored resources -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+
+    <!-- Editable user database that can also be used by UserDatabaseRealm to authenticate users -->
+    <Resource auth="Container" description="User database that can be updated and saved"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              name="UserDatabase"
+              pathname="conf/tomcat-users.xml"
+              type="org.apache.catalina.UserDatabase"
+    />
+
+    <!-- dev -->
+    <Resource auth="Container" driverClassName="oracle.jdbc.driver.OracleDriver"
+              maxActive="100" maxIdle="30" maxWait="10000"
+              type="javax.sql.DataSource"
+              url="jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM"
+              password="danvi2018"
+              username="DAVICH_MALL"
+              name="jdbc/dmallDB"
+    />
+
+    <!-- ERP cloud -->
+    <Resource
+            auth="Container"
+            driverClassName="oracle.jdbc.driver.OracleDriver"
+            maxActive="500"
+            maxIdle="30"
+            maxWait="10000"
+            name="jdbc/mall_IF_DB"
+            type="javax.sql.DataSource"
+            url="jdbc:oracle:thin:@193.122.96.196:21359/DAVICH_PDB1.DAVICHADMINDBSU.DAVICHADMIN.ORACLEVCN.COM"
+            username="davich"
+            password="davich"
+    />
+
+    <!-- 가맹점 PUSH DB oracle -->
+    <Resource
+            auth="Container"
+            driverClassName="net.sf.log4jdbc.DriverSpy"
+            maxActive="100"
+            maxIdle="30"
+            maxWait="10000"
+            name="jdbc/storeDB"
+            type="javax.sql.DataSource"
+            url="jdbc:log4jdbc:oracle:thin:@140.238.12.153:1521:davich"
+            username="store_push"
+            password="store_push"
+    />
+
+    <Resource
+            auth="Container"
+            driverClassName="net.sf.log4jdbc.DriverSpy"
+            maxActive="100"
+            maxIdle="30"
+            maxWait="10000"
+            name="jdbc/pushDB"
+            type="javax.sql.DataSource"
+            url="jdbc:log4jdbc:oracle:thin:@140.238.12.153:1521:davich"
+            username="sms_push"
+            password="sms_push"/>
+</Context>

@@ -1,0 +1,989 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="promotion.exhibition">
+
+    <sql id="selectExhibitionListWhere">
+        <if test="searchEndDate != null and searchEndDate != ''">
+            <![CDATA[
+            AND APPLY_START_DTTM <= TO_DATE(#{searchEndDate}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchStartDate != null and searchStartDate != ''">
+            <![CDATA[
+            AND APPLY_END_DTTM >= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="prmtStatusCds != null and prmtStatusCds.length > 0">
+            AND
+            <foreach collection="prmtStatusCds" item="status" index="index" open="(" close=")" separator=" OR ">
+                <if test="status == '01'"> <!-- 진행 전 -->
+                    <![CDATA[ APPLY_START_DTTM > sysdate ]]>
+                </if>
+                <if test="status == '02'"> <!-- 진행 중 -->
+                    <![CDATA[ (APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM) ]]>
+                </if>
+                <if test="status == '03'"> <!-- 종료 -->
+                    <![CDATA[ APPLY_END_DTTM <= sysdate ]]>
+                </if>
+            </foreach>
+        </if>
+        <if test="prmtTypeCds != null and prmtTypeCds.length > 0">
+            AND PRMT_TYPE_CD IN (
+            <foreach collection="prmtTypeCds" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        <if test="prmtMainExpsUseYns != null and prmtMainExpsUseYns.length > 0">
+            AND PRMT_MAIN_EXPS_USE_YN IN (
+            <foreach collection="prmtMainExpsUseYns" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        <if test="searchWords != null and searchWords != ''">
+              AND PRMT_NM LIKE '%'||#{searchWords}||'%'
+        </if>
+        <if test="goodsTypeCdSelectAll != null and goodsTypeCdSelectAll != 'Y'.toString()">
+            <if test="goodsTypeCds != null and goodsTypeCds.length > 0">
+                AND GOODS_TYPE_CD IN (
+                <foreach collection="goodsTypeCds" item="a" separator=",">#{a}</foreach>
+                )
+            </if>
+        </if>
+    </sql>
+
+    <sql id="selectExhibitionOrder">
+        <if test="periodSelOption != null">
+	        <choose>
+	            <when test="periodSelOption == 'applyStartDttm'">
+	            ORDER  BY APPLY_START_DTTM ASC
+	            </when>
+	            <when test="periodSelOption == 'applyEndDttm'">
+	            ORDER  BY APPLY_END_DTTM ASC
+	            </when>
+	        </choose>
+        </if>
+    </sql>
+
+    <select id="selectExhibitionListPaging" parameterType="exhibitionSO" resultType="exhibitionVO">
+        /* promotion.exhibition.selectExhibitionListPaging - 기획전 목록 조회 */
+        SELECT *
+        FROM
+        (
+            SELECT rownum AS PAGING_NUM, tot_cnt - rownum + 1 AS SORT_NUM, A.*
+            FROM
+            (
+                SELECT count(*) over() AS tot_cnt,
+                       REG_DTTM,
+                       PRMT_NO ,
+                       PRMT_NM ,
+                       to_char(APPLY_START_DTTM, 'YYYY-MM-DD HH24:MI') AS APPLY_START_DTTM ,
+                       to_char(APPLY_END_DTTM, 'YYYY-MM-DD HH24:MI') AS APPLY_END_DTTM ,
+                       CASE
+                        <![CDATA[
+                        WHEN APPLY_START_DTTM > sysdate THEN '진행 전'
+                        WHEN APPLY_START_DTTM <= sysdate THEN '진행 중'
+                        WHEN APPLY_END_DTTM <= sysdate THEN '종료'
+                        ]]>
+                       END AS PRMT_STATUS_NM,
+                       PRMT_MAIN_EXPS_USE_YN,
+                       GOODS_TYPE_CD
+                FROM TP_PROMOTION
+                WHERE SITE_NO = #{siteNo}
+                AND DEL_YN = 'N'
+                AND PRMT_TYPE = 'EX'
+                <include refid="selectExhibitionListWhere" />
+                ORDER BY REG_DTTM DESC
+            ) A
+        ) AA
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectExhibitionListPagingCount" resultType="Integer">
+        /* promotion.exhibition.selectExhibitionListPagingCount - 기획전목록 조회결과 개수*/
+        SELECT COUNT(*)
+        FROM TP_PROMOTION
+        WHERE SITE_NO = #{siteNo}
+        AND DEL_YN = 'N'
+        AND PRMT_TYPE = 'EX'
+        <include refid="selectExhibitionListWhere" />
+    </select>
+
+    <select id="selectExhibitionListPagingTotalCount" resultType="Integer">
+        /* promotion.exhibition.selectExhibitionListPagingTotalCount - 총 기획전목록 개수*/
+        SELECT COUNT(*)
+        FROM TP_PROMOTION
+        WHERE SITE_NO = #{siteNo}
+          AND DEL_YN = 'N'
+          AND PRMT_TYPE = 'EX'
+    </select>
+
+
+    <insert id="insertExhibition">
+        /* promotion.exhibition.insertExhibition - 기획전 등록*/
+        INSERT INTO TP_PROMOTION
+            (
+                PRMT_NO,
+                SITE_NO,
+                PRMT_NM,
+                PRMT_DSCRT,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                PRMT_CONTENT_HTML,
+                PRMT_WEB_BANNER_IMG_PATH,
+                PRMT_WEB_BANNER_IMG,
+                PRMT_MOBILE_BANNER_IMG_PATH,
+                PRMT_MOBILE_BANNER_IMG,
+                PRMT_TARGET_EXPT_CD,
+                PRMT_DC_VALUE,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                DEL_YN,
+                USE_YN,
+                PRMT_TYPE_CD,
+                PRMT_DC_GB_CD,
+                PRMT_LOADRATE,
+                PRMT_GOODS_GB_CD,
+             <if test="prmtBrandNo != null and prmtBrandNo != ''">
+                 PRMT_BRAND_NO,
+             </if>
+                PRMT_MAIN_EXPS_USE_YN,
+                PRMT_MAIN_EXPS_PST,
+                PRMT_MAIN_EXPS_SEQ,
+                FIRST_BUY_SPC_PRICE,
+                SEO_SEARCH_WORD,
+                AGE_CD,
+                GOODS_TYPE_CD,
+                PRMT_TYPE,
+                DLGT_IMG_PATH,
+                DLGT_IMG_NM,
+                DLGT_IMG_ORG_NM
+            )
+            VALUES
+            (
+                #{prmtNo},
+                #{siteNo},
+                #{prmtNm},
+                #{prmtDscrt},
+                to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                #{prmtContentHtml:CLOB},
+                NVL(#{prmtWebBannerImgPath}, ''),
+                NVL(#{prmtWebBannerImg}, ''),
+                NVL(#{prmtMobileBannerImgPath}, ''),
+                NVL(#{prmtMobileBannerImg}, ''),
+                #{prmtTargetExptCd},
+                NVL(#{prmtDcValue}, 0),
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                'N',
+                'Y',
+                #{prmtTypeCd},
+                #{prmtDcGbCd},
+                #{prmtLoadrate},
+                #{prmtGoodsGbCd},
+             <if test="prmtBrandNo != null and prmtBrandNo != ''">
+                 #{prmtBrandNo},
+             </if>
+                #{prmtMainExpsUseYn},
+                #{prmtMainExpsPst},
+                #{prmtMainExpsSeq},
+                #{firstBuySpcPrice},
+                #{seoSearchWord},
+                #{ageCd},
+                #{goodsTypeCd},
+                'EX',
+                #{dlgtImgPath},
+                #{dlgtImgNm},
+                #{dlgtImgOrgNm}
+            )
+    </insert>
+
+	<select id="selectDispzoneNo" resultType="Integer">
+		SELECT NVL(MAX(PRMT_DISPZONE_NO), 0) + 1 AS PRMT_DISPZONE_NO
+		FROM TP_PROMOTION_DISPZONE
+        WHERE PRMT_NO = #{prmtNo}
+	</select>
+	
+    <insert id="insertExhibitionDispzone" >
+        
+    	INSERT INTO TP_PROMOTION_DISPZONE
+            (
+                PRMT_NO,
+                PRMT_DISPZONE_NO,
+                DISPZONE_NM,
+                USE_YN,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                DEL_YN
+            )
+            VALUES
+            (
+                #{prmtNo},
+                #{prmtDispzoneNo},
+                #{dispzoneNm},
+                #{useYn},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                'N'
+            )
+    </insert>
+
+    <insert id="insertExhibitionTargetGoods">
+        <selectKey keyProperty="applySeq" order="BEFORE" resultType="java.lang.Integer">
+             SELECT NVL(MAX(APPLY_SEQ), 0) + 1 AS APPLY_SEQ
+             FROM TP_PROMOTION_TARGET_GOODS
+        </selectKey>
+        /* promotion.exhibition.insertExhibitionTargetGoods - 기획전대상 상품 등록*/
+        INSERT INTO TP_PROMOTION_TARGET_GOODS
+            (
+                PRMT_NO,
+                APPLY_SEQ,
+                GOODS_NO,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                USE_YN
+            )
+            VALUES
+            (
+                #{prmtNo},
+                #{applySeq},
+                NVL(#{goodsNo}, ''),
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                'Y'
+            )
+    </insert>
+
+    <update id="updateExhibition">
+        /* promotion.exhibition.updateExhibition - 기획전 정보  수정*/
+        UPDATE  TP_PROMOTION
+        SET
+                <if test="prmtNm != null and prmtNm != ''">
+                PRMT_NM                 = #{prmtNm},
+                </if>
+                <if test="prmtDscrt != null and prmtDscrt != ''">
+                PRMT_DSCRT              = #{prmtDscrt},
+                </if>
+                <if test="applyStartDttm != null and applyStartDttm != ''">
+                APPLY_START_DTTM        = to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                </if>
+                <if test="applyEndDttm != null and applyEndDttm != ''">
+                APPLY_END_DTTM          = to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                </if>
+                <if test="prmtContentHtml != null and prmtContentHtml != ''">
+                PRMT_CONTENT_HTML       = #{prmtContentHtml:CLOB},
+                </if>
+                <if test="prmtWebBannerImgPath != null and prmtWebBannerImgPath != ''">
+                PRMT_WEB_BANNER_IMG_PATH     = NVL(#{prmtWebBannerImgPath}, ''),
+                </if>
+                <if test="prmtWebBannerImg != null and prmtWebBannerImg != ''">
+                PRMT_WEB_BANNER_IMG     = NVL(#{prmtWebBannerImg}, ''),
+                </if>
+                <if test="prmtMobileBannerImgPath != null and prmtMobileBannerImgPath != ''">
+                PRMT_MOBILE_BANNER_IMG_PATH  = NVL(#{prmtMobileBannerImgPath}, ''),
+                </if>
+                <if test="prmtMobileBannerImg != null and prmtMobileBannerImg != ''">
+                PRMT_MOBILE_BANNER_IMG  = NVL(#{prmtMobileBannerImg}, ''),
+                </if>
+                <if test="prmtTargetExptCd != null and prmtTargetExptCd != ''">
+                PRMT_TARGET_EXPT_CD     = #{prmtTargetExptCd},
+                </if>
+                PRMT_DC_VALUE           = NVL(#{prmtDcValue}, 0),
+                <if test="prmtTypeCd != null and prmtTypeCd != ''">
+                PRMT_TYPE_CD     = #{prmtTypeCd},
+                </if>
+                <if test="prmtDcGbCd != null and prmtDcGbCd != ''">
+                PRMT_DC_GB_CD     = #{prmtDcGbCd},
+                </if>
+                <if test="prmtLoadrate != null and prmtLoadrate != ''">
+                PRMT_LOADRATE     = #{prmtLoadrate},
+                </if>
+                <if test="prmtGoodsGbCd != null and prmtGoodsGbCd != ''">
+                PRMT_GOODS_GB_CD     = #{prmtGoodsGbCd},
+                </if>
+                <if test="prmtMainExpsUseYn != null and prmtMainExpsUseYn != ''">
+                PRMT_MAIN_EXPS_USE_YN     = #{prmtMainExpsUseYn},
+                </if>
+                <if test="prmtMainExpsPst != null and prmtMainExpsPst != ''">
+                PRMT_MAIN_EXPS_PST     = #{prmtMainExpsPst},
+                </if>
+                <if test="prmtMainExpsSeq != null and prmtMainExpsSeq != ''">
+                PRMT_MAIN_EXPS_SEQ     = #{prmtMainExpsSeq},
+                </if>
+                <if test="prmtBrandNo != null and prmtBrandNo != ''">
+                PRMT_BRAND_NO = #{prmtBrandNo},
+                </if>
+                <if test="firstBuySpcPrice != null and firstBuySpcPrice != ''">
+                FIRST_BUY_SPC_PRICE     = #{firstBuySpcPrice},
+                </if>
+                <if test="seoSearchWord != null and seoSearchWord != ''">
+                SEO_SEARCH_WORD     = #{seoSearchWord},
+                </if>
+                AGE_CD = #{ageCd},
+                <if test="goodsTypeCd != null and goodsTypeCd != ''">
+                GOODS_TYPE_CD     = #{goodsTypeCd},
+                </if>
+                <if test="dlgtImgPath != null and dlgtImgPath != ''">
+                DLGT_IMG_PATH = #{dlgtImgPath},
+                </if>
+                <if test="dlgtImgNm != null and dlgtImgNm != ''">
+                DLGT_IMG_NM = #{dlgtImgNm},
+                </if>
+                <if test="dlgtImgOrgNm != null and dlgtImgOrgNm != ''">
+                DLGT_IMG_ORG_NM = #{dlgtImgOrgNm},
+                </if>
+                UPD_DTTM                = sysdate,
+                UPDR_NO                 = #{updrNo}
+        WHERE   PRMT_NO                 = #{prmtNo}
+          AND   SITE_NO                 = #{siteNo}
+    </update>
+    
+    <update id="updateExhibitionDispzone">            
+        /* promotion.exhibition.updateExhibitionDispzone - 전시존 정보  수정*/
+		UPDATE TP_PROMOTION_DISPZONE 
+		SET		<if test="dispzoneNm != null and dispzoneNm != ''">
+                DISPZONE_NM                 = #{dispzoneNm},
+                </if>
+                <if test="useYn != null and useYn != ''">
+                USE_YN              = #{useYn},
+                </if>
+                UPD_DTTM                = sysdate,
+                UPDR_NO                 = #{updrNo}
+		WHERE PRMT_NO = #{prmtNo} 
+			AND PRMT_DISPZONE_NO = #{prmtDispzoneNo}
+	          
+    </update>
+
+    <delete id="deleteExhibitionTargetGoods">
+    /* promotion.exhibition.deleteExhibitionTargetGoods - 기획전대상 상품 지우기*/
+        DELETE  FROM TP_PROMOTION_TARGET_GOODS
+        WHERE PRMT_NO = #{prmtNo}
+    </delete>
+
+    <update id="deleteExhibition">
+        /* promotion.exhibition.deleteExhibition - 기획전 삭제*/
+		UPDATE TP_PROMOTION
+		SET    DEL_YN = 'Y',
+			   UPDR_NO = #{updrNo},
+			   UPD_DTTM = sysdate,
+			   DELR_NO = #{updrNo},
+			   DEL_DTTM = sysdate,
+               DLGT_IMG_PATH = null,
+               DLGT_IMG_NM = null,
+               DLGT_IMG_ORG_NM = null
+		WHERE PRMT_NO IN <foreach collection="list" item="item" open="(" close=")" separator=",">#{item.prmtNo}</foreach>
+		  AND SITE_NO = #{siteNo}
+    </update>
+    
+    <delete id="deleteExhibitionDispzone">
+        /* promotion.exhibition.deleteExhibitionDispzone - 전시존 삭제*/
+		DELETE FROM TP_PROMOTION_DISPZONE
+		WHERE PRMT_NO = #{prmtNo}
+    </delete>
+
+    <select id="selectExhibitionDtl" resultType="exhibitionVO">
+        /* promotion.exhibition.selectExhibitionDtl - 기획전 정보 조회 (단건)*/
+                SELECT  PRMT.PRMT_NO,
+		                PRMT.PRMT_NM,
+		                PRMT.PRMT_DSCRT,
+		                TO_CHAR(PRMT.APPLY_START_DTTM,'YYYYMMDDHH24MI') AS APPLY_START_DTTM,
+		                TO_CHAR(PRMT.APPLY_END_DTTM,'YYYYMMDDHH24MI') AS APPLY_END_DTTM,
+		                PRMT.PRMT_CONTENT_HTML,
+                        replace(PRMT.PRMT_WEB_BANNER_IMG_PATH,'\','/') AS PRMT_WEB_BANNER_IMG_PATH,
+		                PRMT.PRMT_WEB_BANNER_IMG,
+                        replace(PRMT.PRMT_MOBILE_BANNER_IMG_PATH,'\','/') AS PRMT_MOBILE_BANNER_IMG_PATH,
+		                PRMT.PRMT_MOBILE_BANNER_IMG,
+		                PRMT.PRMT_DC_VALUE,
+		                PRMT.PRMT_TARGET_EXPT_CD,
+		                PRMT.PRMT_TYPE_CD,
+		                PRMT.PRMT_DC_GB_CD,
+		                PRMT.PRMT_LOADRATE,
+		                PRMT.PRMT_GOODS_GB_CD,
+		                PRMT.PRMT_BRAND_NO,
+		                NVL(BRAND.BRAND_NM,'') AS BRAND_NM,
+		                NVL(PRMT.PRMT_MAIN_EXPS_USE_YN,'N') AS PRMT_MAIN_EXPS_USE_YN,
+		                PRMT.PRMT_MAIN_EXPS_PST,
+		                PRMT.PRMT_MAIN_EXPS_SEQ,
+		                PRMT.FIRST_BUY_SPC_PRICE,
+		                PRMT.SEO_SEARCH_WORD,
+		                PRMT.AGE_CD,
+                        PRMT.GOODS_TYPE_CD,
+                        (PRMT.DLGT_IMG_PATH||'/'||PRMT.DLGT_IMG_NM) as DLGT_IMG,
+                        PRMT.DLGT_IMG_ORG_NM
+		        FROM    TP_PROMOTION PRMT
+		        LEFT JOIN 	TG_BRAND BRAND ON PRMT.PRMT_BRAND_NO = BRAND.BRAND_NO
+		        WHERE   PRMT.SITE_NO = #{siteNo}
+		          AND   PRMT.PRMT_NO = #{prmtNo}
+		          AND   PRMT.DEL_YN ='N'
+
+    </select>
+    
+    <select id="selectExhibitionDispzone" resultType="exhibitionDispzoneVO">
+        /* promotion.exhibition.selectExhibitionDispzone - 전시존 정보 조회*/
+        SELECT  PRMT_DISPZONE_NO,
+				DISPZONE_NM,
+				USE_YN
+    	FROM    TP_PROMOTION_DISPZONE A
+		WHERE   1=1
+		AND     PRMT_NO = #{prmtNo}
+		AND 	PRMT_DISPZONE_NO > 1
+		AND 	DEL_YN = 'N'
+		ORDER BY PRMT_DISPZONE_NO
+
+    </select>
+
+    <select id="selectExhibitionTargetTotal" resultType="exhibitionTargetVO">
+        /* promotion.exhibition.selectExhibitionTargetTotal - 기획전대상 전체조회 : 기획전대상 중복방지*/
+        SELECT TPTG.GOODS_NO,
+               TP.PRMT_NM,
+               TP.PRMT_NO
+        FROM TP_PROMOTION_TARGET_GOODS TPTG INNER JOIN TP_PROMOTION TP ON TPTG.PRMT_NO = TP.PRMT_NO
+        WHERE TPTG.USE_YN = 'Y'
+        AND TP.DEL_YN = 'N'
+        AND TP.USE_YN = 'Y'
+        <if test="siteNo != null and siteNo != ''">
+            AND TP.SITE_NO = #{siteNo}
+        </if>
+        <![CDATA[
+        AND TP.APPLY_END_DTTM > sysdate
+        ]]>
+    </select>
+
+    <select id="selectTotalGoodsList" parameterType="exhibitionPO" resultType="exhibitionPO">
+        /* promotion.exhibition.selectTotalGoodsList - 기획전대상 등록 : 전체상품 적용일 경우 : 전체 상품 조회*/
+        SELECT GOODS_NO
+        FROM TG_GOODS
+        WHERE SITE_NO = #{siteNo}
+        AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectExhibitionTargetGoods" resultType="exhibitionTargetVO">
+        /* promotion.exhibition.selectExhibitionTargetGoods - 기획전대상 상품 조회*/
+        SELECT rownum, A.*
+        FROM
+            (
+                SELECT fn_getGoodsImgPath(tptg.GOODS_NO, '02') AS IMG_PATH,
+                       tg.GOODS_NM ,
+                       tg.GOODS_NO ,
+                       (SELECT BRAND_NM
+                        FROM TG_BRAND
+                        WHERE tg.BRAND_NO = BRAND_NO) AS BRAND_NM,
+                       ts.SELLER_NM ,
+                       ti.SALE_PRICE ,
+                       ti.STOCK_QTT ,
+                       fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) as GOODS_SALE_STATUS_NM ,
+                       tepm.ERP_ITM_CODE
+                FROM TP_PROMOTION_TARGET_GOODS tptg
+                         INNER JOIN TG_GOODS tg ON tptg.GOODS_NO = tg.GOODS_NO
+                         INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                         INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                         LEFT OUTER JOIN TI_ERP_PRD_MAPPING tepm ON tg.ITEM_NO = tepm.MALL_ITM_CODE
+                where tptg.PRMT_NO = #{prmtNo}
+                ORDER BY tptg.APPLY_SEQ
+            ) A
+    </select>
+
+    <select id="selectExhibitionTargetGoodsList" resultType="goodsVO" >
+        /* promotion.exhibition.selectExhibitionTargetGoodsList */
+        SELECT BB.GOODS_NO
+             , MAX(BB.MALL_ITM_CODE)        as MALL_ITM_CODE
+             , MAX(BB.ERP_ITM_CODE)         as ERP_ITM_CODE
+             , MAX(BB.MALL_GOODS_NO)        as MALL_GOODS_NO
+             , MAX(BB.GOODS_TYPE_CD)        AS GOODS_TYPE_CD
+             , MAX(BB.SELLER_NO)            AS SELLER_NO
+             , MAX(BB.GOODS_NM)             AS GOODS_NM
+             , MAX(BB.ITEM_NO)              AS ITEM_NO
+             , MAX(BB.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_CD
+             , MAX(BB.GOODS_IMG_02)         AS GOODS_IMG_02
+             , MAX(BB.GOODS_THUM_IMG)       AS GOODS_THUM_IMG
+             , MAX(BB.ACCM_SALE_AMT)        AS ACCM_SALE_AMT
+             , MAX(BB.ACCM_SALE_CNT)        AS ACCM_SALE_CNT
+             , MAX(BB.GOODS_SVMN_AMT)       AS GOODS_SVMN_AMT
+             , MAX(BB.BRAND_NO)             AS BRAND_NO
+             , MAX(BB.BRAND_NM)             AS BRAND_NM
+             , MAX(BB.ITEM_NM)              AS ITEM_NM
+             , MAX(BB.CUSTOMER_PRICE)       AS CUSTOMER_PRICE
+             , MAX(BB.SALE_PRICE)           AS SALE_PRICE
+             , MAX(BB.SALE_RATE)            AS SALE_RATE
+             , MAX(BB.SUPPLY_PRICE)         AS SUPPLY_PRICE
+             , MAX(BB.FIRST_BUY_SPC_PRICE)  AS FIRST_BUY_SPC_PRICE
+             , MAX(BB.STOCK_QTT)            AS STOCK_QTT
+             , MAX(BB.SITE_NO)              AS SITE_NO
+             , MAX(BB.SELLER_NM)            AS SELLER_NM
+             , MAX(BB.GOODS_SALE_STATUS_NM) AS GOODS_SALE_STATUS_NM
+             , (SELECT MAX(fn_categoryName(TGC.CTG_NO, #{siteNo}))
+                FROM TG_GOODS_CTG TGC
+                WHERE TGC.GOODS_NO = BB.GOODS_NO
+                  AND TGC.SITE_NO = #{siteNo}
+                  AND TGC.DEL_YN = 'N')     AS CTG_NAME
+        FROM (SELECT (SELECT MAX(MALL_ITM_CODE)
+                      FROM TI_ERP_PRD_MAPPING TPM
+                      WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS MALL_ITM_CODE,
+                     (SELECT MAX(ERP_ITM_CODE)
+                      FROM TI_ERP_PRD_MAPPING TPM
+                      WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS ERP_ITM_CODE,
+                     (SELECT MAX(MALL_GOODS_NO)
+                      FROM TI_ERP_PRD_MAPPING TPM
+                      WHERE TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                        AND TPM.MALL_ITM_CODE = ITM.ITEM_NO)                           AS MALL_GOODS_NO,
+                     GDS.GOODS_NO,
+                     GDS.GOODS_TYPE_CD,
+                     GDS.SELLER_NO,
+                     (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = GDS.SELLER_NO) AS SELLER_NM,
+                     GDS.GOODS_NM,
+                     GDS.ITEM_NO,
+                     GDS.GOODS_SALE_STATUS_CD,
+                     fn_getCodeNm('GOODS_SALE_STATUS_CD', GDS.GOODS_SALE_STATUS_CD)    AS GOODS_SALE_STATUS_NM,
+                     fn_getGoodsImgPath(GDS.GOODS_NO, '02')                            AS GOODS_IMG_02,
+                     (SELECT B.IMG_PATH || '_' || B.IMG_NM
+                      FROM TG_GOODS_IMG_SET A,
+                           TG_GOODS_IMG_DTL B
+                      WHERE A.GOODS_IMGSET_NO = B.GOODS_IMGSET_NO
+                        AND A.GOODS_NO = GDS.GOODS_NO
+                        AND B.GOODS_IMG_TYPE = '02'
+                        AND A.DLGT_IMG_YN = 'N'
+                        AND ROWNUM = 1)                                                AS GOODS_THUM_IMG,
+                     NVL(GDS.ACCM_SALE_AMT, 0)                                         AS ACCM_SALE_AMT,
+                     NVL(GDS.ACCM_SALE_CNT, 0)                                         AS ACCM_SALE_CNT,
+                     NVL(GDS.GOODS_SVMN_AMT, 0)                                        AS GOODS_SVMN_AMT,
+                     GDS.BRAND_NO,
+                     fn_getBrandNm(GDS.BRAND_NO)                                       AS BRAND_NM,
+                     ITM.ITEM_NM,
+                     NVL(ITM.CUSTOMER_PRICE, 0)                                        AS CUSTOMER_PRICE,
+                     NVL(ITM.SALE_PRICE, 0)                                            AS SALE_PRICE,
+                     decode(nvl(ITM.CUSTOMER_PRICE, 0), 0, 0, 100 - (ITM.SALE_PRICE / ITM.CUSTOMER_PRICE) *
+                                                                    100)               AS SALE_RATE,
+                     NVL(ITM.SUPPLY_PRICE, 0)                                          AS SUPPLY_PRICE,
+                     (SELECT MAX(FIRST_BUY_SPC_PRICE)
+                      FROM TP_PROMOTION TP,
+                           TP_PROMOTION_TARGET_GOODS TPTG
+                      WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                        AND TPTG.GOODS_NO = GDS.GOODS_NO
+                        AND TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM, 'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM, 'YYYY-MM-DD HH24:MI:SS')
+                        AND TP.USE_YN = 'Y'
+                        AND TP.DEL_YN = 'N')                                           AS FIRST_BUY_SPC_PRICE,
+                     (SELECT SUM(STOCK_QTT)
+                      FROM TG_ITEM
+                      WHERE GOODS_NO = GDS.GOODS_NO
+                        AND USE_YN = 'Y')                                              AS STOCK_QTT,
+                     GDS.SITE_NO
+              FROM TG_GOODS GDS
+                 , TS_SITE TS
+                 , TP_PROMOTION_TARGET_GOODS TPTG
+                 , TG_ITEM ITM
+               LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                   ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                   AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+              WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                AND GDS.SITE_NO = TS.SITE_NO
+                AND GDS.SITE_NO = #{siteNo}
+                AND GDS.DEL_YN = 'N'
+                AND ITM.DEL_YN = 'N'
+                AND TPTG.GOODS_NO = GDS.GOODS_NO
+                AND TPTG.PRMT_NO = #{prmtNo}
+             ) BB
+        GROUP BY BB.GOODS_NO
+    </select>
+
+    <select id="selectExhibitionGoodsListPaging" resultType="goodsVO">
+        /* promotion.exhibition.selectExhibitionGoodsListPaging - 기획전대상 상품 조회*/
+        /* 특정상품/카테고리만 설정인 경우 아래 조회된 GOODS_NO의 정보를 조회 */
+	    /* 특정상품/카테고리만 예외설정인 경우 전체 상품을 조회해서 아래 GOODS_NO만 제외 */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+		        SELECT
+				      TG.GOODS_NO,
+				      TG.GOODS_NM,
+				      TB.BRAND_NO,
+				      TB.BRAND_NM,
+				      TG.PR_WORDS,
+				      TI.CUSTOMER_PRICE,
+				      TI.SALE_PRICE,
+				      FLOOR((TI.SALE_PRICE*TP.PRMT_DC_VALUE/100)/10)*10 AS PROMOTION_DC_AMT,
+				      fn_getGoodsImgPath(TG.GOODS_NO, '01') AS GOODS_IMG_01,
+		              fn_getGoodsImgPath(TG.GOODS_NO, '02') AS GOODS_IMG_02,
+		              fn_getGoodsImgPath(TG.GOODS_NO, '03') AS GOODS_IMG_03,
+		              fn_getGoodsDispImgPath(TG.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+		              fn_getGoodsDispImgPath(TG.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+		              fn_getGoodsDispImgPath(TG.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+		              fn_getGoodsDispImgPath(TG.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+		              fn_getGoodsDispImgPath(TG.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+				      fn_getGoodsIcon(TG.GOODS_NO, '5') AS ICON_IMGS,
+				      TP.PRMT_DC_VALUE
+				FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG, TG_ITEM TI, TG_GOODS TG
+		             LEFT OUTER JOIN TG_BRAND TB ON TG.BRAND_NO = TB.BRAND_NO
+				WHERE TP.PRMT_NO = TPTG.PRMT_NO
+				AND TG.ITEM_NO = TI.ITEM_NO
+				AND TPTG.GOODS_NO = TG.GOODS_NO
+				AND TP.USE_YN = 'Y'
+				AND TP.DEL_YN = 'N'
+				AND TP.PRMT_NO = #{prmtNo}
+				AND TP.SITE_NO = #{siteNo}
+			) T
+		)
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectExhibitionGoodsListPagingCount" resultType="Integer">
+        /* promotion.exhibition.selectExhibitionGoodsListPagingCount - 기획전대상 상품 조회 검색 개수 */
+        SELECT
+              COUNT(1)
+        FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG, TG_ITEM TI, TG_GOODS TG
+             LEFT OUTER JOIN TG_BRAND TB ON TG.BRAND_NO = TB.BRAND_NO
+        WHERE TP.PRMT_NO = TPTG.PRMT_NO
+        AND TG.ITEM_NO = TI.ITEM_NO
+        AND TPTG.GOODS_NO = TG.GOODS_NO
+        AND TP.USE_YN = 'Y'
+        AND TP.DEL_YN = 'N'
+        AND TP.PRMT_NO = #{prmtNo}
+		AND TP.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectOtherExhibition" parameterType="exhibitionSO" resultType="exhibitionVO">
+        /* promotion.exhibition.selectOtherExhibition - 진행중인 기획전 조회*/
+       SELECT PRMT_NM,
+                PRMT_NO,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+				CASE
+					WHEN <![CDATA[APPLY_START_DTTM > sysdate]]> THEN '진행전'
+					WHEN <![CDATA[(APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM) ]]>  THEN '진행중'
+					WHEN <![CDATA[APPLY_END_DTTM <= sysdate]]> THEN '종료'
+				END  AS PRMT_STATUS_NM,
+                REG_DTTM,
+                PRMT_DC_VALUE
+        FROM TP_PROMOTION
+        WHERE  DEL_YN = 'N'
+        AND SITE_NO = #{siteNo}
+        <![CDATA[
+        AND APPLY_START_DTTM <= sysdate
+        AND sysdate < APPLY_END_DTTM
+        ]]>
+        ORDER BY REG_DTTM DESC
+    </select>
+
+    <select id="selectExhibitionByGoods" parameterType="exhibitionSO" resultType="exhibitionVO">
+        /* promotion.exhibition.selectExhibitionByGoods - 상품번호/카테고리로 기획전 조회*/
+        SELECT *
+        FROM
+        (
+	        SELECT
+			    TP.PRMT_NO,
+			    TP.PRMT_NM,
+			    TP.PRMT_TYPE_CD,
+			    TP.PRMT_DSCRT,
+			    TP.APPLY_START_DTTM,
+			    TP.APPLY_END_DTTM,
+			    TP.PRMT_CONTENT_HTML,
+			    TP.PRMT_WEB_BANNER_IMG,
+			    TP.PRMT_MOBILE_BANNER_IMG,
+			    TP.PRMT_DC_VALUE,
+			    TP.PRMT_DC_GB_CD,
+			    TP.FIRST_BUY_SPC_PRICE,
+			    TP.USE_YN,
+			    TP.DEL_YN
+			 FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+			WHERE TP.PRMT_NO = TPTG.PRMT_NO
+			  AND TP.PRMT_GOODS_GB_CD ='01'
+			  AND TPTG.GOODS_NO = #{goodsNo}
+			  AND TP.USE_YN = 'Y'
+			  AND TP.DEL_YN = 'N'
+			  AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+			  AND TP.SITE_NO = #{siteNo}
+			  <if test="prmtBrandNo != null and prmtBrandNo != ''">
+			  UNION ALL
+			  SELECT
+			    TP.PRMT_NO,
+			    TP.PRMT_NM,
+			    TP.PRMT_TYPE_CD,
+			    TP.PRMT_DSCRT,
+			    TP.APPLY_START_DTTM,
+			    TP.APPLY_END_DTTM,
+			    TP.PRMT_CONTENT_HTML,
+			    TP.PRMT_WEB_BANNER_IMG,
+			    TP.PRMT_MOBILE_BANNER_IMG,
+			    TP.PRMT_DC_VALUE,
+			    TP.PRMT_DC_GB_CD,
+			    TP.FIRST_BUY_SPC_PRICE,
+			    TP.USE_YN,
+			    TP.DEL_YN
+			 FROM TP_PROMOTION TP
+			 WHERE  TP.PRMT_GOODS_GB_CD ='02'
+			  AND TP.PRMT_BRAND_NO=  #{prmtBrandNo}
+			  AND TP.USE_YN = 'Y'
+			  AND TP.DEL_YN = 'N'
+			  AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+			  AND TP.SITE_NO = #{siteNo}
+			  </if>
+			ORDER BY PRMT_DC_VALUE DESC
+		)
+		WHERE ROWNUM = 1
+    </select>
+    
+        
+    <select id="selectEhbDispMngList" parameterType="exhibitionSO" resultType="exhibitionVO">
+        /* promotion.exhibition.selectEhbDispMngList - 진행중인 기획전 전시존 조회*/
+          SELECT PRMT_NO,
+          PRMT_DISPZONE_NO,
+          DISPZONE_NM,
+          USE_YN
+          FROM TP_PROMOTION_DISPZONE
+         <!-- WHERE SITE_NO = #{siteNo} -->
+           WHERE PRMT_NO = #{prmtNo}
+           AND DEL_YN = 'N'            
+           AND USE_YN = 'Y'
+        ORDER BY PRMT_DISPZONE_NO
+    </select>
+    
+    <select id="selectEhbDispGoodsList" parameterType="exhibitionSO" resultType="goodsVO">
+        /* promotion.exhibition.selectEhbDispGoodsList - 진행중인 기획전 전시존의 상품 조회*/
+        SELECT  TSDG.PRMT_DISPZONE_NO,
+                TSDG.GOODS_NO,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '02') AS GOODS_IMG_02,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '03') AS GOODS_IMG_03,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '04') AS GOODS_IMG_04,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '05') AS GOODS_IMG_05,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '06') AS GOODS_IMG_06,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'F') AS GOODS_DISP_IMG_F,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'G') AS GOODS_DISP_IMG_G,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'S') AS GOODS_DISP_IMG_S,
+                TB.BRAND_NO,
+                TB.BRAND_NM,
+                TG.GOODS_NM,
+                TG.PR_WORDS,
+                TI.CUSTOMER_PRICE,
+                TI.SALE_PRICE,
+                decode(nvl(TI.CUSTOMER_PRICE,0), 0, 0, 100-(TI.SALE_PRICE/TI.CUSTOMER_PRICE)*100) as SALE_RATE,
+                fn_getGoodsIcon(TG.GOODS_NO, '5') AS ICON_IMGS,
+                TG.GOODS_SVMN_AMT,
+                TG.GOODS_SCORE,
+                TG.ACCM_GOODSLETT_CNT,
+                TG.RSV_ONLY_YN,
+                TG.PRE_GOODS_YN,
+                TG.STAMP_YN,
+                NVL( (SELECT MAX(PRMT_DC_VALUE)
+		                                 FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+		                                 WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                                           AND TPTG.GOODS_NO = TG.GOODS_NO
+                                           AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+		                                   AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') ,0) AS PRMT_DC_VALUE,
+               (SELECT MAX(PRMT_DC_GB_CD)
+                  FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                 WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                   AND TPTG.GOODS_NO = TG.GOODS_NO
+                   AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                   AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS PRMT_DC_GB_CD,
+              (SELECT MAX(PRMT_TYPE_CD)
+                  FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                 WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                   AND TPTG.GOODS_NO = TG.GOODS_NO
+                   AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                   AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS PRMT_TYPE_CD,
+              (SELECT MAX(FIRST_BUY_SPC_PRICE)
+                  FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                 WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                   AND TPTG.GOODS_NO = TG.GOODS_NO
+                   AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                   AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS FIRST_BUY_SPC_PRICE,
+                 (SELECT fn_getCuoponAvailInfo(TSDG.GOODS_NO,'CPAVL','') FROM DUAL) AS COUPON_AVL_INFO
+          FROM  TP_PROMOTION_DISPZONE TSDS
+                JOIN TP_PROMOTION_TARGET_GOODS TSDG
+                  ON TSDS.PRMT_DISPZONE_NO = TSDG.PRMT_DISPZONE_NO
+                  AND TSDS.PRMT_NO = TSDG.PRMT_NO
+                JOIN TG_GOODS TG
+                  ON TSDG.GOODS_NO      = TG.GOODS_NO
+                JOIN TG_ITEM TI
+                  ON TG.ITEM_NO        = TI.ITEM_NO
+                LEFT OUTER JOIN TG_BRAND TB
+                  ON TB.BRAND_NO       = TG.BRAND_NO
+                LEFT OUTER JOIN TG_GOODS_IMG_SET TGI
+                  ON TG.GOODS_NO = TGI.GOODS_NO
+                 AND TGI.DLGT_IMG_YN = 'Y'
+          WHERE   TSDS.DEL_YN        = 'N'
+          AND	TSDS.USE_YN = 'Y'
+          AND   TSDS.PRMT_NO = #{prmtNo}
+          AND   TSDS.PRMT_DISPZONE_NO    = #{prmtDispzoneNo}
+         <!--  AND   TSDS.SITE_NO = #{siteNo} -->
+         <!-- 판매여부 -->
+		 <if test="saleYn != null and saleYn != ''">
+		     <choose>
+		         <when test="saleYn eq 'Y'.toString()">
+		          <![CDATA[
+		            AND (TG.SALE_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_START_DT IS NULL)
+		            AND (TG.SALE_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_END_DT IS NULL)
+		            AND TG.DISP_YN = 'Y'
+		            AND TG.GOODS_SALE_STATUS_CD = '1'
+		          ]]>
+		         </when>
+		         <when test="saleYn eq 'N'.toString()">
+		             AND TG.SALE_YN = #{saleYn}
+		         </when>
+		     </choose>
+		 </if>
+		 ORDER BY TSDG.APPLY_SEQ
+    </select>
+
+    <insert id="copyExhibitionInfo">
+        <selectKey keyProperty="newPrmtNo" order="BEFORE" resultType="java.lang.Integer">
+            SELECT NVL(MAX(PRMT_NO), 0) + 1 AS newPrmtNo
+            FROM   TP_PROMOTION
+        </selectKey>
+        /* promotion.exhibition.copyExhibition - 기획전 복사 등록*/
+        INSERT INTO TP_PROMOTION
+        (
+            PRMT_NO,
+            SITE_NO,
+            PRMT_NM,
+            PRMT_DSCRT,
+            APPLY_START_DTTM,
+            APPLY_END_DTTM,
+            PRMT_CONTENT_HTML,
+            PRMT_WEB_BANNER_IMG_PATH,
+            PRMT_WEB_BANNER_IMG,
+            PRMT_MOBILE_BANNER_IMG_PATH,
+            PRMT_MOBILE_BANNER_IMG,
+            PRMT_TARGET_EXPT_CD,
+            PRMT_DC_VALUE,
+            REG_DTTM,
+            REGR_NO,
+            UPD_DTTM,
+            UPDR_NO,
+            DEL_YN,
+            USE_YN,
+            PRMT_TYPE_CD,
+            PRMT_DC_GB_CD,
+            PRMT_LOADRATE,
+            PRMT_GOODS_GB_CD,
+            PRMT_BRAND_NO,
+            PRMT_MAIN_EXPS_USE_YN,
+            PRMT_MAIN_EXPS_PST,
+            PRMT_MAIN_EXPS_SEQ,
+            FIRST_BUY_SPC_PRICE,
+            SEO_SEARCH_WORD,
+            AGE_CD,
+            GOODS_TYPE_CD
+        )
+        SELECT
+            #{newPrmtNo},
+            SITE_NO,
+            PRMT_NM,
+            PRMT_DSCRT,
+            APPLY_START_DTTM,
+            APPLY_END_DTTM,
+            PRMT_CONTENT_HTML,
+            PRMT_WEB_BANNER_IMG_PATH,
+            PRMT_WEB_BANNER_IMG,
+            PRMT_MOBILE_BANNER_IMG_PATH,
+            PRMT_MOBILE_BANNER_IMG,
+            PRMT_TARGET_EXPT_CD,
+            PRMT_DC_VALUE,
+            REG_DTTM,
+            REGR_NO,
+            UPD_DTTM,
+            UPDR_NO,
+            DEL_YN,
+            USE_YN,
+            PRMT_TYPE_CD,
+            PRMT_DC_GB_CD,
+            PRMT_LOADRATE,
+            PRMT_GOODS_GB_CD,
+            PRMT_BRAND_NO,
+            PRMT_MAIN_EXPS_USE_YN,
+            PRMT_MAIN_EXPS_PST,
+            PRMT_MAIN_EXPS_SEQ,
+            FIRST_BUY_SPC_PRICE,
+            SEO_SEARCH_WORD,
+            AGE_CD,
+            GOODS_TYPE_CD
+        FROM TP_PROMOTION
+        WHERE PRMT_NO = #{prmtNo}
+    </insert>
+
+    <insert id="copyExhibitionTargetGoods">
+        /* promotion.exhibition.copyExhibitionTargetGoods - 기획전대상 상품 복사 등록 */
+        INSERT INTO TP_PROMOTION_TARGET_GOODS
+        (
+            PRMT_NO,
+            APPLY_SEQ,
+            GOODS_NO,
+            REG_DTTM,
+            REGR_NO,
+            UPD_DTTM,
+            UPDR_NO,
+            USE_YN
+        )
+        SELECT
+            #{newPrmtNo},
+            APPLY_SEQ,
+            GOODS_NO,
+            REG_DTTM,
+            REGR_NO,
+            UPD_DTTM,
+            UPDR_NO,
+            USE_YN
+        FROM TP_PROMOTION_TARGET_GOODS
+        WHERE PRMT_NO=#{prmtNo}
+    </insert>
+
+    <select id="selectExhibitionTargetGoodsExist" resultType="Integer" >
+        /* promotion.exhibition.selectExhibitionTargetGoodsExist */
+        SELECT NVL(COUNT(MAX(BB.GOODS_NO)), 0)
+        FROM (SELECT GDS.GOODS_NO
+                    ,TP.PRMT_NO
+              FROM TG_GOODS GDS
+                 , TP_PROMOTION TP
+                 , TP_PROMOTION_TARGET_GOODS TPTG
+                 , TG_ITEM ITM
+               LEFT OUTER JOIN TI_ERP_PRD_MAPPING TPM
+                               ON TPM.MALL_GOODS_NO = ITM.GOODS_NO
+                                   AND TPM.MALL_ITM_CODE = ITM.ITEM_NO
+              WHERE GDS.ITEM_NO = ITM.ITEM_NO
+                AND GDS.SITE_NO = #{siteNo}
+                AND GDS.DEL_YN = 'N'
+                AND ITM.DEL_YN = 'N'
+                AND PRMT_DC_VALUE > 0
+            <if test="goodsNo != null and goodsNo != ''">
+                AND GDS.GOODS_NO = #{goodsNo}
+            </if>
+            <if test="goodsNoArr != null and goodsNoArr.length > 0">
+                AND GDS.GOODS_NO IN <foreach collection="goodsNoArr" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+                AND GDS.GOODS_NO = TPTG.GOODS_NO
+                AND TPTG.PRMT_NO = TP.PRMT_NO
+                AND TP.USE_YN = 'Y'
+                AND TP.DEL_YN = 'N'
+                AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+             ) BB
+        <if test="prmtNo != null and prmtNo != ''">
+        where BB.PRMT_NO  <![CDATA[<>]]> #{prmtNo}
+        </if>
+        GROUP BY BB.GOODS_NO
+    </select>
+
+    <select id="selectNewPrmtNo" resultType="String">
+        SELECT NVL(MAX(PRMT_NO), 0) + 1 AS newPrmtNo
+        FROM   TP_PROMOTION
+    </select>
+</mapper>

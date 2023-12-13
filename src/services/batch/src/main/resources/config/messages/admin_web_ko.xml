@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+
+    <comment>관리자 BO message</comment>
+
+    <!--
+    업무별 메시지
+    -->
+    <!-- 공통 : COM-->
+    <entry key="admin.web.common.insert">등록되었습니다.</entry>
+    <entry key="admin.web.common.update">수정되었습니다.</entry>
+    <entry key="admin.web.common.delete">삭제되었습니다.</entry>
+    <entry key="admin.web.seller.approval">입점 승인되었습니다.</entry>
+    <entry key="admin.web.seller.delete">판매자가 삭제되었습니다.</entry>
+    <entry key="admin.web.common.save">저장했습니다.</entry>
+
+    <entry key="admin.web.seller.rework">판매자의 거래가 재개되었습니다.</entry>
+    <entry key="admin.web.seller.suspend">판매자의 거래가 중지되었습니다.</entry>
+    <entry key="admin.web.seller.calculate">정산이 완료되었습니다.</entry>
+    <entry key="admin.web.seller.chkCalculate">정산대상기간에 정산기간이 중복되어서 정산을 진행할수 없습니다.</entry>
+    <entry key="admin.web.seller.targetCalc">정산대상기간에 정산대상이 없습니다.</entry>
+    <entry key="admin.web.seller.confirm">정산이 확인 되었습니다.</entry>
+    <entry key="admin.web.seller.approvalCalc">정산이 승인 되었습니다.</entry>
+    
+
+    <!-- 로그인 : LGN-->
+
+    <!-- 기본관리 : SYS-->
+
+
+    <!-- 사용자 : USR-->
+
+
+    <!-- 회원 : MBR-->
+
+
+    <!-- 전시 : DSP-->
+
+
+    <!-- 마케팅 : PRO-->
+
+
+    <!-- 상품 : GDS-->
+    <entry key="admin.web.gds.validate.goodsDetailPO.goodsNo">상품 번호가 유효하지 않습니다.</entry>
+    <entry key="admin.web.gds.validate.goodsDetailPO.goodsNm">상품 명이 유효하지 않습니다.</entry>
+    <entry key="admin.web.gds.validate.goodsDetailPO.salePrice">상품 가격이 유효하지 않습니다.</entry>
+    <entry key="admin.web.gds.validate.goodsDetailPO.stockQtt">재고 값이 유효하지 않습니다.</entry>
+
+
+    <!-- 주문 : ORD-->
+
+
+    <!-- 정산 : ADJ-->
+
+
+    <!-- 통계 : STA-->
+
+</properties>

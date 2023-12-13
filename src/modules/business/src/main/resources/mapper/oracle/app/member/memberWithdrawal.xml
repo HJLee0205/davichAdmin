@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    휴면 회원 관리
+-->
+<mapper namespace="member.manageWithdrawal">
+
+    <sql id="selectWithdrawalMemberListWhere">
+        AND SITE_NO = #{siteNo}
+        and LOGIN_ID is not null
+        <if test="searchWords != null and searchWords != ''">
+             <choose>
+                <when test = "searchType eq 'name'">
+                    AND MEMBER_NM = #{searchName}
+                </when>
+                <when test = "searchType eq 'id'">
+                    AND LOGIN_ID = #{searchLoginId}
+                </when>
+                <when test = "searchType eq 'all'">
+                    AND (
+                         LOGIN_ID = #{searchLoginId} OR
+                         MEMBER_NM = #{searchName}
+                         )
+                </when>
+            </choose>
+         </if>
+         <if test="withdrawalStDttm != null and withdrawalStDttm != ''">
+             <![CDATA[
+             AND WITHDRAWAL_DTTM >= TO_DATE(#{withdrawalStDttm}, 'YYYY-MM-DD')
+             ]]>
+         </if>
+         <if test="withdrawalEndDttm != null and withdrawalEndDttm != ''">
+             <![CDATA[
+             AND WITHDRAWAL_DTTM < TO_DATE(#{withdrawalEndDttm}, 'YYYY-MM-DD') + 1
+             ]]>
+         </if>
+         <if test="withdrawalTypeCd != null and withdrawalTypeCd != ''">
+             AND WITHDRAWAL_TYPE_CD = #{withdrawalTypeCd}
+         </if>
+         <if test="withdrawalReasonCd != null and withdrawalReasonCd != ''">
+             AND WITHDRAWAL_REASON_CD = #{withdrawalReasonCd}
+         </if>
+         <if test="etcWithdrawalReason != null and etcWithdrawalReason != ''">
+             AND ETC_WITHDRAWAL_REASON LIKE '%'||#{etcWithdrawalReason}||'%'
+         </if>
+    </sql>
+
+    <!-- 탈퇴 회원 조회 -->
+    <select id="selectWithdrawalMemberPaging" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectWithdrawalMemberPaging */
+		SELECT *
+        FROM
+        (
+            SELECT ROWNUM AS PAGING_NUM, ROWNUM, TNT_CNT - ROWNUM + 1 AS ROW_NUM, AA.*
+            FROM
+            (
+                SELECT A.*, COUNT(*) OVER() AS TNT_CNT
+                FROM
+                (
+                    SELECT MEMBER_NO,
+                           MEMBER_NM,
+                           LOGIN_ID,
+                           WITHDRAWAL_REASON_CD,
+                           WITHDRAWAL_TYPE_CD,
+                           SITE_NO,
+                           fn_getCodeNm('WITHDRAWAL_REASON_CD', WITHDRAWAL_REASON_CD) WITHDRAWAL_REASON_NM,
+                           fn_getCodeNm('WITHDRAWAL_TYPE_CD', WITHDRAWAL_TYPE_CD) WITHDRAWAL_TYPE_NM,
+                           TO_CHAR(WITHDRAWAL_DTTM, 'YYYY-MM-DD HH24:MI:SS') WITHDRAWAL_DTTM,
+                           ETC_WITHDRAWAL_REASON
+                    FROM TC_WITHDRAWAL_MEMBER
+                    WHERE 1=1
+                    <include refid="selectWithdrawalMemberListWhere" />
+                    <include refid="common.sortSql" />
+                ) A
+            ) AA
+        )
+		<include refid="common.pageSql" />
+    </select>
+
+    <!-- 탈퇴 회원 검색 카운트 -->
+    <select id="selectWithdrawalMemberPagingCount" resultType="Integer">
+        /* member.manage.selectWithdrawalMemberPagingCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT ROWNUM AS PAGING_NUM, ROWNUM, TNT_CNT - ROWNUM + 1 AS ROW_NUM, AA.*
+                FROM
+                    (
+                        SELECT A.*, COUNT(*) OVER() AS TNT_CNT
+                        FROM
+                            (
+                                SELECT MEMBER_NO,
+                                       MEMBER_NM,
+                                       LOGIN_ID,
+                                       WITHDRAWAL_REASON_CD,
+                                       WITHDRAWAL_TYPE_CD,
+                                       SITE_NO,
+                                       fn_getCodeNm('WITHDRAWAL_REASON_CD', WITHDRAWAL_REASON_CD) WITHDRAWAL_REASON_NM,
+                                       fn_getCodeNm('WITHDRAWAL_TYPE_CD', WITHDRAWAL_TYPE_CD) WITHDRAWAL_TYPE_NM,
+                                       TO_CHAR(WITHDRAWAL_DTTM, 'YYYY-MM-DD HH24:MI:SS') WITHDRAWAL_DTTM,
+                                       ETC_WITHDRAWAL_REASON
+                                FROM TC_WITHDRAWAL_MEMBER
+                                WHERE 1=1
+                                <include refid="selectWithdrawalMemberListWhere" />
+                            ) A
+                    ) AA
+            )
+    </select>
+
+    <!-- 탈퇴 회원 전체 카운트 -->
+    <select id="selectWithdrawalMemberPagingTotalCount" resultType="Integer">
+        /* member.manage.selectWithdrawalMemberPagingTotalCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT ROWNUM AS PAGING_NUM, ROWNUM, TNT_CNT - ROWNUM + 1 AS ROW_NUM, AA.*
+                FROM
+                    (
+                        SELECT A.*, COUNT(*) OVER() AS TNT_CNT
+                        FROM
+                            (
+                                SELECT MEMBER_NO,
+                                       MEMBER_NM,
+                                       LOGIN_ID,
+                                       WITHDRAWAL_REASON_CD,
+                                       WITHDRAWAL_TYPE_CD,
+                                       SITE_NO,
+                                       fn_getCodeNm('WITHDRAWAL_REASON_CD', WITHDRAWAL_REASON_CD) WITHDRAWAL_REASON_NM,
+                                       fn_getCodeNm('WITHDRAWAL_TYPE_CD', WITHDRAWAL_TYPE_CD) WITHDRAWAL_TYPE_NM,
+                                       TO_CHAR(WITHDRAWAL_DTTM, 'YYYY-MM-DD HH24:MI:SS') WITHDRAWAL_DTTM,
+                                       ETC_WITHDRAWAL_REASON
+                                FROM TC_WITHDRAWAL_MEMBER
+                                WHERE 1=1
+                            ) A
+                    ) AA
+            )
+    </select>
+
+    <!-- 탈퇴 회원 상세 조회 -->
+    <select id="viewWithdrawalMemberInfoDtl" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.viewWithdrawalMemberInfoDtl */
+        select *
+        from
+            (
+                SELECT row_number() over (partition by A.MEMBER_NO order by A.WITHDRAWAL_DTTM) as RN,
+                       A.MEMBER_NO,
+                       A.MEMBER_NM,
+                       A.BIRTH,
+                       A.BORN_YEAR,
+                       A.BORN_MONTH,
+                       A.GENDER_GB_CD,
+                       A.NTN_GB_CD,
+                       TO_CHAR(A.JOIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') JOIN_DTTM,
+                       TO_CHAR(A.WITHDRAWAL_DTTM, 'YYYY-MM-DD HH24:MI:SS') WITHDRAWAL_DTTM,
+                       A.WITHDRAWAL_TYPE_CD,
+                       fn_getCodeNm('WITHDRAWAL_TYPE_CD', A.WITHDRAWAL_TYPE_CD) WITHDRAWAL_TYPE_NM,
+                       A.WITHDRAWAL_REASON_CD,
+                       fn_getCodeNm('WITHDRAWAL_REASON_CD',A.WITHDRAWAL_REASON_CD) WITHDRAWAL_REASON_NM,
+                       A.ETC_WITHDRAWAL_REASON,
+                       A.CERTIFY_METHOD_CD,
+                       A.EMAIL_RECV_YN,
+                       A.SMS_RECV_YN,
+                       A.MEMBER_STATUS_CD,
+                       A.LOGIN_ID,
+                       A.PW,
+                       A.TEL,
+                       A.MOBILE,
+                       A.EMAIL,
+                       A.JOIN_PATH_CD,
+                       TO_CHAR(A.PW_CHG_DTTM, 'YYYY-MM-DD HH24:MI:SS') PW_CHG_DTTM,
+                       A.LOGIN_FAIL_CNT,
+                       A.STRTNB_ADDR,
+                       A.ROAD_ADDR,
+                       A.DTL_ADDR,
+                       A.NEW_POST_NO,
+                       A.MANAGER_MEMO,
+                       A.REALNM_CERTIFY_YN,
+                       A.MEMBER_GRADE_NO,
+                       A.GRADE_AUTO_REARRANGE_YN,
+                       A.MEMBER_CI,
+                       A.MEMBER_DI,
+                       A.MEMBER_GB_CD,
+                       A.ADULT_CERTIFY_YN,
+                       A.FRG_ADDR_COUNTRY,
+                       A.FRG_ADDR_CITY,
+                       A.FRG_ADDR_STATE,
+                       A.FRG_ADDR_ZIP_CODE,
+                       A.FRG_ADDR_DTL1,
+                       A.FRG_ADDR_DTL2,
+                       A.JOIN_DEVICE_TYPE,
+                       A.SITE_NO,
+                       A.REGR_NO,
+                       A.REG_DTTM,
+                       A.UPDR_NO,
+                       A.UPD_DTTM,
+                       A.BIZ_REG_NO,
+                       B.MEMBER_GRADE_NM
+                FROM TC_WITHDRAWAL_MEMBER A LEFT OUTER JOIN TC_MEMBER_GRADE B ON (A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO and B.SITE_NO = #{siteNo})
+                WHERE A.SITE_NO = #{siteNo}
+                  AND   A.MEMBER_NO = #{memberNo}
+            )
+        where RN = 1
+    </select>
+    
+    <!-- 회원 정보 수정 -->
+    <update id="updateMemInfo" >
+        /* member.manageWithdrawal.updateMemInfo */
+        UPDATE  TC_MEMBER
+           SET MEMBER_NM = #{memberNm},
+               BIRTH = #{birth},
+               BORN_YEAR = #{bornYear},
+               BORN_MONTH = #{bornMonth},
+               GENDER_GB_CD = #{genderGbCd},
+               NTN_GB_CD = #{ntnGbCd},
+               JOIN_DTTM = TO_DATE(#{joinDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+               CERTIFY_METHOD_CD = #{certifyMethodCd},
+               EMAIL_RECV_YN = #{emailRecvYn},
+               SMS_RECV_YN = #{smsRecvYn},
+               MEMBER_STATUS_CD = #{memberStatusCd},
+               TEL = #{tel},
+               MOBILE = #{mobile},
+               EMAIL = #{email},
+               JOIN_PATH_CD = #{joinPathCd},
+               PW_CHG_DTTM = TO_DATE(#{pwChgDttm}, 'YYYY-MM-DD HH24:MI:SS'),
+               LOGIN_FAIL_CNT = #{loginFailCnt},
+               STRTNB_ADDR = #{strtnbAddr},
+               ROAD_ADDR = #{roadAddr},
+               DTL_ADDR = #{dtlAddr},
+               NEW_POST_NO = #{newPostNo},
+               MANAGER_MEMO = #{managerMemo},
+               REALNM_CERTIFY_YN = #{realnmCertifyYn},
+               MEMBER_GRADE_NO = #{memberGradeNo},
+               GRADE_AUTO_REARRANGE_YN = #{gradeAutoRearrangeYn},
+               MEMBER_CI = #{memberCi},
+               MEMBER_DI = #{memberDi},
+               MEMBER_GB_CD = #{memberGbCd},
+               ADULT_CERTIFY_YN = #{adultCertifyYn},
+               FRG_ADDR_COUNTRY = #{frgAddrCountry},
+               FRG_ADDR_CITY = #{frgAddrCity},
+               FRG_ADDR_STATE = #{frgAddrState},
+               FRG_ADDR_ZIP_CODE = #{frgAddrZipCode},
+               FRG_ADDR_DTL1 = #{frgAddrDtl1},
+               FRG_ADDR_DTL2 = #{frgAddrDtl2},
+               REGR_NO = #{regrNo},
+               REG_DTTM = #{regDttm},
+               UPDR_NO = #{updrNo},
+               UPD_DTTM = sysdate,
+			   BIZ_REG_NO = #{bizRegNo}
+         WHERE MEMBER_NO = #{memberNo}
+         AND SITE_NO = #{siteNo}
+    </update>
+    
+    <delete id="deleteWithdrawalMem" >
+        /* member.manageWithdrawal.deleteWithdrawalMem */
+        DELETE FROM TC_WITHDRAWAL_MEMBER
+        WHERE  MEMBER_NO = #{memberNo}
+        AND    SITE_NO       = #{siteNo}
+    </delete>
+</mapper>

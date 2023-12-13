@@ -1,0 +1,207 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!-- Note:  A "Server" is not itself a "Container", so you may not
+     define subcomponents such as "Valves" at this level.
+     Documentation at /docs/config/server.html
+ -->
+<Server port="58015" shutdown="SHUTDOWN">
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <!-- Security listener. Documentation at /docs/config/listeners.html
+  <Listener className="org.apache.catalina.security.SecurityListener" />
+  -->
+  <!--APR library loader. Documentation at /docs/apr.html -->
+  <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+  <!--Initialize Jasper prior to webapps are loaded. Documentation at /docs/jasper-howto.html -->
+  <Listener className="org.apache.catalina.core.JasperListener" />
+  <!-- Prevent memory leaks due to use of particular java/javax APIs-->
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+  <!-- Global JNDI resources
+       Documentation at /docs/jndi-resources-howto.html
+  -->
+  <GlobalNamingResources>
+    <!-- Editable user database that can also be used by
+         UserDatabaseRealm to authenticate users
+    -->
+    <Resource name="UserDatabase" auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database that can be updated and saved"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" />
+			  
+	<!-- real 
+	<Resource name="jdbc/dmallDB" auth="Container" type="javax.sql.DataSource"
+               maxActive="100" maxIdle="30" maxWait="10000"
+               username="davich_mall" password="danvi2018" driverClassName="oracle.jdbc.driver.OracleDriver"
+               url="jdbc:oracle:thin:@140.238.12.153:1521:davich"/>  -->
+	<!-- real 2  -->
+	<Resource name="jdbc/dmallDB" auth="Container" type="javax.sql.DataSource"
+               maxActive="100" maxIdle="30" maxWait="10000"
+               username="davich_mall" password="danvi2018" driverClassName="oracle.jdbc.driver.OracleDriver"
+               url="jdbc:oracle:thin:@140.238.12.153:1521:davich"/>
+   
+	<!-- ERP real
+	<Resource name="jdbc/mall_IF_DB" auth="Container" type="javax.sql.DataSource"
+               maxActive="500" maxIdle="30" maxWait="10000"
+	       username="davich" password="davich" 
+	       driverClassName="oracle.jdbc.driver.OracleDriver"
+               url="jdbc:oracle:thin:@218.54.139.227:21359:davich"/> -->	
+	<!-- ERP cloud -->
+	<Resource name="jdbc/mall_IF_DB" auth="Container" type="javax.sql.DataSource"
+		   maxActive="500" maxIdle="30" maxWait="10000"
+		   username="davich" password="davich" 
+		   driverClassName="oracle.jdbc.driver.OracleDriver"
+		   url="jdbc:oracle:thin:@193.122.96.196:21359/DAVICH_PDB1.DAVICHADMINDBSU.DAVICHADMIN.ORACLEVCN.COM"/>
+	 
+	<!-- store PUSH DB 	   
+	<Resource name="jdbc/storeDB" auth="Container" type="javax.sql.DataSource"
+			   maxActive="500" maxIdle="30" maxWait="10000" validationQuery="SELECT 1" validationInterval="30000"
+		   username="root" password="1234" 
+		   driverClassName="com.mysql.jdbc.Driver"
+			   url="jdbc:mysql://140.238.20.115:3306/store_push?useUnicode=true&amp;characterEncoding=utf8&amp;allowMultiQueries=true&amp;autoReconnect=true"/>
+			   -->	
+	<!-- 가맹점 PUSH DB oracle -->	
+	<Resource name="jdbc/storeDB" auth="Container" type="javax.sql.DataSource"
+			   maxActive="100" maxIdle="30" maxWait="10000"
+			   username="store_push" password="store_push" 
+			   driverClassName="oracle.jdbc.driver.OracleDriver"
+			   url="jdbc:oracle:thin:@140.238.12.153:1521:davich"/>
+
+	<!-- PUSH DB 
+	<Resource name="jdbc/pushDB" auth="Container" type="javax.sql.DataSource"
+			   maxActive="500" maxIdle="30" maxWait="10000" validationQuery="SELECT 1" validationInterval="30000"
+		   username="root" password="1234" 
+		   driverClassName="com.mysql.jdbc.Driver"
+			   url="jdbc:mysql://140.238.20.115:3306/sms_push?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true"/>-->
+	<!-- PUSH DB oracle -->	
+	<Resource name="jdbc/pushDB" auth="Container" type="javax.sql.DataSource"
+			   maxActive="100" maxIdle="30" maxWait="10000"
+			   username="sms_push" password="sms_push" 
+			   driverClassName="oracle.jdbc.driver.OracleDriver"
+			   url="jdbc:oracle:thin:@140.238.12.153:1521:davich"/>
+  </GlobalNamingResources>
+
+  <!-- A "Service" is a collection of one or more "Connectors" that share
+       a single "Container" Note:  A "Service" is not itself a "Container",
+       so you may not define subcomponents such as "Valves" at this level.
+       Documentation at /docs/config/service.html
+   -->
+  <Service name="Catalina">
+
+    <!--The connectors can use a shared executor, you can define one or more named thread pools-->
+    <!--
+    <Executor name="tomcatThreadPool" namePrefix="catalina-exec-"
+        maxThreads="150" minSpareThreads="4"/>
+    -->
+
+
+    <!-- A "Connector" represents an endpoint by which requests are received
+         and responses are returned. Documentation at :
+         Java HTTP Connector: /docs/config/http.html (blocking & non-blocking)
+         Java AJP  Connector: /docs/config/ajp.html
+         APR (HTTP/AJP) Connector: /docs/apr.html
+         Define a non-SSL HTTP/1.1 Connector on port 8088
+    
+    <Connector port="18088" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />-->
+    <!-- A "Connector" using the shared thread pool-->
+    <!--
+    <Connector executor="tomcatThreadPool"
+               port="8088" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="8443" />
+    -->
+    <!-- Define a SSL HTTP/1.1 Connector on port 8443
+         This connector uses the BIO implementation that requires the JSSE
+         style configuration. When using the APR/native implementation, the
+         OpenSSL style configuration is required as described in the APR/native
+         documentation -->
+    <!--
+    <Connector port="8443" protocol="org.apache.coyote.http11.Http11Protocol"
+               maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
+               clientAuth="false" sslProtocol="TLS" />
+    -->
+	<Connector port="58443" protocol="HTTP/1.1" SSLEnabled="true"
+			maxThreads="1024" connectionTimeout="5000" disableUploadTimeout="true" compression="on" compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/javascript,image/png,font/woff2,image/x-png,image/gif" tcpNoDelay="true" maxHttpHeaderSize="8192" enableLookups="false" acceptCount="10" scheme="https" secure="true" clientAuth="false"
+			keystoreFile="/app/image/www.davichmarket.com.keystore" keystorePass="www.davichmarket.com"
+			sslEnabledProtocols="TLSv1.1,TLSv1.2"
+			ciphers="TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA, TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+			TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA, TLS_RSA_WITH_AES_128_CBC_SHA256,
+			TLS_RSA_WITH_AES_128_CBC_SHA, TLS_RSA_WITH_AES_256_CBC_SHA256,
+			TLS_RSA_WITH_AES_256_CBC_SHA" Server="DavichMarket"/>
+
+    <!-- Define an AJP 1.3 Connector on port 8009
+    <Connector port="8181" protocol="AJP/1.3" redirectPort="58443" URIEncoding="UTF-8" connectionTimeout="5000"/>
+	 -->
+	<Connector port="8181" protocol="AJP/1.3" redirectPort="58443" URIEncoding="UTF-8" connectionTimeout="5000" enableLookups="false" maxSpareThreads="75" maxThreads="1024" minSpareThreads="25" compression="on" compressableMimeType="text/html,text/xml,text/plain,text/javascript,text/css,application/javascript,image/png,font/woff2,image/x-png,image/gif" tcpNoDelay="true" maxHttpHeaderSize="8192" acceptCount="10" Server="DavichMarket"/>
+
+    <!-- An Engine represents the entry point (within Catalina) that processes
+         every request.  The Engine implementation for Tomcat stand alone
+         analyzes the HTTP headers included with the request, and passes them
+         on to the appropriate Host (virtual host).
+         Documentation at /docs/config/engine.html -->
+
+    <!-- You should set jvmRoute to support load-balancing via AJP ie :
+    <Engine name="Catalina" defaultHost="localhost" jvmRoute="jvm1">
+    -->
+    <Engine name="Catalina" defaultHost="localhost" jvmRoute="was10">
+
+      <!--For clustering, please take a look at documentation at:
+          /docs/cluster-howto.html  (simple how to)
+          /docs/config/cluster.html (reference documentation) -->
+      <!--
+      <Cluster className="org.apache.catalina.ha.tcp.SimpleTcpCluster"/>
+      -->
+
+      <!-- Use the LockOutRealm to prevent attempts to guess user passwords
+           via a brute-force attack -->
+      <Realm className="org.apache.catalina.realm.LockOutRealm">
+        <!-- This Realm uses the UserDatabase configured in the global JNDI
+             resources under the key "UserDatabase".  Any edits
+             that are performed against this UserDatabase are immediately
+             available for use by the Realm.  -->
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
+      </Realm>
+
+      <Host name="localhost"  appBase="/data/O4OPJT/image"
+            unpackWARs="true" autoDeploy="false">
+
+        <!-- SingleSignOn valve, share authentication between web applications
+             Documentation at: /docs/config/valve.html -->
+        <!--
+        <Valve className="org.apache.catalina.authenticator.SingleSignOn" />
+        -->
+
+        <!-- Access log processes all example.
+             Documentation at: /docs/config/valve.html
+             Note: The pattern used is equivalent to using pattern="common" -->
+        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+               prefix="localhost_access_log." suffix=".log"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+		
+		<Context crossContext="false" docBase="ROOT" path="" reloadable="false" />
+		
+      </Host>
+    </Engine>
+  </Service>
+</Server>

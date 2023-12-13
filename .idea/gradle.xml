@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="delegatedBuild" value="false" />
+        <option name="testRunner" value="PLATFORM" />
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="jdk1.8.0_292" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/buildSrc" />
+            <option value="$PROJECT_DIR$/src/config" />
+            <option value="$PROJECT_DIR$/src/modules/business" />
+            <option value="$PROJECT_DIR$/src/modules/common" />
+            <option value="$PROJECT_DIR$/src/modules/smsemail/common" />
+            <option value="$PROJECT_DIR$/src/modules/smsemail/remote" />
+            <option value="$PROJECT_DIR$/src/services/admin" />
+            <option value="$PROJECT_DIR$/src/services/batch" />
+            <option value="$PROJECT_DIR$/src/services/image" />
+            <option value="$PROJECT_DIR$/src/services/smsemail" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

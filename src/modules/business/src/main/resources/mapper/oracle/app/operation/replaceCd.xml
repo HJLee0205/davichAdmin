@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="operation.replaceCd">
+
+    
+    <select id="selectReplaceCdList" resultType="replaceCdVO">
+        /* operation.replaceCd.selectReplaceCdList */
+        SELECT  
+            REPLACE_NO,
+            REPLACE_NM,
+            REPLACE_DSCRT,
+            REPLACE_GB_CD,
+            MAPPING_TABLE,
+            MAPPING_COLUMN,
+            DISP_MAPPING_COLUMN,
+            DEL_YN
+        FROM    TB_REPLACE_CD 
+        WHERE 1=1
+        AND DEL_YN = 'N'
+
+    </select>
+   
+
+</mapper>

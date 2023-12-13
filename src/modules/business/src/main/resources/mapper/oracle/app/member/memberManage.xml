@@ -1,0 +1,1897 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	회원 정보 관리 맵퍼
+-->
+<mapper namespace="member.manage">
+
+	<sql id="selectMemberListWhere">
+		<where>
+		    AND A.MEMBER_STATUS_CD = #{memberStatusCd}
+            <![CDATA[
+            AND A.MEMBER_NO >= 1000
+            ]]>
+            <if test="siteNo != null and siteNo != ''">
+                AND A.SITE_NO = #{siteNo}
+            </if>
+            <if test="joinStDttm != null and joinStDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM >= TO_DATE(#{joinStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="joinEndDttm != null and joinEndDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM < TO_DATE(#{joinEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+            <if test="loginStDttm != null and loginStDttm != ''">
+                <![CDATA[
+                AND to_date(LAST_LOGIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') >= TO_DATE(#{loginStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="loginEndDttm != null and loginEndDttm != ''">
+                <![CDATA[
+                AND to_date(LAST_LOGIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') < TO_DATE(#{loginEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+            <if test="bornMonth != null and bornMonth != ''">
+                AND LPAD(A.BORN_MONTH,2,'0') = #{bornMonth}
+            </if>
+            <if test="smsRecvYn != null and smsRecvYn != ''">
+                AND nvl(A.SMS_RECV_YN, 'N') = #{smsRecvYn}
+            </if>
+            <if test="emailRecvYn != null and emailRecvYn != ''">
+                AND nvl(A.EMAIL_RECV_YN, 'N') = #{emailRecvYn}
+            </if>
+            <if test="memberGradeNo != null and memberGradeNo != ''">
+                AND A.MEMBER_GRADE_NO = #{memberGradeNo}
+            </if>
+            <if test="memberTypeCd != null and memberTypeCd != ''">
+                AND A.MEMBER_TYPE_CD = #{memberTypeCd}
+            </if>
+            <if test="genderGbCd != null and genderGbCd != ''">
+                AND A.GENDER_GB_CD = #{genderGbCd}
+            </if>
+            <if test="joinPathCd != null and joinPathCd.length > 0">
+                AND A.JOIN_PATH_CD IN
+                <foreach collection="joinPathCd" item="item" index="index" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="integrationMemberGbCd != null and integrationMemberGbCd != ''">
+               <![CDATA[
+                AND A.INTEGRATION_MEMBER_GB_CD = #{integrationMemberGbCd}
+                ]]>
+            </if>
+            <if test="searchWords != null and searchWords != ''">
+                <choose>
+                    <when test = "searchType eq 'name'.toString()">
+                        AND A.MEMBER_NM = #{searchName}
+                    </when>
+                    <when test = "searchType eq 'id'.toString()">
+                        AND A.LOGIN_ID = #{searchLoginId}
+                    </when>
+                    <when test = "searchType eq 'email'.toString()">
+                        AND A.EMAIL LIKE '%'||#{searchEmail}||'%'
+                    </when>
+                    <when test = "searchType eq 'mobile'.toString()">
+                        AND A.MOBILE = #{searchMobile}
+                    </when>
+                    <when test = "searchType eq 'memberNo'.toString()">
+                        AND TO_CHAR(A.MEMBER_NO) = #{searchMemberNo}
+                    </when>
+                    <when test="searchType eq 'nickname'.toString()">
+                        AND A.MEMBER_NN = #{searchNn}
+                    </when>
+                    <when test = "searchType eq 'all'.toString()">
+                        AND (
+                             A.MOBILE = #{searchMobile} OR
+                             A.EMAIL LIKE '%'||#{searchEmail}||'%' OR
+                             A.LOGIN_ID = #{searchLoginId} OR
+                             A.MEMBER_NM = #{searchName} OR
+                             TO_CHAR(A.MEMBER_NO) = #{searchMemberNo} OR
+                             A.MEMBER_NN = #{searchNn}
+                             )
+                    </when>
+                </choose>
+            </if>
+            <if test="stAge != null and stAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR >= #{stAge}
+                ]]>
+            </if>
+            <if test="endAge != null and endAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR <= #{endAge}
+                ]]>
+            </if>
+            <if test="appToken != null and appToken != ''">
+                AND A.APP_TOKEN IS NOT NULL
+                <if test="searchAlarmGb == null or searchAlarmGb == ''">
+                AND (NOTI_GB = '1' OR EVENT_GB = '1' OR NEWS_GB = '1')
+                </if>
+            </if>
+
+            <if test="searchAlarmGb != null and searchAlarmGb != ''">
+                <choose>
+                    <when test = "searchAlarmGb eq '01'.toString()">
+                        AND A.NOTI_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '02'.toString()">
+                        AND A.EVENT_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '03'.toString()">
+                        AND A.NEWS_GB = '1'
+                    </when>
+                </choose>
+            </if>
+            <if test="stPrcAmt != null and stPrcAmt != ''">
+                <![CDATA[
+                AND PRC_AMT >= #{stPrcAmt}
+                ]]>
+            </if>
+			<if test="endPrcAmt != null and endPrcAmt != ''">
+                <![CDATA[
+                AND PRC_AMT <= #{endPrcAmt}
+                ]]>
+            </if>
+            <if test="stSaleAmt != null and stSaleAmt != ''">
+                <![CDATA[
+                AND SALE_AMT >= #{stSaleAmt}
+                ]]>
+            </if>
+            <if test="endSaleAmt != null and endSaleAmt != ''">
+                <![CDATA[
+                AND SALE_AMT <= #{endSaleAmt}
+                ]]>
+            </if>
+            <if test="stOrdCnt != null and stOrdCnt != ''">
+                <![CDATA[
+                AND ORD_CNT >= #{stOrdCnt}
+                ]]>
+            </if>
+            <if test="endOrdCnt != null and endOrdCnt != ''">
+                <![CDATA[
+                AND ORD_CNT <= #{endOrdCnt}
+                ]]>
+            </if>
+            <if test="stPrcPoint != null and stPrcPoint != ''">
+                <![CDATA[
+                AND PRC_POINT >= #{stPrcPoint}
+                ]]>
+            </if>
+            <if test="endPrcPoint != null and endPrcPoint != ''">
+                <![CDATA[
+                AND PRC_POINT <= #{endPrcPoint}
+                ]]>
+            </if>
+            <if test="stPrcStamp != null and stPrcStamp != ''">
+                <![CDATA[
+                and PRC_STAMP >= #{stPrcStamp}
+                ]]>
+            </if>
+            <if test="endPrcStamp != null and endPrcStamp != ''">
+                <![CDATA[
+                and PRC_STAMP <= #{endPrcStamp}
+                ]]>
+            </if>
+            <if test="stLoginCnt != null and stLoginCnt != ''">
+                <![CDATA[
+                AND LOGIN_CNT >= ${stLoginCnt}
+                ]]>
+            </if>
+            <if test="endLoginCnt != null and endLoginCnt != ''">
+                <![CDATA[
+                AND LOGIN_CNT <= ${endLoginCnt}
+                ]]>
+            </if>
+            <if test="stCommentCnt != null and stCommentCnt != ''">
+                <![CDATA[
+                AND COMMENT_CNT >= #{stCommentCnt}
+                ]]>
+            </if>
+            <if test="endCommentCnt != null and endCommentCnt != ''">
+                <![CDATA[
+                AND COMMENT_CNT <= #{endCommentCnt}
+                ]]>
+            </if>
+            <if test="(ordStDttm != null and ordStDttm != '') or (ordEndDttm != null and ordEndDttm != '') or (ordTypeCd != null and ordTypeCd != '')">
+            	AND exists (
+            		SELECT 1 
+                    FROM TO_ORD ORD 
+                    LEFT JOIN TO_ORD_DTL TOD ON ORD.ORD_NO = TOD.ORD_NO
+                    LEFT JOIN TG_GOODS TG ON TG.GOODS_NO = TOD.GOODS_NO
+                    WHERE ORD.MEMBER_NO = A.MEMBER_NO
+                    <if test="ordStDttm != null and ordStDttm != ''">
+		                <![CDATA[
+		                AND ORD.PAYMENT_CMPLT_DTTM >= TO_DATE(#{ordStDttm}, 'YYYY-MM-DD')
+		                ]]>
+		            </if>
+		            <if test="ordEndDttm != null and ordEndDttm != ''">
+		                <![CDATA[
+		                AND ORD.PAYMENT_CMPLT_DTTM < TO_DATE(#{ordEndDttm}, 'YYYY-MM-DD') + 1
+		                ]]>
+		            </if>
+                    <if test="ordTypeCd != null and ordTypeCd != ''">
+                    	<choose>
+                    		<when test="ordTypeCd eq '01'.toString() or ordTypeCd eq '02'.toString()">
+                    			AND TG.GOODS_TYPE_CD = #{ordTypeCd}	
+                    		</when>
+                    		<otherwise>
+                    			AND TG.SELLER_NO != 1
+                    		</otherwise>
+                    	</choose>
+					</if>
+            	)
+            </if>
+            <if test="pushGbCd != null and pushGbCd.length > 0">
+                AND
+                <foreach collection="pushGbCd" item="item" index="index" open="(" separator="OR" close=")">
+                    <choose>
+                    <when test = "item eq '01'">
+                        A.NOTI_GB = '1'
+                    </when>
+                    <when test = "item eq '02'">
+                        A.EVENT_GB = '1'
+                    </when>
+                    <when test = "item eq '03'">
+                        A.NEWS_GB = '1'
+                    </when>
+                </choose>
+                </foreach>
+            </if>
+            <if test="smsSearchYn != null and smsSearchYn != '' and smsSearchYn eq 'Y'.toString()">
+                AND A.MOBILE is not null
+            </if>
+		</where>
+	</sql>
+
+
+	<!-- 회원 리스트 조회 -->
+	<select id="selectMemListPaging" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectMemListPaging -- 회원 리스트 조회 */
+		SELECT AA.tot_cnt - AA.PAGING_NUM + 1 as SORT_NUM, AA.*
+		FROM
+		(
+			SELECT A.*, count(*) over() as tot_cnt, ROW_NUMBER() OVER(ORDER BY ${sidx} ${sord}) PAGING_NUM
+			FROM
+			(
+                SELECT
+                   A.MEMBER_NO,
+                   A.SITE_NO,
+                   A.MEMBER_NM,
+                   A.MEMBER_NN,
+                   A.MEMBER_TYPE_CD,
+                   A.IMG_PATH||'_'||A.IMG_NM as IMG_URL,
+                   A.BIRTH,
+                   A.GENDER_GB_CD,
+                   A.NTN_GB_CD,
+                   A.JOIN_DTTM,
+                   A.EMAIL_RECV_YN,
+                   nvl(A.SMS_RECV_YN, 'N') as SMS_RECV_YN,
+                   A.MEMBER_STATUS_CD,
+                   A.LOGIN_ID,
+                   A.TEL,
+                   A.MOBILE,
+                   A.EMAIL,
+                   A.JOIN_PATH_CD,
+                   A.MEMBER_GRADE_NO,
+                   A.BORN_MONTH,
+                   A.BORN_YEAR,
+                   A.APP_TOKEN,
+                   A.OS_TYPE,
+                   A.NOTI_GB,
+                   A.EVENT_GB,
+                   A.NEWS_GB,
+                   A.REG_DTTM,
+                   A.RECV_RJT_YN,
+                   A.INTEGRATION_MEMBER_GB_CD,
+                   fn_getCodeNm('MEMBER_TYPE_CD', A.MEMBER_TYPE_CD) as MEMBER_TYPE_NM,
+                   fn_getCodeNm('JOIN_PATH_CD', A.JOIN_PATH_CD) as JOIN_PATH_NM,
+                   fn_getCodeNm('INTEGRATION_MEMBER_GB_CD', A.INTEGRATION_MEMBER_GB_CD) as INTEGRATION_MEMBER_GB_NM,
+                   fn_getCodeNm('MEMBER_STATUS_CD', nvl(A.MEMBER_STATUS_CD, '01')) as MEMBER_STATUS_NM
+                 ,(SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */
+                            NVL(SUM(TMSP.PRC_AMT),0) - NVL((SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */  SUM(PRC_AMT) PRC_AMT_USE
+                                                     FROM TC_MEMBER_SVMN_USE
+                                                     WHERE MEMBER_NO = TMSP.MEMBER_NO) ,0)
+                     FROM TC_MEMBER_SVMN_PVD TMSP
+                    WHERE TMSP.SVMN_USE_PSB_YN = 'Y' AND (TMSP.VALID_PERIOD IS NULL OR TMSP.VALID_PERIOD = '' OR TO_DATE(TMSP.VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                      AND TMSP.MEMBER_NO = A.MEMBER_NO
+                    GROUP BY TMSP.MEMBER_NO
+                  ) as PRC_AMT
+                 ,TO_CHAR((SELECT MAX(HIST.LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST HIST WHERE MEMBER_NO = A.MEMBER_NO), 'YYYY-MM-DD HH24:MI:SS') LAST_LOGIN_DTTM
+                 ,nvl((SELECT COUNT(*) FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO), 0) as LOGIN_CNT
+                 ,(SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE SITE_NO = 1 AND MEMBER_GRADE_NO = A.MEMBER_GRADE_NO ) as MEMBER_GRADE_NM
+                 ,(SELECT
+                           SUM(CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90') THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END)
+                      FROM TO_ORD_DTL H
+                           ,TO_ORD I
+                     WHERE H.ORD_NO = I.ORD_NO
+                     AND I.MEMBER_NO =A.MEMBER_NO
+                 ) as SALE_AMT
+                 ,(SELECT count(1) FROM  TO_ORD I where I.MEMBER_NO =A.MEMBER_NO) as ORD_CNT
+                 /*,nvl((SELECT SUM(PRC_POINT) FROM TC_MEMBER_POINT WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO), 0) AS PRC_POINT*/
+                 ,(SELECT nvl(sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+                    WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 end), 0)
+                    FROM TC_MEMBER_DPOINT_LOG
+                    WHERE MEMBERNO = A.MEMBER_NO) AS PRC_POINT
+                 ,(SELECT COUNT(*) FROM TB_BBS_CMNT WHERE DEL_YN = 'N' AND  REGR_NO = A.MEMBER_NO ) AS COMMENT_CNT
+                  FROM TC_MEMBER A
+			) A
+			<include refid="selectMemberListWhere" />
+			<include refid="common.sortSql"/>
+		) AA
+		<include refid="common.pageSql" />
+	</select>
+
+    <select id="selectMemListPagingCount" resultType="Integer">
+        /* member.manage.selectMemListPagingCount */
+        SELECT COUNT(*)
+          FROM (
+                SELECT
+                      A.*
+                    ,(SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */
+                                NVL(SUM(TMSP.PRC_AMT),0) - NVL((SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */  SUM(PRC_AMT) PRC_AMT_USE
+                                                                FROM TC_MEMBER_SVMN_USE
+                                                                WHERE MEMBER_NO = TMSP.MEMBER_NO) ,0)
+                           FROM TC_MEMBER_SVMN_PVD TMSP
+                          WHERE TMSP.SVMN_USE_PSB_YN = 'Y' AND (TMSP.VALID_PERIOD IS NULL OR TMSP.VALID_PERIOD = '' OR TO_DATE(TMSP.VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                            AND TMSP.MEMBER_NO = A.MEMBER_NO
+                          GROUP BY TMSP.MEMBER_NO
+                      ) AS PRC_AMT
+                     ,TO_CHAR((SELECT MAX(HIST.LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST HIST WHERE MEMBER_NO = A.MEMBER_NO), 'YYYY-MM-DD') LAST_LOGIN_DTTM
+                     ,(SELECT COUNT(*) LOGIN_CNT FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO) as LOGIN_CNT
+                     ,(SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE SITE_NO = 1 AND MEMBER_GRADE_NO = A.MEMBER_GRADE_NO ) as MEMBER_GRADE_NM
+                     ,(SELECT
+                               SUM(CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90') THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END)      PC_SALES_AMT
+                         FROM TO_ORD_DTL H,TO_ORD I
+                        WHERE H.ORD_NO = I.ORD_NO
+                          AND I.MEMBER_NO =A.MEMBER_NO
+                       ) AS SALE_AMT
+                     ,(SELECT count(1) FROM  TO_ORD I WHERE I.MEMBER_NO =A.MEMBER_NO) AS ORD_CNT
+                     ,(SELECT nvl(sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+                        WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 end), 0)
+                        FROM TC_MEMBER_DPOINT_LOG
+                        WHERE MEMBERNO = A.MEMBER_NO) AS PRC_POINT
+                     ,(SELECT COUNT(*) FROM TB_BBS_CMNT WHERE DEL_YN = 'N' AND  REGR_NO = A.MEMBER_NO ) AS COMMENT_CNT
+                        FROM TC_MEMBER A
+                ) A
+              <include refid="selectMemberListWhere" />
+    </select>
+
+    <select id="selectMemListPagingTotalCount" resultType="Integer">
+        /* member.manage.selectMemListPagingTotalCount */
+        SELECT COUNT(*)
+        FROM (
+                 SELECT
+                     A.*
+                      ,(SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */
+                                NVL(SUM(TMSP.PRC_AMT),0) - NVL((SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */  SUM(PRC_AMT) PRC_AMT_USE
+                                                                FROM TC_MEMBER_SVMN_USE
+                                                                WHERE MEMBER_NO = TMSP.MEMBER_NO) ,0)
+                        FROM TC_MEMBER_SVMN_PVD TMSP
+                        WHERE TMSP.SVMN_USE_PSB_YN = 'Y' AND (TMSP.VALID_PERIOD IS NULL OR TMSP.VALID_PERIOD = '' OR TO_DATE(TMSP.VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                          AND TMSP.MEMBER_NO = A.MEMBER_NO
+                        GROUP BY TMSP.MEMBER_NO
+                        ) AS PRC_AMT
+                      ,TO_CHAR((SELECT MAX(HIST.LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST HIST WHERE MEMBER_NO = A.MEMBER_NO), 'YYYY-MM-DD') LAST_LOGIN_DTTM
+                      ,(SELECT COUNT(*) LOGIN_CNT FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO) as LOGIN_CNT
+                      ,(SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE SITE_NO = 1 AND MEMBER_GRADE_NO = A.MEMBER_GRADE_NO ) as MEMBER_GRADE_NM
+                      ,(SELECT
+                            SUM(CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90') THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END)      PC_SALES_AMT
+                        FROM TO_ORD_DTL H,TO_ORD I
+                        WHERE H.ORD_NO = I.ORD_NO
+                          AND I.MEMBER_NO =A.MEMBER_NO
+                        ) AS SALE_AMT
+                      ,(SELECT count(1) FROM  TO_ORD I WHERE I.MEMBER_NO =A.MEMBER_NO) AS ORD_CNT
+                      ,(SELECT nvl(sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+                                            WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 end), 0)
+                        FROM TC_MEMBER_DPOINT_LOG
+                        WHERE MEMBERNO = A.MEMBER_NO) AS PRC_POINT
+                      ,(SELECT COUNT(*) FROM TB_BBS_CMNT WHERE DEL_YN = 'N' AND  REGR_NO = A.MEMBER_NO ) AS COMMENT_CNT
+                 FROM TC_MEMBER A
+             ) A
+    </select>
+
+    <!-- 회원리스트 조회 (SMS/PUSH 발송용) -->
+    <select id="selectMemListBySend" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectMemListBySend -- 회원 리스트 조회 */
+        SELECT AA.tot_cnt - AA.PAGING_NUM + 1 as SORT_NUM, AA.*
+        FROM
+        (
+        SELECT A.*, count(*) over() as tot_cnt, ROW_NUMBER() OVER(ORDER BY ${sidx} ${sord}) PAGING_NUM
+        FROM
+        (
+            SELECT
+                A.MEMBER_NO,
+                A.SITE_NO,
+                A.MEMBER_NM,
+                A.MEMBER_NN,
+                A.MEMBER_TYPE_CD,
+                A.IMG_PATH||'_'||A.IMG_NM as IMG_URL,
+                A.BIRTH,
+                A.GENDER_GB_CD,
+                A.NTN_GB_CD,
+                A.JOIN_DTTM,
+                A.EMAIL_RECV_YN,
+                nvl(A.SMS_RECV_YN, 'N') as SMS_RECV_YN,
+                A.MEMBER_STATUS_CD,
+                A.LOGIN_ID,
+                A.TEL,
+                A.MOBILE,
+                A.EMAIL,
+                A.JOIN_PATH_CD,
+                A.MEMBER_GRADE_NO,
+                A.BORN_MONTH,
+                A.BORN_YEAR,
+                A.APP_TOKEN,
+                A.OS_TYPE,
+                A.NOTI_GB,
+                A.EVENT_GB,
+                A.NEWS_GB,
+                A.REG_DTTM,
+                A.RECV_RJT_YN,
+                A.INTEGRATION_MEMBER_GB_CD,
+                fn_getCodeNm('MEMBER_TYPE_CD', A.MEMBER_TYPE_CD) as MEMBER_TYPE_NM,
+                fn_getCodeNm('JOIN_PATH_CD', A.JOIN_PATH_CD) as JOIN_PATH_NM,
+                fn_getCodeNm('INTEGRATION_MEMBER_GB_CD', A.INTEGRATION_MEMBER_GB_CD) as INTEGRATION_MEMBER_GB_NM,
+                fn_getCodeNm('MEMBER_STATUS_CD', nvl(A.MEMBER_STATUS_CD, '01')) as MEMBER_STATUS_NM
+                ,(SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */
+                    NVL(SUM(TMSP.PRC_AMT),0) - NVL((SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */  SUM(PRC_AMT) PRC_AMT_USE
+                    FROM TC_MEMBER_SVMN_USE
+                    WHERE MEMBER_NO = TMSP.MEMBER_NO) ,0)
+                     FROM TC_MEMBER_SVMN_PVD TMSP
+                    WHERE TMSP.SVMN_USE_PSB_YN = 'Y' AND (TMSP.VALID_PERIOD IS NULL OR TMSP.VALID_PERIOD = '' OR TO_DATE(TMSP.VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                      AND TMSP.MEMBER_NO = A.MEMBER_NO
+                    GROUP BY TMSP.MEMBER_NO
+                    ) as PRC_AMT
+                ,TO_CHAR((SELECT MAX(HIST.LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST HIST WHERE MEMBER_NO = A.MEMBER_NO), 'YYYY-MM-DD HH24:MI:SS') LAST_LOGIN_DTTM
+                ,(SELECT COUNT(*) FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO) as LOGIN_CNT
+                ,(SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE SITE_NO = 1 AND MEMBER_GRADE_NO = A.MEMBER_GRADE_NO ) as MEMBER_GRADE_NM
+                ,(SELECT
+                        SUM(CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90') THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END)
+                    FROM TO_ORD_DTL H
+                        ,TO_ORD I
+                    WHERE H.ORD_NO = I.ORD_NO
+                    AND I.MEMBER_NO =A.MEMBER_NO
+                    ) as SALE_AMT
+                ,(SELECT count(1) FROM  TO_ORD I where I.MEMBER_NO =A.MEMBER_NO) as ORD_CNT
+                ,(SELECT nvl(sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+                    WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 end), 0)
+                    FROM TC_MEMBER_DPOINT_LOG
+                    WHERE MEMBERNO = A.MEMBER_NO) AS PRC_POINT
+                ,(SELECT COUNT(*) FROM TB_BBS_CMNT WHERE DEL_YN = 'N' AND  REGR_NO = A.MEMBER_NO ) AS COMMENT_CNT
+            FROM TC_MEMBER A
+            ) A
+            <include refid="selectMemberListWhere" />
+            <include refid="common.sortSql"/>
+        ) AA
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 회원 상세 조회 -->
+    <select id="viewMemInfoDtl" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.viewMemInfoDtl */
+        SELECT A.MEMBER_NO,
+               A.MEMBER_NM,
+               A.MEMBER_NN,
+               nvl(A.MEMBER_TYPE_CD, '01') as MEMBER_TYPE_CD,
+               fn_getCodeNm('MEMBER_TYPE_CD', A.MEMBER_TYPE_CD) MEMBER_TYPE_NM,
+               A.BIZ_REG_NO,
+               A.BIZ_FILE_PATH,
+               A.BIZ_FILE_NM,
+               A.BIZ_FILE_SIZE,
+               A.BIZ_ORG_FILE_NM,
+               A.IMG_PATH,
+               A.IMG_NM,
+               A.IMG_ORG_NM,
+               A.INF_DESC,
+               nvl(A.BIZ_APRV_YN, 'N') as BIZ_APRV_YN,
+               A.MANAGER_NM,
+               A.BIRTH,
+               A.PW,
+               A.GENDER_GB_CD,
+               fn_getCodeNm('GENDER_GB_CD', A.GENDER_GB_CD) GENDER_GB_NM,
+               TO_CHAR(A.JOIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') JOIN_DTTM,
+               nvl(A.EMAIL_RECV_YN, 'N') as EMAIL_RECV_YN,
+               nvl(A.SMS_RECV_YN, 'N') as SMS_RECV_YN,
+               A.LOGIN_ID,
+               A.TEL,
+               A.MOBILE,
+               A.EMAIL,
+               A.STRTNB_ADDR,
+               A.ROAD_ADDR,
+               A.DTL_ADDR,
+               A.NEW_POST_NO,
+               A.FRG_ADDR_COUNTRY,
+               A.FRG_ADDR_CITY,
+               A.FRG_ADDR_STATE,
+               A.FRG_ADDR_ZIP_CODE,
+               A.FRG_ADDR_DTL1,
+               A.FRG_ADDR_DTL2,
+               A.MEMBER_GB_CD,
+               A.MANAGER_MEMO,
+               A.RECV_RJT_YN,
+               NVL(A.REALNM_CERTIFY_YN,'N') AS REALNM_CERTIFY_YN,
+               A.JOIN_PATH_CD,
+               B.MEMBER_GRADE_NO,
+               B.MEMBER_GRADE_NM,
+               C.DC_UNIT_CD,
+               C.DC_VALUE,
+               C.SVMN_UNIT_CD,
+               C.SVMN_VALUE,
+               A.CUSTOM_STORE_NO,
+               A.CUSTOM_STORE_NM,
+               NVL(D.LOGIN_ID,'') RECOM_MEMBER_ID,
+               A.CEO_NM,
+               A.INTEGRATION_MEMBER_GB_CD
+               ,fn_getCodeNm('INTEGRATION_MEMBER_GB_CD', A.INTEGRATION_MEMBER_GB_CD) INTEGRATION_MEMBER_GB_NM
+               ,TO_CHAR(A.MEMBER_INTEGRATION_DTTM, 'YYYY-MM-DD HH24:MI:SS') AS MEMBER_INTEGRATION_DTTM
+               ,A.ID_CHG_YN
+               ,TO_CHAR(A.APP_FIRST_LOGIN_DTTM, 'YYYY-MM-DD HH24:MI:SS') APP_FIRST_LOGIN_DTTM
+               ,A.REALNM_CERTIFY_YN
+               ,CASE WHEN TO_CHAR(A.JOIN_DTTM,'YYYYMMDD') BETWEEN TO_CHAR(SYSDATE-3,'YYYYMMDD') AND TO_CHAR(SYSDATE,'YYYYMMDD') THEN 'Y' ELSE 'N' END  NEW_MEMBER_YN
+               ,(SELECT
+                        CASE WHEN COUNT(1)>0 THEN 'Y' ELSE 'N' END OLD_MEMBER_YN
+                   FROM TC_MEMBER_CP
+                  WHERE MEMBER_NO=#{memberNo}
+                    AND COUPON_NO IN (SELECT COUPON_NO FROM TP_COUPON WHERE COUPON_KIND_CD ='07')
+                    AND TO_CHAR(REG_DTTM,'YYYYMMDD') BETWEEN TO_CHAR(SYSDATE-3,'YYYYMMDD') AND TO_CHAR(SYSDATE,'YYYYMMDD')) AS OLD_MEMBER_YN
+                , NVL(
+                (
+                    SELECT CASE WHEN COUNT(1) > 0 THEN 'Y' ELSE 'N' END
+                      FROM (
+                        SELECT
+                            (
+                            SELECT
+                                   CASE WHEN COUNT(1) > 0 AND A.SALE_AMT*A.ORD_QTT-A.DC_AMT =  MAX(TP.FIRST_BUY_SPC_PRICE)*A.ORD_QTT THEN 'Y' ELSE 'N' END
+                              FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                             WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                               AND TP.PRMT_TYPE_CD ='06'
+                               AND TP.SITE_NO = 1
+                               AND TPTG.GOODS_NO= A.GOODS_NO
+                            ) AS FIRST_SPC_ORD_YN
+                         FROM TO_ORD_DTL A, TO_ORD B
+                        WHERE A.ORD_NO=B.ORD_NO
+                          AND B.MEMBER_NO = #{memberNo}
+                          AND A.GOODS_NO IN (
+                                                SELECT DISTINCT TPTG.GOODS_NO
+                                                 FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                                                            WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                                                              AND TP.PRMT_TYPE_CD ='06'
+                                                              AND TP.SITE_NO = 1
+                                                )
+                        )
+                     WHERE FIRST_SPC_ORD_YN ='Y'
+                )
+                ,'N') AS FIRST_SPC_ORD_YN
+                ,A.NOTI_GB
+                ,A.EVENT_GB
+                ,A.NEWS_GB
+                ,A.MEMBER_CARD_NO
+                ,(select ERP_MEMBER_NO from TI_ERP_MEM_MAPPING where MALL_MEMBER_NO = A.MEMBER_NO and rownum = 1 and DEL_YN = 'N') as ERP_MEMBER_NO
+          FROM TC_MEMBER A
+               LEFT JOIN(SELECT MEMBER_GRADE_NM, MEMBER_GRADE_NO
+                           FROM TC_MEMBER_GRADE
+                          WHERE SITE_NO = #{siteNo})B ON A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO
+               LEFT OUTER JOIN(SELECT MEMBER_GRADE_NO,DC_UNIT_CD,DC_VALUE,SVMN_UNIT_CD,SVMN_VALUE
+                           FROM TC_MEMBER_GRADE_BNF
+                          WHERE SITE_NO = #{siteNo} AND USE_YN = 'Y')C ON A.MEMBER_GRADE_NO = C.MEMBER_GRADE_NO
+               LEFT JOIN TC_MEMBER D ON A.RECOM_MEMBER_NO = D.MEMBER_NO
+         WHERE A.SITE_NO = #{siteNo}
+           AND A.MEMBER_NO = #{memberNo}
+
+    </select>
+
+	<!-- 사업자 회원 승인 처리 -->
+    <update id="confirmMemInfo" >
+        /* member.manage.confirmMemInfo */
+        UPDATE  TC_MEMBER
+           SET
+               UPDR_NO = #{regrNo}
+               ,UPD_DTTM = sysdate
+               ,BIZ_APRV_YN = 'Y'
+         WHERE MEMBER_NO = #{memberNo}
+           AND SITE_NO = #{siteNo}
+    </update>
+    
+    <!-- 회원 정보 수정 -->
+    <update id="updateMemInfo" >
+    { CALL
+   		DECLARE
+   		BEGIN
+    		
+        /* member.manage.updateMemInfo */
+        UPDATE  TC_MEMBER
+           SET
+               UPDR_NO = #{regrNo}
+               ,UPD_DTTM = sysdate
+               
+               <if test="idChgYn != null and idChgYn eq 'Y'.toString()">
+				,LOGIN_ID = #{chgId}
+				,ID_CHG_YN = 'Y'
+				,ID_CHG_DTTM = sysdate
+               </if>
+               <if test="memberNm != null and memberNm != ''">
+               ,MEMBER_NM = #{memberNm}
+               </if>
+               <if test="birth != null and birth != ''">
+               ,BIRTH = #{birth}
+               </if>
+               <if test="bornYear != null and bornYear != ''">
+               ,BORN_YEAR = #{bornYear}
+               </if>
+               <if test="bornMonth != null and bornMonth != ''">
+               ,BORN_MONTH = #{bornMonth}
+               </if>
+               <if test="email != null and email != ''">
+               ,EMAIL = #{email}
+               </if>
+               <if test="emailRecvYn != null and emailRecvYn != ''">
+               ,EMAIL_RECV_YN = #{emailRecvYn}
+               </if>
+               <if test="mobile != null and mobile != ''">
+               ,MOBILE = #{mobile}
+               </if>
+               <if test="mobileSmr != null and mobileSmr != ''">
+               ,MOBILE_SMR = #{mobileSmr}
+               </if>
+               <if test="smsRecvYn != null and smsRecvYn != ''">
+               ,SMS_RECV_YN = #{smsRecvYn}
+               </if>
+               <if test="tel != null and tel != ''">
+               ,TEL = #{tel}
+               </if>
+               <if test="memberTypeCd != null and memberTypeCd != ''">
+               ,MEMBER_TYPE_CD = #{memberTypeCd}
+               </if>
+               <if test="memberGradeNo != null and memberGradeNo != ''">
+               ,MEMBER_GRADE_NO = #{memberGradeNo}
+               </if>
+               <if test="genderGbCd != null and genderGbCd != ''">
+               ,GENDER_GB_CD = #{genderGbCd}
+               </if>
+               <if test="pw != null and pw != ''">
+                   ,PW = #{pw}
+                   ,PW_CHG_DTTM = sysdate
+               </if>
+                <if test="newPostNo != null and newPostNo != ''">
+                    ,NEW_POST_NO = #{newPostNo}
+                </if>
+                <if test="strtnbAddr != null and strtnbAddr != ''">
+                    ,STRTNB_ADDR = #{strtnbAddr}
+                </if>
+                <if test="roadAddr != null and roadAddr != ''">
+                    ,ROAD_ADDR = #{roadAddr}
+                </if>
+                <if test="dtlAddr != null and dtlAddr != ''">
+                    ,DTL_ADDR = #{dtlAddr}
+                </if>
+               <if test="memberGbCd eq '10'">
+	               <if test="newPostNo != null and newPostNo != ''">
+	                   ,NEW_POST_NO = #{newPostNo}
+	               </if>
+	               <if test="strtnbAddr != null and strtnbAddr != ''">
+	                   ,STRTNB_ADDR = #{strtnbAddr}
+	               </if>
+	               <if test="roadAddr != null and roadAddr != ''">
+	                   ,ROAD_ADDR = #{roadAddr}
+	               </if>
+	               <if test="dtlAddr != null and dtlAddr != ''">
+	                   ,DTL_ADDR = #{dtlAddr}
+	               </if>
+	               ,FRG_ADDR_COUNTRY = NULL
+	               ,FRG_ADDR_CITY = NULL
+	               ,FRG_ADDR_STATE = NULL
+	               ,FRG_ADDR_ZIP_CODE = NULL
+	               ,FRG_ADDR_DTL1 = NULL
+	               ,FRG_ADDR_DTL2 = NULL
+               </if>
+
+               <if test="memberGbCd eq '20'">
+                   ,NEW_POST_NO = NULL
+                   ,STRTNB_ADDR = NULL
+                   ,ROAD_ADDR = NULL
+                   ,DTL_ADDR = NULL
+	               <if test="frgAddrCountry != null and frgAddrCountry != ''">
+	                   ,FRG_ADDR_COUNTRY = #{frgAddrCountry}
+	               </if>
+	               <if test="frgAddrCity != null and frgAddrCity != ''">
+	                   ,FRG_ADDR_CITY = #{frgAddrCity}
+	               </if>
+	               <if test="frgAddrState != null and frgAddrState != ''">
+	                   ,FRG_ADDR_STATE = #{frgAddrState}
+	               </if>
+	               <if test="frgAddrZipCode != null and frgAddrZipCode != ''">
+	                   ,FRG_ADDR_ZIP_CODE = #{frgAddrZipCode}
+	               </if>
+	               <if test="frgAddrDtl1 != null and frgAddrDtl1 != ''">
+	                   ,FRG_ADDR_DTL1 = #{frgAddrDtl1}
+	               </if>
+	               <if test="frgAddrDtl2 != null and frgAddrDtl2 != ''">
+	                   ,FRG_ADDR_DTL2 = #{frgAddrDtl2}
+	               </if>
+               </if>
+               ,MANAGER_MEMO = #{managerMemo}
+               <if test="memberGbCd != null and memberGbCd != ''">
+                   ,MEMBER_GB_CD = #{memberGbCd}
+               </if>
+                <if test="bizRegNo != null and bizRegNo != ''">
+                    ,BIZ_REG_NO = #{bizRegNo}
+                </if>
+
+                <if test="managerNm != null and managerNm != ''">
+                    ,MANAGER_NM = #{managerNm}
+                </if>
+
+                <if test="bizFilePath != null and bizFilePath != ''">
+                    ,BIZ_FILE_PATH = #{bizFilePath}
+                </if>
+                <if test="bizFileNm != null and bizFileNm != ''">
+                    ,BIZ_FILE_NM = #{bizFileNm}
+                </if>
+                <if test="bizOrgFileNm != null and bizOrgFileNm != ''">
+                    ,BIZ_ORG_FILE_NM = #{bizOrgFileNm}
+                </if>
+                <if test="bizFileSize != null and bizFileSize != ''">
+                    ,BIZ_FILE_SIZE = #{bizFileSize}
+                </if>
+                <if test="integrationMemberGbCd == '02'">
+                    ,INTEGRATION_MEMBER_GB_CD = '01'
+                    ,REALNM_CERTIFY_YN = 'Y'
+                </if>
+                <if test="memberCardNo != null and memberCardNo != ''">
+	                ,MEMBER_CARD_NO = #{memberCardNo}
+                </if>
+                <if test="ceoNm != null and ceoNm != ''">
+                    ,CEO_NM = #{ceoNm}
+                </if>
+
+                <choose>
+                    <when test = "notiGb != null and notiGb != ''">
+                          ,NOTI_GB = #{notiGb}
+                    </when>
+                    <otherwise>
+                          ,NOTI_GB = null
+                    </otherwise>
+                </choose>
+
+                <choose>
+                    <when test = "eventGb != null and eventGb != ''">
+                          ,EVENT_GB = #{eventGb}
+                    </when>
+                    <otherwise>
+                          ,EVENT_GB = null
+                    </otherwise>
+                </choose>
+
+                <choose>
+                    <when test = "newsGb != null and newsGb != ''">
+                          ,NEWS_GB = #{newsGb}
+                    </when>
+                    <otherwise>
+                          ,NEWS_GB = null
+                    </otherwise>
+                </choose>
+                <if test="memberNn != null and memberNn != ''">
+                    ,MEMBER_NN = #{memberNn}
+                </if>
+                <if test="imgPath != null and imgPath != ''">
+                    ,IMG_PATH = #{imgPath}
+                </if>
+                <if test="imgNm != null and imgNm != ''">
+                    ,IMG_NM = #{imgNm}
+                </if>
+                <if test="imgOrgNm != null and imgOrgNm != ''">
+                    ,IMG_ORG_NM = #{imgOrgNm}
+                </if>
+                <if test="infDesc != null and infDesc != ''">
+                    ,INF_DESC = #{infDesc}
+                </if>
+                <if test="customStoreNo != null and customStoreNo != ''">
+                    ,CUSTOM_STORE_NO = #{customStoreNo}
+                </if>
+         WHERE MEMBER_NO = #{memberNo}
+           AND SITE_NO = #{siteNo};
+           
+		<if test="idChgYn eq 'Y'.toString()">
+		UPDATE TC_DORMANT_MEMBER
+			SET LOGIN_ID = #{chgId}
+		WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo};
+	     
+		UPDATE TC_WITHDRAWAL_MEMBER
+			SET LOGIN_ID = #{chgId}
+		WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo};
+		
+		UPDATE TO_ORD
+			SET LOGIN_ID = #{chgId}
+		WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo};
+		</if>
+		END
+    }   
+    </update>
+
+    <update id="updateRecvRjtYnMemInfo" >
+        /* member.manage.updateRecvRjtYnMemInfo */
+        UPDATE  TC_MEMBER
+		   SET RECV_RJT_YN = 'Y' , SMS_RECV_YN ='N'
+		WHERE 1=1
+		  AND (SITE_NO, MEMBER_NO) IN (
+		      SELECT *
+		      FROM (
+		            SELECT SITE_NO, MEMBER_NO
+		            FROM TC_MEMBER
+		            WHERE 1=1
+		            AND (SITE_NO,MEMBER_NO) IN (
+		                SELECT SITE_NO, MEMBER_NO
+		                  FROM TC_MEMBER A
+		                 WHERE 1=1
+		                   AND A.MOBILE IN (
+                              <foreach collection="recvRJtMobile" item="recvRJtMobile" separator=",">#{recvRJtMobile}</foreach>
+                            )
+		            )
+		      ) A
+		)
+    </update>
+
+    <!-- 회원 정보 수정 이력 등록 -->
+    <insert id="insertMemInfoHis" >
+        /* member.manage.insertMemInfoHis */
+        INSERT INTO TC_MEMBER_CHG_HIST
+             ( MEMBER_NO,
+               CHG_DTTM,
+               SITE_NO,
+               LOGIN_ID,
+               BIRTH,
+               EMAIL,
+               EMAIL_RECV_YN,
+               MOBILE,
+               SMS_RECV_YN,
+               TEL,
+               MEMBER_GRADE_NO,
+               MEMBER_GB_CD,
+               <if test="pw != null and pw != ''">
+                   PW,
+                   PW_CHG_DTTM,
+               </if>
+               <if test="memberGbCd eq '10'">
+	               <if test="newPostNo != null and newPostNo != ''">
+	                   NEW_POST_NO,
+	               </if>
+	               <if test="strtnbAddr != null and strtnbAddr != ''">
+	                   STRTNB_ADDR,
+	               </if>
+	               <if test="roadAddr != null and roadAddr != ''">
+	                   ROAD_ADDR ,
+	               </if>
+	               <if test="dtlAddr != null and dtlAddr != ''">
+	                   DTL_ADDR,
+	               </if>
+	               FRG_ADDR_COUNTRY,
+	               FRG_ADDR_CITY,
+	               FRG_ADDR_STATE,
+	               FRG_ADDR_ZIP_CODE,
+	               FRG_ADDR_DTL1,
+	               FRG_ADDR_DTL2,
+               </if>
+
+               <if test="memberGbCd eq '20'">
+                   NEW_POST_NO,
+                   STRTNB_ADDR,
+                   ROAD_ADDR,
+                   DTL_ADDR,
+	               <if test="frgAddrCountry != null and frgAddrCountry != ''">
+	                   FRG_ADDR_COUNTRY,
+	               </if>
+	               <if test="frgAddrCity != null and frgAddrCity != ''">
+	                   FRG_ADDR_CITY,
+	               </if>
+	               <if test="frgAddrState != null and frgAddrState != ''">
+	                   FRG_ADDR_STATE,
+	               </if>
+	               <if test="frgAddrZipCode != null and frgAddrZipCode != ''">
+	                   FRG_ADDR_ZIP_CODE,
+	               </if>
+	               <if test="frgAddrDtl1 != null and frgAddrDtl1 != ''">
+	                   FRG_ADDR_DTL1,
+	               </if>
+	               <if test="frgAddrDtl2 != null and frgAddrDtl2 != ''">
+	                   FRG_ADDR_DTL2,
+	               </if>
+               </if>
+
+
+               MANAGER_MEMO,
+               REGR_NO,
+               REG_DTTM
+             )
+        VALUES
+             ( #{memberNo},
+               sysdate,
+               #{siteNo},
+               #{loginId},
+               #{birth},
+               #{email},
+               #{emailRecvYn},
+               #{mobile},
+               #{smsRecvYn},
+               #{tel},
+               #{memberGradeNo},
+               #{memberGbCd},
+               <if test="pw != null and pw != ''">
+                   #{pw},
+                   sysdate,
+               </if>
+               <if test="memberGbCd eq '10'">
+	               <if test="newPostNo != null and newPostNo != ''">
+	                   #{newPostNo},
+	               </if>
+	               <if test="strtnbAddr != null and strtnbAddr != ''">
+	                   #{strtnbAddr},
+	               </if>
+	               <if test="roadAddr != null and roadAddr != ''">
+	                   #{roadAddr},
+	               </if>
+	               <if test="dtlAddr != null and dtlAddr != ''">
+	                   #{dtlAddr},
+	               </if>
+	               NULL,
+	               NULL,
+	               NULL,
+	               NULL,
+	               NULL,
+	               NULL,
+               </if>
+
+               <if test="memberGbCd eq '20'">
+                   NULL,
+                   NULL,
+                   NULL,
+                   NULL,
+	               <if test="frgAddrCountry != null and frgAddrCountry != ''">
+	                   #{frgAddrCountry},
+	               </if>
+	               <if test="frgAddrCity != null and frgAddrCity != ''">
+	                   #{frgAddrCity},
+	               </if>
+	               <if test="frgAddrState != null and frgAddrState != ''">
+	                   #{frgAddrState},
+	               </if>
+	               <if test="frgAddrZipCode != null and frgAddrZipCode != ''">
+	                   #{frgAddrZipCode},
+	               </if>
+	               <if test="frgAddrDtl1 != null and frgAddrDtl1 != ''">
+	                   #{frgAddrDtl1},
+	               </if>
+	               <if test="frgAddrDtl2 != null and frgAddrDtl2 != ''">
+	                   #{frgAddrDtl2},
+	               </if>
+               </if>
+               #{managerMemo},
+               #{regrNo},
+               sysdate
+              )
+    </insert>
+
+    <update id="successIdentity" >
+    /* member.manage.successIdentity */
+        UPDATE  TC_MEMBER
+            SET
+            REALNM_CERTIFY_YN = 'Y',
+            <if test="certifyMethodCd != null and certifyMethodCd != ''">
+            CERTIFY_METHOD_CD = #{certifyMethodCd},
+            </if>
+            <if test="adultCertifyYn != null and adultCertifyYn != ''">
+            ADULT_CERTIFY_YN = #{adultCertifyYn},
+            </if>
+            <if test="birth != null and birth != ''">
+            BIRTH = #{birth},
+            </if>
+            MEMBER_DI = #{memberDi},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+         WHERE MEMBER_NO = #{memberNo}
+           AND SITE_NO = #{siteNo}
+    </update>
+    <!-- 회원 탈퇴 -->
+    <insert id="deleteMem">
+        INSERT
+          INTO TC_WITHDRAWAL_MEMBER
+               (
+                MEMBER_NO,
+                WITHDRAWAL_DTTM,
+                SITE_NO,
+                MEMBER_NM,
+                BIRTH,
+                BORN_YEAR,
+                BORN_MONTH,
+                GENDER_GB_CD,
+                NTN_GB_CD,
+                JOIN_DTTM,
+                CERTIFY_METHOD_CD,
+                EMAIL_RECV_YN,
+                SMS_RECV_YN,
+                MEMBER_STATUS_CD,
+                LOGIN_ID,
+                BIZ_REG_NO,
+                PW,
+                TEL,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD,
+                PW_CHG_DTTM,
+                LOGIN_FAIL_CNT,
+                WITHDRAWAL_TYPE_CD,
+                WITHDRAWAL_REASON_CD,
+                ETC_WITHDRAWAL_REASON,
+                STRTNB_ADDR,
+                ROAD_ADDR,
+                DTL_ADDR,
+                NEW_POST_NO,
+                REALNM_CERTIFY_YN,
+                MEMBER_GRADE_NO,
+                MEMBER_CI,
+                MEMBER_DI,
+                ADULT_CERTIFY_YN,
+                MEMBER_GB_CD,
+                FRG_ADDR_COUNTRY,
+                FRG_ADDR_CITY,
+                FRG_ADDR_STATE,
+                FRG_ADDR_ZIP_CODE,
+                FRG_ADDR_DTL1,
+                FRG_ADDR_DTL2,
+                JOIN_DEVICE_TYPE,
+                REGR_NO,
+                REG_DTTM,
+                MANAGER_MEMO
+                )
+         SELECT MEMBER_NO, sysdate, SITE_NO, MEMBER_NM, BIRTH, BORN_YEAR, BORN_MONTH,
+                GENDER_GB_CD, NTN_GB_CD, JOIN_DTTM, CERTIFY_METHOD_CD,
+                EMAIL_RECV_YN, SMS_RECV_YN,
+                #{memberStatusCd}, LOGIN_ID,BIZ_REG_NO, PW, TEL, MOBILE, EMAIL,
+                JOIN_PATH_CD, PW_CHG_DTTM, LOGIN_FAIL_CNT,
+                #{withdrawalTypeCd}, #{withdrawalReasonCd},
+                #{etcWithdrawalReason}, STRTNB_ADDR, ROAD_ADDR, DTL_ADDR,
+                NEW_POST_NO, REALNM_CERTIFY_YN, MEMBER_GRADE_NO,
+                MEMBER_CI, MEMBER_DI, ADULT_CERTIFY_YN, MEMBER_GB_CD,
+                FRG_ADDR_COUNTRY,FRG_ADDR_CITY, FRG_ADDR_STATE, FRG_ADDR_ZIP_CODE,
+                FRG_ADDR_DTL1, FRG_ADDR_DTL2, JOIN_DEVICE_TYPE, #{regrNo}, sysdate,
+                MANAGER_MEMO
+           FROM TC_MEMBER
+          WHERE SITE_NO = #{siteNo}
+            AND MEMBER_NO = #{memberNo}
+    </insert>
+
+    <!-- 회원 테이블에서 탈퇴 회원 테이블로 데이터 입력 후 회원 테이블 데이터 삭제하지 않고 상태 변경 -->
+    <update id="updateWithdrawalMemInfo" >
+        /* member.manage.updateWithdrawalMemInfo */
+        UPDATE  TC_MEMBER
+           SET MEMBER_STATUS_CD = #{memberStatusCd},
+               MEMBER_NM = NULL,
+               BIRTH = NULL,
+               BORN_YEAR = NULL,
+               BORN_MONTH = NULL,
+               GENDER_GB_CD = NULL,
+               NTN_GB_CD = NULL,
+               JOIN_DTTM = NULL,
+               CERTIFY_METHOD_CD = NULL,
+               EMAIL_RECV_YN = NULL,
+               SMS_RECV_YN = NULL,
+               LOGIN_ID = NULL,
+               PW = NULL,
+               TEL = NULL,
+               MOBILE = NULL,
+               EMAIL = NULL,
+               JOIN_PATH_CD = NULL,
+               PW_CHG_DTTM = NULL,
+               LOGIN_FAIL_CNT = NULL,
+               STRTNB_ADDR = NULL,
+               ROAD_ADDR = NULL,
+               DTL_ADDR = NULL,
+               NEW_POST_NO = NULL,
+               MANAGER_MEMO = NULL,
+               REALNM_CERTIFY_YN = NULL,
+               MEMBER_GRADE_NO = NULL,
+               GRADE_AUTO_REARRANGE_YN = NULL,
+               MEMBER_CI = NULL,
+               MEMBER_DI = NULL,
+               MEMBER_GB_CD = NULL,
+               ADULT_CERTIFY_YN = NULL,
+               FRG_ADDR_COUNTRY = NULL,
+               FRG_ADDR_CITY = NULL,
+               FRG_ADDR_STATE = NULL,
+               FRG_ADDR_ZIP_CODE = NULL,
+               FRG_ADDR_DTL1 = NULL,
+               FRG_ADDR_DTL2 = NULL,
+               JOIN_DEVICE_TYPE = NULL,
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE MEMBER_NO = #{memberNo}
+           AND SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 회원 최근 로그인 정보 조회 -->
+    <select id="selectLastLoinInfo" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectLastLoinInfo */
+        SELECT *
+        FROM
+        (
+	        SELECT LOGIN_DTTM LAST_LOGIN_DTTM, LOGIN_IP
+	          FROM TC_MEMBER_LOGIN_HIST
+	         WHERE MEMBER_NO = #{memberNo}
+	         ORDER BY LOGIN_DTTM DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <!-- 회원 정보 최근 수정일 조회 -->
+    <select id="selectLastUpdate" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectLastUpdate */
+        SELECT *
+        FROM
+        (
+	        SELECT TO_CHAR(CHG_DTTM, 'YYYY-MM-DD HH24:MI:SS') CHG_DTTM
+	          FROM TC_MEMBER_CHG_HIST
+	         WHERE MEMBER_NO = #{memberNo}
+	         ORDER BY CHG_DTTM DESC
+        )
+        WHERE ROWNUM = 1
+    </select>
+
+    <!-- 회원 방문횟수 조회 -->
+    <select id="selectVisitCnt" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectVisitCnt */
+        SELECT COUNT(*) LOGIN_CNT
+		  FROM TC_MEMBER_LOGIN_HIST
+		 WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 회원 포인트 조회 -->
+    <select id="selectMemPoint" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectMemPoint */
+
+		SELECT MEM.MEMBER_NO, nvl(NVL(PVD.PRC_POINT, 0) - NVL(USED.PRC_POINT,0), 0) AS PRC_POINT
+    	FROM TC_MEMBER MEM
+		LEFT OUTER JOIN
+		(
+			SELECT MEMBER_NO, NVL(SUM(PRC_POINT),0) PRC_POINT
+			FROM TC_MEMBER_POINT
+			WHERE (VALID_PERIOD IS NULL OR VALID_PERIOD = '' OR TO_DATE(VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+			AND MEMBER_NO = #{memberNo}
+			AND POINT_GB_CD = 10
+			group by MEMBER_NO
+		) PVD ON (MEM.MEMBER_NO = PVD.MEMBER_NO)
+		LEFT OUTER JOIN
+		(
+			SELECT MEMBER_NO, NVL(SUM(PRC_POINT),0) PRC_POINT
+			FROM TC_MEMBER_POINT
+			WHERE (VALID_PERIOD IS NULL OR VALID_PERIOD = '' OR TO_DATE(VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+			AND MEMBER_NO = #{memberNo}
+			AND POINT_GB_CD = 20
+			group by MEMBER_NO
+		) USED ON (MEM.MEMBER_NO = USED.MEMBER_NO)
+		WHERE MEM.MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 회원 마켓포인트 조회 -->
+    <select id="selectMemSaveMn" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectMemSaveMn */
+        SELECT nvl(sum(CASE WHEN DTYPE IN ('00','01','02','03','06','07') THEN SAL_POINT
+                            WHEN DTYPE IN ('04','05','08') THEN SAL_POINT * -1 end), 0) as PRC_AMT
+        FROM TC_MEMBER_DPOINT_LOG
+        WHERE MEMBERNO = #{memberNo}
+    </select>
+
+    <!-- 회원 쿠폰 갯수 조회 -->
+    <select id="selectMemCpCnt" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectMemCpCnt */
+		SELECT COUNT(*) CP_CNT
+		  FROM TC_MEMBER_CP
+		 WHERE USE_YN = #{useYn}
+		   <![CDATA[
+		   AND CP_APPLY_START_DTTM <= sysdate
+		   AND CP_APPLY_END_DTTM >= sysdate
+		   ]]>
+		   AND MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 상품 문의 글 갯수 조회 -->
+    <select id="selectQuestionCnt" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectQuestionCnt */
+        SELECT COUNT(*) QUESTION_CNT
+          FROM TB_GOODS_BBS_LETT
+         WHERE REGR_NO = #{memberNo}
+           AND BBS_ID = #{bbsId}
+           AND DEL_YN = 'N'
+    </select>
+
+    <!-- 상품 후기 글 갯수 조회 -->
+    <select id="selectReviewCnt" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectReviewCnt */
+        SELECT COUNT(*) REVIEW_CNT
+          FROM TB_GOODS_BBS_LETT
+         WHERE REGR_NO = #{memberNo}
+           AND BBS_ID = #{bbsId}
+           AND DEL_YN = 'N'
+    </select>
+
+    <!-- 회원 스탬프 조회 -->
+    <select id="selectMemStamp" parameterType="memberManageSO" resultType="memberManageVO">
+        SELECT nvl(sum(CASE WHEN canc_type = '0' THEN decode(in_flag, '0', sla_stamp, sla_stamp * -1)
+                            WHEN canc_type = '2' THEN decode(in_flag, '2', sla_stamp * -1, sla_stamp) END), 0) AS PRC_STAMP
+        FROM eaa07_stamp@DAVISION ed
+                 INNER JOIN (SELECT * FROM TI_ERP_MEM_MAPPING WHERE DEL_YN = 'N') temm ON ed.MEMBER_NO = temm.ERP_MEMBER_NO
+        WHERE ed.SERVICE = '0'
+          AND temm.MALL_MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 1:1문의게시판 글 갯수 조회 -->
+    <select id="selectInquirytCnt" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectInquirytCnt */
+        SELECT COUNT(*) INQUIRY_CNT
+          FROM TB_MTM_INQUIRY_BBS_LETT
+         WHERE MEMBER_NO = #{memberNo}
+           AND DEL_YN = 'N'
+           AND GRP_NO IS NULL
+    </select>
+
+    <sql id="selectCouponListWhere">
+        <!-- <if test="fromRegDt != null and fromRegDt != ''">
+            <![CDATA[
+            AND A.REG_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="toRegDt != null and toRegDt != ''">
+            <![CDATA[
+            AND A.REG_DTTM <= TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 0.99999
+            ]]>
+        </if> -->
+    	<!-- 사용기한 지난 쿠폰 제외 -->
+        <![CDATA[
+           and A.USE_YN = 'N'
+		   AND A.CP_APPLY_START_DTTM <= sysdate
+		   AND A.CP_APPLY_END_DTTM >= sysdate
+        ]]>
+        <if test="goodsTypeCd != null and goodsTypeCd != ''">
+        	AND B.GOODS_TYPE_CD = #{goodsTypeCd}
+        </if>
+        <if test="ageCd != null and ageCd != ''">
+        	AND B.AGE_CD LIKE '%'||#{ageCd}||'%'
+        </if>
+    </sql>
+
+	<!-- 쿠폰 상세 조회 -->
+	<select id="couponInfoDtl" parameterType="memberManageSO" resultType="memberManageVO">
+		SELECT A.COUPON_NO,
+		      A.MEMBER_NO,
+		      TO_CHAR(A.CP_APPLY_START_DTTM, 'YYYY-MM-DD') CP_APPLY_START_DTTM,
+		      TO_CHAR(A.CP_APPLY_END_DTTM, 'YYYY-MM-DD') CP_APPLY_END_DTTM,
+		      CASE A.USE_YN WHEN 'Y' THEN '사용'
+		                    WHEN 'N' THEN '미사용' END USE_YN,
+		      TO_CHAR(A.USE_DTTM, 'YYYY-MM-DD') USE_DTTM,
+		      TO_CHAR(A.REG_DTTM, 'YYYY-MM-DD') ISSUE_DTTM,
+		      B.COUPON_KIND_CD,
+		      fn_getCodeNm('COUPON_KIND_CD', B.COUPON_KIND_CD) AS COUPON_KIND_CD_NM,
+		      B.COUPON_NM,
+		      B.COUPON_APPLY_LIMIT_CD,
+		      B.COUPON_APPLY_TARGET_CD,
+		      B.COUPON_BNF_CD,
+		      CASE B.COUPON_BNF_CD WHEN '01' THEN '%'
+		                    WHEN '02' THEN '원' END BNF_UNIT,
+		      B.COUPON_BNF_VALUE,
+		      B.COUPON_BNF_DC_AMT,
+		      B.COUPON_USE_LIMIT_AMT,
+		      B.COUPON_APPLY_PERIOD_CD,
+		      B.COUPON_APPLY_ISSUE_AF_PERIOD,
+		      TO_CHAR(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD , 'YYYY-MM-DD') COUPON_APPLY_PERIOD_DTTM,
+		      TO_DATE(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD, 'YYYY-MM-DD') - TO_DATE(SYSDATE, 'YYYY-MM-DD') COUPON_APPLY_PERIOD
+		 FROM TC_MEMBER_CP A
+		      LEFT JOIN (SELECT * FROM TP_COUPON)B ON A.COUPON_NO = B.COUPON_NO
+		WHERE A.MEMBER_NO = #{memberNo}
+			AND A.COUPON_NO = #{couponNo}
+	</select>
+	
+
+    <!-- 쿠폰 리스트 조회 -->
+    <select id="selectCouponGetPaging" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectCouponGetPaging */
+		SELECT *
+		FROM
+		(
+			SELECT T.*, ROWNUM AS PAGING_NUM, T.tot_cnt - rownum + 1 as SORT_NUM
+			FROM
+			(
+				SELECT A.*
+				FROM
+				(
+			        SELECT A.*, count(*) over() as tot_cnt
+			        FROM (
+			                SELECT A.COUPON_NO,
+			                       A.MEMBER_NO,
+			                       A.MEMBER_CP_NO,
+			                       TO_CHAR(A.CP_APPLY_START_DTTM, 'YYYY-MM-DD') CP_APPLY_START_DTTM,
+			                       TO_CHAR(A.CP_APPLY_END_DTTM, 'YYYY-MM-DD') CP_APPLY_END_DTTM,
+			                       CASE A.USE_YN WHEN 'Y' THEN '사용'
+			                                     WHEN 'N' THEN '미사용' END USE_YN,
+			                       TO_CHAR(A.USE_DTTM, 'YYYY-MM-DD') USE_DTTM,
+			                       TO_CHAR(A.REG_DTTM, 'YYYY-MM-DD') ISSUE_DTTM,
+			                       B.COUPON_KIND_CD,
+			                       fn_getCodeNm('COUPON_KIND_CD', B.COUPON_KIND_CD) AS COUPON_KIND_CD_NM,
+			                       B.COUPON_NM,
+			                       B.OFFLINE_ONLY_YN,
+			                       B.COUPON_APPLY_LIMIT_CD,
+			                       B.COUPON_APPLY_TARGET_CD,
+			                       B.COUPON_BNF_CD,
+			                       CASE B.COUPON_BNF_CD WHEN '01' THEN '%'
+			                                     WHEN '02' THEN '원' END BNF_UNIT,
+			                       B.COUPON_BNF_VALUE,
+			                       B.COUPON_BNF_DC_AMT,
+			                       B.COUPON_BNF_TXT,
+			                       B.COUPON_USE_LIMIT_AMT,
+			                       B.COUPON_APPLY_PERIOD_CD,
+			                       B.COUPON_APPLY_ISSUE_AF_PERIOD,
+			                       B.GOODS_TYPE_CD,
+			                       B.AGE_CD,
+			                       CASE WHEN B.COUPON_KIND_CD <![CDATA[<>]]> '07' THEN
+			                       TO_CHAR(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD , 'YYYY-MM-DD')
+			                       ELSE
+			                       TO_CHAR(A.REG_DTTM + B.COUPON_APPLY_CONFIRM_AF_PERIOD, 'YYYY-MM-DD')
+			                       END
+			                       COUPON_APPLY_PERIOD_DTTM,
+			                       CASE WHEN B.COUPON_KIND_CD <![CDATA[<>]]> '07' THEN
+			                       TO_DATE(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD, 'YYYY-MM-DD') - TO_DATE(SYSDATE, 'YYYY-MM-DD')
+			                       ELSE
+			                       TO_DATE(A.REG_DTTM + B.COUPON_APPLY_CONFIRM_AF_PERIOD, 'YYYY-MM-DD') - TO_DATE(SYSDATE, 'YYYY-MM-DD')
+			                       END
+			                       COUPON_APPLY_PERIOD,
+			                       B.COUPON_APPLY_CONFIRM_AF_PERIOD,
+			                       CASE WHEN A.BUY_DECIDE_DTTM IS NULL THEN 'N' ELSE 'Y' END AS CONFIRM_YN
+			                  FROM TC_MEMBER_CP A
+			                       LEFT OUTER JOIN TP_COUPON B ON A.COUPON_NO = B.COUPON_NO
+			                 WHERE A.MEMBER_NO = #{memberNo}
+			                 <include refid="selectCouponListWhere"/>
+			                 ORDER BY A.REG_DTTM desc
+					) A
+				) A
+	        ) T
+	    )
+		<include refid="common.pageSql" />
+    </select>
+
+    <select id="selectCouponGetPagingCount" resultType="Integer">
+        /* member.manage.selectCouponGetPagingCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_CP A
+               LEFT OUTER JOIN TP_COUPON B ON A.COUPON_NO = B.COUPON_NO
+         WHERE A.MEMBER_NO = #{memberNo}
+		<include refid="selectCouponListWhere"/>
+    </select>
+
+    <select id="selectCouponGetPagingTotalCount" resultType="Integer">
+        /* member.manage.selectCouponGetPagingTotalCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_CP A
+               LEFT OUTER JOIN TP_COUPON B ON A.COUPON_NO = B.COUPON_NO
+         WHERE A.MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 자주쓰는 배송지 리스트 조회 -->
+    <select id="selectDeliveryList" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectDeliveryList */
+		SELECT *
+		FROM
+		(
+			SELECT T.*, ROWNUM AS PAGING_NUM, ROWNUM
+			FROM
+			(
+				SELECT T.*
+				FROM
+				(
+					SELECT ROWNUM AS SORT_NUM, A.*,
+		               CASE MEMBER_GB_CD WHEN '20' THEN FRG_ADDR_DTL2||' '||FRG_ADDR_DTL1||' '||FRG_ADDR_CITY||' '||FRG_ADDR_STATE||' '||FRG_ADDR_COUNTRY
+		                                 WHEN '10' THEN NVL(ROAD_ADDR,STRTNB_ADDR)||' '||DTL_ADDR
+		                                  END ADDR
+					FROM (
+				        SELECT MEMBER_NO,
+						       GB_NM,
+						       ADRS_NM,
+						       TEL,
+						       MOBILE,
+						       MEMBER_GB_CD,
+						       FRG_ADDR_DTL1,
+		                       FRG_ADDR_DTL2,
+		                       FRG_ADDR_CITY,
+		                       FRG_ADDR_STATE,
+		                       ROAD_ADDR,
+		                       STRTNB_ADDR,
+		                       DTL_ADDR,
+						       CASE FRG_ADDR_COUNTRY WHEN 'US' THEN 'United State'
+						                             WHEN 'UK' THEN 'United Kingdom'
+						                             WHEN 'PH' THEN 'Philippines'
+						                             ELSE FRG_ADDR_COUNTRY END FRG_ADDR_COUNTRY,
+		                       CASE MEMBER_GB_CD WHEN '20' THEN FRG_ADDR_ZIP_CODE
+		                                         WHEN '10' THEN NEW_POST_NO
+		                                          END NEW_POST_NO,
+						       CASE MEMBER_GB_CD WHEN '10' THEN '국내'
+						                         ELSE '해외' END FRG_GB
+						  FROM TC_MEMBER_DELIVERY
+						 WHERE MEMBER_NO = #{memberNo}
+						 ORDER BY REG_DTTM ASC
+					) A
+				) T
+				ORDER BY SORT_NUM DESC
+			) T
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectDeliveryListCount" resultType="Integer">
+        /* member.manage.selectDeliveryListCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_DELIVERY
+         WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <select id="selectDeliveryListTotalCount" resultType="Integer">
+        /* member.manage.selectDeliveryListTotalCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_DELIVERY
+         WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 회원 리스트 조회 -->
+    <select id="selectMemList" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectMemList */
+        SELECT /*+ INDEX(A IDX_TC_MEMBER_004) */ A.*
+        FROM TC_MEMBER A
+        WHERE 1=1
+        AND A.site_no = #{siteNo}
+        AND A.MEMBER_STATUS_CD = '01'
+        AND A.MEMBER_NO >= 1000
+        <if test="memberGradeNo != null and memberGradeNo != ''">
+            AND A.MEMBER_GRADE_NO = #{memberGradeNo}
+        </if>
+        <if test="bornMonth != null and bornMonth != ''">
+            AND A.BORN_MONTH = #{bornMonth}
+        </if>
+        <if test="emailRecvYn != null and emailRecvYn != ''">
+            AND A.EMAIL_RECV_YN = #{emailRecvYn}
+        </if>
+        <if test="memberNo != null and memberNo != ''">
+            AND A.MEMBER_NO = #{memberNo}
+        </if>
+
+    </select>
+
+
+    <!-- 푸시 대상 전체 회원 목록 조회 -->
+    <select id="selectTotalPushList" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectTotalPushList */
+        SELECT /*+ INDEX(A IDX_TC_MEMBER_004) */ A.*
+        FROM TC_MEMBER A
+        WHERE 1=1
+        AND APP_TOKEN IS NOT NULL 
+        AND A.site_no = #{siteNo}
+        AND A.MEMBER_STATUS_CD = '01'
+        AND A.MEMBER_NO >= 1000
+        
+            <if test="searchAlarmGb != null and searchAlarmGb != ''">
+                <choose>
+                    <when test = "searchAlarmGb eq '01'">
+                        AND NOTI_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '02'">
+                        AND EVENT_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '03'">
+                        AND NEWS_GB = '1'
+                    </when>
+                </choose>
+            </if>        
+    </select>
+
+    <!-- 슈퍼관리자 조회 -->
+    <select id="selectAdmin" parameterType="memberManageSO" resultType="String">
+        /* member.manage.selectAdmin */
+		SELECT B.MEMBER_NO
+		  FROM TA_MANAGER_AUTH_GRP A, TA_MANAGER B, TC_MEMBER C
+		 WHERE A.SITE_NO = #{siteNo}
+		   AND A.AUTH_GB_CD = 'A'
+		   AND A.AUTH_GRP_NO = B.AUTH_GRP_NO
+           and B.MEMBER_NO = C.MEMBER_NO
+           and C.MEMBER_STATUS_CD = '01'
+    </select>
+
+    <!-- 관리자 번호 목록 조회 -->
+    <select id="selectAdminList" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectAdminList */
+		SELECT MEMBER_NO
+		  FROM TA_MANAGER
+		 WHERE SITE_NO =#{siteNo}
+    </select>
+
+    <!-- 처리 로그 조회 -->
+    <select id="selectLog" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectLog */
+        SELECT *
+        FROM
+            (
+                SELECT tmch.MEMBER_NO ,
+                       tmch.CHG_DTTM,
+                       tmag.AUTH_NM ,
+                       tm2.LOGIN_ID ,
+                       nvl2(tmch.MEMBER_TYPE_CD, ',회원유형', '')||
+                       nvl2(tmch.CUSTOM_STORE_NO, ',가맹점코드', '')||
+                       nvl2(tmch.MEMBER_NN, ',닉네임', '')||
+                       nvl2(tmch.BIZ_REG_NO, ',사업자등록번호', '')||
+                       decode(tmch.BIZ_FILE_PATH, NULL,
+                              decode(tmch.BIZ_FILE_NM, NULL,
+                                     decode(tmch.BIZ_FILE_SIZE, NULL,
+                                            decode(tmch.BIZ_ORG_FILE_NM, NULL, '', ',사업자등록증 사본')
+                                         , ',사업자등록증 사본')
+                                  , ',사업자등록증 사본')
+                           , ',사업자등록증 사본')||
+                       nvl2(tmch.BIZ_APRV_YN, ',사업자 승인 여부', '')||
+                       nvl2(tmch.MANAGER_NM, ',담당자명', '')||
+                       decode(tmch.IMG_PATH, NULL,
+                              decode(tmch.IMG_NM, NULL,
+                                     decode(tmch.IMG_ORG_NM, NULL, '', ',프로필 이미지')
+                                  , ',프로필 이미지')
+                           , ',프로필 이미지')||
+                       nvl2(tmch.INF_DESC, ',인플루언서 소개', '')||
+                       nvl2(tmch.PW, ',비밀번호', '')||
+                       nvl2(tmch.TEL, ',전화번호', '')||
+                       nvl2(tmch.MOBILE, ',휴대폰', '')||
+                       nvl2(tmch.EMAIL, ',이메일', '')||
+                       nvl2(tmch.EMAIL_RECV_YN, ',이메일 수신여부', '')||
+                       nvl2(tmch.SMS_RECV_YN, ',SMS 수신여부', '')||
+                       nvl2(tmch.NOTI_GB, ',댓글 푸시여부', '')||
+                       nvl2(tmch.EVENT_GB, ',마케팅 푸시여부', '')||
+                       nvl2(tmch.NEWS_GB, ',야간 푸시여부', '')||
+                       decode(tmch.STRTNB_ADDR, NULL,
+                              decode(tmch.ROAD_ADDR, NULL,
+                                     decode(tmch.DTL_ADDR, NULL,
+                                            decode(tmch.NEW_POST_NO, NULL, '', ',주소 정보')
+                                         , ',주소 정보')
+                                  , ',주소 정보')
+                           , ',주소 정보')||
+                       nvl2(tmch.MEMBER_GRADE_NO, ',회원등급', '')||
+                       nvl2(tmch.MEMBER_STATUS_CD, ',회원상태', '')||
+                       nvl2(tmch.MANAGER_MEMO, ',관리자 메모', '') AS PRC_LOG_NM
+                FROM TC_MEMBER_CHG_HIST2 tmch
+                         INNER JOIN TA_MANAGER tm ON tmch.UPDR_NO = tm.MEMBER_NO
+                         INNER JOIN TA_MANAGER_AUTH_GRP tmag ON tm.AUTH_GRP_NO = tmag.AUTH_GRP_NO
+                         INNER JOIN TC_MEMBER tm2 ON tmch.UPDR_NO = tm2.MEMBER_NO
+                WHERE tmch.MEMBER_NO = #{memberNo}
+                ORDER BY tmch.CHG_DTTM DESC
+            )
+        WHERE PRC_LOG_NM IS NOT NULL
+    </select>
+
+    <select id="selectAtchFile" parameterType="memberManagePO" resultType="FileVO">
+        /* member.manage.selectAtchFile 사업자 등록증 사본 정보 조회 */
+        SELECT
+            <if test="memberTypeCd eq '04'">
+                IMG_PATH as file_path,
+                IMG_NM as file_name,
+                IMG_ORG_NM as file_org_name
+            </if>
+            <if test="memberTypeCd eq '05'">
+                BIZ_FILE_PATH AS file_path,
+                BIZ_FILE_NM AS file_name,
+                BIZ_FILE_SIZE AS fileSize,
+                BIZ_ORG_FILE_NM AS file_org_name
+            </if>
+        FROM TC_MEMBER
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+    </select>
+
+    <delete id="deleteAtchFile">
+        /* member.manage.deleteAtchFile  사업자 등록증 사본 정보 삭제*/
+        UPDATE  TC_MEMBER
+        SET
+            <if test="memberTypeCd eq '04'">
+                IMG_PATH = null,
+                IMG_NM = null,
+                IMG_ORG_NM = null
+            </if>
+            <if test="memberTypeCd eq '05'">
+                BIZ_FILE_PATH = null,
+                BIZ_FILE_NM = null,
+                BIZ_FILE_SIZE = null,
+                BIZ_ORG_FILE_NM = null
+            </if>
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_NO = #{memberNo}
+    </delete>
+    
+    <select id="selectMemCouponInfo" parameterType="memberManageSO" resultType="memberManageVO">
+        /* app.promotion.coupon.selectMemCouponInfo - 회원쿠폰 정보 조회 (단건)*/
+        SELECT A.COUPON_NO,
+              A.MEMBER_NO,
+              A.MEMBER_CP_NO,
+              A.CP_ISSUE_NO,
+              TO_CHAR(A.CP_APPLY_START_DTTM, 'YYYY-MM-DD') CP_APPLY_START_DTTM,
+              TO_CHAR(A.CP_APPLY_END_DTTM, 'YYYY-MM-DD') CP_APPLY_END_DTTM,
+              CASE A.USE_YN WHEN 'Y' THEN '사용'
+                            WHEN 'N' THEN '미사용' END USE_YN,
+              TO_CHAR(A.USE_DTTM, 'YYYY-MM-DD') USE_DTTM,
+              TO_CHAR(A.REG_DTTM, 'YYYY-MM-DD') ISSUE_DTTM,
+              B.COUPON_KIND_CD,
+              fn_getCodeNm('COUPON_KIND_CD', B.COUPON_KIND_CD) AS COUPON_KIND_CD_NM,
+              B.COUPON_NM,
+              B.COUPON_APPLY_LIMIT_CD,
+              B.COUPON_APPLY_TARGET_CD,
+              B.COUPON_BNF_CD,
+              CASE B.COUPON_BNF_CD WHEN '01' THEN '%'
+                            WHEN '02' THEN '원' END BNF_UNIT,
+              B.COUPON_BNF_VALUE,
+              B.COUPON_BNF_DC_AMT,
+              B.COUPON_BNF_TXT,
+              B.COUPON_USE_LIMIT_AMT,
+              B.COUPON_APPLY_PERIOD_CD,
+              B.COUPON_APPLY_ISSUE_AF_PERIOD,
+              TO_CHAR(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD , 'YYYY-MM-DD') COUPON_APPLY_PERIOD_DTTM,
+              TO_DATE(A.REG_DTTM + B.COUPON_APPLY_ISSUE_AF_PERIOD, 'YYYY-MM-DD') - TO_DATE(SYSDATE, 'YYYY-MM-DD') COUPON_APPLY_PERIOD,
+              B.COUPON_DSCRT,
+              B.GOODS_TYPE_CD,
+              B.AGE_CD
+         FROM TC_MEMBER_CP A
+              LEFT JOIN TP_COUPON B ON A.COUPON_NO = B.COUPON_NO
+        WHERE A.MEMBER_NO = #{memberNo}
+        	<if test="couponNo != null and couponNo != ''">
+        		AND A.COUPON_NO = #{couponNo}
+        	</if>
+        	<if test="memberCpNo != null and memberCpNo != ''">
+	            AND A.MEMBER_CP_NO = #{memberCpNo}
+	        </if>
+    </select>
+
+	<select id="selectMemListByPush" resultType="memberManageVO">
+		/* member.manage.selectMemListByPush */
+		SELECT T.*, ROWNUM AS PAGING_NUM, ROWNUM
+			FROM
+			(
+                SELECT ROWNUM AS SORT_NUM, A.*
+                  FROM (
+                        SELECT A.MEMBER_NO,
+                               A.SITE_NO,
+                               A.MEMBER_NM,
+                               A.MEMBER_TYPE_CD,
+                               fn_getCodeNm('MEMBER_TYPE_CD', A.MEMBER_TYPE_CD) MEMBER_TYPE_NM,
+                               A.BIRTH,
+                               A.GENDER_GB_CD,
+                               A.NTN_GB_CD,
+                               TO_CHAR(A.JOIN_DTTM, 'YYYY-MM-DD') JOIN_DTTM,
+                               A.EMAIL_RECV_YN,
+                               A.SMS_RECV_YN,
+                               A.MEMBER_STATUS_CD,
+                               A.LOGIN_ID,
+                               A.TEL,
+                               A.MOBILE,
+                               A.EMAIL,
+                               A.JOIN_PATH_CD,
+                               fn_getCodeNm('JOIN_PATH_CD', JOIN_PATH_CD) JOIN_PATH_NM,
+                               A.PRC_AMT,
+                               A.MEMBER_GRADE_NO,
+                               A.BORN_MONTH,
+                               A.BORN_YEAR,
+                               A.APP_TOKEN,
+                               A.REG_DTTM,
+                               A.RECV_RJT_YN,
+                               A.INTEGRATION_MEMBER_GB_CD,
+                               A.LAST_LOGIN_DTTM,
+                               A.LOGIN_CNT,
+                               A.PRC_POINT,
+                               A.COMMENT_CNT,
+                               A.SALE_AMT,
+                               A.ORD_CNT
+                          FROM (
+                                SELECT A.MEMBER_NO,
+                                       A.SITE_NO,
+                                       A.MEMBER_NM,
+                                       A.MEMBER_TYPE_CD,
+                                       A.BIRTH,
+                                       A.GENDER_GB_CD,
+                                       A.NTN_GB_CD,
+                                       A.JOIN_DTTM,
+                                       A.EMAIL_RECV_YN,
+                                       A.SMS_RECV_YN,
+                                       A.MEMBER_STATUS_CD,
+                                       A.LOGIN_ID,
+                                       A.TEL,
+                                       A.MOBILE,
+                                       A.EMAIL,
+                                       A.JOIN_PATH_CD,
+                                       A.MEMBER_GRADE_NO,
+                                       A.REG_DTTM,
+                                       A.BORN_MONTH,
+                                       A.BORN_YEAR,
+                                       A.RECV_RJT_YN,
+                                       A.APP_TOKEN,
+                                       A.INTEGRATION_MEMBER_GB_CD
+                                       ,(SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */
+                                                NVL(SUM(TMSP.PRC_AMT),0) - NVL((SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */  SUM(PRC_AMT) PRC_AMT_USE
+                                                                                FROM TC_MEMBER_SVMN_USE
+                                                                                WHERE MEMBER_NO = TMSP.MEMBER_NO) ,0)
+                                           FROM TC_MEMBER_SVMN_PVD TMSP
+                                          WHERE TMSP.SVMN_USE_PSB_YN = 'Y' AND (TMSP.VALID_PERIOD IS NULL OR TMSP.VALID_PERIOD = '' OR TO_DATE(TMSP.VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                                            AND TMSP.MEMBER_NO = A.MEMBER_NO
+                                          GROUP BY TMSP.MEMBER_NO
+                                      ) AS PRC_AMT
+                                       ,TO_CHAR((SELECT MAX(HIST.LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST HIST WHERE MEMBER_NO = A.MEMBER_NO), 'YYYY-MM-DD') LOGIN_DTTM
+                                     ,(SELECT COUNT(*) LOGIN_CNT FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO) as LOGIN_CNT
+                                     ,(SELECT MEMBER_GRADE_NM FROM TC_MEMBER_GRADE WHERE SITE_NO = 1 AND MEMBER_GRADE_NO = A.MEMBER_GRADE_NO ) as MEMBER_GRADE_NM
+                                     ,(SELECT /*+ INDEX(H IDX_TO_ORD_DTL_001) INDEX(I IDX_TO_ORD_PK)*/
+                                               SUM(CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90') THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END)      PC_SALES_AMT
+                                         FROM TO_ORD_DTL H,TO_ORD I
+                                        WHERE H.ORD_NO = I.ORD_NO
+                                          AND I.MEMBER_NO =A.MEMBER_NO
+                                       ) AS SALE_AMT
+                                     ,(SELECT count(1) FROM  TO_ORD I WHERE I.MEMBER_NO =A.MEMBER_NO) AS ORD_CNT
+                                     ,(SELECT SUM(PRC_POINT) FROM TC_MEMBER_POINT WHERE MEMBER_NO = A.MEMBER_NO GROUP BY MEMBER_NO) AS PRC_POINT
+                                     ,(SELECT COUNT(*) FROM TB_BBS_CMNT WHERE DEL_YN = 'N' AND  REGR_NO = A.MEMBER_NO ) AS COMMENT_CNT
+                                  FROM TC_MEMBER A
+                                ) A
+                                <include refid="selectMemberListWhere" />
+                        ) A
+			) T
+	</select>
+	
+	<select id="selectIntegrationDttm" parameterType="MemberManageSO" resultType="MemberManageVO">
+		
+		SELECT
+			NVL(TO_CHAR(MEMBER_INTEGRATION_DTTM,'YYYY-MM-DD HH24:MI:SS'),'0000-01-01 00:00:00') MEMBER_INTEGRATION_DTTM
+		FROM 
+			TC_MEMBER
+		WHERE
+			MEMBER_NO = ${memberNo} 
+	</select>
+
+    <select id="selectFaceList" resultType="memberFaceVO" parameterType="memberFaceSO">
+        /* biz.app.goods.filter.selectFilterList */
+        SELECT FACE_NO as ID,
+               to_char(NVL(UP_FACE_NO, 0)) as PARENT,
+               FACE_NM as TEXT,
+               TO_NUMBER(FACE_LVL) FACE_LVL,
+               SORT_SEQ,
+               FACE_CD,
+               FACE_IMG_NM,
+               FACE_IMG_PATH,
+               FACE_MENU_TYPE,
+               GOODS_TYPE_CD
+        FROM TA_FACE_INFO
+        WHERE SITE_NO = #{siteNo}
+          AND USE_YN = 'Y'
+        ORDER BY FACE_LVL, SORT_SEQ
+    </select>
+
+    <select id="selectFaceInfoList" resultType="memberFaceVO" parameterType="memberFaceSO">
+        /* biz.app.goods.face.selectFaceInfoList */
+        SELECT T.*
+        FROM (
+                 SELECT 0 as ID,
+                        '#' as PARENT,
+                        SITE_NM as TEXT,
+                        0 FACE_LVL,
+                        0 SORT_SEQ,
+                        '0' FACE_MENU_TYPE,
+                        '0' GOODS_TYPE_CD,
+                        '0' FACE_CD
+                 FROM TS_SITE_DTL
+                 WHERE SITE_NO = #{siteNo}
+                 UNION ALL
+                 SELECT FACE_NO as ID,
+                        to_char(NVL(UP_FACE_NO, 0)) as PARENT,
+                        FACE_NM as TEXT,
+                        TO_NUMBER(FACE_LVL) FACE_LVL,
+                        SORT_SEQ,
+                        FACE_MENU_TYPE,
+                        GOODS_TYPE_CD,
+                        FACE_CD
+                 FROM TA_FACE_INFO
+                 WHERE SITE_NO = #{siteNo}
+                   AND USE_YN = 'Y'
+             ) T
+        ORDER BY T.FACE_LVL, T.SORT_SEQ
+    </select>
+
+    <select id="checkDuplicationNickname" parameterType="memberManageVO" resultType="Integer">
+        select count(MEMBER.MEMBER_NN) from
+        (
+            select MEMBER_NN
+            from TC_MEMBER
+            where SITE_NO = #{siteNo}
+            and MEMBER_NN = #{memberNn}
+            union all
+            select MEMBER_NN
+            from TC_WITHDRAWAL_MEMBER
+            where SITE_NO = #{siteNo}
+            and MEMBER_NN = #{memberNn}
+            union all
+            select MEMBER_NN
+            from TC_DORMANT_MEMBER
+            where SITE_NO = #{siteNo}
+            and MEMBER_NN = #{memberNn}
+        ) MEMBER
+    </select>
+
+    <select id="selectStampListPaging" resultType="memberManageVO">
+        select *
+        from
+        (
+            SELECT AA.*, AA.tot_cnt - rownum + 1 AS SORT_NUM
+            FROM
+                (
+                    SELECT rownum AS PAGING_NUM, A.*, count(*) over() AS tot_cnt
+                    FROM
+                        (
+                            SELECT to_char(ed.IN_DATE, 'YYYY-MM-DD HH24:MI:SS') as IN_DATE,
+                                   CASE WHEN ((ed.IN_FLAG = '0' AND ed.CANC_TYPE = '2') OR ed.IN_FLAG = '3') THEN '-'
+                                        WHEN (ed.IN_FLAG = '0' AND ed.CANC_TYPE = '0') THEN '+' END AS in_type,
+                                   nvl2(ed.STR_CODE, 'off', 'on') AS in_store,
+                                   ed.SLA_STAMP
+                            FROM eaa07_stamp@DAVISION ed
+                                     INNER JOIN (SELECT * FROM TI_ERP_MEM_MAPPING WHERE DEL_YN = 'N') temm ON ed.MEMBER_NO = temm.ERP_MEMBER_NO
+                            where temm.MALL_MEMBER_NO = #{memberNo}
+                            <if test="fromDt != null and fromDt != ''">
+                            <![CDATA[
+                            and ed.IN_DATE >= to_date(#{fromDt}, 'YYYY-MM-DD')
+                            ]]>
+                            </if>
+                            <if test="toDt != null and toDt != ''">
+                            <![CDATA[
+                            and ed.IN_DATE <= to_date(#{toDt}, 'YYYY-MM-DD') + 1
+                            ]]>
+                            </if>
+                            <if test="statusCd != null and statusCd != ''">
+                                <if test="statusCd eq 'P'.toString()">
+                                    and (ed.IN_FLAG = '0' and ed.CANC_TYPE = '0')
+                                </if>
+                                <if test="statusCd eq 'D'.toString()">
+                                    and ((ed.IN_FLAG = '0' and ed.CANC_TYPE = '2') or ed.IN_FLAG = '3')
+                                </if>
+                            </if>
+                            ORDER BY ed.IN_DATE DESC
+                        ) A
+                ) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectStampListPagingCount" resultType="Integer">
+        SELECT count(*)
+        FROM eaa07_stamp@DAVISION ed
+                 INNER JOIN (SELECT * FROM TI_ERP_MEM_MAPPING WHERE DEL_YN = 'N') temm ON ed.MEMBER_NO = temm.ERP_MEMBER_NO
+        where temm.MALL_MEMBER_NO = #{memberNo}
+        <if test="fromDt != null and fromDt != ''">
+            <![CDATA[
+            and ed.IN_DATE >= to_date(#{fromDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="toDt != null and toDt != ''">
+            <![CDATA[
+            and ed.IN_DATE <= to_date(#{toDt}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="statusCd != null and statusCd != ''">
+            <if test="statusCd eq 'P'.toString()">
+                and (ed.IN_FLAG = '0' and ed.CANC_TYPE = '0')
+            </if>
+            <if test="statusCd eq 'D'.toString()">
+                and ((ed.IN_FLAG = '0' and ed.CANC_TYPE = '2') or ed.IN_FLAG = '3')
+            </if>
+        </if>
+        ORDER BY ed.IN_DATE DESC
+    </select>
+
+    <select id="selectStampListPagingTotalCount" resultType="Integer">
+        SELECT count(*)
+        FROM eaa07_stamp@DAVISION ed
+                 INNER JOIN (SELECT * FROM TI_ERP_MEM_MAPPING WHERE DEL_YN = 'N') temm ON ed.MEMBER_NO = temm.ERP_MEMBER_NO
+        where temm.MALL_MEMBER_NO = #{memberNo}
+        ORDER BY ed.IN_DATE DESC
+    </select>
+</mapper>

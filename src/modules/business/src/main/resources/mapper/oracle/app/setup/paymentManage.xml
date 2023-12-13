@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.paymentManage">
+	<sql id="selectPaymentWhere">
+		<where>
+			tp.SITE_NO = #{siteNo}
+			<if test="shopNm != null and shopNm != ''">
+				AND tp.SHOP_NM LIKE '%'||#{shopNm}||'%'
+			</if>
+			<if test="pgCd != null and pgCd != ''">
+				AND tp.PG_CD = #{pgCd}
+			</if>
+		</where>
+	</sql>
+
+    <!-- 무통장 계좌 사용여부 조회(단건) -->
+    <select id="selectNopbPaymentConfig" parameterType="long" resultType="NopbPaymentConfigVO">
+        /* setup.paymentManage.selectNopbPaymentConfig */
+        SELECT
+            NOPBPAYMENT_USE_YN
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 무통장결제설정, 은행계좌 설정 조회(리스트) -->
+    <select id="selectNopbPaymentList" parameterType="long" resultType="NopbPaymentConfigVO">
+        /* setup.paymentManage.selectNopbPaymentList */
+        SELECT T.*, ROWNUM
+        FROM
+        (
+			select SORT_NUM AS NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+			    from
+			    (
+                           SELECT
+                                nopb.NOPB_PAYMENT_SEQ
+                                , nopb.BANK_NM
+                                , nopb.BANK_CD
+                                , nopb.ACTNO
+                                , nopb.HOLDER
+                                , nopb.DLGT_ACT_YN
+                           FROM
+                                TS_NOPB_PAYMENT_SET nopb
+                           WHERE   1=1
+                           AND nopb.SITE_NO=#{siteNo}
+				) A
+			) AA
+			order by SORT_NUM DESC
+		) T
+    </select>
+
+    <!-- 은행명 조회 -->
+    <select id="selectBankNm" parameterType="String" resultType="String">
+        /* setup.paymentManage.selectBankNm */
+        SELECT fn_getCodeNm('BANK_CD', #{value}) FROM DUAL
+    </select>
+
+
+	<!-- 무통장결제설정, 은행계좌 설정 조회(리스트) -->
+	<select id="selectPaymentPaging" resultType="CommPaymentConfigVO">
+		/* setup.paymentManage.selectPopManagePaging */
+		SELECT tot_cnt - ROWNUM + 1 as SORT_NUM, TT.*
+		FROM
+			(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*, count(*) over() as tot_cnt
+			FROM
+				(
+				SELECT  tp.SHOP_CD
+						, tp.SHOP_NM
+						, tp.PG_CD
+						, tp.PG_ID
+				FROM    TS_PG_SET tp
+				<include refid="selectPaymentWhere" />
+				<include refid="common.sortSql" />
+				) T
+			) TT
+		<include refid="common.pageSql" />
+	</select>
+
+	<select id="selectPaymentPagingTotalCount" resultType="Integer">
+		/* setup.paymentManage.selectPaymentPagingTotalCount */
+		SELECT  count(*)
+		FROM    TS_PG_SET
+		WHERE   SITE_NO = #{siteNo}
+	</select>
+
+	<select id="selectPaymentPagingCount" resultType="Integer">
+		/* setup.paymentManage.selectPaymentPagingCount */
+		SELECT  count(*)
+		FROM    TS_PG_SET tp
+		<include refid="selectPaymentWhere" />
+	</select>
+
+    <!-- 통합전자결제 설정 조회(단건) -->
+    <select id="selectCommPaymentConfig" parameterType="CommPaymentConfigSO" resultType="CommPaymentConfigVO">
+        /* setup.paymentManage.selectCommPaymentConfig */
+        SELECT
+			tp.SHOP_CD
+			, tp.SHOP_CD AS BEFORE_SHOP_CD
+			, tp.SHOP_NM
+            , tp.PG_CD
+            , tp.PG_NM
+            , tp.USE_YN
+            , tp.CRED_PAYMENT_YN
+            , tp.ACTTRANS_PAYMENT_YN
+            , tp.VIRTACT_PAYMENT_YN
+            , tp.MOBILE_PAYMENT_YN
+            , tp.DPST_CHECK_URL_USE_YN
+            , tp.PG_ID
+            , tp.SIGN_KEY
+            , tp.KEY_PASSWD
+            , tp.PG_KEY
+            , tp.PG_KEY2
+            , tp.PG_KEY3
+            , tp.PG_KEY4
+            , tp.INST_PERIOD
+            , tp.NOINT_TYPE_CD
+            , tp.NOINT_PERIOD_CD
+            , tp.CASH_RCT_USE_YN
+            , tp.ESCROW_USE_YN
+            , tp.ESCROW_CRED_PAYMENT_YN
+            , tp.ESCROW_ACTTRANS_PAYMENT_YN
+            , tp.ESCROW_VIRTACT_PAYMENT_YN
+            , tp.ESCROW_USE_AMT
+            , tp.SAFEBUY_IMG_PATH
+            , tp.SAFEBUY_IMG_DISP_SET_CD
+            , tp.ESCROW_ID
+            , tp.ESCROW_CERT_KEY_FILE_PATH1
+            , tp.ESCROW_CERT_KEY_FILE_PATH2
+            , tp.ESCROW_CERT_KEY_FILE_PATH3
+            , tp.ESCROW_CERTIFY_MARK_CONTENT
+        FROM    TS_PG_SET tp
+        WHERE   tp.SITE_NO = #{siteNo}
+          <if test="pgCd != null and pgCd != ''">
+            AND tp.PG_CD = #{pgCd}
+          </if>
+          <if test="useYn != null and useYn != ''">
+            AND tp.USE_YN = #{useYn}
+          </if>
+          <if test="shopCd != null and shopCd != ''">
+            AND tp.SHOP_CD = #{shopCd}
+          </if>
+    </select>
+
+    <!-- 간편결제 설정 조회(단건) -->
+    <select id="selectSimplePaymentConfig" parameterType="SimplePaymentConfigSO" resultType="SimplePaymentConfigVO">
+        /* setup.paymentManage.selectSimplePaymentConfig */
+        SELECT
+            tsp.SIMP_PG_CD
+            , tsp.SIMP_PG_TYPE_CD
+            , tsp.USE_SET_CD
+            , tsp.FRC_CD
+            , tsp.STORE_ID
+            , tsp.STORE_PW
+            , tsp.USE_AREA_CD
+            , tsp.DSN_SET_CD
+            , ts.SIMPLEPAY_USE_YN
+        FROM    TS_SIMP_PG_SET tsp LEFT OUTER JOIN
+                TS_SITE ts ON(tsp.SITE_NO = ts.SITE_NO)
+        WHERE   tsp.SITE_NO = #{siteNo}
+        AND     tsp.simp_pg_cd = #{simpPgCd}
+    </select>
+
+    <!--NPAY 설정 조회(단건) -->
+    <select id="selectNPayConfig" parameterType="Long" resultType="NPayConfigVO">
+        /* setup.paymentManage.selectNPayConfig */
+        SELECT
+            NAVER_CMN_CERT_KEY
+            , WHITE_LIST
+            , CHECKOUT_USE_YN
+            , CHECKOUT_TEST_USE_YN
+            , DLVR_COMPANY_SELECT
+            , RECVPAY_DLVRC
+            , MNSHOP_USE_YN
+            , NAVER_FRC_ID
+            , LINK_CERT_KEY
+            , IMG_CERT_KEY
+            , PC_BTN_SELECT
+            , MOBILE_BTN_SELECT
+            , BTN_LINK_TARGET
+            , REPLACE_CD
+            , STOCK_LINK_USE_YN
+            , ORD_INTEGRATION_MANAGE_USE_YN
+        FROM    TS_NPAY_SET
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 해외결제 설정 조회(단건) -->
+    <select id="selectForeignPaymentConfig" parameterType="Long" resultType="CommPaymentConfigVO">
+        /* setup.paymentManage.selectForeignPaymentConfig */
+        SELECT
+            ts.FRG_PAYMENT_YN
+            , ts.FRG_PAYMENT_STORE_ID
+            , ts.FRG_PAYMENT_PW
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+	<!-- 알리페이 설정 조회(단건) -->
+    <select id="selectAlipayPaymentConfig" parameterType="Long" resultType="CommPaymentConfigVO">
+        /* setup.paymentManage.selectAlipayPaymentConfig */
+        SELECT
+            ts.ALIPAY_PAYMENT_YN
+            , ts.ALIPAY_PAYMENT_STORE_ID
+            , ts.ALIPAY_PAYMENT_PW
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 텐페이 설정 조회(단건) -->
+    <select id="selectTenpayPaymentConfig" parameterType="Long" resultType="CommPaymentConfigVO">
+        /* setup.paymentManage.selectTenpayPaymentConfig */
+        SELECT
+            ts.TENPAY_PAYMENT_YN
+            , ts.TENPAY_PAYMENT_STORE_ID
+            , ts.TENPAY_PAYMENT_PW
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 위챗페이 설정 조회(단건) -->
+    <select id="selectWechpayPaymentConfig" parameterType="Long" resultType="CommPaymentConfigVO">
+        /* setup.paymentManage.selectWechpayPaymentConfig */
+        SELECT
+            ts.WECHPAY_PAYMENT_YN
+            , ts.WECHPAY_PAYMENT_STORE_ID
+            , ts.WECHPAY_PAYMENT_PW
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 무통장 계좌 사용여부 수정 -->
+    <update id="updateNopbPaymentConfig">
+        /* setup.paymentManage.updateNopbPaymentConfig */
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		        NOPBPAYMENT_USE_YN=#{nopbpaymentUseYn}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		        SITE_NO
+		        , NOPBPAYMENT_USE_YN
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		        #{siteNo}
+		        , #{nopbpaymentUseYn}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- 무통장 은행계좌 등록 -->
+    <insert id="insertNopbAccount">
+        /* setup.paymentManage.insertNopbAccount */
+        INSERT INTO TS_NOPB_PAYMENT_SET (
+        	NOPB_PAYMENT_SEQ
+            , SITE_NO
+            , BANK_NM
+            , BANK_CD
+            , ACTNO
+            , HOLDER
+            , DLGT_ACT_YN
+            , REGR_NO
+            , REG_DTTM
+        ) VALUES (
+        	fn_getSeq(0, 'NOPB_PAYMENT_SEQ')
+            , #{siteNo}
+            , #{bankNm}
+            , #{bankCd}
+            , #{actno}
+            , #{holder}
+            , #{dlgtActYn}
+            , #{regrNo}
+            , sysdate
+        )
+    </insert>
+
+    <!-- 무통장 은행계좌 수정 -->
+     <update id="updateNopbAccount">
+        /* setup.paymentManage.updateNopbAccount */
+        UPDATE TS_NOPB_PAYMENT_SET SET
+            SITE_NO=#{siteNo}
+            , BANK_NM=#{bankNm}
+            , BANK_CD=#{bankCd}
+            , ACTNO=#{actno}
+            , HOLDER=#{holder}
+            , UPDR_NO = #{updrNo}
+            , UPD_DTTM = sysdate
+        WHERE NOPB_PAYMENT_SEQ=#{nopbPaymentSeq}
+    </update>
+
+    <!-- 무통장 대표계좌 수정 -->
+    <update id="updateNopbPaymentDlgtActConfig">
+        /* setup.paymentManage.updateNopbPaymentDlgtActConfig */
+        UPDATE TS_NOPB_PAYMENT_SET SET
+            DLGT_ACT_YN=#{dlgtActYn}
+        WHERE NOPB_PAYMENT_SEQ=#{nopbPaymentSeq}
+    </update>
+
+    <delete id="deleteNopbAccount">
+        /* setup.paymentManage.deleteNopbAccount */
+        DELETE FROM TS_NOPB_PAYMENT_SET WHERE NOPB_PAYMENT_SEQ=#{nopbPaymentSeq}
+    </delete>
+
+    <!-- 통합전자결제 설정 사용여부 미사용 처리  -->
+    <update id="updateCommPaymentUseYn">
+        /* setup.paymentManage.updateCommPaymentUseYn */
+        UPDATE TS_PG_SET SET
+            USE_YN = 'N'
+        WHERE SITE_NO = #{siteNo}
+    </update>
+
+	<insert id="insertCommPaymentConfig">
+		/* setup.paymentManage.insertCommPaymentConfig */
+		INSERT INTO TS_PG_SET (
+								  SHOP_CD
+		                        , SHOP_NM
+							    , PG_CD
+								, PG_NM
+								, SITE_NO
+								, USE_YN
+								, CRED_PAYMENT_YN
+								, ACTTRANS_PAYMENT_YN
+								, VIRTACT_PAYMENT_YN
+								, MOBILE_PAYMENT_YN
+								, DPST_CHECK_URL_USE_YN
+								, PG_ID
+								, SIGN_KEY
+								, KEY_PASSWD
+								, PG_KEY
+								, PG_KEY2
+								, PG_KEY3
+								, PG_KEY4
+								, INST_PERIOD
+								, NOINT_TYPE_CD
+								, NOINT_PERIOD_CD
+								, CASH_RCT_USE_YN
+								, ESCROW_USE_YN
+								, ESCROW_CRED_PAYMENT_YN
+								, ESCROW_ACTTRANS_PAYMENT_YN
+								, ESCROW_VIRTACT_PAYMENT_YN
+								, ESCROW_USE_AMT
+								, SAFEBUY_IMG_PATH
+								, SAFEBUY_IMG_DISP_SET_CD
+								, ESCROW_ID
+								, ESCROW_CERT_KEY_FILE_PATH1
+								, ESCROW_CERT_KEY_FILE_PATH2
+								, ESCROW_CERT_KEY_FILE_PATH3
+								, ESCROW_CERTIFY_MARK_CONTENT
+								, REGR_NO
+								, REG_DTTM
+		) VALUES (
+				 #{shopCd}
+				 , #{shopNm}
+				 , #{pgCd}
+				 , #{pgNm}
+				 , #{siteNo}
+				 , 'Y'
+				 , #{credPaymentYn}
+				 , #{acttransPaymentYn}
+				 , #{virtactPaymentYn}
+				 , #{mobilePaymentYn}
+				 , #{dpstCheckUrlUseYn}
+				 , #{pgId}
+				 , #{signKey}
+				 , #{keyPasswd}
+				 , #{pgKey}
+				 , #{pgKey2}
+				 , #{pgKey3}
+				 , #{pgKey4}
+				 , #{instPeriod}
+				 , #{nointTypeCd}
+				 , #{nointPeriodCd}
+				 , #{cashRctUseYn}
+				 , #{escrowUseYn}
+				 , #{escrowCredPaymentYn}
+				 , #{escrowActtransPaymentYn}
+				 , #{escrowVirtactPaymentYn}
+				 , #{escrowUseAmt}
+				 , #{safebuyImgPath}
+				 , #{safebuyImgDispSetCd}
+				 , #{escrowId}
+				 , #{escrowCertKeyFilePath1}
+				 , #{escrowCertKeyFilePath2}
+				 , #{escrowCertKeyFilePath3}
+				 , #{escrowCertifyMarkContent}
+				 , #{regrNo}
+				 , sysdate
+				 )
+	</insert>
+
+    <!-- 통합전자결제 설정 등록/수정  -->
+    <update id="updateCommPaymentConfig">
+        /* setup.paymentManage.updateCommPaymentConfig */
+    	MERGE INTO TS_PG_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND PG_CD = #{pgCd} AND SHOP_CD = #{beforeShopCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+	            PG_NM = #{pgNm}
+			    , SHOP_NM = #{shopNm}
+				, SHOP_CD = #{shopCd}
+	            , USE_YN = #{useYn}
+	            , CRED_PAYMENT_YN = #{credPaymentYn}
+	            , ACTTRANS_PAYMENT_YN = #{acttransPaymentYn}
+	            , VIRTACT_PAYMENT_YN = #{virtactPaymentYn}
+	            , MOBILE_PAYMENT_YN = #{mobilePaymentYn}
+	            , DPST_CHECK_URL_USE_YN = #{dpstCheckUrlUseYn}
+	            , PG_ID = #{pgId}
+	            , SIGN_KEY = #{signKey}
+	            , KEY_PASSWD = #{keyPasswd}
+	            , PG_KEY = #{pgKey}
+	            , PG_KEY2 = #{pgKey2}
+	            , PG_KEY3 = #{pgKey3}
+	            , PG_KEY4 = #{pgKey4}
+	            , INST_PERIOD = #{instPeriod}
+	            , NOINT_TYPE_CD = #{nointTypeCd}
+	            , NOINT_PERIOD_CD = #{nointPeriodCd}
+	            , CASH_RCT_USE_YN = #{cashRctUseYn}
+	            , ESCROW_USE_YN = #{escrowUseYn}
+	            , ESCROW_CRED_PAYMENT_YN = #{escrowCredPaymentYn}
+	            , ESCROW_ACTTRANS_PAYMENT_YN = #{escrowActtransPaymentYn}
+	            , ESCROW_VIRTACT_PAYMENT_YN = #{escrowVirtactPaymentYn}
+	            , ESCROW_USE_AMT = #{escrowUseAmt}
+	            , SAFEBUY_IMG_PATH = #{safebuyImgPath}
+	            , SAFEBUY_IMG_DISP_SET_CD = #{safebuyImgDispSetCd}
+	            , ESCROW_ID = #{escrowId}
+	            , ESCROW_CERT_KEY_FILE_PATH1 = #{escrowCertKeyFilePath1}
+	            , ESCROW_CERT_KEY_FILE_PATH2 = #{escrowCertKeyFilePath2}
+	            , ESCROW_CERT_KEY_FILE_PATH3 = #{escrowCertKeyFilePath3}
+	            , ESCROW_CERTIFY_MARK_CONTENT = #{escrowCertifyMarkContent}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+				, SHOP_NM
+				, SHOP_CD
+	            , PG_CD
+	            , PG_NM
+	            , USE_YN
+	            , CRED_PAYMENT_YN
+	            , ACTTRANS_PAYMENT_YN
+	            , VIRTACT_PAYMENT_YN
+	            , MOBILE_PAYMENT_YN
+	            , DPST_CHECK_URL_USE_YN
+	            , PG_ID
+	            , SIGN_KEY
+	            , KEY_PASSWD
+	            , PG_KEY
+	            , PG_KEY2
+	            , PG_KEY3
+	            , PG_KEY4
+	            , INST_PERIOD
+	            , NOINT_TYPE_CD
+	            , NOINT_PERIOD_CD
+	            , CASH_RCT_USE_YN
+	            , ESCROW_USE_YN
+	            , ESCROW_CRED_PAYMENT_YN
+	            , ESCROW_ACTTRANS_PAYMENT_YN
+	            , ESCROW_VIRTACT_PAYMENT_YN
+	            , ESCROW_USE_AMT
+	            , SAFEBUY_IMG_PATH
+	            , SAFEBUY_IMG_DISP_SET_CD
+	            , ESCROW_ID
+	            , ESCROW_CERT_KEY_FILE_PATH1
+	            , ESCROW_CERT_KEY_FILE_PATH2
+	            , ESCROW_CERT_KEY_FILE_PATH3
+	            , ESCROW_CERTIFY_MARK_CONTENT
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+				, #{shopNm}
+				, #{shopCd}
+	            , #{pgCd}
+	            , #{pgNm}
+	            , #{useYn}
+	            , #{credPaymentYn}
+	            , #{acttransPaymentYn}
+	            , #{virtactPaymentYn}
+	            , #{mobilePaymentYn}
+	            , #{dpstCheckUrlUseYn}
+	            , #{pgId}
+	            , #{signKey}
+	            , #{keyPasswd}
+	            , #{pgKey}
+	            , #{pgKey2}
+	            , #{pgKey3}
+	            , #{pgKey4}
+	            , #{instPeriod}
+	            , #{nointTypeCd}
+	            , #{nointPeriodCd}
+	            , #{cashRctUseYn}
+	            , #{escrowUseYn}
+	            , #{escrowCredPaymentYn}
+	            , #{escrowActtransPaymentYn}
+	            , #{escrowVirtactPaymentYn}
+	            , #{escrowUseAmt}
+	            , #{safebuyImgPath}
+	            , #{safebuyImgDispSetCd}
+	            , #{escrowId}
+	            , #{escrowCertKeyFilePath1}
+	            , #{escrowCertKeyFilePath2}
+	            , #{escrowCertKeyFilePath3}
+	            , #{escrowCertifyMarkContent}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+
+	<delete id="deleteCommPaymentConfig">
+		/* setup.paymentManage.deleteCommPaymentConfig */
+		DELETE FROM TS_PG_SET
+		WHERE   SITE_NO = #{siteNo}
+			AND PG_CD = #{pgCd}
+			AND SHOP_CD = #{shopCd}
+	</delete>
+
+    <!-- 간편결제 사용설정 수정  -->
+    <update id="updateSimplePaymentUseYnConfig">
+        /* setup.paymentManage.updateSimplePaymentUseYnConfig */
+        UPDATE TS_SITE SET
+             SIMPLEPAY_USE_YN =  #{simplepayUseYn}
+            , UPDR_NO = #{updrNo}
+            , UPD_DTTM = sysdate
+        WHERE SITE_NO=#{siteNo}
+    </update>
+
+    <!-- 간편결제 설정 등록/수정  -->
+    <update id="updateSimplePaymentConfig">
+        /* setup.paymentManage.updateSimplePaymentConfig */
+    	MERGE INTO TS_SIMP_PG_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND SIMP_PG_CD = #{simpPgCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+	            SIMP_PG_TYPE_CD = #{simpPgTypeCd}
+	            , USE_SET_CD = #{useSetCd}
+	            , FRC_CD = #{frcCd}
+	            , STORE_ID = #{storeId}
+	            , STORE_PW = #{storePw}
+	            , USE_AREA_CD = #{useAreaCd}
+	            , DSN_SET_CD = #{dsnSetCd}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+	            , SIMP_PG_CD
+	            , SIMP_PG_TYPE_CD
+	            , USE_SET_CD
+	            , FRC_CD
+	            , STORE_ID
+	            , STORE_PW
+	            , USE_AREA_CD
+	            , DSN_SET_CD
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+	            , #{simpPgCd}
+	            , #{simpPgTypeCd}
+	            , #{useSetCd}
+	            , #{frcCd}
+	            , #{storeId}
+	            , #{storePw}
+	            , #{useAreaCd}
+	            , #{dsnSetCd}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+
+    <!-- NPAY 설정 등록/수정  -->
+    <update id="updateNPayConfig">
+        /* setup.paymentManage.updateNPayConfig */
+    	MERGE INTO TS_NPAY_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+				NAVER_CMN_CERT_KEY = #{naverCmnCertKey}
+				, WHITE_LIST = #{whiteList}
+				, CHECKOUT_USE_YN = #{checkoutUseYn}
+				, CHECKOUT_TEST_USE_YN = #{checkoutTestUseYn}
+				, DLVR_COMPANY_SELECT = #{dlvrCompanySelect}
+				, RECVPAY_DLVRC = #{recvpayDlvrc}
+				, MNSHOP_USE_YN = #{mnshopUseYn}
+				, NAVER_FRC_ID = #{naverFrcId}
+				, LINK_CERT_KEY = #{linkCertKey}
+				, IMG_CERT_KEY = #{imgCertKey}
+				, PC_BTN_SELECT = #{pcBtnSelect}
+				, MOBILE_BTN_SELECT = #{mobileBtnSelect}
+				, BTN_LINK_TARGET = #{btnLinkTarget}
+				, REPLACE_CD = #{replaceCd}
+				, STOCK_LINK_USE_YN = #{stockLinkUseYn}
+				, ORD_INTEGRATION_MANAGE_USE_YN = #{ordIntegrationManageUseYn}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		        SITE_NO
+		        , NAVER_CMN_CERT_KEY
+			    , WHITE_LIST
+			    , CHECKOUT_USE_YN
+			    , CHECKOUT_TEST_USE_YN
+			    , DLVR_COMPANY_SELECT
+			    , RECVPAY_DLVRC
+			    , MNSHOP_USE_YN
+			    , NAVER_FRC_ID
+			    , LINK_CERT_KEY
+			    , IMG_CERT_KEY
+			    , PC_BTN_SELECT
+			    , MOBILE_BTN_SELECT
+			    , BTN_LINK_TARGET
+			    , REPLACE_CD
+			    , STOCK_LINK_USE_YN
+			    , ORD_INTEGRATION_MANAGE_USE_YN
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		        #{siteNo}
+		        , #{naverCmnCertKey}
+		        , #{whiteList}
+		        , #{checkoutUseYn}
+		        , #{checkoutTestUseYn}
+		        , #{dlvrCompanySelect}
+		        , #{recvpayDlvrc}
+	            , #{mnshopUseYn}
+	            , #{naverFrcId}
+	            , #{linkCertKey}
+	            , #{imgCertKey}
+	            , #{pcBtnSelect}
+	            , #{mobileBtnSelect}
+	            , #{btnLinkTarget}
+	            , #{replaceCd}
+	            , #{stockLinkUseYn}
+	            , #{ordIntegrationManageUseYn}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- 해외결제 설정 등록/수정  -->
+    <update id="updateForeignPaymentConfig">
+        /* setup.paymentManage.updateForeignPaymentConfig */
+        UPDATE TS_SITE SET
+             FRG_PAYMENT_YN =  #{frgPaymentYn}
+            , FRG_PAYMENT_STORE_ID = #{frgPaymentStoreId}
+            , FRG_PAYMENT_PW = #{frgPaymentPw}
+            , UPDR_NO = #{updrNo}
+            , UPD_DTTM = sysdate
+        WHERE SITE_NO=#{siteNo}
+    </update>
+</mapper>

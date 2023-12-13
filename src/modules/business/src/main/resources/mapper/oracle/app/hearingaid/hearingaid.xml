@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="hearingaid">
+	<select id="selectHearingaidStep1" parameterType="HearingaidStep1VO" resultType="HearingaidStep1VO">
+		SELECT CD, CD_NM, CD_SHORT_NM, USER_DEFINE1, USER_DEFINE2, USER_DEFINE3, USER_DEFINE4 
+		FROM TA_CMN_CD_DTL 
+		WHERE GRP_CD = #{grpCd}
+		AND USE_YN = 'Y'
+		<if test="userDefine1 != null and userDefine1 != ''">
+		AND USER_DEFINE1 = #{userDefine1}
+		</if>
+		<if test="stepCd != null and stepCd != ''">
+		AND CD IN (${stepCd})
+		</if>
+		ORDER BY SORT_SEQ
+	</select>
+	<select id="selectHearingaidRecommend" parameterType="HearingaidVO" resultType="HearingaidVO"> 
+		SELECT GOODS_NO, GOODS_NM FROM TG_GOODS
+		WHERE SITE_NO = 1
+		AND DEL_YN = 'N'
+		AND GOODS_NO IN
+		<foreach collection="hearingaidCdMap" item="hearingaidCd" index="index" separator="INTERSECT" open = "(" close=")">
+		    SELECT TGC.GOODS_NO FROM TG_GOODS_CTG TGC WHERE SITE_NO = 1 AND DEL_YN = 'N' AND CTG_NO = #{hearingaidCd}
+		</foreach>		
+	</select>
+	<delete id="deleteHearingaidCheck" parameterType="HearingaidCheckVO">
+		DELETE FROM tc_hearingaid_check WHERE member_no = #{memberNo} 
+	</delete>
+	<insert id="insertHearingaidCheck" parameterType="HearingaidCheckVO">
+		INSERT INTO tc_hearingaid_check (
+		    hearingaid_seq,
+		    member_no,
+		    goods_no,
+		    goods_nm,
+		    ctg_nos,
+		    result_all,
+		    reg_dttm,
+		    relate_activity
+		) VALUES (
+		    (SELECT NVL(MAX(hearingaid_seq),0) + 1 FROM tc_hearingaid_check),
+		    #{memberNo},
+			#{goodsNo},
+			#{goodsNm},
+			#{ctgNos},
+			#{resultAll},
+			sysdate,
+			#{relateActivity}
+		)
+	</insert>
+	<select id="selectHearingaidCheckList" parameterType="HearingaidCheckVO" resultType="HearingaidCheckVO">
+		SELECT hearingaid_seq,
+		    member_no,
+		    goods_no,
+		    goods_nm,
+		    ctg_nos,
+		    result_all,
+		    reg_dttm,
+		    relate_activity
+		FROM tc_hearingaid_check
+		WHERE member_no = #{memberNo}
+	</select>
+</mapper>

@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	예제 매퍼
+-->
+<mapper namespace="biz.app.example">
+
+	<sql id="selectCmnCdGrpWhere">
+		<where>
+			<if test="fromRegDt != null and fromRegDt != ''">
+				<![CDATA[
+				REG_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+				]]>
+			</if>
+			<if test="toRegDt != null and toRegDt != ''">
+				<![CDATA[
+				AND REG_DTTM < TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 1
+				]]>
+			</if>
+			<if test="grpNm != null and grpNm != ''">
+				AND GRP_NM = #{grpNm}
+			</if>
+			<if test="userDefine1Nm != null">
+				AND USER_DEFINE1_NM IS NOT NULL
+			</if>
+			<if test="userDefine2Nm != null">
+				AND USER_DEFINE2_NM IS NOT NULL
+			</if>
+			<if test="userDefine3Nm != null">
+				aNd USER_DEFINE3_NM IS NOT NULL
+			</if>
+			<if test="userDefine4Nm != null">
+				AND USER_DEFINE4_NM IS NOT NULL
+			</if>
+			<if test="userDefine5Nm != null">
+				AND USER_DEFINE5_NM IS NOT NULL
+			</if>
+		</where>
+	</sql>
+
+	<select id="selectCmnCdGrpPaging" resultType="cmnCdGrp">
+		/* biz.app.example.selectCmnCdGrpPaing */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT
+						GRP_CD,
+						GRP_NM,
+						GRP_DSCRT,
+						USE_YN,
+						USER_DEFINE1_NM,
+						USER_DEFINE2_NM,
+						USER_DEFINE3_NM,
+						USER_DEFINE4_NM,
+						USER_DEFINE5_NM,
+						USE_YN,
+						REG_DTTM,
+						REGR_NO,
+						UPD_DTTM,
+						UPDR_NO,
+						DEL_YN,
+						DEL_DTTM,
+						DELR_NO
+				FROM	T_CMN_CD_GRP
+				<include refid="selectCmnCdGrpWhere" />
+				<include refid="common.sortSql" />
+			) T
+		)
+		<include refid="common.pageSql" />
+	</select>
+
+	<!-- 공통코드 그룹 페이징 조회를 위한 카운트 -->
+	<select id="selectCmnCdGrpPagingCount" resultType="Integer">
+		/* biz.app.example.selectCmnCdGrpCount */
+		SELECT	count(*)
+		FROM	T_CMN_CD_GRP
+		<include refid="selectCmnCdGrpWhere" />
+	</select>
+
+	<select id="selectCmnCdGrpPagingTotalCount" resultType="Integer">
+		/* biz.app.example.selectCmnCdGrpTotalCount */
+		SELECT	count(*)
+		FROM	T_CMN_CD_GRP
+	</select>
+
+	<!-- 공통 코드 그룹 상세 -->
+	<select id="selectCmnCdGrp" resultType="cmnCdGrp">
+		SELECT
+				GRP_CD,
+				GRP_NM,
+				GRP_DSCRT,
+				USE_YN,
+				USER_DEFINE1_NM,
+				USER_DEFINE2_NM,
+				USER_DEFINE3_NM,
+				USER_DEFINE4_NM,
+				USER_DEFINE5_NM,
+				REG_DTTM,
+				REGR_NO,
+				UPD_DTTM,
+				UPDR_NO,
+				DEL_YN,
+				DEL_DTTM,
+				DELR_NO
+		FROM	T_CMN_CD_GRP
+		WHERE	GRP_CD = #{grpCd}
+	</select>
+
+	<!-- 공통 코드 그룹 등록 -->
+	<insert id="insertCmnCdGrp">
+		INSERT INTO T_CMN_CD_GRP
+			(
+				GRP_CD,
+				GRP_NM,
+				GRP_DSCRT,
+				USE_YN,
+				USER_DEFINE1_NM,
+				USER_DEFINE2_NM,
+				USER_DEFINE3_NM,
+				USER_DEFINE4_NM,
+				USER_DEFINE5_NM,
+				REG_DTTM,
+				REGR_NO
+			)
+			VALUES
+			(
+				#{grpCd},
+				#{grpNm},
+				#{grpDscrt},
+				#{useYn},
+				#{userDefine1Nm},
+				#{userDefine2Nm},
+				#{userDefine3Nm},
+				#{userDefine4Nm},
+				#{userDefine5Nm},
+				sysdate,
+				#{regrNo}
+			)
+	</insert>
+
+	<!-- 공통 코드 그룹 수정 -->
+	<update id="updateCmnCdGrp">
+		UPDATE	T_CMN_CD_GRP
+		SET		GRP_NM = #{grpNm},
+				GRP_DSCRT = #{grpDscrt},
+				USER_DEFINE1_NM = #{userDefine1Nm},
+				USER_DEFINE2_NM = #{userDefine2Nm},
+				USER_DEFINE3_NM = #{userDefine3Nm},
+				USER_DEFINE4_NM = #{userDefine4Nm},
+				USER_DEFINE5_NM = #{userDefine5Nm},
+				UPDR_NO = #{updrNo},
+				UPD_DTTM = sysdate
+		WHERE	GRP_CD = #{grpCd}
+	</update>
+
+	<!-- 공통 코드 그룹 삭제 -->
+	<update id="deleteCmnCdGrp">
+		UPDATE	T_CMN_CD_GRP
+		SET		DEL_YN = 'Y',
+				DELR_NO = #{delrNo},
+				DEL_DTTM = sysdate
+		WHERE	GRP_CD IN <foreach collection="list" item="item" open="(" close=")" separator=",">#{item.grpCd}</foreach>
+	</update>
+
+	<insert id="deleteAll">
+		DELETE FROM T_TEST
+	</insert>
+
+	<insert id="insert">
+		insert T_TEST VALUES (#{test})
+	</insert>
+
+	<update id="update">
+		UPDATE T_TEST
+		SET TEST = #{n}
+		WHERE TEST = #{test}
+	</update>
+
+	<delete id="delete">
+		DELETE FROM T_TEST
+		WHERE TEST = #{test}
+	</delete>
+</mapper>

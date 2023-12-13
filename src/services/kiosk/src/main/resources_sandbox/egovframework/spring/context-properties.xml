@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+
+	<bean name="propertiesService" class="egovframework.rte.fdl.property.impl.EgovPropertyServiceImpl" destroy-method="destroy">
+		<property name="properties">
+	        <map>
+	        	<!-- Site No -->
+	        	<entry key="siteNo" value="1"/>
+	        	
+	        	<!-- 1페잊 목록 수 -->
+	        	<entry key="pageUnit" value="5"/>
+	        	
+	        	<!-- 1페잊 패이징 수 -->
+	        	<entry key="pageSize" value="10"/>
+	        	
+	        	<!-- 인터페이스 URL -->
+    			<entry key="interfaceURL" value="http://www.davichmarket.com/ifapi_mall"/>
+    			
+    			<!-- CHIPER_AES 암호화 키(18byte) -->
+    			<entry key="core.encryption.aes.key" value="danvistory"/>
+    			<entry key="core.encryption.aes.iv" value="danvistory.com"/>
+    			
+    			<!-- CHIPER_DES 암호화 키 -->
+    			<entry key="core.encryption.des.key" value="kis_des_crypto"/>
+    			
+    			<!-- DESede 암호화 키 -->
+    			<entry key="core.encryption.desede.key" value="kis_desede_crypto_123456"/>
+    			
+    			<!-- 첨부파일 경로 -->
+	        	<entry key="attach_dir" value="D:\O4OPJT\upload\kiosk\attach_dir"/>
+	        </map>
+		</property>
+	</bean>
+	
+</beans>	

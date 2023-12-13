@@ -1,0 +1,40 @@
+<configuration scan="true">
+    <contextListener class="dmall.framework.logback.LoggerStartupListener"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%green(%d{HH:mm:ss.SSS}) %green([%-5level]) %green([%logger{36}]) %green([%F:%L]) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/${log.name}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${log.path}/${log.name}/${log.name}.%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <Pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - [%F:%L] - %msg%n</Pattern>
+        </encoder>
+    </appender>
+
+    <logger name="dmall" level="${log.dmall.level}"/>
+    <logger name="net.danvi" level="${log.net.danvi.level}"/>
+    <logger name="org.apache.commons" level="${log.org.apache.commons}"/>
+    <logger name="org.springframework" level="${log.org.springframework}"/>
+    <logger name="org.mybatis" level="${log.org.mybatis}"/>
+
+    <!-- log4jdbc -->
+    <logger name="jdbc.resultset" level="${log.jdbc.resultset.level}" additivity="false"/>
+    <logger name="jdbc.audit" level="${log.jdbc.audit.level}" additivity="false"/>
+    <logger name="jdbc.sqlonly" level="${log.jdbc.sqlonly.level}"  additivity="false"/>
+    <logger name="jdbc.resultsettable" level="${log.jdbc.resultsettable.level}"  additivity="false"/>
+    <logger name="jdbc.sqltiming" level="${log.jdbc.sqltiming.level}"  additivity="false"/>
+    <logger name="jdbc.connection" level="${log.jdbc.connection.level}"  additivity="false"/>
+    <logger name="com.sun.mail.smtp" level="${log.com.sun.mail.smtp.level}"  additivity="false"/>
+
+    <root level="${log.root.level}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+</configuration>

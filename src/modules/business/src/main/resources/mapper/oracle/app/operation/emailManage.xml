@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="operation.emailManage">
+
+    <sql id="selectEmailInfoWhere">
+        AND hist.Site_NO = #{siteNo}
+        AND hist.DEL_YN = 'N'
+        <if test="sendDttm != null and sendDttm != ''">
+            AND hist.SEND_DTTM = TO_DATE(#{sendDttm}, 'YYYY-MM-DD HH24:MI:SS')
+        </if>
+        <if test="sendStndrd != null and sendStndrd != ''">
+            AND hist.SEND_STNDRD = #{sendStndrd}
+        </if>
+        <if test="fromRegDt != null and fromRegDt != ''">
+            <![CDATA[
+            AND hist.SEND_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="toRegDt != null and toRegDt != ''">
+            <![CDATA[
+            AND hist.SEND_DTTM < TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="searchVal != null and searchVal != ''">
+            <if test="searchKind == 'all'">
+                AND (hist.SEND_CONTENT like '%'||#{searchVal}||'%' or mem.MEMBER_NM = #{memberNm})
+            </if>
+	        <if test="searchKind == 'searchSendTitle'">
+	            AND hist.SEND_TITLE like '%'||#{searchVal}||'%'
+	        </if>
+	        <if test="searchKind == 'searchSendContent'">
+	            AND hist.SEND_CONTENT like '%'||#{searchVal}||'%'
+	        </if>
+	        <if test="searchKind == 'searchBbsNm'">
+	            AND BBS_Nm like '%'||#{searchVal}||'%'
+	        </if>
+	        <if test="searchKind == 'searchMemberNm'">
+	            AND mem.MEMBER_NM = #{memberNm}
+	        </if>
+        </if>
+        <if test="resultCd != null and resultCd != ''">
+            AND hist.RESULT_CD = #{resultCd}
+        </if>
+    </sql>
+
+    <!-- EMAIL 발생 이력 조회 Paging -->
+    <select id="selectSendEmailPaging" resultType="emailSendVO">
+        /* operation.emailManage.selectAutoSendEmailPaging */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+                    SELECT  hist.*,
+                            <if test='("N").equals(autoSendYn)'>
+                                COUNT(1) GROUP_CNT,
+                                COUNT(IF (hist.RESULT_CD = 'Y', hist.RESULT_CD, null)) SUCCESS_CNT,
+                            </if>
+                            mem.LOGIN_ID,
+                            mem.MEMBER_NM
+                    FROM    TB_MAIL_SEND_HIST hist
+                    LEFT OUTER JOIN TC_MEMBER mem on (mem.MEMBER_NO = hist.RECEIVER_NO)
+                    WHERE 1=1
+                    <include refid="selectEmailInfoWhere" />
+                    <if test='("N").equals(autoSendYn)'>
+                        GROUP BY SEND_DTTM
+                    </if>
+                    <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+
+    </select>
+
+    <!-- Email 자동 발송 상세 조회 -->
+    <select id="selectSendEmailInfo" resultType="emailSendVO">
+        /* operation.emailManage.selectSendEmailInfo */
+        SELECT SEND_DTTM,
+		       case when hist.RESULT_CD = 'Y' THEN '성공' ELSE '실패' END RESULT_CD,
+		       hist.RECEIVER_NO,
+		       hist.RECEIVER_ID,
+		       hist.RECEIVER_NM,
+		       hist.SEND_TITLE,
+		       hist.SEND_CONTENT,
+		       hist.SENDER_NM,
+               hist.SEND_EMAIL,
+               hist.SEND_STNDRD
+		FROM TB_MAIL_SEND_HIST hist
+		WHERE 1=1
+        AND hist.SITE_NO = #{siteNo}
+        AND hist.MAIL_SEND_NO = #{mailSendNo}
+    </select>
+
+    <!-- EMAIL 발생 이력 조회 Count -->
+    <select id="selectSendEmailPagingCount" resultType="Integer">
+        /* operation.emailManage.selectAutoSendEmailPagingCount */
+        <if test='("N").equals(autoSendYn)'>
+        SELECT COUNT(A.CNT)
+          FROM (
+        </if>
+		        SELECT COUNT(*) CNT
+		        FROM    TB_MAIL_SEND_HIST hist
+		        LEFT OUTER JOIN TC_MEMBER mem on (mem.MEMBER_NO = hist.RECEIVER_NO and mem.MEMBER_STATUS_CD = '01')
+		        WHERE 1=1
+		        <include refid="selectEmailInfoWhere" />
+		        <if test='("N").equals(autoSendYn)'>
+		           GROUP BY SEND_DTTM
+		        </if>
+		 <if test='("N").equals(autoSendYn)'>
+		       ) A
+		 </if>
+    </select>
+
+    <!-- EMAIL 발생 이력 조회 Total Paging -->
+    <select id="selectSendEmailPagingTotalCount" resultType="Integer">
+        /* operation.emailManage.selectAutoSendEmailPagingTotalCount */
+        <if test='("N").equals(autoSendYn)'>
+        SELECT COUNT(A.CNT)
+          FROM (
+        </if>
+		        SELECT COUNT(*) CNT
+		        FROM    TB_MAIL_SEND_HIST hist
+		        WHERE 1=1
+		        AND hist.SITE_NO = #{siteNo}
+		        AND DEL_YN = 'N'
+		        <if test='("N").equals(autoSendYn)'>
+		           GROUP BY SEND_DTTM
+		        </if>
+		 <if test='("N").equals(autoSendYn)'>
+               ) A
+         </if>
+    </select>
+
+    <!-- Email 발송 이력 등록 -->
+    <insert id="insertEmailSendHst">
+        /* operation.emailManage.insertEmailSendHst */
+        INSERT INTO TB_MAIL_SEND_HIST
+            (
+            	MAIL_SEND_NO,
+                <if test="ordNo != null and ordNo != '' and ordNo != 0">
+                    ORD_NO,
+                </if>
+                SEND_TARGET_CD,
+                <if test="mailTypeCd != null and mailTypeCd != ''">
+                    MAIL_TYPE_CD,
+                </if>
+                RESULT_CD,
+                SEND_EMAIL,
+                SEND_TITLE,
+                SEND_CONTENT,
+                <if test="sendStndrd != null and sendStndrd != ''">
+                SEND_STNDRD,
+                </if>
+                SENDER_NO,
+                SENDER_NM,
+                RECEIVER_EMAIL,
+                SEND_DTTM,
+                <if test="receiverNo != null and receiverNo != '' and receiverNo != 0">
+                    RECEIVER_NO,
+                </if>
+                <if test="receiverId != null and receiverId != ''">
+                    RECEIVER_ID,
+                </if>
+                <if test="receiverNm != null and receiverNm != ''">
+                    RECEIVER_NM,
+                </if>
+                AUTO_SEND_YN,
+                SITE_NO,
+                REG_DTTM,
+                REGR_NO
+            )
+            VALUES
+            (
+            	fn_getSeq(0, 'MAIL_SEND_NO'),
+                <if test="ordNo != null and ordNo != '' and ordNo != 0">
+                    #{ordNo},
+                </if>
+                #{sendTargetCd},
+                <if test="mailTypeCd != null and mailTypeCd != ''">
+                    #{mailTypeCd},
+                </if>
+                #{resultCd},
+                #{sendEmail},
+                #{sendTitle},
+                #{sendContent:CLOB},
+                <if test="sendStndrd != null and sendStndrd != ''">
+                    #{sendStndrd},
+                </if>
+                #{senderNo},
+                #{senderNm},
+                #{receiverEmail},
+                sysdate,
+                <if test="receiverNo != null and receiverNo != '' and receiverNo != 0">
+                    #{receiverNo},
+                </if>
+                <if test="receiverId != null and receiverId != ''">
+                    #{receiverId},
+                </if>
+                <if test="receiverNm != null and receiverNm != ''">
+                    #{receiverNm},
+                </if>
+                #{autoSendYn},
+                #{siteNo},
+                sysdate,
+                #{regrNo}
+            )
+    </insert>
+
+    <!-- Email 자동 발송 상세 조회 -->
+    <select id="selectStatusCfg" resultType="emailSendVO">
+        /* operation.emailManage.getSaveGb */
+        SELECT A.*, fn_getCodeNm('MAIL_TYPE_CD', MAIL_TYPE_CD) AS MAIL_TYPE_NM
+        FROM TB_MAIL_AUTO_SEND_MANAGE A
+        WHERE 1=1
+        AND A.SITE_NO = #{siteNo}
+        AND A.MAIL_TYPE_CD = #{mailTypeCd}
+    </select>
+
+    <!-- Email 자동 발송 설정 등록 체크 -->
+    <select id="getSaveGb" resultType="int">
+        /* operation.emailManage.getSaveGb */
+        SELECT count(*)
+        FROM TB_MAIL_AUTO_SEND_MANAGE
+        WHERE 1=1
+        AND SITE_NO = #{siteNo}
+        AND MAIL_TYPE_CD = #{mailTypeCd}
+    </select>
+
+    <!-- Email 자동 발송 등록 -->
+    <insert id="insertEmailSendAutoSet">
+        /* operation.emailManage.insertEmailSendAutoSet */
+        INSERT INTO TB_MAIL_AUTO_SEND_MANAGE
+            (
+                SITE_NO,
+                MAIL_TYPE_CD,
+                AUTO_SEND_YN,
+                SEND_EMAIL,
+                MAIL_TITLE,
+                MAIL_CONTENT,
+                MEMBER_SEND_YN,
+                ADMIN_SEND_YN,
+                SELLER_SEND_YN,
+                STORE_SEND_YN,
+                STAFF_SEND_YN,
+                REG_DTTM,
+                REGR_NO
+            )
+            VALUES
+            (
+                #{siteNo},
+                #{mailTypeCd},
+			    #{autoSendYn},
+			    #{sendEmail},
+			    #{mailTitle},
+			    #{mailContent:CLOB},
+			    #{memberSendYn},
+			    #{adminSendYn},
+			    #{sellerSendYn},
+			    #{storeSendYn},
+			    #{staffSendYn},
+			    sysdate,
+			    #{regrNo}
+            )
+    </insert>
+
+    <!-- Email 자동 발송 수정 -->
+    <update id="updateEmailSendAutoSet">
+        /* operation.emailManage.updateEmailSendAutoSet */
+        UPDATE  TB_MAIL_AUTO_SEND_MANAGE
+        SET
+                AUTO_SEND_YN = #{autoSendYn},
+                SEND_EMAIL = #{sendEmail},
+                MAIL_TITLE = #{mailTitle},
+                MAIL_CONTENT = #{mailContent:CLOB},
+                MEMBER_SEND_YN = #{memberSendYn},
+                ADMIN_SEND_YN = #{adminSendYn},
+                SELLER_SEND_YN = #{sellerSendYn},
+                STORE_SEND_YN = #{storeSendYn},
+                STAFF_SEND_YN = #{staffSendYn},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE   SITE_NO = #{siteNo}
+        AND     MAIL_TYPE_CD = #{mailTypeCd}
+    </update>
+
+    <select id="selectSendEmailManageAdmin" parameterType="emailSendVO" resultType="memberManageVO">
+        /* operation.emailManage.selectSendEmailManageAdmin */
+        select NVL(member.EMAIL, '') as EMAIL, member.MEMBER_NO, member.MEMBER_NM, grp.AUTH_GB_CD, member.LOGIN_ID
+        from TC_MEMBER member left outer join TA_MANAGER manage on (member.MEMBER_NO = manage.MEMBER_NO)
+                              inner join TA_MANAGER_AUTH_GRP grp on (manage.AUTH_GRP_NO = grp.AUTH_GRP_NO )
+        where 1=1
+        and (grp.AUTH_GB_CD = case when #{managerSendYn} = 'Y' then 'A' when #{operatorSendYn} = 'Y' then 'B' end )
+        and member.SITE_NO = #{siteNo}
+        and member.email is not null
+    </select>
+
+    <!-- 이메일 보유 건수 조회 -->
+    <select id="selectEmailPossCnt" resultType="int">
+        /* operation.emailManage.selectEmailPossCnt */
+        SELECT MAIL_POSS_CNT
+        FROM TB_MAIL_INFO_MANAGE
+        WHERE 1=1
+        AND SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 이메일 보유 건수 차감 -->
+    <update id="updateEmailPossCnt">
+        /* operation.emailManage.updateEmailPossCnt */
+        <selectKey keyProperty="possCnt" order="BEFORE" resultType="int">
+		    SELECT MAIL_POSS_CNT-1 AS possCnt FROM TB_MAIL_INFO_MANAGE WHERE SITE_NO = #{siteNo}
+		</selectKey>
+        UPDATE TB_MAIL_INFO_MANAGE
+          SET MAIL_POSS_CNT = #{possCnt}
+        WHERE 1=1
+        AND SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 관리자 이메일 주소 조회 -->
+    <select id="selectAdminEmail" resultType="emailSendVO">
+        /* operation.emailManage.selectAdminEmail */
+        SELECT MANAGER_EMAIL, SITE_NM, SITE_NO, CUST_CT_EMAIL FROM TS_SITE_DTL
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 최근 발송 이메일 목록 조회  -->
+    <select id="selectEmailHst" parameterType="emailSendSO" resultType="emailSendVO">
+        /* operation.emailManage."selectEmailHst" */
+        SELECT *
+        FROM
+        (
+	        SELECT MAIL_SEND_NO,
+			       SEND_TITLE,
+			       SEND_CONTENT
+			  FROM TB_MAIL_SEND_HIST
+			 WHERE REGR_NO = #{memberNo}
+			 ORDER BY REG_DTTM DESC
+		 )
+		 WHERE ROWNUM BETWEEN 1 AND 5
+    </select>
+
+    <!-- 최근 발송 이메일 목록 조회(단건)  -->
+    <select id="selectSendEmailHstOne" parameterType="emailSendSO" resultType="emailSendVO">
+        /* operation.emailManage."selectSendEmailHstOne" */
+        SELECT MAIL_SEND_NO,
+               SEND_TITLE,
+               SEND_CONTENT
+          FROM TB_MAIL_SEND_HIST
+         WHERE MAIL_SEND_NO = #{mailSendNo}
+    </select>
+
+    <!-- 이메일 발송 이력 삭제 -->
+    <update id="deleteMailSendHst">
+        /* operation.emailManage.deleteMailSendHst */
+        UPDATE TB_MAIL_SEND_HIST
+          SET DEL_YN = #{delYn},
+              DEL_DTTM = sysdate,
+              DELR_NO = #{regrNo}
+        WHERE 1=1
+        AND MAIL_SEND_NO IN
+            <foreach collection="delEmailShotHst" item="item" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+    </update>
+
+</mapper>

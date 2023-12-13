@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   방문자 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.vstrAnls">
+    <sql id="selectVstrAnlsListWhere">
+        <if test="eqpmGbCd != null and eqpmGbCd != ''">
+            AND EQPM_GB_CD = #{eqpmGbCd}
+        </if>
+        <if test="periodGb eq 'T'.toString()">
+            AND YR = #{yr}
+            AND MM = #{mm}
+            AND DT = #{dt}
+            GROUP BY HR
+            ORDER BY HR ASC
+        </if>
+        <if test="periodGb eq 'D'.toString()">
+            AND YR = #{yr}
+            AND MM = #{mm}
+            GROUP BY DT
+            ORDER BY DT ASC
+        </if>
+        <if test="periodGb eq 'M'.toString()">
+            AND YR = #{yr}
+            GROUP BY MM
+            ORDER BY MM ASC
+        </if>
+    </sql>
+    
+    <!-- 방문자 분석 전체조회 -->
+    <select id="selectVstrAnlsList" parameterType="vstrSO" resultType="vstrVO">
+        /* statistics.vstrAnls.selectVstrAnlsList */
+        SELECT
+            <if test="periodGb eq 'T'.toString()">
+            HR as LABEL
+            </if>
+            <if test="periodGb eq 'D'.toString()">
+            DT as LABEL
+            </if>
+            <if test="periodGb eq 'M'.toString()">
+            MM as LABEL
+            </if>
+            , ROUND(SUM(VSTR_CNT),0) AS VSTR_CNT
+            , ROUND(SUM(PAGE_VW),0) AS PAGE_VW
+          FROM TT_VSTR_ANLS
+         WHERE SITE_NO = #{siteNo}
+         <include refid="selectVstrAnlsListWhere" />
+    </select>
+    <!-- 방문자 분석 총건수 조회 -->
+    <select id="selectVstrAnlsListTotalCount" parameterType="vstrSO" resultType="Integer">
+        /* statistics.vstrAnls.selectVstrAnlsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+			        <if test=' periodGb == "M" ' >
+						,YR, MM			        
+					</if>                 
+                      , SUM(VSTR_CNT) AS VSTR_CNT
+                      , SUM(PAGE_VW) AS PAGE_VW
+                   FROM TT_VSTR_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectVstrAnlsListWhere" />
+                ) TCNT
+    </select>
+    <!-- 방문자 분석 조건적용 총건수 조회 -->
+    <select id="selectVstrAnlsListCount" parameterType="vstrSO" resultType="Integer">
+        /* statistics.vstrAnls.selectVstrAnlsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+				        <if test=' periodGb == "M" ' >
+							,YR, MM			        
+						</if>                 
+                      , SUM(VSTR_CNT) AS VSTR_CNT
+                      , SUM(PAGE_VW) AS PAGE_VW
+                   FROM TT_VSTR_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectVstrAnlsListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

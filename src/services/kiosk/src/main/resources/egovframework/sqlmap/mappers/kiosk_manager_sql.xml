@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.kiosk.manager.mapper.ManagerMapper">
+	<select id="selectBookingMainBannerList" parameterType="egovframework.kiosk.manager.vo.BannerVO" resultType="egovframework.kiosk.manager.vo.BannerVO">
+		SELECT BANNER_NO, STR_CODE, ORG_FILE_NM, FILE_PATH, FILE_NM, FILE_TYPE, FILE_SIZE, REG_ID, REG_DATE, IS_VIEW
+		FROM TC_STR_BOOKING_BANNER WHERE (STR_CODE = '0000' OR STR_CODE = #{str_code})
+		<if test="is_view != null and is_view != ''">
+			AND IS_VIEW = #{is_view}
+		</if>
+	</select>
+	<select id="selectBookingBannerList" parameterType="egovframework.kiosk.manager.vo.BannerVO" resultType="egovframework.kiosk.manager.vo.BannerVO">
+		SELECT BANNER_NO, STR_CODE, ORG_FILE_NM, FILE_PATH, FILE_NM, FILE_TYPE, FILE_SIZE, REG_ID, REG_DATE, IS_VIEW
+		FROM TC_STR_BOOKING_BANNER WHERE STR_CODE = #{str_code}
+		<if test="is_view != null and is_view != ''">
+			AND IS_VIEW = #{is_view}
+		</if>
+	</select>
+	<select id="selectBookingBanner" parameterType="egovframework.kiosk.manager.vo.BannerVO" resultType="egovframework.kiosk.manager.vo.BannerVO">
+		SELECT BANNER_NO, STR_CODE, ORG_FILE_NM, FILE_PATH, FILE_NM, FILE_TYPE, FILE_SIZE, REG_ID, REG_DATE, IS_VIEW
+		FROM TC_STR_BOOKING_BANNER WHERE STR_CODE = #{str_code} AND BANNER_NO = #{banner_no}
+	</select>
+	<insert id="insertBookingBanner" parameterType="egovframework.kiosk.manager.vo.BannerVO">
+		INSERT INTO TC_STR_BOOKING_BANNER(
+			BANNER_NO, 
+			STR_CODE, ORG_FILE_NM, FILE_PATH, FILE_NM, FILE_TYPE, FILE_SIZE, REG_ID, REG_DATE, IS_VIEW
+		)VALUES (
+		    (SELECT NVL(MAX(BANNER_NO),0) + 1 FROM TC_STR_BOOKING_BANNER), 
+		    #{str_code}, #{org_file_nm}, #{file_path}, #{file_nm}, #{file_type}, #{file_size}, #{reg_id}, SYSDATE, #{is_view}
+		)
+	</insert>
+	<update id="updateBookingBanner" parameterType="egovframework.kiosk.manager.vo.BannerVO">
+		UPDATE TC_STR_BOOKING_BANNER
+		SET
+			ORG_FILE_NM = #{org_file_nm}, 
+			FILE_PATH = #{file_path}, 
+			FILE_NM = #{file_nm}, 
+			FILE_TYPE = #{file_type}, 
+			FILE_SIZE = #{file_size}, 
+			REG_ID = #{reg_id}, 
+			REG_DATE = SYSDATE
+		WHERE BANNER_NO = #{banner_no} AND STR_CODE = #{str_code}
+	</update>
+	<delete id="deleteBookingBanner" parameterType="egovframework.kiosk.manager.vo.BannerVO">
+		DELETE FROM TC_STR_BOOKING_BANNER WHERE BANNER_NO = #{banner_no} AND STR_CODE = #{str_code}
+	</delete>
+	<update id="updateBookingBannerIsView" parameterType="egovframework.kiosk.manager.vo.BannerVO">
+		UPDATE TC_STR_BOOKING_BANNER
+		SET
+			IS_VIEW = #{is_view},
+			REG_ID = #{reg_id}, 
+			REG_DATE = SYSDATE
+		WHERE BANNER_NO = #{banner_no} AND STR_CODE = #{str_code}
+	</update>
+</mapper>

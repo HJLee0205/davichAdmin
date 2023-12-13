@@ -1,0 +1,109 @@
+@charset "utf-8";
+
+.btn_id_detail {text-decoration: underline;}
+.btn_id_detail:hover {text-decoration: underline;font-weight: bold;}
+/* skin management */
+.skin_wrap{overflow:hidden;margin-bottom:45px;}
+.skin_con{float:right;width:50%;height:100%;}
+.skin_con:first-child{float:left;}
+.skin_con:first-child > div{margin:0 26px 0 0;}
+.skin_con > div{overflow:hidden;margin-left:26px;padding:32px 42px;border:1px solid #eee;background-color:#fbfbfb;}
+.skin_con .btn{float:left;/*margin-top:17px;*/}
+.skin_con .btn .txt{position:relative;display:block;padding-left:12px;color:#222;}
+.skin_con .btn .txt:after{content:'';position:absolute;top:8px;left:0;display:block;width:4px;height:7px;background:url(../img/common/ico_comm.png) no-repeat -88px -72px;}
+.skin_con .btn .green{width:120px;min-width:auto;height:38px;margin-top:14px;padding:0;line-height:38px;display:block;font-size:12px;color:#fff;/*font-family:'NanumGothicBold';*/border-radius:2px;behavior: url(PIE.htc);background-color:#399983;}
+.skin_con .skin{float:right;width:220px;height:100%;border:1px solid #eee;-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;}
+.skin_con .skin img{width:100%;}
+
+/* btn */
+.btn_more{position:absolute;top:20px;right:20px;display:inline-block;width:10px;height:10px;background-position:0 -100px;}
+
+/* title */
+h3.tlth3.mt85{margin-top:85px;}
+
+/* design_center */
+.design_center{}
+.dc_tlt{border-top:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5;padding:1px 0;}
+.dc_tlt h4{position:relative;border-top:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5;padding:17px 11px;}
+.dc_tlt h4 .btn_gray{position:absolute;top:15px;right:11px;}
+.dc_con{margin:18px 0 30px;}
+.dc_con .list{overflow:hidden;width:100%;}
+.dc_con .list li{float:left;width:20%;margin-left:6.6%;text-align:center;}
+.dc_con .list li:first-child{margin-left:0;}
+.dc_con .img{display:inline-block;width:100%;}
+.dc_con .txt{display:inline-block;margin-top:10px;}
+.dc_con .pri{display:inline-block;margin-top:5px;}
+.dc_con .btn_gray{display:inline-block;margin-top:5px;}
+
+/* table image management */
+.tbl_img{border-bottom:1px solid #e5e5e5;}
+.tbl_img > table{width:100%;border-top:1px solid #000;}
+.tbl_img > table > tbody > tr > td{padding:10px 0;text-align:center;border-left:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5;}
+.tbl_img > table > tbody > tr > td:last-child{border-right:1px solid #e5e5e5;}
+.tbl_img > table > tbody > tr:last-child > td{border-bottom:none;}
+.sec01_box .line_box .top_lay .select_btn.bottom{top:8px;}
+
+/* HTML PUBLISHING */
+.cate_con .cate_right{}
+.cate_con .cate_right .link_box{position:relative;height:22px;padding:12px 10px;border:3px solid #eee;}
+.cate_con .cate_right .link_box .url{color:#0135c2;font-size:14px;/*font-family:'NanumGothicBold';*/}
+.cate_con .cate_right .link_box .btn{position:absolute;top:12px;right:10px;}
+.cate_con .cate_right .publishing{height:520px;margin-top:8px;padding:12px 10px;border:3px solid #eee;}
+
+.h3ml{margin-left:13px;}
+
+/*160614 추가*/
+.page_add{width:200px; height:35px; line-height:35px;}
+.page_add_p{height:60px; border:1px solid #ccc; border-radius:2px;}
+/*.page_add_p{height:60px; border:1px solid #999; border-radius:2px;}보더 색상값 변경*/
+.page_add_p textarea{width:100%; height:100%; padding:0px 6px; box-sizing:border-box; overflow-y:scroll;}
+.page_add_w{margin:15px 0 0px 25px; /*font-family:nanumGothic;*/ font-size:18px;}
+.page_add_wc{width:650px; padding:25px; margin:15px 25px 25px; border:3px solid #eee; background-color:#FFFFFF;}
+
+/*배너관리 2018-10-19*/
+.bn_guide_wrap	{
+	overflow:hidden; 
+	padding-bottom: 30px;
+	margin-top:30px; 
+	border-bottom:1px dotted #ccc;
+}
+.bn_guide_wrap p	{
+	font-size: 15px;
+    color: #0055a4;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.bn_guide_wrap span	{
+	display:block;
+	margin:0 0 10px 0;
+	font-size:13px;
+}
+.bn_guide_left	{
+	float:left; width:880px;
+}
+.bn_guide_right	{
+	float:right; width:calc(100% - 900px)
+}
+
+.bn_guide_tb	{
+	width:100%;
+	border-top:1px solid #555;
+}
+
+.bn_guide_tb th	{
+	text-align:center;
+	padding:6px 5px;
+	border-right:1px solid #ccc;
+	border-bottom:1px solid #ccc;
+	background:#f9f9f9;
+}
+.bn_guide_tb td	{
+	text-align:center;
+	padding:6px 5px;
+	border-right:1px solid #ccc;
+	border-bottom:1px solid #ccc;
+}
+.bn_guide_tb th:last-child,
+.bn_guide_tb td:last-child	{
+	border-right:none;
+}

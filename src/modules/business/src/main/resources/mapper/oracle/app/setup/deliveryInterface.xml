@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.delivery.interface">
+
+    <!-- 택배사 연동 설정정보 조회 -->
+    <select id="selectDeliveryInterface" parameterType="net.danvi.dmall.biz.app.setup.delivery.model.CourierVO" resultType="net.danvi.dmall.biz.app.setup.delivery.model.CourierVO">
+        /* setup.delivery.interface.selectDeliveryInterface - 택배사 연동 설정정보 조회 */
+           SELECT
+			  tc.SITE_NO
+			, tc.COURIER_CD
+			, NVL(tc.LINK_USE_YN, 'N') AS LINK_USE_YN
+			, NVL(tc.LINK_APPLY_STATUS, '00') AS LINK_APPLY_STATUS
+            , LINK_ID
+            , LINK_PW
+            , LINK_STORE_ID
+            , LINK_CUSTNO
+            , LINK_CONTRT_PT_NM
+            , PRIVACY_CLCT_APPLY_YN
+            , PRIVACY_USE_APPLY_YN
+			, tc.REG_DTTM
+           FROM    TS_COURIER tc
+           WHERE   tc.SITE_NO = #{siteNo}
+             AND   tc.COURIER_CD = #{courierCd}
+    </select>
+
+    <!-- 배송관련 설정정보 수정 -->
+    <update id="updateDeliveryInterface">
+    	/* setup.delivery.updateDeliveryConfig - 배송관련 설정정보 수정 */
+    	MERGE INTO TS_COURIER
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND COURIER_CD = #{courierCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+	              COURIER_NM = #{courierNm}
+	            , USE_YN = #{useYn}
+	            , DLVRC = #{dlvrc}
+	            , LINK_USE_YN = #{linkUseYn}
+	            , LINK_ID = #{linkId}
+	            , LINK_PW = #{linkPw}
+	            , LINK_STORE_ID = #{linkStoreID}
+	            , LINK_CUSTNO = #{linkCustno}
+	            , LINK_CONTRT_PT_NM = #{linkContrtPtNm}
+	            , PRIVACY_CLCT_APPLY_YN = #{privacyClctApplyYn}
+	            , PRIVACY_USE_APPLY_YN = #{privacyUseApplyYn}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	              SITE_NO
+	            , COURIER_CD
+	            , COURIER_NM
+	            , USE_YN
+	            , DLVRC
+	            , LINK_USE_YN
+	            , LINK_APPLY_STATUS
+	            , LINK_ID
+	            , LINK_PW
+	            , LINK_STORE_ID
+	            , LINK_CUSTNO
+	            , LINK_CONTRT_PT_NM
+	            , PRIVACY_CLCT_APPLY_YN
+	            , PRIVACY_USE_APPLY_YN
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	             #{siteNo}
+	            ,#{courierCd}
+	            ,#{courierNm}
+	            ,#{useYn}
+	            ,#{dlvrc}
+	            ,#{linkUseYn}
+	            ,#{linkApplyStatus}
+	            ,#{linkId}
+	            ,#{linkPw}
+	            ,#{linkStoreID}
+	            ,#{linkCustno}
+	            ,#{linkContrtPtNm}
+	            ,#{privacyClctApplyYn}
+	            ,#{privacyUseApplyYn}
+	            ,#{regrNo}
+	            ,#{regDttm}
+		    )
+    </update>
+
+    <delete id="deleteDeliveryInterface">
+       DELETE   FROM TS_COURIER
+        WHERE   SITE_NO = #{siteNo}
+          AND   COURIER_CD = #{courierCd}
+    </delete>
+
+</mapper>

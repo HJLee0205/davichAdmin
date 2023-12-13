@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/tx		http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+						http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd">
+	
+	
+	<bean id="egov.propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/egovProps/globals.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+	<!-- DataSource -->
+
+    <!--<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="${Globals.DriverClassName}"/>
+        <property name="url" value="${Globals.Url}" />
+        <property name="username" value="${Globals.UserName}"/>
+        <property name="password" value="${Globals.Password}"/>
+    </bean>-->
+    <jee:jndi-lookup id="dataSource" jndi-name="jdbc/storeDB" resource-ref="true" />
+
+    <bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSource" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL         :  "/>
+            </bean>
+        </property>
+    </bean>
+    
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation" value="classpath:sqlmap/myBatisConfig.xml" />
+		<!--<property name="mapperLocations" value="classpath:mapper/mariadb/*.xml" />-->
+		<property name="mapperLocations" value="classpath:mapper/oracle/market/*.xml" />
+	</bean>
+
+	<!-- SqlSession setup for MyBatis Database Layer -->
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSession"/>
+		<constructor-arg index="1" value="BATCH" />
+	</bean>
+
+
+	<!--  ### Market DB ### -->
+	<!--<bean id="dataSourceMarket" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+		<property name="driverClassName" value="${market.jdbc.driver}"/>
+		<property name="url" value="${market.jdbc.url}"/>
+		<property name="username" value="${market.jdbc.user}"/>
+		<property name="password" value="${market.jdbc.password}"/>
+	</bean>-->
+
+	<jee:jndi-lookup id="dataSourceMarket" jndi-name="jdbc/dmallDB" resource-ref="true" />
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSourceMarket" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL         :  "/>
+            </bean>
+        </property>
+    </bean>
+    
+	<bean id="sqlSessionMarket" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceMarket" />
+		<property name="configLocation" value="classpath:sqlmap/myBatisConfig.xml" />
+		<property name="mapperLocations" value="classpath:mapper/oracle/market/*.xml" />
+	</bean>
+
+	<bean id="sqlSessionTemplateMarket" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionMarket"/>
+	</bean>
+
+
+	<!--  ### Davich DB ### -->
+	<!--<bean id="dataSourceDavich" class="org.springframework.jdbc.datasource.DriverManagerDataSource" >
+		<property name="driverClassName" value="${davich.jdbc.driver}"/>
+		<property name="url" value="${davich.jdbc.url}"/>
+		<property name="username" value="${davich.jdbc.user}"/>
+		<property name="password" value="${davich.jdbc.password}"/>
+	</bean>-->
+
+	<jee:jndi-lookup id="dataSourceDavich" jndi-name="jdbc/mall_IF_DB" resource-ref="true" />
+
+    <bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSourceDavich" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL         :  "/>
+            </bean>
+        </property>
+    </bean>
+	<bean id="sqlSessionDavich" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceDavich" />
+		<property name="configLocation" value="classpath:sqlmap/myBatisConfig.xml" />
+		<property name="mapperLocations" value="classpath:mapper/oracle/davich/*.xml" />
+	</bean>
+
+	<bean id="sqlSessionTemplateDavich" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionDavich"/>
+		<constructor-arg index="1" value="BATCH" />
+	</bean>
+    
+</beans>

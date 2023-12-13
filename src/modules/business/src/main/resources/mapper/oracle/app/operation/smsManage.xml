@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="operation.smsManage">
+
+    <sql id="selectSmsInfoWhere">
+        AND hist.SITE_NO = #{siteNo}
+        <if test="fromRecvDttm != null and fromRecvDttm != ''">
+            <![CDATA[
+            AND RECV_DTTM >= TO_DATE(#{fromRecvDttm}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="autoSendYn != null and autoSendYn != ''">
+            AND AUTO_SEND_YN = #{autoSendYn}
+        </if>
+        <if test="toRecvDttm != null and toRecvDttm != ''">
+            <![CDATA[
+            AND RECV_DTTM < TO_DATE(#{toRecvDttm}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="receiverId != null and receiverId != ''">
+            AND receiver_Id like '%'||#{receiverId}||'%'
+        </if>
+        <if test="recvTelno != null and recvTelno != ''">
+            AND recv_Telno like '%'||#{recvTelno}||'%'
+        </if>
+        <if test="searchRecvTelno != null and searchRecvTelno != ''">
+            AND recv_Telno = #{searchRecvTelno}
+        </if>
+        <if test='resultCd != null and resultCd.length > 0'>
+            AND result_cd IN
+            <foreach collection="resultCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+
+        <if test="sendFrmCd != null and sendFrmCd != ''">
+            AND SEND_FRM_CD = #{sendFrmCd}
+        </if>
+
+        <if test="searchWords != null and searchWords != ''">
+            <choose>
+                <when test='searchType eq "sendTelNo"'>
+                    AND SEND_TELNO = #{searchWords}
+                </when>
+                <when test='searchType eq "recvTelNo"'>
+                    AND RECV_TELNO = #{searchWords}
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- SMS 발송 내역 조회 -->
+    <select id="selectSMSPossCnt" resultType="int">
+        /* operation.smsManage.selectSMSPossCnt */
+        SELECT POSS_CNT
+        FROM TB_SMS_INFO_MANAGE
+        WHERE 1 = 1
+          AND SITE_NO = #{siteNo}
+    </select>
+
+    <!-- SMS 발송 내역 조회 -->
+    <select id="selectSmsHstPaging" resultType="smsSendVO">
+        /* operation.smsManage.selectSmsHstPaging */
+        SELECT *
+        FROM
+        (
+        select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+        from
+        (
+        select A.*, count(*) over() as tot_cnt
+        from
+        (
+        SELECT hist.SMS_SEND_NO, hist.RECEIVER_ID, hist.RECEIVER_NM, hist.RECV_TELNO, hist.RECV_DTTM, hist.RESULT_CD,
+        hist.SENDER_NO, hist.SENDER_ID, hist.SENDER_NM,hist.AUTO_SEND_YN,
+        hist.SEND_TELNO, hist.SEND_DTTM ,fn_getCodeNm('SEND_FRM_CD', SEND_FRM_CD) AS SEND_FRM_NM,
+        CASE hist.SEND_FRM_CD WHEN '01' THEN TMS_LOG.fsenddate
+        WHEN '02' THEN MMS_LOG.SENTDATE END REAL_SEND_DTTM
+        FROM TB_SMS_SEND_HIST hist
+        LEFT JOIN MMS_MSGLOG MMS_LOG ON MMS_LOG.ETC1 = hist.SMS_SEND_NO
+        LEFT JOIN TMSGLOG TMS_LOG ON TMS_LOG.fetc1 = hist.SMS_SEND_NO
+
+        WHERE 1=1
+
+        <include refid="selectSmsInfoWhere"/>
+        <include refid="common.sortSql"/>
+        ) A
+        ) AA
+        )
+        <include refid="common.pageSql"/>
+
+    </select>
+
+    <!-- SMS 발송 내역 조회 Count -->
+    <select id="selectSmsHstPagingCount" resultType="Integer">
+        /* operation.smsManage.selectSmsHstPagingCount */
+        SELECT COUNT(*)
+        FROM TB_SMS_SEND_HIST hist
+        WHERE 1=1
+        <include refid="selectSmsInfoWhere"/>
+    </select>
+
+    <!-- SMS 발송 내역 조회 Total Count -->
+    <select id="selectSmsHstPagingTotalCount" resultType="Integer">
+        /* operation.smsManage.selectSmsHstPagingTotalCount */
+        SELECT COUNT(*)
+
+        FROM TB_SMS_SEND_HIST hist
+        WHERE 1 = 1
+          AND hist.SITE_NO = #{siteNo}
+          AND AUTO_SEND_YN = #{autoSendYn}
+    </select>
+
+    <!-- SMS 발송 조회 -->
+    <select id="selectSmsHstInfo" resultType="smsSendVO">
+        /* operation.emailManage.selectSmsHstInfo */
+        SELECT case when hist.RESULT_CD = '01' THEN '성공' ELSE '실패' END RESULT_CD,
+               hist.RECEIVER_NO,
+               hist.RECEIVER_NM || '(' || hist.RECEIVER_ID || ')'      RECEIVER_NM,
+               hist.SEND_WORDS,
+               hist.RECV_TELNO
+        FROM TB_SMS_SEND_HIST hist
+        WHERE 1 = 1
+          AND hist.SITE_NO = #{siteNo}
+          AND hist.SMS_SEND_NO = #{smsSendNo}
+    </select>
+
+    <insert id="sendSms">
+        <selectKey resultType="java.lang.Long" keyColumn="SMS_SEND_NO" keyProperty="smsSendNo" order="AFTER">
+            SELECT fn_getSeqCurr(0, 'SMS_SEND_NO') as SMS_SEND_NO FROM DUAL
+        </selectKey>
+        /* operation.smsManage.sendSms */
+        INSERT INTO TB_SMS_SEND_HIST
+        (
+        SMS_SEND_NO,
+        SITE_NO,
+        <if test="sendTypeCd != null and sendTypeCd != ''">
+            SEND_TYPE_CD,
+        </if>
+        SEND_TARGET_CD,
+        SEND_FRM_CD,
+        RESULT_CD,
+        SEND_TELNO,
+        SEND_WORDS,
+        SENDER_NO,
+        SENDER_ID,
+        SENDER_NM,
+        SEND_DTTM,
+        REAL_SEND_DTTM,
+        RECV_TELNO,
+        RECEIVER_NO,
+        RECEIVER_ID,
+        RECEIVER_NM,
+        RECV_DTTM,
+        AUTO_SEND_YN,
+        ORD_NO,
+        REG_DTTM,
+        REGR_NO
+        )
+        VALUES
+        (
+        fn_getSeq(0, 'SMS_SEND_NO'),
+        #{siteNo},
+        <if test="sendTypeCd != null and sendTypeCd != ''">
+            #{sendTypeCd},
+        </if>
+        #{sendTargetCd},
+        #{sendFrmCd},
+        #{resultCd},
+        #{sendTelno},
+        #{sendWords},
+        #{senderNo},
+        #{senderId},
+        #{senderNm},
+        sysdate,
+        #{realSendDttm},
+        #{recvTelNo},
+        #{receiverNo},
+        #{receiverId},
+        #{receiverNm},
+        sysdate,
+        <!-- #{recvDttm}, -->
+        #{autoSendYn},
+        #{ordNo},
+        sysdate,
+        #{regrNo}
+        )
+    </insert>
+    <insert id="insertKftelTblMessage">
+        /* operation.smsManage.insertKftelTblMessage */
+        INSERT INTO TBLMESSAGE(fsequence, fuserid, fsenddate, fdestine, fcallback, ftext, fetc1)
+        VALUES (fn_getSeq(0, 'FSEQUENCE'), #{siteNo}, sysdate, #{fdestine}, #{fcallback}, #{sendWords}, #{smsSendNo})
+    </insert>
+
+    <insert id="insertKftelMmsMsg">
+        /* operation.smsManage.insertKftelMmsMsg */
+        INSERT INTO MMS_MSG(MSGKEY, subject, phone, callback, status, reqdate, msg, file_cnt, etc1)
+        VALUES (fn_getSeq(0, 'MSGKEY'), '[LMS 전송]', #{fdestine}, #{fcallback}, 0, sysdate, #{sendWords}, 0,
+                #{smsSendNo})
+    </insert>
+
+    <insert id="insertAdminNo">
+        /* operation.smsManage.insertAdminNo */
+        INSERT INTO TB_SMS_SEND_NO_MANAGE
+        (SEQ,
+         SITE_NO,
+         RECV_MOBILE,
+         REG_DTTM,
+         REGR_NO)
+        VALUES (fn_getSeq(0, 'SMS_SEQ'),
+                #{siteNo},
+                #{recvMobile},
+                sysdate,
+                #{regrNo})
+    </insert>
+
+    <select id="selectStatusSms" resultType="smsSendVO">
+        /* operation.smsManage.selectStatusSms */
+        SELECT A.SEND_TYPE_CD,
+                A.USE_YN,
+                A.MEMBER_SEND_YN,
+                A.MEMBER_SEND_WORDS,
+                A.ADMIN_SEND_YN,
+                A.ADMIN_SEND_WORDS,
+                A.SELLER_SEND_YN,
+                A.SELLER_SEND_WORDS,
+                A.STORE_SEND_YN,
+                A.STORE_SEND_WORDS,
+                A.STAFF_SEND_YN,
+                A.STAFF_SEND_WORDS
+        FROM TB_SMS_AUTO_SEND_MANAGE A
+        RIGHT OUTER JOIN TA_CMN_CD_DTL B ON B.GRP_CD ='SEND_TYPE_CD' and A.SEND_TYPE_CD = B.CD
+        WHERE B.GRP_CD = 'SEND_TYPE_CD'
+        AND B.USE_YN = 'Y'
+        and A.SITE_NO = #{siteNo}
+        <if test="sendTypeCd != null and sendTypeCd != ''">
+            AND A.SEND_TYPE_CD = #{sendTypeCd}
+        </if>
+        ORDER BY B.SORT_SEQ ASC
+    </select>
+
+    <select id="selectAdminNo" resultType="smsSendVO">
+        /* operation.smsManage.selectAdminNo */
+        SELECT SEQ,
+               SITE_NO,
+               RECV_MOBILE
+        FROM TB_SMS_SEND_NO_MANAGE
+        WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectStoreAdminNo" resultType="smsSendVO">
+        /* operation.smsManage.selectStoreAdminNo */
+        select ''         as SEQ,
+               '1'        as SITE_NO,
+               HAND_PHONE as STORE_HAND_PHONE
+        from am030tbl@davision
+        where str_code = #{storeNo}
+          AND MARKET_AT = '1'
+          AND HAND_PHONE is not null
+          AND USE_FLG = '1'
+    </select>
+
+    <delete id="deleteAdminNo">
+        /* operation.smsManage.deleteAdminNo */
+        DELETE
+        FROM TB_SMS_SEND_NO_MANAGE
+        WHERE SITE_NO = #{siteNo}
+    </delete>
+
+    <update id="updateSmsPossCnt">
+        /* operation.smsManage.updateSmsPossCnt */
+        <selectKey keyProperty="possCnt" order="BEFORE" resultType="int">
+            SELECT POSS_CNT-#{minusPossCnt} AS possCnt FROM TB_SMS_INFO_MANAGE WHERE SITE_NO = #{siteNo}
+        </selectKey>
+        UPDATE TB_SMS_INFO_MANAGE a
+        SET a.poss_Cnt = #{possCnt}
+        WHERE a.SITE_NO = #{siteNo}
+    </update>
+
+    <update id="updateStatusSms">
+        /* operation.smsManage.updateStatusSms */
+        MERGE INTO TB_SMS_AUTO_SEND_MANAGE
+        USING DUAL
+        ON (SITE_NO = #{siteNo} AND SEND_TYPE_CD = #{sendTypeCd})
+        WHEN MATCHED THEN
+        UPDATE
+        SET USE_YN = #{useYn},
+        MEMBER_SEND_YN = #{memberSendYn},
+        MEMBER_SEND_WORDS = #{memberSendWord},
+        ADMIN_SEND_YN = #{adminSendYn},
+        ADMIN_SEND_WORDS = #{adminSendWord},
+        SELLER_SEND_YN = #{sellerSendYn},
+        SELLER_SEND_WORDS = #{sellerSendWord},
+        STORE_SEND_YN = #{storeSendYn},
+        STORE_SEND_WORDS = #{storeSendWord},
+        STAFF_SEND_YN = #{staffSendYn},
+        STAFF_SEND_WORDS = #{staffSendWord},
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHEN NOT MATCHED THEN
+        INSERT (
+        SEND_TYPE_CD,
+        SITE_NO,
+        USE_YN,
+        MEMBER_SEND_YN,
+        MEMBER_SEND_WORDS,
+        ADMIN_SEND_YN,
+        ADMIN_SEND_WORDS,
+        SELLER_SEND_YN,
+        SELLER_SEND_WORDS,
+        STORE_SEND_YN,
+        STORE_SEND_WORDS,
+        STAFF_SEND_YN,
+        STAFF_SEND_WORDS,
+        REGR_NO,
+        REG_DTTM
+        ) VALUES (
+        #{sendTypeCd},
+        #{siteNo},
+        #{useYn},
+        #{memberSendYn},
+        #{memberSendWord},
+        #{adminSendYn},
+        #{adminSendWord},
+        #{sellerSendYn},
+        #{sellerSendWord},
+        #{storeSendYn},
+        #{storeSendWord},
+        #{staffSendYn},
+        #{staffSendWord},
+        #{regrNo},
+        sysdate
+        )
+
+    </update>
+
+    <!-- 관리자 이메일 주소 조회 -->
+    <select id="selectAdminSmsNo" resultType="String">
+        /* operation.smsManage.selectAdminSmsNo */
+        SELECT CERTIFY_SEND_NO
+        FROM TS_SITE
+        WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 자동발송 상태별 메세지 조회 -->
+    <select id="sendStatusSms" resultType="smsSendVO" parameterType="smsSendSO">
+        /* operation.smsManage.sendStatusSms */
+        SELECT SEND_TYPE_CD,
+               SITE_NO,
+               USE_YN,
+               MEMBER_SEND_YN,
+               MEMBER_SEND_WORDS,
+               ADMIN_SEND_YN,
+               ADMIN_SEND_WORDS,
+               SELLER_SEND_YN,
+               SELLER_SEND_WORDS,
+               STORE_SEND_YN,
+               STORE_SEND_WORDS,
+               STAFF_SEND_YN,
+               STAFF_SEND_WORDS
+        FROM TB_SMS_AUTO_SEND_MANAGE
+        WHERE SEND_TYPE_CD = #{sendTypeCd}
+          AND SITE_NO = #{siteNo}
+    </select>
+
+    <sql id="selectWhere">
+        <if test="startDt != null and startDt != ''">
+            <![CDATA[
+            AND SEND_DTTM >= TO_DATE(#{startDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="endDt != null and endDt != ''">
+            <![CDATA[
+            AND SEND_DTTM < TO_DATE(#{endDt}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="receiverId != null and receiverId != ''">
+            AND receiver_Id = #{receiverId}
+        </if>
+        <if test="recvTelno != null and recvTelno != ''">
+            AND recv_Telno  = #{recvTelno}
+        </if>
+        <if test="searchRecvTelno != null and searchRecvTelno != ''">
+            AND recv_Telno  = #{searchRecvTelno}
+        </if>
+        <if test="searchSendTelno != null and searchSendTelno != ''">
+            AND SEND_TELNO = #{searchSendTelno}
+        </if>
+        <if test='searchResult != null and searchResult != ""'>
+            <if test='searchResult eq "01"'>
+                AND frsltstat IN ('0')
+            </if>
+            <if test="searchResult eq '02'">
+                AND frsltstat NOT IN ('0')
+            </if>
+        </if>
+
+        <if test="sendFrmCd != null and sendFrmCd != ''">
+            AND SEND_FRM_CD = #{sendFrmCd}
+        </if>
+
+        <if test="searchWords != null and searchWords != ''">
+            <choose>
+                <when test='searchType eq "sendTelNo"'>
+                    AND SEND_TELNO = #{searchWords}
+                </when>
+                <when test='searchType eq "recvTelNo"'>
+                    AND RECV_TELNO = #{searchWords}
+                </when>
+            </choose>
+        </if>
+        <if test="status != null and status != ''">
+            AND STATUS = #{status}
+        </if>
+    </sql>
+
+    <!-- 전송 정보 조회 관련 시작 -->
+    <select id="selectSendHistoryList" parameterType="innerSmsSendHistSO" resultType="smsSendHistVO">
+        /* operation.smsManage.selectSendHistoryList - SMS 전송 이력 조회 */
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+                FROM
+                    (
+                        SELECT A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT ssh.SENDER_ID ,
+                                       ssh.RECEIVER_ID ,
+                                       ssh.RECEIVER_NM ,
+                                       ssh.RECV_TELNO ,
+                                       ssh.SEND_TELNO ,
+                                       ssh.SEND_DTTM ,
+                                       decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+                                       ssh.SEND_WORDS ,
+                                       decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS ,
+                                       (case when kml.STATUS = '4' then
+                                                 (case when kml.FAILED_TYPE = 'SMS' then ksml.REQDATE
+                                                       when kml.FAILED_TYPE = 'LMS' then kmml.REQDATE end)
+                                             else kml.REQDATE end) as FRSLTDATE ,
+                                       ssh.SEND_FRM_CD ,
+                                       decode(ssh.SEND_FRM_CD, '01', 'SMS', '02', 'LMS') as SEND_FRM_NM
+                                FROM SMS_SEND_HIST ssh
+                                         INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+                                         LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+                                         LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+                                WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+                                  and ssh.SITE_NO = #{siteNo}
+                                ORDER BY ssh.SEND_DTTM DESC
+                            ) A
+                        where 1=1
+                        <include refid="selectWhere"/>
+                    ) AA
+            )
+        <include refid="common.pageSql"/>
+    </select>
+    <!-- 전송 정보 조회 관련 끝 -->
+
+    <select id="selectSendHistoryListCount" resultType="Integer">
+        /* operation.smsManage.selectSendHistoryListCount - SMS 전송 이력 페이징 카운트*/
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+                FROM
+                    (
+                        SELECT A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT ssh.SENDER_ID ,
+                                       ssh.RECEIVER_ID ,
+                                       ssh.RECEIVER_NM ,
+                                       ssh.RECV_TELNO ,
+                                       ssh.SEND_TELNO ,
+                                       ssh.SEND_DTTM ,
+                                       decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+                                       ssh.SEND_WORDS ,
+                                       decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS ,
+                                       (case when kml.STATUS = '4' then
+                                                 (case when kml.FAILED_TYPE = 'SMS' then ksml.REQDATE
+                                                       when kml.FAILED_TYPE = 'LMS' then kmml.REQDATE end)
+                                             else kml.REQDATE end) as FRSLTDATE ,
+                                       ssh.SEND_FRM_CD ,
+                                       decode(ssh.SEND_FRM_CD, '01', 'SMS', '02', 'LMS') as SEND_FRM_NM
+                                FROM SMS_SEND_HIST ssh
+                                         INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+                                         LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+                                         LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+                                WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+                                  and ssh.SITE_NO = #{siteNo}
+                                ORDER BY ssh.SEND_DTTM DESC
+                            ) A
+                        where 1=1
+                        <include refid="selectWhere"/>
+                    ) AA
+            )
+    </select>
+
+
+    <select id="selectSendHistoryListTotalCount" resultType="Integer">
+        /* operation.smsManage.selectSendHistoryListTotalCount - sms 전송이력 페이징 전체 카운트 */
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+                FROM
+                    (
+                        SELECT A.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT ssh.SENDER_ID ,
+                                       ssh.RECEIVER_ID ,
+                                       ssh.RECEIVER_NM ,
+                                       ssh.RECV_TELNO ,
+                                       ssh.SEND_TELNO ,
+                                       ssh.SEND_DTTM ,
+                                       decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+                                       ssh.SEND_WORDS ,
+                                       decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS ,
+                                       (case when kml.STATUS = '4' then
+                                                 (case when kml.FAILED_TYPE = 'SMS' then ksml.REQDATE
+                                                       when kml.FAILED_TYPE = 'LMS' then kmml.REQDATE end)
+                                             else kml.REQDATE end) as FRSLTDATE ,
+                                       ssh.SEND_FRM_CD ,
+                                       decode(ssh.SEND_FRM_CD, '01', 'SMS', '02', 'LMS') as SEND_FRM_NM
+                                FROM SMS_SEND_HIST ssh
+                                         INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+                                         LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+                                         LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+                                WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+                                  and ssh.SITE_NO = #{siteNo}
+                                ORDER BY ssh.SEND_DTTM DESC
+                            ) A
+                        where 1=1
+                    ) AA
+            )
+    </select>
+</mapper>

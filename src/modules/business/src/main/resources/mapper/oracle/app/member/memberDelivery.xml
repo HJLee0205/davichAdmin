@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member.delivery">
+
+    <!-- 회원배송지 조회 -->
+    <select id="selectDeliveryListPaging" resultType="memberDeliveryVO">
+	SELECT MEMBER_DELIVERY_NO, MEMBER_NO, GB_NM, ADRS_NM, TEL, MOBILE, MEMBER_GB_CD,
+	    INTERPHONE,FRG_ADDR_COUNTRY, FRG_ADDR_CITY, FRG_ADDR_STATE, FRG_ADDR_ZIP_CODE, FRG_ADDR_DTL1, FRG_ADDR_DTL2,
+		NEW_POST_NO, STRTNB_ADDR, ROAD_ADDR, DTL_ADDR, DEFAULT_YN,
+		REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM
+	FROM TC_MEMBER_DELIVERY
+	WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 최근 배송지 조회 -->
+    <select id="selectRecentlyDeliveryInfo" resultType="memberDeliveryVO">
+    /* member.delivery.selectRecentlyDeliveryInfo */
+    SELECT *
+    FROM
+    (
+		SELECT
+		   A.MEMBER_NO,
+		   A.MEMBER_GB_CD,
+		   A.ADRS_NM,A.ADRS_TEL,A.ADRS_MOBILE,A.POST_NO,A.ROADNM_ADDR,A.NUM_ADDR,DTL_ADDR,
+		   A.FRG_ADDR_COUNTRY,A.FRG_ADDR_CITY,A.FRG_ADDR_STATE,A.FRG_ADDR_DTL1,A.FRG_ADDR_DTL2
+		FROM TO_ORD_DELIVERY A
+		WHERE A.SITE_NO = #{siteNo}
+		AND A.MEMBER_NO = #{memberNo}
+		AND NOT EXISTS (
+			SELECT ORD_NO FROM TO_VISIT_RSV_DTL WHERE ORD_NO = A.ORD_NO
+		)
+		ORDER BY REG_DTTM DESC
+	)
+	WHERE ROWNUM = 1
+    </select>
+
+    <!-- 회원배송지를 위한 카운트 -->
+    <select id="selectDeliveryListPagingCount" resultType="Integer">
+	SELECT count(*)
+	FROM TC_MEMBER_DELIVERY
+	WHERE MEMBER_NO = #{memberNo}
+    </select>
+
+    <!-- 회원배송지 상세조회  -->
+    <select id="selectDeliveryDtl" resultType="memberDeliveryVO">
+    SELECT MEMBER_DELIVERY_NO, MEMBER_NO, GB_NM, ADRS_NM, TEL, MOBILE,MEMBER_GB_CD,
+        INTERPHONE,FRG_ADDR_COUNTRY, FRG_ADDR_CITY, FRG_ADDR_STATE, FRG_ADDR_ZIP_CODE, FRG_ADDR_DTL1, FRG_ADDR_DTL2,
+        NEW_POST_NO, STRTNB_ADDR, ROAD_ADDR, DTL_ADDR, DEFAULT_YN,
+        REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM
+    FROM TC_MEMBER_DELIVERY
+    WHERE MEMBER_NO = #{memberNo}
+    AND MEMBER_DELIVERY_NO = #{memberDeliveryNo}
+    </select>
+
+    <!-- 회원배송지 등록 -->
+    <insert id="insertDelivery">
+	INSERT INTO TC_MEMBER_DELIVERY(
+	 MEMBER_DELIVERY_NO
+	,MEMBER_NO
+	,GB_NM
+	,ADRS_NM
+	,TEL
+	,MOBILE
+	,INTERPHONE
+	,MEMBER_GB_CD
+    ,DEFAULT_YN
+    ,REGR_NO
+    ,REG_DTTM
+	,NEW_POST_NO
+	,STRTNB_ADDR
+	,ROAD_ADDR
+	,DTL_ADDR
+    ,FRG_ADDR_COUNTRY
+    ,FRG_ADDR_ZIP_CODE
+    ,FRG_ADDR_STATE
+    ,FRG_ADDR_CITY
+    ,FRG_ADDR_DTL1
+    ,FRG_ADDR_DTL2
+	) VALUES (
+	 #{memberDeliveryNo}
+    ,#{memberNo}
+    ,#{gbNm}
+    ,#{adrsNm}
+    ,#{tel}
+    ,#{mobile}
+    ,#{interphone}
+    ,#{memberGbCd}
+    ,#{defaultYn}
+    ,#{memberNo}
+    ,sysdate
+	,#{newPostNo}
+	,#{strtnbAddr}
+	,#{roadAddr}
+	,#{dtlAddr}
+	,#{frgAddrCountry}
+	,#{frgAddrZipCode}
+	,#{frgAddrState}
+	,#{frgAddrCity}
+	,#{frgAddrDtl1}
+	,#{frgAddrDtl2}
+	)
+    </insert>
+
+    <!-- 회원배송지 수정 -->
+    <update id="updateDelivery">
+    /* member.delivery.updateDelivery */
+	UPDATE TC_MEMBER_DELIVERY
+	SET
+	MEMBER_NO = #{memberNo}
+	<if test="memberDeliveryNo != null and memberDeliveryNo != ''">
+	, MEMBER_DELIVERY_NO = #{memberDeliveryNo}
+	</if>
+	<if test="gbNm != null and gbNm != ''">
+	,GB_NM = #{gbNm}
+	</if>
+	<if test="adrsNm != null and adrsNm != ''">
+	,ADRS_NM = #{adrsNm}
+	</if>
+	<if test="tel != null and tel != ''">
+	,TEL = #{tel}
+	</if>
+	<if test="mobile != null and mobile != ''">
+	,MOBILE = #{mobile}
+	</if>
+	<if test="interphone != null and interphone != ''">
+    ,INTERPHONE = #{interphone}
+    </if>
+    <if test="memberGbCd != null and memberGbCd != ''">
+    ,MEMBER_GB_CD = #{memberGbCd}
+		<if test="memberGbCd eq '10'">
+	        <if test="newPostNo != null and newPostNo != ''">
+	            , NEW_POST_NO = #{newPostNo}
+	        </if>
+	        <if test="strtnbAddr != null and strtnbAddr != ''">
+	            , STRTNB_ADDR = #{strtnbAddr}
+	        </if>
+	        <if test="roadAddr != null and roadAddr != ''">
+	            , ROAD_ADDR = #{roadAddr}
+	        </if>
+	        <if test="dtlAddr != null and dtlAddr != ''">
+	            , DTL_ADDR = #{dtlAddr}
+	        </if>
+	        ,FRG_ADDR_COUNTRY = NULL
+	        ,FRG_ADDR_CITY = NULL
+	        ,FRG_ADDR_STATE = NULL
+	        ,FRG_ADDR_ZIP_CODE = NULL
+	        ,FRG_ADDR_DTL1 = NULL
+	        ,FRG_ADDR_DTL2 = NULL
+	    </if>
+	    <if test="memberGbCd eq '20'">
+	        ,NEW_POST_NO = NULL
+	        ,STRTNB_ADDR = NULL
+	        ,ROAD_ADDR = NULL
+	        ,DTL_ADDR = NULL
+	        <if test="frgAddrCountry != null and frgAddrCountry != ''">
+	            ,FRG_ADDR_COUNTRY = #{frgAddrCountry}
+	        </if>
+	        <if test="frgAddrCity != null and frgAddrCity != ''">
+	            ,FRG_ADDR_CITY = #{frgAddrCity}
+	        </if>
+	        <if test="frgAddrState != null and frgAddrState != ''">
+	            ,FRG_ADDR_STATE = #{frgAddrState}
+	        </if>
+	        <if test="frgAddrZipCode != null and frgAddrZipCode != ''">
+	            ,FRG_ADDR_ZIP_CODE = #{frgAddrZipCode}
+	        </if>
+	        <if test="frgAddrDtl1 != null and frgAddrDtl1 != ''">
+	            ,FRG_ADDR_DTL1 = #{frgAddrDtl1}
+	        </if>
+	        <if test="frgAddrDtl2 != null and frgAddrDtl2 != ''">
+	            ,FRG_ADDR_DTL2 = #{frgAddrDtl2}
+	        </if>
+	    </if>
+	</if>
+	<if test="defaultYn != null and defaultYn != ''">
+	,DEFAULT_YN = #{defaultYn}
+	</if>
+	<!--<if test="defaultYn == null or defaultYn == ''">
+    ,DEFAULT_YN = 'N'
+    </if>-->
+	,UPDR_NO = #{memberNo}
+	,UPD_DTTM = sysdate
+	WHERE MEMBER_NO = #{memberNo}
+	<if test="memberDeliveryNo != null and memberDeliveryNo != ''">
+	AND MEMBER_DELIVERY_NO = #{memberDeliveryNo}
+	</if>
+    </update>
+
+    <!-- 회원배송지 삭제 -->
+    <delete id="deleteDelivery">
+    DELETE FROM TC_MEMBER_DELIVERY
+    WHERE MEMBER_DELIVERY_NO = #{memberDeliveryNo}
+    AND MEMBER_NO = #{memberNo}
+    </delete>
+
+</mapper>

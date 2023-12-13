@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   회원마켓포인트 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.memberSvmnAnls">
+    <sql id="selectMemberSvmnListWhere">
+            AND A.SITE_NO = #{siteNo}
+            AND TO_DATE(A.YR || A.MM || A.DT, 'YYYYMMDD') BETWEEN TO_DATE(#{stDt}, 'YYYY-MM-DD') AND TO_DATE(#{endDt}, 'YYYY-MM-DD')
+         <if test=' totalSum != "1" '>
+            <choose>
+                <when test='searchType != null and  searchType.equals("name")'>
+                    AND B.MEMBER_NM LIKE '%'||#{searchName}||'%'
+                </when>
+                <when test='searchType != null and searchType.equals("id")'>
+                    AND A.MEMBER_ID LIKE '%'||#{searchId}||'%'
+                </when>
+                <when test='searchType != null and searchType.equals("email")'>
+                    AND B.EMAIL LIKE '%'||#{searchEmail}||'%'
+                </when>
+                <when test='searchType != null and searchType.equals("tel")'>
+                    AND B.TEL LIKE '%'||#{searchTel}||'%'
+                </when>
+                <when test='searchType != null and searchType.equals("mobile")'>
+                    AND B.MOBILE LIKE '%'||#{searchMobile}||'%'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 회원마켓포인트 분석 전체 총 합 -->
+    <select id="selectTotMemberSvmnList" parameterType="memberSvmnSO" resultType="memberSvmnVO">
+        /* statistics.memberSvmnAnls.selectTotMemberSvmnList */
+        SELECT NVL(A.TOT_PVD_SVMN_CNT, 0) AS TOT_PVD_SVMN_CNT
+             , NVL(A.TOT_PVD_SVMN, 0) AS TOT_PVD_SVMN
+             , NVL(A.TOT_USE_SVMN_CNT, 0) AS TOT_USE_SVMN_CNT
+             , NVL(A.TOT_USE_SVMN, 0) AS TOT_USE_SVMN
+             , NVL(A.TOT_CANCEL_SVMN_CNT, 0) AS TOT_CANCEL_SVMN_CNT
+             , NVL(A.TOT_CANCEL_SVMN, 0) AS TOT_CANCEL_SVMN
+             , NVL(A.TOT_REMAIN_SVMN, 0) AS TOT_REMAIN_SVMN
+          FROM (
+                   SELECT ROUND(NVL(SUM(A.PVD_SVMN_CNT),0),0) AS TOT_PVD_SVMN_CNT
+                        , ROUND(NVL(SUM(A.PVD_SVMN),0),0) AS TOT_PVD_SVMN
+                        , ROUND(NVL(SUM(A.USE_SVMN_CNT),0),0) AS TOT_USE_SVMN_CNT
+                        , ROUND(NVL(SUM(A.USE_SVMN),0),0) AS TOT_USE_SVMN
+                        , ROUND(NVL(SUM(A.CANCEL_SVMN_CNT),0),0) AS TOT_CANCEL_SVMN_CNT
+                        , ROUND(NVL(SUM(A.CANCEL_SVMN),0),0) AS TOT_CANCEL_SVMN
+                        , ROUND(NVL(SUM(A.REMAIN_SVMN),0),0) AS TOT_REMAIN_SVMN
+                     FROM TT_MEMBER_SVMN_ANLS A, TC_MEMBER B
+                    WHERE 1= 1
+                   <include refid="selectMemberSvmnListWhere" />
+                 GROUP BY A.SITE_NO
+               ) A
+    </select>
+
+    <!-- 회원마켓포인트 분석 전체조회 -->
+    <select id="selectMemberSvmnList" parameterType="memberSvmnSO" resultType="memberSvmnVO">
+        /* statistics.memberSvmnAnls.selectMemberSvmnList */
+		SELECT *
+		FROM
+		(
+	        select ROWNUM AS PAGING_NUM, ROWNUM, ROWNUM <if test = ' excelYn != "Y" ' >  + #{limit} </if> AS RANK
+	             , A.*
+	          FROM (
+                   SELECT fn_getMemberIdName(A.SITE_NO, A.MEMBER_ID) AS MEMBER_NM
+                        , A.MEMBER_ID
+                        , ROUND(A.PVD_SVMN_CNT, 0) AS PVD_SVMN_CNT
+                        , ROUND(A.PVD_SVMN,0) AS PVD_SVMN
+                        , ROUND(A.USE_SVMN_CNT,0) AS USE_SVMN_CNT
+                        , ROUND(A.USE_SVMN,0) AS USE_SVMN
+                        , ROUND(A.CANCEL_SVMN_CNT,0) AS CANCEL_SVMN_CNT
+                        , ROUND(A.CANCEL_SVMN,0) AS CANCEL_SVMN
+                        , ROUND(A.REMAIN_SVMN,0) AS REMAIN_SVMN
+                     FROM (
+                              SELECT A.MEMBER_ID
+                                   , A.SITE_NO
+                                   , SUM(NVL(A.PVD_SVMN_CNT, 0)) AS PVD_SVMN_CNT
+                                   , SUM(NVL(A.PVD_SVMN, 0)) AS PVD_SVMN
+                                   , SUM(NVL(A.USE_SVMN_CNT, 0)) AS USE_SVMN_CNT
+                                   , SUM(NVL(A.USE_SVMN, 0)) AS USE_SVMN
+                                   , SUM(NVL(A.REMAIN_SVMN, 0)) AS REMAIN_SVMN
+                                   , SUM(NVL(A.CANCEL_SVMN_CNT, 0)) AS CANCEL_SVMN_CNT
+                                   , SUM(NVL(A.CANCEL_SVMN, 0))     AS CANCEL_SVMN
+                                FROM TT_MEMBER_SVMN_ANLS A
+                               WHERE 1 = 1
+                              <include refid="selectMemberSvmnListWhere" />
+                            GROUP BY A.SITE_NO, A.MEMBER_ID
+                           ) A
+                       <include refid="common.sortSql" />
+               ) A
+      )
+      <if test = ' excelYn != "Y" ' >
+      <include refid="common.pageSql" />
+      </if>
+    </select>
+
+    <!-- 회원마켓포인트 분석 총건수 조회 -->
+    <select id="selectMemberSvmnListTotalCount" parameterType="memberSvmnSO" resultType="Integer">
+        /* statistics.memberSvmnAnls.selectMemberSvmnListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.SITE_NO
+                   FROM TT_MEMBER_SVMN_ANLS A
+                  WHERE 1= 1
+                  <include refid="selectMemberSvmnListWhere" />
+               GROUP BY A.SITE_NO, A.MEMBER_ID
+                ) TCNT
+    </select>
+    <!-- 회원마켓포인트 분석 조건적용 총건수 조회 -->
+    <select id="selectMemberSvmnListCount" parameterType="memberSvmnSO" resultType="Integer">
+        /* statistics.memberSvmnAnls.selectMemberSvmnListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT A.SITE_NO
+                   FROM TT_MEMBER_SVMN_ANLS A
+                  WHERE 1= 1
+                  <include refid="selectMemberSvmnListWhere" />
+               GROUP BY A.SITE_NO, A.MEMBER_ID
+                ) PGCNT
+    </select>
+</mapper>

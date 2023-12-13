@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board.bbsReplyManage">
+
+    <sql id="selectBbsInfoWhere">
+        <where>
+            <if test="fromRegDt != null and fromRegDt != ''">
+                <![CDATA[
+                TO_DATE(REG_DTTM, 'YYYY-MM-DD') >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="toRegDt != null and toRegDt != ''">
+                <![CDATA[
+                AND TO_DATE(REG_DTTM, 'YYYY-MM-DD') < TO_DATE(#{toRegDt}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="grpNm != null and grpNm != ''">
+                AND GRP_NM = #{grpNm}
+            </if>
+            <if test="userDefine1Nm != null">
+                AND USER_DEFINE1_NM IS NOT NULL
+            </if>
+            <if test="userDefine2Nm != null">
+                AND USER_DEFINE2_NM IS NOT NULL
+            </if>
+            <if test="userDefine3Nm != null">
+                aNd USER_DEFINE3_NM IS NOT NULL
+            </if>
+            <if test="userDefine4Nm != null">
+                AND USER_DEFINE4_NM IS NOT NULL
+            </if>
+            <if test="userDefine5Nm != null">
+                AND USER_DEFINE5_NM IS NOT NULL
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insertBbsReply">
+        /* board.bbsManage.insertBbsReply */
+        INSERT INTO BBS_CMNT
+            (
+                CMNT_SEQ,
+                LETT_NO,
+                COMTENT,
+                REGR_NM,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+                #{cmntSeq},
+                #{lettNo},
+                #{content},
+                #{regrNm},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <update id="updateBbsReply">
+        /* board.bbsManage.updateBbsReply */
+        UPDATE  TB_MTM_INQUIRY_BBS_LETT
+        SET     TITLE = #{title},
+                CONTENT = #{content:CLOB},
+                SMS_SEND_YN = #{smsSendYn},
+                EMAIL_SEND_YN = #{emailSendYn}
+        WHERE   LETT_NO = #{lettNo}
+    </update>
+
+    <update id="deleteBbsReply">
+        /* board.bbsManage.deleteBbsReply */
+        UPDATE  BBS_CMNT
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{delrNo},
+                DEL_DTTM = sysdate
+        WHERE   CMNT_SEQ =  #{cmntSeq}
+        AND     LETT_NO = #{lettNo}
+    </update>
+
+</mapper>

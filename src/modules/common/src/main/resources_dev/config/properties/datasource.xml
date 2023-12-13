@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+	<entry key="main.database.type">oracle</entry>
+	<!-- push db mariadb -->
+	<entry key="push.database.type">oracle</entry>
+ 	<!--<entry key="push.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://10.102.2.140:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="push.jdbc.user">root</entry>
+	<entry key="push.jdbc.password">1234</entry>-->
+
+	<!-- 가맹점 push db mariadb -->	
+	<entry key="store.database.type">oracle</entry>
+ 	<!--<entry key="store.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="store.jdbc.url">jdbc:log4jdbc:mysql://10.102.2.165:3306/push_db?useUnicode=true&amp;characterEncoding=utf8&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="store.jdbc.user">root</entry>
+	<entry key="store.jdbc.password">1234</entry>-->
+	
+	<!-- ERP DB -->
+	<entry key="erp.database.type">oracle</entry>
+	<!--<entry key="erp.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="erp.jdbc.url">jdbc:log4jdbc:oracle:thin:@218.54.139.227:21359:davich</entry>
+	<entry key="erp.jdbc.user">davich</entry>
+	<entry key="erp.jdbc.password">davich</entry>-->
+	<entry key="erp.database.charset">euc-kr</entry>
+		
+</properties>

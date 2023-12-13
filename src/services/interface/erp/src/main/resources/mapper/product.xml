@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="product">
+
+	<parameterMap type="com.davichmall.ifapi.prd.dto.ProductSearchReqDTO" id="productSearchDto" />
+	<parameterMap type="com.davichmall.ifapi.prd.dto.ProductStockReqDTO" id="productStockDto" />
+	<parameterMap type="com.davichmall.ifapi.prd.dto.BrandSearchReqDTO" id="brandSearchDto" />
+	<resultMap type="com.davichmall.ifapi.prd.dto.ProductSearchResDTO$ProductInfoDTO" id="productDto" autoMapping="true" />
+	<resultMap type="com.davichmall.ifapi.prd.dto.BrandSearchResDTO$BrandDTO" id="brandDto" autoMapping="true" />
+	<resultMap type="com.davichmall.ifapi.prd.dto.ItmKindSearchResDTO$ItmKindDTO" id="itmKindDto" autoMapping="true" />
+
+	<!-- 상품목록 검색 -->
+	<!-- 상품목록검색조건 -->
+	<sql id="selectProductCondition">
+		where use_ind = '0'
+		<if test="itmCode != null and itmCode != ''">
+			and itm_code like #{itmCode} || '%'
+		</if>
+		<if test="itmName != null and itmName != ''">
+			and upper(itm_name) like '%' || upper(#{itmName}) || '%'
+		</if>
+		<if test="itmKind != null and itmKind != ''">
+			and itm_kind = #{itmKind}
+		</if>
+		<if test="brandCode != null and brandCode != ''">
+			and brand_code = #{brandCode}
+		</if>
+	</sql>
+	
+	<!-- 상품목록조회 -->
+	<select id="selectProductList" parameterMap="productSearchDto" resultMap="productDto">
+		select prd.itm_code as itmCode
+			, prd.itm_name as itmName
+			, prd.std_sprc as stdPrc
+			, prd.cls_code as clsName
+			, mak.ven_name as makName
+			, brd.brand_name as brandName
+			, fcd.ctr_name as focusName
+			, rcd.ctr_name as refractionName
+			, prd.sph as sph
+			, prd.cyl as cyl
+		from (
+			select t.* from (
+				select a.*, rownum as rn
+				from am070tbl a
+				<include refid="selectProductCondition"></include>
+				order by a.itm_name
+			) t
+			where rn > #{pageNo} * #{cntPerPage}
+			  and rn &lt;= (#{pageNo} + 1) * #{cntPerPage}
+			  and rownum &lt;= #{cntPerPage}
+		) prd
+		left outer join am050tbl mak on prd.mak_code = mak.ven_code
+		left outer join am055tbl brd on prd.brand_code = brd.brand_code
+		left outer join am700tbl fcd on fcd.ctr_id = '705' and prd.focus_code = fcd.ctr_code
+		left outer join am700tbl rcd on rcd.ctr_id = '706' and prd.refraction_code = rcd.ctr_code
+	</select>
+	
+	<!-- 상품목록 개수 조회 -->
+	<select id="countProductList" parameterMap="productSearchDto" resultType="int">
+		select count(*) as cnt
+		from am070tbl
+		<include refid="selectProductCondition"></include>
+	</select>
+	
+	<!-- 상품재고 조회 -->
+	<select id="selectProductStock" parameterMap="productStockDto" resultType="int">
+		select fnc_cen_jego('0000', #{erpItmCode}) from dual
+	</select>
+	
+	<!-- 브랜드 목록 검색 -->
+	<select id="selectBrandList" parameterMap="brandSearchDto" resultMap="brandDto">
+		select brand_code as brandCode
+			, brand_name as brandName
+			, brand_name_kr as brandNameKr
+		from am055tbl a
+		where (upper(a.brand_name) like '%' || upper(#{brandName}) || '%' or upper(a.brand_name_kr) like '%' || upper(#{brandName}) || '%')
+		<if test="itmKind eq '1'.toString()">
+			and a.d01 = '1'
+		</if>
+		<if test="itmKind eq '2'.toString()">
+			and a.d02 = '1'
+		</if>
+		<if test="itmKind eq '3'.toString()">
+			and a.d03 = '1'
+		</if>
+		<if test="itmKind eq '4'.toString()">
+			and a.d04 = '1'
+		</if>
+		<if test="itmKind eq '5'.toString()">
+			and a.d05 = '1'
+		</if>
+		and exists(
+			select 1 
+			from am070tbl 
+			where brand_code = a.brand_code 
+			and use_ind = '0'
+<!-- 			<if test="itmKind eq '1'.toString()"> -->
+<!-- 				and itm_kind = '01'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '2'.toString()"> -->
+<!-- 				and itm_kind = '02'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '3'.toString()"> -->
+<!-- 				and itm_kind = '03'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '4'.toString()"> -->
+<!-- 				and itm_kind = '04'  -->
+<!-- 			</if>  -->
+<!-- 			<if test="itmKind eq '5'.toString()"> -->
+<!-- 				and itm_kind = '11'  -->
+<!-- 			</if>  -->
+			and rownum = 1
+		)
+	</select>
+	
+	<!-- 상품분류 목록 조회 -->
+	<select id="selectItmKindList" resultMap="itmKindDto">
+		select ctr_code as code
+			, ctr_name as name
+		from am700tbl
+		where ctr_id = '708'
+	</select>
+</mapper>

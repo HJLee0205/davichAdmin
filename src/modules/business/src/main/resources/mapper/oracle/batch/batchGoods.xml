@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="batch.goods">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+	
+    <!-- BA-G-001 : 상품 판매 상태 변경 프로시져 호출 -->
+    <update id="updateGoodsSaleStatus" statementType="CALLABLE" parameterType="net.danvi.dmall.biz.batch.goods.salestatus.model.GoodsBatchVO">
+        { call SP_BA_G_001_GOODS_SALE_STATUS (
+                #{regrNo, mode=IN}
+              , #{updrNo, mode=IN}
+        ) }
+    </update>
+    <!-- BA-G-001 : 상품 판매 정보 변경 프로시져 호출 -->
+    <update id="updateGoodsSortInfo" statementType="CALLABLE" parameterType="net.danvi.dmall.biz.batch.goods.salestatus.model.GoodsBatchVO">
+        { call SP_BA_G_001_GOODS_SORT_INFO (
+                #{regrNo, mode=IN}
+              , #{updrNo, mode=IN}
+              , ''
+        ) }
+    </update>
+
+    <select id="selectEpGoodsList" resultType="java.util.LinkedHashMap">
+        /* batch.goods.selectEpGoodsList */
+        select
+             A.id                             AS id
+            ,MAX(A.title)                     AS title
+            ,MAX(A.price_pc)                  AS price_pc
+            ,MAX(A.price_mobile)              AS price_mobile
+            ,MAX(A.normal_price)              AS normal_price
+            ,MAX(A.link)                      AS link
+            ,''              AS mobile_link
+            ,A.image_link                     AS image_link
+            ,A.add_image_link                 AS add_image_link
+            ,A.category_name1                 AS category_name1
+            ,A.category_name2                 AS category_name2
+            ,A.category_name3                 AS category_name3
+            ,A.category_name4                 AS category_name4
+            ,MAX(A.naver_category)            AS naver_category
+            ,MAX(A.naver_product_id)          AS naver_product_id
+            ,MAX(A.condition)                 AS condition
+            ,MAX(A.import_flag)               AS import_flag
+            ,MAX(A.parallel_import)           AS parallel_import
+            ,MAX(A.order_made)                AS order_made
+            ,MAX(A.product_flag)              AS product_flag
+            ,MAX(A.ADULT)                     AS ADULT
+            ,MAX(A.goods_type)                AS goods_type
+            ,MAX(A.barcode)                   AS barcode
+            ,MAX(A.manufacture_define_number) AS manufacture_define_number
+            ,MAX(A.model_number)              AS model_number
+            ,MAX(A.brand)                     AS brand
+            ,MAX(A.maker)                     AS maker
+            ,MAX(A.origin)                    AS origin
+            ,MAX(A.card_event)                AS card_event
+            ,MAX(A.event_words)               AS event_words
+            ,MAX(A.coupon)                    AS coupon
+            ,MAX(A.partner_coupon_download)   AS partner_coupon_download
+            ,MAX(A.interest_free_event)       AS interest_free_event
+            ,MAX(A.point)                     AS point
+            ,MAX(A.installation_costs)        AS installation_costs
+            ,MAX(A.pre_match_code)            AS pre_match_code
+            ,MAX(A.search_tag)                AS search_tag
+            ,MAX(A.group_id)                  AS group_id
+            ,MAX(A.vendor_id)                 AS vendor_id
+            ,MAX(A.coordi_id)                 AS coordi_id
+            ,MAX(A.minimum_purchase_quantity) AS minimum_purchase_quantity
+            ,MAX(A.review_count)              AS review_count
+            ,MAX(A.shipping)                  AS shipping
+            ,MAX(A.delivery_grade)            AS delivery_grade
+            ,MAX(A.delivery_detail)           AS delivery_detail
+            ,MAX(A.attribute)                 AS attribute
+            ,MAX(A.option_detail)             AS option_detail
+            ,MAX(A.seller_id)                 AS seller_id
+            ,MAX(A.age_group)                 AS age_group
+            ,MAX(A.gender)                    AS gender
+            ,MAX(A.shipping_settings)         AS shipping_settings
+             from (
+        SELECT /*+ INDEX(GDS IDX_TG_GOODS_PK)  INDEX(ITM IDX_TG_ITEM_004)*/
+                 GDS.GOODS_NO  as id                                                                              /* 상품 ID */
+                ,GDS.GOODS_NM as title                                                                            /* 상품명                   */
+                ,NVL(ITM.SALE_PRICE,0) AS price_pc                                                                /* 상품 가격                */
+                ,NVL(ITM.SALE_PRICE,0) AS price_mobile                                                            /* 모바일 상품 가격            */
+                ,NVL(ITM.CUSTOMER_PRICE,0) AS normal_price                                                        /* 정가                    */
+                ,'http://www.davichmarket.com/front/goods/goods-detail?goodsNo='||gds.goods_no  as link           /* 상품 URL                */
+                ,'http://www.davichmarket.com/m/front/goods/goods-detail?goodsNo='||gds.goods_no as mobile_link   /* 상품 모바일 URL           */
+                ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(GDS.GOODS_NO, 'C') AS image_link                                             /* 이미지 URL               */
+                ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(GDS.GOODS_NO, 'D') AS add_image_link                                         /* 추가 이미지 URL           */
+                ,
+                (
+                SELECT  DISTINCT SPLIT(FN_CATEGORYNAME(A.CTG_NO,1),1,'>')
+                                FROM TG_CTG A
+                                WHERE A.CTG_NO IN (
+                                SELECT  TGC.CTG_NO
+                                FROM TG_GOODS_CTG TGC
+                                           WHERE TGC.GOODS_NO  = GDS.GOODS_NO
+                                             AND TGC.SITE_NO  =  1
+                                             AND TGC.DEL_YN = 'N'
+                                             AND DLGT_CTG_YN='Y'
+                                )
+                ) as category_name1                                                                               /* 제휴사 카테고리명(대분류)      */
+                ,(
+                SELECT  DISTINCT SPLIT(FN_CATEGORYNAME(A.CTG_NO,1),2,'>')
+                                FROM TG_CTG A
+                                WHERE A.CTG_NO IN (
+                                SELECT  TGC.CTG_NO
+                                        FROM TG_GOODS_CTG TGC
+                                           WHERE TGC.GOODS_NO  = GDS.GOODS_NO
+                                             AND TGC.SITE_NO  =  1
+                                             AND TGC.DEL_YN = 'N'
+                                             AND DLGT_CTG_YN='Y'				)
+                ) as category_name2                                                                               /* 제휴사 카테고리명(중분류)      */
+                ,
+                (
+                SELECT  DISTINCT SPLIT(FN_CATEGORYNAME(A.CTG_NO,1),3,'>')
+                                FROM TG_CTG A
+                                WHERE A.CTG_NO IN (
+                                SELECT  TGC.CTG_NO
+                                        FROM TG_GOODS_CTG TGC
+                                           WHERE TGC.GOODS_NO  = GDS.GOODS_NO
+                                             AND TGC.SITE_NO  =  1
+                                             AND TGC.DEL_YN = 'N'
+                                             AND DLGT_CTG_YN='Y'
+                                )
+                ) as category_name3                                                                               /* 제휴사 카테고리명(소분류)      */
+                ,
+                (
+                SELECT  DISTINCT SPLIT(FN_CATEGORYNAME(A.CTG_NO,1),4,'>')
+                                FROM TG_CTG A
+                                WHERE A.CTG_NO IN (
+                                SELECT  TGC.CTG_NO
+                                        FROM TG_GOODS_CTG TGC
+                                           WHERE TGC.GOODS_NO  = GDS.GOODS_NO
+                                             AND TGC.SITE_NO  =  1
+                                             AND TGC.DEL_YN = 'N'
+                                             AND DLGT_CTG_YN='Y'
+                                )
+                ) as category_name4                                                                               /* 제휴사 카테고리명(세분류)      */
+                ,'' as naver_category                                                                             /* 네이버 카테고리             */
+                ,'' as naver_product_id                                                                           /* 가격비교 페이지 ID          */
+                ,'신상품' as condition                                                                             /* 상품상태                 */
+                ,'N' as import_flag                                                                               /* 해외구매대행 여부            */
+                ,'N' as parallel_import                                                                           /* 병행수입 여부              */
+                ,'N' as order_made                                                                                /* 주문제작상품 여부            */
+                ,'' as product_flag                                                                               /* 판매방식 구분              */
+                ,DECODE(GDS.ADULT_CERTIFY_YN,'Y','Y','N') AS ADULT                                                /* 미성년자 구매불가 상품 여부     */
+                ,'' as goods_type                                                                                 /* 상품 구분                */
+                ,'' as barcode                                                                                    /* 바코드                   */
+                ,'' as manufacture_define_number                                                                  /* 제품코드                 */
+                ,GDS.MODEL_NM as model_number                                                                     /* 모델명                   */
+                ,fn_getBrandNm(GDS.BRAND_NO) AS brand                                                             /* 브랜드                   */
+                ,gds.mmft as maker                                                                                /* 제조사                   */
+                ,gds.habitat as origin                                                                            /* 원산지                   */
+                ,'' as card_event                                                                                 /* 카드명/카드할인가격       */
+                ,
+                (
+                SELECT
+                    DISTINCT TP.PRMT_NM
+                 FROM TP_PROMOTION_TARGET_GOODS TPTG ,TP_PROMOTION TP
+                WHERE TPTG.PRMT_NO = TP.PRMT_NO
+                    AND TPTG.GOODS_NO=GDS.GOODS_NO
+                    AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                    AND TP.DEL_YN='N'
+                    AND TP.USE_YN='Y'
+                    AND ROWNUM =1
+                )as event_words                                                                             /* 이벤트                   */
+                ,'' as coupon                                                                               /* 일반/제휴쿠폰              */
+                ,'' as partner_coupon_download                                                              /* 쿠폰다운로드필요 여부         */
+                ,'' as interest_free_event                                                                  /* 카드 무이자 할부 정보        */
+                ,'' as point                                                                                /* 포인트                   */
+                ,'N' as installation_costs                                                                  /* 별도 설치비 유무            */
+                ,'' as pre_match_code                                                                       /* 사전매칭코드               */
+                ,replace(gds.seo_search_word,',','|') as search_tag                                         /* 검색태그                 */
+                ,'' as group_id                                                                             /* Group ID              */
+                ,'' as vendor_id                                                                            /* 제휴사 상품 ID            */
+                ,'' as coordi_id                                                                            /* 코디상품ID               */
+                ,GDS.MIN_ORD_QTT as minimum_purchase_quantity                                               /* 최소구매수량               */
+                ,(
+                select count(1) from TB_GOODS_BBS_LETT gbl
+                where gbl.bbs_id ='review'
+                and gbl.goods_no=gds.goods_no
+                ) as review_count                                                                           /* 상품평(리뷰,구매평) 개수      */
+                ,(
+                    CASE WHEN GDS.DLVR_SET_CD = '2' THEN  0
+                         WHEN GDS.DLVR_SET_CD = '3' THEN NVL(GDS.GOODSEACH_DLVRC, 0)
+                         WHEN GDS.DLVR_SET_CD = '4' THEN NVL(GDS.PACK_UNIT_DLVRC, 0)
+                    ELSE (
+                          CASE WHEN TS.DEFAULT_DLVRC_TYPE_CD = '2' THEN NVL(TS.DEFAULT_DLVRC, 0)
+                               WHEN TS.DEFAULT_DLVRC_TYPE_CD = '3' THEN NVL(TS.DEFAULT_DLVR_MIN_DLVRC, 0)
+                               ELSE 0
+                          END
+                    )
+                   END
+                  )  as shipping                                                                             /* 배송료                   */
+                ,'' as delivery_grade                                                                       /* 차등배송비 여부             */
+                ,'' as delivery_detail                                                                      /* 차등배송비 내용             */
+                ,'' as attribute                                                                            /* 상품속성                 */
+                ,'' as option_detail                                                                        /* 구매옵션                 */
+                ,gds.seller_no as seller_id                                                                 /* 셀러 ID (오픈마켓에 한함)    */
+                ,'' as age_group                                                                            /* 주 이용 고객층             */
+                ,'' as gender                                                                               /* 성별                    */
+                ,'' as shipping_settings                                                                    /* 배송부가정보               */
+        FROM TG_GOODS  GDS, TG_ITEM ITM ,TG_GOODS_CTG TGC, TS_SITE TS
+        WHERE GDS.GOODS_NO= ITM.GOODS_NO
+        AND GDS.GOODS_NO= TGC.GOODS_NO
+        AND GDS.SITE_NO = TS.SITE_NO
+        AND GDS.SITE_NO = '1'
+        AND GDS.DEL_YN = 'N'
+        AND ITM.DEL_YN = 'N'
+        AND GDS.DISP_YN ='Y'
+        AND GDS.SALE_YN='Y'
+        AND GDS.DISP_YN='Y'
+        AND GDS.NAVER_LINK_YN='Y'
+            ) A
+            GROUP BY A.ID
+    </select>
+
+    <select id="selectDispImgList" resultType="java.util.LinkedHashMap">
+<![CDATA[
+      select goods_no
+        ,DISP_IMG_PATH_TYPE_A
+        ,DISP_IMG_NM_TYPE_A
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'A') url_a
+        ,DISP_IMG_FILE_SIZE_TYPE_A
+        ,DISP_IMG_PATH_TYPE_B
+        ,DISP_IMG_NM_TYPE_B
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'B') url_b
+        ,DISP_IMG_FILE_SIZE_TYPE_B
+        ,DISP_IMG_PATH_TYPE_C
+        ,DISP_IMG_NM_TYPE_C
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'C') url_c
+        ,DISP_IMG_FILE_SIZE_TYPE_C
+        ,DISP_IMG_PATH_TYPE_D
+        ,DISP_IMG_NM_TYPE_D
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'D') url_d
+        ,DISP_IMG_FILE_SIZE_TYPE_D
+        ,DISP_IMG_PATH_TYPE_E
+        ,DISP_IMG_NM_TYPE_E
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'E') url_e
+        ,DISP_IMG_FILE_SIZE_TYPE_E
+        ,DISP_IMG_PATH_TYPE_F
+        ,DISP_IMG_NM_TYPE_F
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'F') url_f
+        ,DISP_IMG_FILE_SIZE_TYPE_F
+        ,DISP_IMG_PATH_TYPE_G
+        ,DISP_IMG_NM_TYPE_G
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'G') url_g
+        ,DISP_IMG_FILE_SIZE_TYPE_G
+        ,DISP_IMG_PATH_TYPE_S
+        ,DISP_IMG_NM_TYPE_S
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'S') url_s
+        ,DISP_IMG_FILE_SIZE_TYPE_S
+        ,DISP_IMG_PATH_TYPE_M
+        ,DISP_IMG_NM_TYPE_M
+        ,'http://www.davichmarket.com'||fn_getGoodsDispImgPath(goods_no,'M') url_m
+        ,DISP_IMG_FILE_SIZE_TYPE_M
+         from tg_goods
+         where del_yn <> 'Y'
+         ]]>
+    </select>
+
+    <select id="selectImgList" resultType="java.util.LinkedHashMap">
+<![CDATA[
+        SELECT
+            A.GOODS_NO
+            ,B.GOODS_IMGSET_NO
+            ,B.GOODS_IMG_TYPE
+            ,B.IMG_PATH ,B.IMG_NM
+            ,B.IMG_WIDTH,B.IMG_HEIGHT
+            ,'http://www.davichmarket.com'||FN_GETGOODSIMGPATH(A.GOODS_NO, B.GOODS_IMG_TYPE) AS URL
+            ,B.IMG_SIZE
+         FROM TG_GOODS_IMG_SET A,
+        TG_GOODS_IMG_DTL B
+        WHERE A.GOODS_IMGSET_NO = B.GOODS_IMGSET_NO
+         ]]>
+    </select>
+
+</mapper>

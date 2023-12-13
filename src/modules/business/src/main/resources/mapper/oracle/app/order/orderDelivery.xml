@@ -1,0 +1,619 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	주문 배송
+-->
+<mapper namespace="order.delivery">
+    <!-- 주문목록 페이징 조회 검색 조건-->
+    <sql id="selectDeliveryListWhere">
+        <where>
+            A.ORD_NO = B.ORD_NO
+            AND A.SITE_NO = #{siteNo}
+            AND B.ADD_OPT_YN = 'N'
+            <choose>
+                <when test="dayTypeCd == '01' ">
+                    <if test="ordDayS != null and ordDayS != ''">
+                        <![CDATA[
+                        AND A.ORD_ACCEPT_DTTM >= TO_DATE(#{ordDayS}, 'YYYY-MM-DD')
+                        ]]>
+                    </if>
+                    <if test="ordDayE != null and ordDayE != ''">
+                        <![CDATA[
+                        AND A.ORD_ACCEPT_DTTM < TO_DATE(#{ordDayE}, 'YYYY-MM-DD') + 1
+                        ]]>
+                    </if>
+                </when>
+                <when test="dayTypeCd == '02'">
+                    <if test="ordDayS != null and ordDayS != ''">
+                        <![CDATA[
+                        AND L.RLS_CMPLT_REG_DTTM >= TO_DATE(#{ordDayS}, 'YYYY-MM-DD')
+                        ]]>
+                    </if>
+                    <if test="ordDayE != null and ordDayE != ''">
+                        <![CDATA[
+                        AND L.RLS_CMPLT_REG_DTTM < TO_DATE(#{ordDayE}, 'YYYY-MM-DD') + 1
+                        ]]>
+                    </if>
+                </when>
+            </choose>
+            <if test="ordStatusCd != null and ordStatusCd != ''">
+                AND B.ORD_DTL_STATUS_CD IN <foreach collection="ordStatusCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+
+            <if test="ordStatusCd == null or ordStatusCd == ''">
+              AND B.ORD_DTL_STATUS_CD IN ('30','40','50')
+            </if>
+
+            <if test="saleChannelCd != null and saleChannelCd != ''">
+                AND A.SALE_CHANNEL_CD IN <foreach collection="saleChannelCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+
+            <if test="searchSeller != null and searchSeller != ''">
+                AND SELLER_NO= #{searchSeller}
+            </if>
+
+            <if test="searchCd != null and searchCd != '' and searchWord != null and searchWord !=''">
+                <choose>
+                    <when test="searchCd eq '01'">
+                        AND A.ORD_NO LIKE '%'||#{searchWord}||'%'
+                    </when>
+                    <when test="searchCd eq '02'">
+                        AND A.ORDR_NM = #{searchWord}
+                    </when>
+                    <when test="searchCd eq '08'">
+                        AND B.GOODS_NM LIKE '%'||#{searchWord}||'%'
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </sql>
+
+    <!-- 출고목록 페이징 조회 -->
+    <select id="selectDeliveryListPaging" resultType="DeliveryVO">
+        /* biz.app.order.delivery.selectDeliveryListPaging - 출고목록 페이징 조회 */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+	                SELECT
+	                    A.ORD_NO,
+	                    B.ORD_DTL_SEQ,
+	                    B.GOODS_NO,
+	                    B.ORD_QTT,
+	                   (SELECT DLVR_NO FROM TO_DLVR WHERE ORD_NO=A.ORD_NO AND ORD_DTL_SEQ=B.ORD_DTL_SEQ and rownum = 1) AS DLVR_NO,
+		                A.ORD_ACCEPT_DTTM,
+		                B.RLS_CMPLT_DTTM,
+		                B.GOODS_NM,
+		                B.ITEM_NM,
+		                A.LOGIN_ID,
+		                A.ORDR_NM,
+	                   fn_getCodeNm('SALE_CHANNEL_CD', A.SALE_CHANNEL_CD) SALE_CHANNEL_NM,
+	                    E.SELLER_NO,
+	                    (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = E.SELLER_NO) AS SELLER_NM,
+		                NVL(fn_getMemberGradeNm(#{siteNo}, A.MEMBER_NO), '') MEMBER_GRADE_NM,
+		                /* fn_getCodeNm('SALE_CHANNEL_CD', A.SALE_CHANNEL_CD) SALE_CHANNEL_NM, */
+		                A.SITE_NO,
+	                    B.ORD_DTL_STATUS_CD,
+		                fn_getCodeNm('ORD_DTL_STATUS_CD', B.ORD_DTL_STATUS_CD) ORD_DTL_STATUS_NM,
+		                L.RLS_COURIER_CD,
+		                NVL(fn_getCodeNm('COURIER_CD', L.RLS_COURIER_CD),'') RLS_COURIER_NM,
+		                L.RLS_INVOICE_NO,
+		                L.DLVRC_PAYMENT_CD,
+		                A.REG_DTTM,
+	                    A.UPD_DTTM,
+                        TO_CHAR(NVL(ROUND(B.SALE_AMT,0),0), 'FM999,999,999,999') AS SALE_AMT,
+                        TO_CHAR(NVL(ROUND(B.SUPPLY_AMT,0),0), 'FM999,999,999,999') AS SUPPLY_AMT,
+                        TO_CHAR((SELECT ROUND(SUM(PAYMENT_AMT),0) FROM TO_PAYMENT  WHERE ORD_NO = A.ORD_NO AND PAYMENT_TURN=(select max(payment_turn) from to_payment where ord_no=a.ord_no) ), 'FM999,999,999,999') as PAYMENT_AMT,
+                        TO_CHAR(B.DC_AMT, 'FM999,999,999,999') AS DC_AMT,
+                        (SELECT ADRS_NM FROM TO_ORD_DELIVERY  WHERE ORD_NO = A.ORD_NO) as ADRS_NM
+		            FROM    TO_ORD A, TO_ORD_DTL B
+		                LEFT JOIN(
+		                    SELECT ORD_NO, ORD_DTL_SEQ, RLS_INVOICE_NO, RLS_COURIER_CD, DLVRC_PAYMENT_CD, RLS_CMPLT_REG_DTTM
+		                    FROM
+		                    (
+				            	SELECT A.ORD_NO
+				            		, A.ORD_DTL_SEQ
+				            		, MAX(A.RLS_INVOICE_NO) AS RLS_INVOICE_NO
+				            		, MAX(A.RLS_COURIER_CD) AS RLS_COURIER_CD
+				            		, MAX(A.DLVRC_PAYMENT_CD) AS DLVRC_PAYMENT_CD
+				            		, MAX(A.RLS_CMPLT_REG_DTTM) AS RLS_CMPLT_REG_DTTM
+				            		, MAX(A.REG_DTTM) AS REG_DTTM
+		                          FROM TO_DLVR A,
+		                          (SELECT MAX(DLVR_NO) DLVR_NO
+		                          FROM TO_DLVR A, TO_ORD_DTL B
+		                          WHERE A.ORD_NO = B.ORD_NO
+		                              AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+		                          GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+		                          ) B
+		                          WHERE A.DLVR_NO = B.DLVR_NO
+		                          GROUP BY ORD_NO, A.ORD_DTL_SEQ
+		                    ) dlvr
+		                    WHERE (1=1)
+				            <if test="ordDayS != null and ordDayS != ''">
+				                <![CDATA[
+				                AND REG_DTTM >= TO_DATE(#{ordDayS}, 'YYYY-MM-DD')
+				                ]]>
+				            </if>
+		                ) L ON B.ORD_NO = L.ORD_NO
+		                    AND B.ORD_DTL_SEQ = L.ORD_DTL_SEQ
+	                LEFT JOIN TG_GOODS E
+	                ON E.GOODS_NO = B.GOODS_NO
+		            <include refid="selectDeliveryListWhere" />
+		           <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 출고 목록 페이징 조회를 위한 카운트 -->
+    <select id="selectDeliveryListPagingCount" resultType="Integer">
+        /* biz.app.order.delivery.selectDeliveryListPagingCount - 출고 목록 페이징 조회를 위한 카운트*/
+        SELECT  count(1)
+        FROM  TO_ORD A, TO_ORD_DTL B
+        LEFT JOIN(
+            SELECT ORD_NO, ORD_DTL_SEQ, RLS_INVOICE_NO, RLS_COURIER_CD, DLVRC_PAYMENT_CD, RLS_CMPLT_REG_DTTM
+            FROM
+            (
+            	SELECT A.ORD_NO
+            		, A.ORD_DTL_SEQ
+            		, MAX(A.RLS_INVOICE_NO) AS RLS_INVOICE_NO
+            		, MAX(A.RLS_COURIER_CD) AS RLS_COURIER_CD
+            		, MAX(A.DLVRC_PAYMENT_CD) AS DLVRC_PAYMENT_CD
+            		, MAX(A.RLS_CMPLT_REG_DTTM) AS RLS_CMPLT_REG_DTTM
+            		, MAX(A.REG_DTTM) AS REG_DTTM
+                  FROM TO_DLVR A,
+                  (SELECT MAX(DLVR_NO) DLVR_NO
+                  FROM TO_DLVR A, TO_ORD_DTL B
+                  WHERE A.ORD_NO = B.ORD_NO
+                      AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+                  GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+                  ) B
+                  WHERE A.DLVR_NO = B.DLVR_NO
+                  GROUP BY ORD_NO, A.ORD_DTL_SEQ
+            ) dlvr
+            WHERE (1=1)
+            <if test="ordDayS != null and ordDayS != ''">
+                <![CDATA[
+                AND REG_DTTM >= TO_DATE(#{ordDayS}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+        ) L ON B.ORD_NO = L.ORD_NO
+            AND B.ORD_DTL_SEQ = L.ORD_DTL_SEQ
+        LEFT JOIN TG_GOODS E
+        ON E.GOODS_NO = B.GOODS_NO
+        <include refid="selectDeliveryListWhere" />
+    </select>
+
+    <select id="selectDeliveryListPagingTotalCount" resultType="Integer">
+        /* biz.app.order.delivery.selectOrdListPagingTotalCount - 출고 목록 페이징 조회를 위한 토탈 카운트*/
+        SELECT  count(1)
+        FROM    TO_ORD A, TO_ORD_DTL B
+        WHERE
+            A.ORD_NO = B.ORD_NO
+            AND A.SITE_NO = #{siteNo}
+            AND B.ORD_DTL_STATUS_CD IN ('30','40','50')
+            AND B.ADD_OPT_YN = 'N'
+    </select>
+
+
+    <!-- 주문 번호별 배송 정보  -->
+    <select id="selectOrdDtlDelivery" resultType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+    /* biz.app.order.delivery.selectOrdDtlDelivery - 주문 번호별 배송 정보*/
+        SELECT A.DLVR_NO,
+            B.ORD_DTL_SEQ,
+            B.GOODS_NM,
+            B.ITEM_NM,
+            fn_getGoodsImgPath(B.GOODS_NO, '03') AS IMG_PATH,
+            (SELECT
+                  utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',','['||ADD_OPT_NM||']') order by ADD_OPT_NM asc ).EXTRACT ('//text()').GETSTRINGVAL(),2))
+                FROM TO_ORD_DTL
+                WHERE ORD_NO = #{ordNo}
+                    AND ADD_OPT_YN = 'Y'
+                    AND ORD_NO = B.ORD_NO
+                    AND GOODS_NO = B.GOODS_NO
+                    AND ITEM_NO = B.ITEM_NO
+                GROUP BY ORD_NO
+            ) AS ADD_OPT_NM,
+            A.DLVR_QTT,
+            RLS_COURIER_CD,
+            NVL(fn_getCodeNm('COURIER_CD', RLS_COURIER_CD),'직접배송') RLS_COURIER_NM,
+            NVL(RLS_INVOICE_NO, '번호없음') AS RLS_INVOICE_NO,
+            RLS_INVOICE_REG_DTTM,
+            B.ORD_DTL_STATUS_CD,
+            A.DLVRC_PAYMENT_CD,
+            fn_getCodeNm('DLVRC_PAYMENT_CD', A.DLVRC_PAYMENT_CD) AS DLVRC_PAYMENT_NM
+        FROM (
+					SELECT *
+					FROM
+					(
+						SELECT A.*, RANK() OVER(PARTITION BY A.ORD_NO, A.ORD_DTL_SEQ ORDER BY A.DLVR_NO DESC) AS RANK
+						FROM TO_DLVR A,
+						(
+							SELECT MAX(DLVR_NO) DLVR_NO
+							FROM TO_DLVR A, TO_ORD_DTL B
+							WHERE A.ORD_NO = B.ORD_NO
+							AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+							GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+						) B
+						WHERE A.DLVR_NO = B.DLVR_NO
+					)
+					WHERE RANK = 1
+              ) A, TO_ORD_DTL B
+        WHERE A.ORD_NO = B.ORD_NO
+            AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+            AND B.ORD_NO = #{ordNo}
+            AND B.ADD_OPT_YN = 'N'
+            AND RLS_CMPLT_REG_DTTM IS NOT NULL
+            <if test="sellerNo != null and sellerNo != ''">
+		    		AND EXISTS (SELECT 1 FROM TG_GOODS TG
+		    		            WHERE TG.GOODS_NO = B.GOODS_NO
+		    		             AND SELLER_NO = #{sellerNo})
+			</if>
+        ORDER BY B.ORD_DTL_SEQ ASC
+    </select>
+
+    <!-- 주문 배송지 수정 -->
+    <update id="updateOrdDtlDeliveryAddr" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryPO">
+    /* biz.app.order.delivery.updateOrdDtlDeliveryAddr - 주문 배송지 수정 */
+        UPDATE TO_ORD_DELIVERY
+        SET
+            MEMBER_GB_CD = #{memberGbCd},
+            <if test="memberGbCd eq '10'">
+	            POST_NO = #{postNo},
+	            ROADNM_ADDR = #{roadnmAddr},
+	            NUM_ADDR = #{numAddr},
+	            DTL_ADDR = #{dtlAddr},
+            </if>
+	        <if test="memberGbCd eq '20'">
+		        FRG_ADDR_COUNTRY = #{frgAddrCountry},
+			    FRG_ADDR_CITY = #{frgAddrCity},
+			    FRG_ADDR_STATE = #{frgAddrState},
+			    FRG_ADDR_ZIP_CODE = #{frgAddrZipCode},
+			    FRG_ADDR_DTL1 = #{frgAddrDtl1},
+			    FRG_ADDR_DTL2 = #{frgAddrDtl2},
+			</if>
+            DLVR_MSG = #{dlvrMsg},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE ORD_NO = #{ordNo}
+    </update>
+
+    <!-- 주문 번호별 배송처리 정보  -->
+    <select id="selectOrdDtlInvoice" resultType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+    /* biz.app.order.delivery.selectOrdDtlInvoice - 주문 번호별 배송처리 정보 */
+		SELECT ROWNUM, A.*
+		FROM
+		(
+				select C.DLVR_NO,
+		            B.ORD_DTL_SEQ,
+		            B.GOODS_NM,
+		            B.GOODS_NO,
+		            fn_getGoodsImgPath(B.GOODS_NO, '03') AS IMG_PATH,
+		            B.ITEM_NM,
+		            B.ORD_QTT,
+                    B.ORD_DTL_STATUS_CD,
+		            G.STOCK_QTT,
+		            (NVL(S.AVAIL_STOCK_QTT,0) + G.STOCK_QTT) AVAIL_STOCK_QTT,
+		            NVL(C.DLVR_QTT,0) DLVR_QTT,
+		            NVL(L.CLAIM_QTT,0) CAN_QTT,
+		            fn_getCodeNm('DLVRC_PAYMENT_CD', C.DLVRC_PAYMENT_CD) AS DLVRC_PAYMENT_NM,
+		            RLS_COURIER_CD,
+		            fn_getCodeNm('COURIER_CD', C.RLS_COURIER_CD) RLS_COURIER_NM,
+		            NVL(RLS_INVOICE_NO, '') AS RLS_INVOICE_NO,
+		            RLS_INVOICE_REG_DTTM,
+		            C.DLVRC_PAYMENT_CD
+		        FROM TS_SITE S,
+		        (
+					select *
+					from
+					(
+						SELECT A.*, rank() over(partition by A.ORD_NO, A.ORD_DTL_SEQ order by A.DLVR_NO desc) as rank
+						FROM TO_DLVR A,
+						(
+							SELECT MAX(DLVR_NO) DLVR_NO
+							FROM TO_DLVR A, TO_ORD_DTL B
+							WHERE A.ORD_NO = B.ORD_NO
+							AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+							GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+						) B
+						WHERE A.DLVR_NO = B.DLVR_NO
+					)
+					where rank = 1
+                ) C, TG_ITEM G, TO_ORD_DTL B
+		        LEFT JOIN (
+		            SELECT ORD_NO, ORD_DTL_SEQ, ORD_QTT AS CLAIM_QTT
+		            FROM TO_ORD_DTL
+		            WHERE ORD_NO = #{ordNo}
+		                AND ORD_DTL_STATUS_CD = '21' /** 결제 취소 */
+		        ) L
+		            ON L.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+		            AND L.ORD_NO = B.ORD_NO
+		        WHERE C.ORD_NO = B.ORD_NO
+                  AND C.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+		          AND B.ORD_NO = #{ordNo}
+		          AND B.ADD_OPT_YN = 'N'
+		          AND B.ITEM_NO = G.ITEM_NO
+		          AND S.SITE_NO = #{siteNo}
+				<if test="sellerNo != null and sellerNo != ''">
+					AND EXISTS (SELECT 1 FROM TG_GOODS TG
+								WHERE TG.GOODS_NO = B.GOODS_NO
+								AND TG.SELLER_NO = #{sellerNo})
+				</if>
+		        ORDER BY B.ORD_DTL_SEQ ASC
+		) A
+    </select>
+
+    <!-- 주문 배송처리 정보 등록-->
+    <update id="updateOrdDtlInvoiceNew" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryPO">
+    /* biz.app.order.delivery.updateOrdDtlInvoiceNew - 주문 배송처리 정보 등록 */
+        UPDATE TO_DLVR
+        SET
+            RLS_COURIER_CD = #{rlsCourierCd}
+            , RLS_INVOICE_NO = #{rlsInvoiceNo}
+            , RLS_INVOICE_REG_DTTM = sysdate
+            , RLS_CMPLT_REG_DTTM = sysdate
+            , DLVR_QTT = #{dlvrQtt}
+            , DLVR_MSG = #{dlvrMsg}
+            , UPDR_NO = #{regrNo}
+            , UPD_DTTM = sysdate
+        WHERE DLVR_NO = #{dlvrNo}
+    </update>
+
+    <!-- 주문 배송 정보 수정-->
+    <update id="updateOrdDtlInvoice" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryPO">
+    /* biz.app.order.delivery.updateOrdDtlInvoice - 주문 배송 정보 수정 */
+        UPDATE TO_DLVR
+            SET
+            RLS_COURIER_CD = #{rlsCourierCd}
+            , RLS_INVOICE_NO = #{rlsInvoiceNo}
+            , UPDR_NO = #{regrNo}
+            , UPD_DTTM = sysdate
+        WHERE DLVR_NO = #{dlvrNo}
+    </update>
+
+    <select id="selectDownInvoiceAddList" resultType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+        /* biz.app.order.delivery.selectDownInvoiceAddList -  송장번호 목록 조회*/
+        SELECT A.*,
+            RLS_COURIER_CD
+        FROM
+        (
+            SELECT B.ORD_NO,
+                    B.ORD_DTL_SEQ,
+                    A.ORDR_NM,
+                    B.GOODS_NM,
+                    B.GOODS_NO,
+                    B.ITEM_NM,
+                    fn_getCodeNm('ORD_DTL_STATUS_CD', B.ORD_DTL_STATUS_CD) ORD_DTL_STATUS_NM,
+                    B.ORD_QTT,
+                    0 AS DLVR_QTT,
+                    '' AS RLS_COURIER_CD,
+                    '' AS RLS_INVOICE_NO,
+                    C.POST_NO,
+                    C.ROADNM_ADDR,
+                    C.NUM_ADDR,
+                    C.DTL_ADDR
+                FROM TO_ORD A, TO_ORD_DTL B, TO_ORD_DELIVERY C,
+                (
+					select *
+					from
+					(
+					    SELECT A.*, rank() over(partition by a.ORD_NO, a.ORD_DTL_SEQ order by a.DLVR_NO desc) as rank
+					    FROM TO_DLVR A,
+					    (
+					        SELECT MAX(DLVR_NO) DLVR_NO
+					        FROM TO_DLVR A, TO_ORD_DTL B
+					        WHERE A.ORD_NO = B.ORD_NO
+					        AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+					        GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+					    ) B
+					    WHERE A.DLVR_NO = B.DLVR_NO
+					)
+					where rank = 1
+                ) D, TG_GOODS E
+                WHERE A.ORD_NO = B.ORD_NO
+                    AND A.ORD_NO = C.ORD_NO
+                    AND B.ADD_OPT_YN = 'N'
+                    AND B.ORD_DTL_STATUS_CD = '30' --IN ('20','30')
+                    AND B.ORD_NO = D.ORD_NO
+                    AND B.ORD_DTL_SEQ = D.ORD_DTL_SEQ
+                    AND D.RLS_COURIER_CD IS NULL
+                    AND B.GOODS_NO = E.GOODS_NO
+		        <if test="searchSeller != null and searchSeller != ''">
+		        	AND E.SELLER_NO =  #{searchSeller}
+				</if>
+		        <if test="ordDayS != null and ordDayS != ''">
+		            <![CDATA[
+		            AND A.PAYMENT_CMPLT_DTTM >= TO_DATE(#{ordDayS}, 'YYYY-MM-DD')
+		            ]]>
+		        </if>
+		        <if test="ordDayE != null and ordDayE != ''">
+		            <![CDATA[
+		            AND A.PAYMENT_CMPLT_DTTM < TO_DATE(#{ordDayE}, 'YYYY-MM-DD') + 1
+		            ]]>
+		        </if>
+        ) A
+        ORDER BY A.ORD_NO DESC, A.ORD_DTL_SEQ ASC
+    </select>
+
+    <select id="selectUpInvoiceAddList" resultType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+        /* biz.app.order.delivery.selectUpInvoiceAddList - 송장등록을 위한 송장번호 목록 조회*/
+        SELECT ORD_NO, ORD_DTL_SEQ, ORDR_NM, GOODS_NM, GOODS_NO, ITEM_NM, ORD_DTL_STATUS_NM, ORD_DTL_STATUS_CD,
+                    ORD_QTT, 0 AS DLVR_QTT, #{rlsCourierCd} AS RLS_COURIER_CD, #{rlsInvoiceNo} AS RLS_INVOICE_NO,
+                    POST_NO, NUM_ADDR, ROADNM_ADDR, DTL_ADDR
+        FROM
+        (
+	        SELECT B.ORD_NO,
+	                B.ORD_DTL_SEQ,
+	                A.ORDR_NM,
+	                B.GOODS_NM,
+	                B.GOODS_NO,
+	                B.ITEM_NM,
+	                fn_getCodeNm('ORD_DTL_STATUS_CD', B.ORD_DTL_STATUS_CD) ORD_DTL_STATUS_NM,
+	                B.ORD_DTL_STATUS_CD,
+	                B.ORD_QTT,
+	                0 AS DLVR_QTT,
+	                D.RLS_COURIER_CD,
+	                C.POST_NO, C.NUM_ADDR, C.ROADNM_ADDR, C.DTL_ADDR
+	            FROM TO_ORD A, TO_ORD_DELIVERY C, TO_ORD_DTL B,
+	            (
+					select *
+					from
+					(
+					    SELECT A.*, rank() over(partition by a.ORD_NO, A.ORD_DTL_SEQ order by a.DLVR_NO desc) as rank
+					    FROM TO_DLVR A,
+					    (
+					        SELECT MAX(DLVR_NO) DLVR_NO
+					        FROM TO_DLVR A, TO_ORD_DTL B
+					        WHERE A.ORD_NO = B.ORD_NO
+					        AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+					        GROUP BY A.ORD_NO, A.ORD_DTL_SEQ
+					    ) B
+					    WHERE A.DLVR_NO = B.DLVR_NO
+					)
+					where rank = 1
+                ) D
+	            WHERE A.ORD_NO = B.ORD_NO
+	                AND A.ORD_NO = C.ORD_NO
+	                AND B.ADD_OPT_YN = 'N'
+	                AND A.ORD_NO = #{ordNo}
+	                AND B.ORD_DTL_SEQ = #{ordDtlSeq}
+	                AND B.ORD_NO = D.ORD_NO
+	                AND B.ORD_DTL_SEQ = D.ORD_DTL_SEQ
+	      ) A
+	      WHERE A.RLS_COURIER_CD IS NULL
+    </select>
+
+    <!-- 주문 송장 정보 등록-->
+    <update id="updateInvoice" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+    /* biz.app.order.delivery.updateInvoice - 주문 송장 정보 등록 */
+        UPDATE TO_DLVR
+        SET
+            RLS_COURIER_CD = #{rlsCourierCd},
+            RLS_INVOICE_NO = #{rlsInvoiceNo},
+            RLS_INVOICE_REG_DTTM = sysdate,
+            RLS_CMPLT_REG_DTTM = sysdate,
+            UPDR_NO =  #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE ORD_NO = #{ordNo}
+            AND ORD_DTL_SEQ = #{ordDtlSeq}
+    </update>
+
+    <!-- 사이트별 사용중인 택배사 목록 조회 -->
+    <select id="selectSiteCourierList" resultType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+    /* biz.app.order.delivery.selectSiteCourierList - 사이트별 사용중인 택배사 목록 조회 */
+    SELECT
+        COURIER_CD AS RLS_COURIER_CD
+        , COURIER_NM AS RLS_COURIER_NM
+    FROM TS_COURIER
+    WHERE SITE_NO = #{siteNo}
+        AND USE_YN ='Y'
+    ORDER BY COURIER_NM
+    </select>
+
+    <!-- 택배업체 배송 완료 결과 처리 -->
+    <update id="updateDlvrByCourier" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryVO">
+    /* biz.app.order.delivery.updateDlvrByCourier - 택배업체 배송 완료 결과 처리 */
+        UPDATE TO_DLVR
+        SET
+            RLS_CMPLT_REG_DTTM = sysdate,
+            UPD_DTTM = sysdate
+        WHERE RLS_COURIER_CD = #{rlsCourierCd}
+            AND RLS_INVOICE_NO = #{rlsInvoiceNo}
+   </update>
+
+    <!-- 택배업체 배송 완료 결과 처리된 주문 번호  -->
+    <select id="selectOrdDtlByCourier" resultType="net.danvi.dmall.biz.app.order.manage.model.OrderGoodsVO">
+    /* biz.app.order.delivery.selectOrdDtlByCourier - 택배업체 배송 완료 결과 처리된 주문 번호 */
+    SELECT
+        ordDtl.ORD_NO, ordDtl.ORD_DTL_SEQ, ordDtl.ORD_DTL_STATUS_CD
+    FROM TO_ORD_DTL ordDtl, TO_DLVR dlvr
+    WHERE ordDtl.ORD_NO = dlvr.ORD_NO
+        AND ordDtl.ORD_DTL_SEQ = dlvr.ORD_DTL_SEQ
+        AND dlvr.RLS_COURIER_CD = #{rlsCourierCd}
+        AND dlvr.RLS_INVOICE_NO = #{rlsInvoiceNo}
+        <![CDATA[
+        AND ordDtl.ORD_DTL_STATUS_CD < '50'
+        ]]>
+        AND ordDtl.ORD_DTL_STATUS_CD >= '20'
+    </select>
+
+    <!-- 배송완료 후 3일 경과된 주문 데이터 조회-->
+    <select id="selectDeliveryCompletedList" resultType="net.danvi.dmall.biz.app.order.manage.model.OrderGoodsVO" parameterType="int">
+    /* biz.app.order.delivery.selectDeliveryCompletedList - 배송완료 후 3일 경과된 주문 데이터 조회 */
+    SELECT  B.ORD_NO, B.ORD_DTL_SEQ
+    FROM    TO_ORD A, TO_ORD_DTL B
+    WHERE   A.ORD_NO = B.ORD_NO
+            <![CDATA[
+            AND sysdate > B.DLVR_CMPLT_DTTM + #{cnt}
+            ]]>
+            AND B.ORD_DTL_STATUS_CD = '50' AND SALE_CHANNEL_CD = 'shop9999'
+    </select>
+
+    <!-- 배송중 조회 ( 우체국 ) -->
+    <select id="selectDeliveryEpostList" resultType="net.danvi.dmall.biz.batch.order.epost.model.EpostVO" >
+    /* biz.app.order.delivery.selectDeliveryEpostList - 배송중 조회 ( 우체국 ) */
+    SELECT
+            '01' SEND_REQ_DIV_CD,
+            A.SITE_NO,
+            DTL.ORD_NO,
+            DTL.ORD_DTL_SEQ,
+            C.RLS_INVOICE_NO,
+            D.ADRS_NM,
+            D.ADRS_MOBILE,
+            D.ADRS_TEL,
+            D.POST_NO,
+            D.NUM_ADDR,
+            D.DTL_ADDR,
+            A.ORDR_NM, A.ORDR_MOBILE, A.ORDR_TEL,
+            '' ORDR_POST_NO, '' ORDR_NUM_ADDR, '' ORDR_DTL_ADDR,
+            '', D.DLVR_MSG,
+            DTL.GOODS_NO, DTL.GOODS_NM,
+            C.REAL_DLVR_AMT
+
+    FROM    TO_ORD A
+            INNER JOIN (
+              SELECT  ORD_NO, ORD_DTL_SEQ, ORD_DTL_STATUS_CD, GOODS_NO, GOODS_NM FROM TO_ORD_DTL
+              WHERE   ORD_DTL_STATUS_CD IN ('40') AND DLVR_API = 'N'
+              ) DTL ON DTL.ORD_NO = A.ORD_NO
+            INNER JOIN (
+              SELECT  B.ORD_NO, B.ORD_DTL_SEQ, A.RLS_INVOICE_NO, SUM(A.REAL_DLVR_AMT) REAL_DLVR_AMT
+              FROM
+                TO_DLVR A,
+                (
+                SELECT  B.ORD_NO, B.ORD_DTL_SEQ, MAX(A.DLVR_NO) AS DLVR_NO
+                FROM    TO_DLVR A, TO_ORD_DTL B
+                WHERE   A.ORD_NO = B.ORD_NO
+                        AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+                GROUP BY B.ORD_NO, B.ORD_DTL_SEQ
+                ) B
+              WHERE A.DLVR_NO = B.DLVR_NO
+              GROUP BY B.ORD_NO, B.ORD_DTL_SEQ, A.RLS_INVOICE_NO
+            ) C ON C.ORD_NO = DTL.ORD_NO AND C.ORD_DTL_SEQ = DTL.ORD_DTL_SEQ
+            LEFT JOIN (
+              SELECT
+                      ORD_NO, ADRS_NM, ADRS_MOBILE, ADRS_TEL, POST_NO, NUM_ADDR, DTL_ADDR, DLVR_MSG
+              FROM    TO_ORD_DELIVERY
+            ) D ON D.ORD_NO = DTL.ORD_NO
+    WHERE
+            C.RLS_INVOICE_NO > '' AND D.ADRS_NM > ''
+            AND D.ADRS_MOBILE > '' AND D.POST_NO > '' AND D.NUM_ADDR > '' AND D.DTL_ADDR > '' AND A.ORDR_NM > ''
+    </select>
+
+
+    <!-- 우체국 연동 상태 수정 -->
+    <update id="updateOrdDtlDeliveryEpost" parameterType="net.danvi.dmall.biz.app.order.delivery.model.DeliveryPO">
+    /* biz.app.order.delivery.updateOrdDtlDeliveryEpost */
+        UPDATE TO_ORD_DTL
+        SET
+            DLVR_API = #{dlvrApi},
+            DLVR_API_DTTM = sysdate
+        WHERE ORD_NO = #{ordNo} AND ORD_DTL_SEQ = #{ordDtlSeq}
+    </update>
+</mapper>

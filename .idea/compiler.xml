@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.22/lombok-1.18.22.jar" />
+        </processorPath>
+        <module name="davichmarket.davichmarket.image.test" />
+        <module name="davichmarket.module.smsemail.remote.main" />
+        <module name="davichmarket.davichmarket.batch.main" />
+        <module name="davichmarket.davichmarket.smsemail.test" />
+        <module name="davichmarket.module.smsemail.remote.test" />
+        <module name="davichmarket.davichmarket.image.main" />
+        <module name="davichmarket.davichmarket.batch.test" />
+        <module name="davichmarket.config.main" />
+        <module name="davichmarket.module.common.test" />
+        <module name="davichmarket.module.common.main" />
+        <module name="davichmarket.davichmarket.admin.test" />
+        <module name="davichmarket.davichmarket.smsemail.main" />
+        <module name="davichmarket.module.smsemail.common.main" />
+        <module name="davichmarket.module.business.test" />
+        <module name="davichmarket.config.test" />
+        <module name="davichmarket.davichmarket.admin.main" />
+        <module name="davichmarket.module.smsemail.common.test" />
+        <module name="davichmarket.module.business.main" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="1.8" />
+  </component>
+</project>

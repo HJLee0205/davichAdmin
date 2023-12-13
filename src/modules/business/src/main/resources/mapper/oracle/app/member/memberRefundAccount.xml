@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member.refundAccount">
+
+    <!-- 회원환불계좌 조회 -->
+    <select id="selectRefundAccount" resultType="refundAccountVO">
+    SELECT TMA.MEMBER_NO, TMA.BANK_CD,TACCD.CD_NM AS BANK_NM, TMA.ACT_NO, TMA.HOLDER_NM,
+       TMA.REGR_NO, TMA.REG_DTTM, TMA.UPDR_NO, TMA.UPD_DTTM
+    FROM TC_MEMBER_REFUND_ACT TMA, TA_CMN_CD_DTL  TACCD
+    WHERE MEMBER_NO = #{memberNo}
+    AND TMA.BANK_CD = TACCD.CD
+    AND TACCD.GRP_CD = 'BANK_CD'
+    AND ROWNUM = 1
+    </select>
+
+    <!-- 회원환불계좌 등록 -->
+    <insert id="insertRefundAccount">
+	INSERT INTO TC_MEMBER_REFUND_ACT(
+	REFUND_ACT_SEQ
+	, MEMBER_NO
+	,BANK_CD
+	,ACT_NO
+	,HOLDER_NM
+	,REGR_NO
+	,REG_DTTM
+	) VALUES (
+	#{refundActSeq}
+	,#{memberNo}
+    ,#{bankCd}
+    ,#{actNo}
+    ,#{holderNm}
+    ,#{regrNo}
+    ,sysdate
+	)
+    </insert>
+
+    <!-- 회원환불계좌 수정 -->
+    <update id="updateRefundAccount">
+	UPDATE TC_MEMBER_REFUND_ACT
+	SET
+	BANK_CD = #{bankCd}
+	,ACT_NO = #{actNo}
+	,HOLDER_NM = #{holderNm}
+	,UPDR_NO = #{updrNo}
+	,UPD_DTTM = sysdate
+	WHERE MEMBER_NO = #{memberNo}
+    </update>
+
+    <!-- 회원환불계좌 삭제 -->
+    <delete id="deleteRefundAccount">
+	DELETE FROM TC_MEMBER_REFUND_ACT
+	WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
+</mapper>

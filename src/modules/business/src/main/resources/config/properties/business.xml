@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 비지니스 관련 프로퍼티 설정 -->
+<properties>
+    <entry key="biz.test">test</entry>
+
+    <entry key="system.domain.product">www.davichmarket.com</entry>
+    <entry key="system.domain.dev">www.davichmarket.com</entry>
+    <entry key="system.domain.local">admin.davichmarket.com</entry>
+    
+    <!-- 인터페이스 URL -->
+     <entry key="interface.url">http://localhost/ifapi_mall</entry>
+</properties>

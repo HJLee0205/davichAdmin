@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   판매순위 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.saleRankGoodsAnls">
+    <sql id="selectSaleRankGoodsListWhere">
+        AND SITE_NO = #{siteNo}
+        AND ANLS_GB_CD = #{anlsGbCd}
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, ANLS_GB_CD, YR, MM, DT, GOODS_NO
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, ANLS_GB_CD, YR, MM, DT, GOODS_NO, EQPM_GB_CD
+            </if>
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+            <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, ANLS_GB_CD, YR, MM, GOODS_NO
+            </if>
+            <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, ANLS_GB_CD, YR, MM, GOODS_NO, EQPM_GB_CD
+            </if>
+        </if>
+        group by GOODS_NO
+        order by SALE_QTT desc
+    </sql>
+
+    <!-- 판매순위 분석 전체조회 -->
+    <select id="selectSaleRankGoodsList" parameterType="saleRankGoodsSO" resultType="saleRankGoodsVO">
+        /* statistics.saleRankGoodsAnls.selectSaleRankGoodsList */
+		SELECT *
+		FROM
+		(
+	        select ROWNUM AS PAGING_NUM, ROWNUM, ROWNUM AS RANK
+	             , A.*
+	          FROM (
+                   SELECT fn_getGoodsNm(A.GOODS_NO) AS GOODS_NM
+                        , ROUND(A.SALE_QTT,0) AS SALE_QTT
+                        , ROUND(A.SALE_AMT,0) AS SALE_AMT
+                        , ROUND(A.STOCK_QTT,0) AS STOCK_QTT
+                        , ROUND(A.AVAIL_QTT,0) AS AVAIL_QTT
+                        , ROUND(A.BASKET_QTT,0) AS BASKET_QTT
+                        , ROUND(A.FAV_GOODS_QTT,0) AS FAV_GOODS_QTT
+                        , ROUND(A.REVIEW_CNT,0) AS REVIEW_CNT
+                     FROM (
+                              SELECT GOODS_NO
+                                   , SUM(NVL(SALE_QTT,0)) AS SALE_QTT
+                                   , SUM(NVL(SALE_AMT,0)) AS SALE_AMT
+                                   , SUM(NVL(STOCK_QTT,0)) AS STOCK_QTT
+                                   , SUM(NVL(AVAIL_QTT,0)) AS AVAIL_QTT
+                                   , SUM(NVL(BASKET_QTT,0)) AS BASKET_QTT
+                                   , SUM(NVL(FAV_GOODS_QTT,0)) AS FAV_GOODS_QTT
+                                   , SUM(NVL(REVIEW_CNT,0)) AS REVIEW_CNT
+                                FROM TT_GOODS_ANLS
+                               WHERE 1= 1
+                               <include refid="selectSaleRankGoodsListWhere" />
+                           ) A
+                      <include refid="common.sortSql" />
+                ) A
+         )
+         <include refid="common.pageSql" />
+    </select>
+
+    <!-- 판매순위 분석 총건수 조회 -->
+    <select id="selectSaleRankGoodsListTotalCount" parameterType="saleRankGoodsSO" resultType="Integer">
+        /* statistics.saleRankGoodsAnls.selectSaleRankGoodsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT GOODS_NO
+                      , SUM(NVL(SALE_QTT,0)) AS SALE_QTT
+                      , SUM(NVL(SALE_AMT,0)) AS SALE_AMT
+                   FROM TT_GOODS_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectSaleRankGoodsListWhere" />
+                ) TCNT
+    </select>
+
+    <!-- 판매순위 분석 조건적용 총건수 조회 -->
+    <select id="selectSaleRankGoodsListCount" parameterType="saleRankGoodsSO" resultType="Integer">
+        /* statistics.saleRankGoodsAnls.selectSaleRankGoodsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT GOODS_NO
+                      , SUM(NVL(SALE_QTT,0)) AS SALE_QTT
+                      , SUM(NVL(SALE_AMT,0)) AS SALE_AMT
+                   FROM TT_GOODS_ANLS
+                  WHERE 1 = 1
+                ) PGCNT
+    </select>
+</mapper>

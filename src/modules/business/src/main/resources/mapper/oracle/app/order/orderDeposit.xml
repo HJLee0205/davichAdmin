@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	주문 배송
+-->
+<mapper namespace="order.deposit">
+    <!-- 주문목록 페이징 조회 검색 조건-->
+    <sql id="selectDepositListWhere">
+            AND A.ORD_NO = B.ORD_NO
+        <if test="searchDayS != null and searchDayS != ''">
+            <![CDATA[
+            AND A.ORD_ACCEPT_DTTM >= TO_DATE(#{searchDayS}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchDayE != null and searchDayE != ''">
+            <![CDATA[
+            AND A.ORD_ACCEPT_DTTM < TO_DATE(#{searchDayE}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="ordStatusCd != null and ordStatusCd != ''">
+            AND A.ORD_STATUS_CD IN <foreach collection="ordStatusCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test="searchCd != null and searchCd != '' and searchWord != null and searchWord !=''">
+            <choose>
+                <when test="searchCd eq '01'">
+                    AND A.ORD_NO LIKE '%'||#{searchWord}||'%'
+                </when>
+                <when test="searchCd eq '02'">
+                    AND A.ORDR_NM = #{searchWord}
+                </when>
+                <when test="searchCd eq '03'">
+                    AND B.DPSTER_NM = #{searchWord}
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 가상계좌무통장 주문목록 페이징 조회 -->
+    <select id="selectDepositListPaging" resultType="net.danvi.dmall.biz.app.order.deposit.model.DepositVO">
+        /* biz.app.order.deposit.selectDepositListPaging - 가상계좌무통장 주문목록 페이징 조회 */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+		            SELECT
+						A.ORD_NO,
+						max(A.ORDR_NM) as ORDR_NM,
+						(
+							CASE
+								WHEN max(B.PAYMENT_WAY_CD) = '11' THEN
+								utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('BANK_CD',BANK_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2))
+								ELSE
+								utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',fn_getCodeNm('PG'||PAYMENT_PG_CD||'_FINANCE_CD',BANK_CD)) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2))
+							END
+						) AS BANK_NM,
+						max(B.ACT_NO) as ACT_NO,
+						max(B.DPSTER_NM) as DPSTER_NM,
+						max(B.PAYMENT_AMT) as PAYMENT_AMT,
+						fn_getCodeNm('ORD_STATUS_CD', max(A.ORD_STATUS_CD)) AS ORD_STATUS_NM,
+						CASE
+							WHEN max(PAYMENT_STATUS_CD) ='02' THEN TO_CHAR(max(B.PAYMENT_CMPLT_DTTM), 'YYYY-MM-DD HH24:MI:SS')
+							ELSE ''
+						END PAYMENT_CMPLT_DTTM,
+						max(A.ORD_STATUS_CD) as ORD_STATUS_CD,
+						max(A.REG_DTTM) as REG_DTTM,
+						max(A.UPD_DTTM) as UPD_DTTM
+		            FROM    TO_ORD A,
+		            (
+						select *
+						from
+						(
+							SELECT A.*, rank() over(partition by A.ORD_NO order by A.PAYMENT_NO desc) as rank
+							from TO_PAYMENT A,
+							(
+								SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+								FROM TO_PAYMENT
+								WHERE SITE_NO = #{siteNo}
+								GROUP BY ORD_NO
+							) B
+							WHERE A.ORD_NO = B.ORD_NO
+							AND A.PAYMENT_TURN = B.PAYMENT_TURN
+							AND A.PAYMENT_WAY_CD = #{paymentWayCd}
+						)
+		             ) B
+		            WHERE  1=1
+		            <include refid="selectDepositListWhere" />
+		            GROUP BY A.ORD_NO
+		            <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 주문목록 페이징 조회를 위한 카운트 -->
+    <select id="selectDepositListPagingCount" resultType="Integer">
+        /* biz.app.order.deposit.selectDepositListPagingCount - 가상계좌무통장 주문목록 페이징 조회 count */
+        SELECT  count(1)
+        FROM    TO_ORD A,
+		(
+			select *
+			from
+			(
+				SELECT A.*, rank() over(partition by A.ORD_NO order by A.PAYMENT_NO desc) as rank
+				from TO_PAYMENT A,
+				(
+					SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+					FROM TO_PAYMENT
+					WHERE SITE_NO = #{siteNo}
+					GROUP BY ORD_NO
+				) B
+				WHERE A.ORD_NO = B.ORD_NO
+				AND A.PAYMENT_TURN = B.PAYMENT_TURN
+				AND A.PAYMENT_WAY_CD = #{paymentWayCd}
+			)
+		) B
+        WHERE 1=1
+        <include refid="selectDepositListWhere" />
+    </select>
+
+    <select id="selectDepositListPagingTotalCount" resultType="Integer">
+        /* biz.app.order.deposit.selectDepositListPagingTotalCount - 가상계좌무통장 주문목록 페이징 total count 조회 */
+        SELECT  count(1)
+        FROM    TO_ORD A,
+		(
+			select *
+			from
+			(
+				SELECT A.*, rank() over(partition by A.ORD_NO order by A.PAYMENT_NO desc) as rank
+				from TO_PAYMENT A,
+				(
+					SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+					FROM TO_PAYMENT
+					WHERE SITE_NO = #{siteNo}
+					GROUP BY ORD_NO
+				) B
+				WHERE A.ORD_NO = B.ORD_NO
+				AND A.PAYMENT_TURN = B.PAYMENT_TURN
+				AND A.PAYMENT_WAY_CD = #{paymentWayCd}
+			)
+		) B
+    </select>
+
+        <!-- 결제 값 변경 -->
+    <update id="updateOrdStatusPayDone" parameterType="net.danvi.dmall.biz.app.order.manage.model.OrderGoodsVO">
+        /* biz.app.order.deposit.updateOrdStatusPayDone - 결제 값 변경 */
+		UPDATE TO_PAYMENT C
+		SET  C.PAYMENT_CMPLT_DTTM = sysdate
+			, C.PAYMENT_STATUS_CD = '02'
+			, C.UPDR_NO = #{regrNo}
+			, C.UPD_DTTM = sysdate
+		WHERE PAYMENT_NO =
+			(
+				SELECT PAYMENT_NO
+				FROM
+				(
+					SELECT PAYMENT_NO, ORD_NO, PAYMENT_TURN, PAYMENT_WAY_CD, RANK() OVER(PARTITION BY ORD_NO ORDER BY PAYMENT_TURN DESC) AS RANK
+					FROM TO_PAYMENT
+					WHERE SITE_NO = #{siteNo}
+					AND ORD_NO = #{ordNo}
+				)
+				WHERE RANK = 1
+				AND PAYMENT_WAY_CD in ('11','22')
+			)
+    </update>
+</mapper>

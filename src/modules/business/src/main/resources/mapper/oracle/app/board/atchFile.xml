@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.atchFile">
+
+    <sql id="selectAtchFileWhere">
+        AND DEL_YN = 'N'
+        <if test="fileNo != null and fileNo != ''">
+            AND FILE_NO = #{fileNo}
+        </if>
+        <if test="bbsId != null and bbsId != ''">
+            AND BBS_ID = #{bbsId}
+        </if>
+        <if test="siteNo != null and siteNo != ''">
+            AND SITE_NO = #{siteNo}
+        </if>
+        <if test="lettNo != null and lettNo != ''">
+            AND LETT_NO = #{lettNo}
+        </if>
+        <if test="fileGb != null and fileGb != ''">
+            AND FILE_GB = #{fileGb}
+        </if>
+        ORDER BY FILE_NO ASC
+    </sql>
+
+    <select id="selectAtchFileList" resultType="atchFileVO">
+        /* board.atchFile.selectAtchFileList */
+        SELECT  *
+        FROM    TB_ATCHFILE
+        WHERE 1=1
+        <include refid="selectAtchFileWhere"/>
+    </select>
+
+    <select id="selectAtchFileDtl" resultType="fileVO">
+        /* board.atchFile.selectAtchFileDtl */
+        SELECT  atchfile.FILE_PATH, atchfile.ORG_FILE_NM as FILE_ORG_NAME, atchfile.FILE_NM as FILE_NAME, atchfile.IMG_YN as imgYn
+		FROM    TB_ATCHFILE  atchfile
+		WHERE 1=1
+        <include refid="selectAtchFileWhere"/>
+    </select>
+
+    <insert id="insertAtchFile" >
+        /* board.atchFile.insertAtchFile */
+        INSERT INTO TB_ATCHFILE (
+            FILE_NO, BBS_ID, LETT_NO, SITE_NO, FILE_GB, FILE_PATH, ORG_FILE_NM, IMG_YN,
+            FILE_NM, FILE_SIZE, EXTSN,REGR_NO, REG_DTTM, DEL_YN, DLGT_IMG_YN
+        ) VALUES (
+            fn_getSeq(0, 'FILE_NO'), #{bbsId}, #{lettNo},#{siteNo}, #{fileGb}, #{filePath}, #{orgFileNm}, #{imgYn},
+            #{fileNm}, #{fileSize}, #{extsn}, #{regrNo}, sysdate, 'N', #{dlgtImgYn}
+        )
+    </insert>
+    <update id="deleteAtchFile" >
+        /* board.atchFile.deleteAtchFile */
+        DELETE  FROM TB_ATCHFILE
+        WHERE   FILE_NO = #{fileNo}
+        <!-- UPDATE  TB_ATCHFILE
+        SET     DEL_YN = 'Y',
+                DEL_DTTM = sysdate,
+                DELR_NO = #{delrNo}
+        WHERE   FILE_NO = #{fileNo} -->
+    </update>
+    <select id="selectAtchFileList2" parameterType="atchFileVO" resultType="atchFileVO">
+        /* board.atchFile.selectAtchFileList */
+        SELECT  *
+        FROM    TB_ATCHFILE
+        WHERE 1=1
+        AND DEL_YN = 'N'
+        AND LETT_NO = #{lettNo}
+        <if test="fileGb != null and fileGb != ''">
+        AND file_gb = #{fileGb}
+        </if>
+    </select>
+</mapper>

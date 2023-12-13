@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dist">
+	
+	<!-- 매장수령 주문 출고 마감시간 조회 -->
+	<select id="selectClosingTimeForStoreDlvr" resultType="string">
+		/* dist.selectClosingTimeForStoreDlvr - 매장수령 주문 출고 마감시간 조회 */
+		select ctr_name as closingTime
+		from am700tbl@DAVISION
+		where ctr_id = '602'
+		  and ctr_code = 'S'
+	</select>
+	
+	<!-- 자택수령 주문 출고 마감시간 조회 -->
+	<select id="selectClosingTimeForHomeDlvr" resultType="string">
+		select ctr_name as closingTime
+		from am700tbl@DAVISION
+		where ctr_id = '602'
+		  and ctr_code = 'H'
+	</select>
+	
+	<!-- 전표번호 조회 -->
+	<select id="getNextOrdSlip" parameterType="string" resultType="string">
+		select lpad(nvl(max(ord_slip), 0) + 1, 6, '0') as ordSlip
+		from mall_order_h@DAVISION
+		where ord_date = to_date(#{ordDate}, 'YYYYMMDD')
+	</select>
+
+	<select id="getCurOrdDtlSeq" parameterType="string" resultType="string">
+		select nvl(max(ORD_SEQ), 0) as ordDtlSeq
+		from mall_order_d@DAVISION
+		where ord_date = to_date(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+	</select>
+
+	<!-- 발주/반품 등록 -->
+	<insert id="insertOrderInfo" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderRegReqDTO">
+		MERGE INTO mall_order_h@DAVISION
+		USING DUAL
+		ON (ORD_SLIP_NO = #{ordSlipNo})
+		WHEN MATCHED THEN
+		UPDATE SET
+			ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		WHEN NOT MATCHED THEN
+		    insert (
+				   ord_date
+				 , str_code
+		<if test="ordSlip != null and ordSlip != ''">
+				 , ord_slip
+		</if>
+				 , ven_code
+				 , ord_rute
+		<if test="gubun != null and gubun != ''">
+				 , gubun
+		</if>
+		<if test="ordSlipNo != null and ordSlipNo != ''">
+				 , ord_slip_no
+		</if>
+				 , cd_cust
+				 , nm_cust
+				 , order_code
+		<if test="zipCode != null and zipCode != ''">
+				 , cd_o_zip
+		</if>
+				 , nm_o_addr1
+				 , nm_o_addr2
+				 , hand_phone
+		<if test="bigo != null and bigo != ''">
+				 , bigo
+		</if>
+				 , org_ord_date
+		<if test="orgStrCode != null and orgStrCode != ''">
+				 , org_str_code
+		</if>
+		<if test="orgOrdSlip != null and orgOrdSlip != ''">
+				 , org_ord_slip
+		</if>
+		<if test="inoutYn != null and inoutYn != ''">
+				 , inout_yn
+		</if>
+		<if test="chargeYn != null and chargeYn != ''">
+				 , charge_yn
+		</if>
+		<if test="reorderReason != null and reorderReason != ''">
+				 , reorder_reason
+		</if>
+				 , ord_cust
+				 , ord_phone
+		) values (
+				TO_DATE(#{ordDate}, 'YYYYMMDD')
+				, #{strCode}
+		<if test="ordSlip != null and ordSlip != ''">
+				, #{ordSlip}
+		</if>
+				, #{venCode}
+				, #{ordRute}
+		<if test="gubun != null and gubun != ''">
+				, #{gubun}
+		</if>
+		<if test="ordSlipNo != null and ordSlipNo != ''">
+				, #{ordSlipNo}
+		</if>
+				, #{cdCust, jdbcType=VARCHAR}
+				, #{receiverName, jdbcType=VARCHAR}
+				, #{delivStrCode, jdbcType=VARCHAR}
+		<if test="zipCode != null and zipCode != ''">
+				, #{zipCode, jdbcType=VARCHAR}
+		</if>
+				, #{address1, jdbcType=VARCHAR}
+				, #{address2, jdbcType=VARCHAR}
+				, #{receiverHp, jdbcType=VARCHAR}
+		<if test="bigo != null and bigo != ''">
+				, #{bigo, jdbcType=VARCHAR}
+		</if>
+				, TO_DATE(#{orgOrdDate}, 'YYYYMMDD')
+		<if test="orgStrCode != null and orgStrCode != ''">
+				, #{orgStrCode, jdbcType=VARCHAR}
+		</if>
+		<if test="orgOrdSlip != null and orgOrdSlip != ''">
+				, #{orgOrdSlip, jdbcType=VARCHAR}
+		</if>
+		<if test="inoutYn != null and inoutYn != ''">
+				, #{inoutYn}
+		</if>
+		<if test="chargeYn != null and chargeYn != ''">
+				, #{chargeYn}
+		</if>
+		<if test="reorderReason != null and reorderReason != ''">
+				, #{reorderReason, jdbcType=VARCHAR}
+		</if>
+				, #{orderName, jdbcType=VARCHAR}
+				, #{orderHp, jdbcType=VARCHAR}
+			)
+	</insert>
+	
+	<!-- 발주 상세 등록 -->
+	<insert id="insertOrderDetailInfo" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderRegReqDTO$OrderDetailDTO">
+			insert into mall_order_d@DAVISION (
+				  ord_date
+				 , str_code
+				 , ord_slip
+				 , itm_code
+				 , ord_seq
+				 , ord_add_no
+				 , itm_name
+				 , opt_name
+				 , tax
+				 , sup_qty
+				 , wprc
+				 , sprc
+				 , ret_sayu
+				 , return_status
+				 , org_ord_seq
+				 , org_ord_add_no
+				 , str_ip_yn)
+		values ( TO_DATE(#{ordDate}, 'YYYYMMDD')
+				, #{strCode}
+				, #{ordSlip}
+				, #{erpItmCode, jdbcType=VARCHAR}
+				, #{erpOrdDtlSeq}
+				, #{erpOrdAddNo}
+				, #{goodsNm}
+				, #{optNm, jdbcType=VARCHAR}
+				, #{tax}
+				, #{qty}
+				, #{wprc}
+				, #{sprc}
+				, #{retSayu, jdbcType=VARCHAR}
+				, #{returnStatus, jdbcType=VARCHAR}
+				, #{orgOrdSeq, jdbcType=VARCHAR}
+				, #{orgOrdAddNo, jdbcType=VARCHAR}
+				, #{strIpYn, jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 결제정보 등록 -->
+	<insert id="insertOrderPaymentInfo" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderPayInfoDTO">
+		/* dist.insertOrderPaymentInfo - 결제정보 등록 */
+		insert into mall_itm_paymat@DAVISION
+		(dates
+		, str_code
+		, ord_slip
+		, ord_seq
+		, ord_add_no
+		, seq_no
+		, canc_type
+		, pay_type
+		, pay_name
+		, dc_code
+		, dc_name
+		, in_dates
+		, pay_amt)
+		values
+		(TO_DATE(#{dates}, 'YYYYMMDD')
+		, #{strCode}
+		, #{ordSlip}
+		, #{ordSeq}
+		, #{ordAddNo}
+		, #{seqNo}
+		, #{cancType}
+		, #{payType}
+		, #{payName}
+		, #{dcCode, jdbcType=VARCHAR}
+		, #{dcName, jdbcType=VARCHAR}
+		, TO_DATE(#{inDates}, 'YYYYMMDD')
+		, #{payAmt})
+	</insert>
+	
+	<!-- 발주 취소 -->
+	<update id="cancelOrder" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderCancelReqDTO">
+		update mall_order_h@DAVISION
+		set sup_com = '2'
+		where ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+	</update>
+	
+	<!-- 쇼핑몰 배송 데이터 조회 -->
+	<select id="selectMallOrderDlvrInfo" parameterType="map" resultType="map">
+		select a.dlvr_no as "dlvr_no"
+			, a.dlvr_qtt as "dlvr_qtt"
+			, NVL(a.dlvr_msg,'') as "dlvr_msg"
+			, a.dlvrc_payment_cd as "dlvrc_payment_cd"
+			, b.goods_no as "goods_no"
+			, b.ord_dtl_status_cd as "ord_dtl_status_cd"
+		from to_dlvr a
+		inner join to_ord_dtl b on a.ord_no = b.ord_no and a.ord_dtl_seq = b.ord_dtl_seq
+		where a.ord_no = #{mallOrderNo}
+		  and a.ord_dtl_seq = #{mallOrderDtlSeq}
+	</select>
+	
+	<!-- 주문상세 1건에 따른 결제 내역 목록 조회  -->
+	<select id="selectOrderDtlPaymentInfoList" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderPayInfoDTO" resultType="net.danvi.dmall.biz.ifapi.dist.dto.OrderPayInfoDTO">
+		select to_char(dates, 'YYYYMMDD') as dates
+			, str_code as strCode
+			, ord_slip as ordSlip
+			, ord_seq as ordSeq
+			, ord_add_no as ordAddNo
+			, seq_no as seqNo
+			, canc_type as cancType
+			, pay_type as payType
+			, pay_name as payName
+			, dc_code as dcCode
+			, dc_name as dcName
+			, to_char(in_dates, 'YYYYMMDD') as inDates
+			, pay_amt as payAmt
+		from mall_itm_paymat@DAVISION
+		where dates = TO_DATE(#{dates}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+		  and ord_seq = #{ordSeq}
+		  and ord_add_no = #{ordAddNo}
+	</select>
+	
+	<!-- 원주문상세 주문수량 조회 -->
+	<select id="selectOrgOrderDtlQty" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.OrderRegReqDTO$OrderDetailDTO" resultType="int">
+		select sup_qty
+		from mall_order_d@DAVISION
+		where ord_date = TO_DATE(#{orgOrdDate}, 'YYYYMMDD')
+		  and str_code = #{orgStrCode}
+		  and ord_slip = #{orgOrdSlip}
+		  and ord_seq = #{orgOrdSeq}
+		  and ord_add_no = #{orgOrdAddNo}
+	</select>
+	
+	<!-- 다비젼 주문상세 반품 상태 코드 변경 -->
+	<update id="updateErpOrderDtlStatus" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.MallReturnConfirmReqDTO$ClaimInfoDTO">
+		update mall_order_d@DAVISION
+		set return_status = #{status}
+		where ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+		  and ord_seq = #{ordSeq}
+		  and ord_add_no = #{ordAddNo}
+	</update>
+	
+	<!-- 다비젼 주문 상세에서 해당 주문번호 기준으로 상태가 다른 데이터 개수 -->
+	<select id="countErpOrderDtlOtherStatus" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.MallReturnConfirmReqDTO$ClaimInfoDTO" resultType="int">
+		select count(*) as cnt
+		from mall_order_d@DAVISION
+		where ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+		  and return_status != #{status}
+	</select>
+	
+	<!-- 다비젼 주문 상태 코드 변경 -->
+	<update id="updateErpOrderStatus" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.MallReturnConfirmReqDTO$ClaimInfoDTO">
+		update mall_order_h@DAVISION
+		set status = #{status}
+		where ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+	</update>
+	
+	<!-- 쇼핑몰 주문상세 반품 상태코드 변경  -->
+	<update id="updateMallReturnStatus" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.ErpReturnConfirmReqDTO">
+		update to_claim
+		set return_cd = '12'
+		  , updr_no = #{updrNo}
+		  , upd_dttm = sysdate
+		where (
+		  	<foreach collection="ordDtlList" item="ordDtl" separator="or">
+		  	(
+			  	claim_no = #{ordDtl.claimNo}
+			  	and ord_no = #{ordDtl.ordNo}
+			  	and ord_dtl_seq = #{ordDtl.ordDtlSeq}
+			  	and claim_qtt = #{ordDtl.qty}
+			  	and return_cd = '11'
+		  	)
+		  	</foreach>
+		)
+	</update>
+	
+	<!-- 다비젼에 구매확정정보 갱신 -->
+	<update id="updateErpPurchaseConfirm" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.PurchaseConfirmReqDTO">
+		update mall_order_d@DAVISION
+		set purchase_confirm_yn = 'Y'
+		  , cng_date = sysdate
+		where ord_date = TO_DATE(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+		  and (
+		  	<foreach collection="ordDtlList" item="ordDtl" separator="or">
+		  	(ord_seq = #{ordDtl.ordSeq} and ord_add_no = #{ordDtl.ordAddNo})
+		  	</foreach>
+		  )
+	</update>
+	
+	<!-- 원반품 정보 조회 -->
+	<select id="selectReturnOrderDtlInfo" parameterType="map" resultType="net.danvi.dmall.biz.ifapi.dist.dto.ReturnInfoDTO">
+		select to_char(d.ord_date, 'YYYYMMDD') as ordDate
+			, d.str_code as strCode
+			, d.ord_slip as ordSlip
+			, d.ord_seq || '' as ordSeq
+			, d.ord_add_no as ordAddNo
+			, d.sprc as sprc
+			, nvl(d.sup_qty, 0) as supQty
+			, to_char(h.org_ord_date, 'YYYYMMDD') as orgOrdDate
+			, h.org_str_code as orgStrCode
+			, h.org_ord_slip as orgOrdSlip
+			, d.org_ord_seq || '' as orgOrdSeq
+			, d.org_ord_add_no as orgOrdAddNo
+		from mall_order_d@DAVISION d
+		inner join mall_order_h@DAVISION h on d.ord_date = h.ord_date and d.str_code = d.str_code and d.ord_slip = h.ord_slip
+		where d.ord_date = to_date(#{ordDate}, 'YYYYMMDD')
+		  and d.str_code = #{strCode}
+		  and d.ord_slip = #{ordSlip}
+		  and d.ord_seq = #{ordSeq}
+		  and d.ord_add_no = #{ordAddNo}
+	</select>
+	
+	<!-- 원주문상세 수량 조회(환불제외) -->
+	<select id="selectOrgOrderQtyExceptRefund" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.ReturnInfoDTO" resultType="int">
+		select sum(case when h.gubun = 0 then d.sup_qty else d.sup_qty * -1 end) as "qty"
+		from mall_order_h@DAVISION h
+		inner join mall_order_d@DAVISION d on h.ord_date = d.ord_date and h.str_code = d.str_code and h.ord_slip = d.ord_slip
+		where (h.ord_date = to_date(#{orgOrdDate}, 'YYYYMMDD')
+			and h.str_code = #{orgStrCode}
+			and h.ord_slip = #{orgOrdSlip}
+			and d.ord_seq = #{orgOrdSeq}
+			and d.ord_add_no = #{orgOrdAddNo})
+		or (h.org_ord_date = to_date(#{orgOrdDate}, 'YYYYMMDD')
+			and h.org_str_code = #{orgStrCode}
+			and h.org_ord_slip = #{orgOrdSlip}
+			and d.org_ord_seq = #{orgOrdSeq}
+			and d.org_ord_add_no = #{orgOrdAddNo}
+			and h.charge_yn = 'Y')
+	</select>
+	
+	<!-- 원주문 결제정보 조회 (환불제외) -->
+	<select id="selectOrgPaymentInfoListExceptRefund" parameterType="net.danvi.dmall.biz.ifapi.dist.dto.ReturnInfoDTO" resultType="net.danvi.dmall.biz.ifapi.dist.dto.OrderPayInfoDTO">
+		select pay_type as payType
+			, pay_name as payName
+			, dc_code as dcCode
+			, dc_name as dcName
+			, sum(pay_amt) as payAmt
+		from (
+			select p.pay_type
+				, p.pay_name
+				, p.dc_code
+				, p.dc_name
+				, case when h.gubun = '0' then p.pay_amt else p.pay_amt * -1 end as pay_amt
+			from mall_itm_paymat@DAVISION p
+			inner join mall_order_d@DAVISION d on p.dates = d.ord_date and p.str_code = d.str_code and p.ord_slip = d.ord_slip and p.ord_seq = d.ord_seq and p.ord_add_no = d.ord_add_no
+			inner join mall_order_h@DAVISION h on p.dates = h.ord_date and p.str_code = h.str_code and p.ord_slip = h.ord_slip
+			where (h.ord_date = to_date(#{orgOrdDate}, 'YYYYMMDD')
+			and h.str_code = #{orgStrCode}
+			and h.ord_slip = #{orgOrdSlip}
+			and d.ord_seq = #{orgOrdSeq}
+			and d.ord_add_no = #{orgOrdAddNo})
+			or (h.org_ord_date = to_date(#{orgOrdDate}, 'YYYYMMDD')
+			and h.org_str_code = #{orgStrCode}
+			and h.org_ord_slip = #{orgOrdSlip}
+			and d.org_ord_seq = #{orgOrdSeq}
+			and d.org_ord_add_no = #{orgOrdAddNo})
+		)
+		group by pay_type, pay_name, dc_code, dc_name
+	</select>
+	 
+	<!-- 전체 반품시 반품 발주 데이터의 정산 여부를 Y로 설정 -->
+	<update id="updateOrderChargeYnToY" parameterType="map">
+		update mall_order_h@DAVISION
+		set charge_yn = 'Y'
+		  , cng_date = sysdate
+		where ord_date = to_date(#{ordDate}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and ord_slip = #{ordSlip}
+	</update>
+	
+	<!-- 주문 상세의 현재 상태 조회 -->
+	<select id="selectOrderDtlCurrentStatus" parameterType="map" resultType="string">
+		select ord_dtl_status_cd
+		from to_ord_dtl
+		where ord_no = #{ordNo}
+		and ord_dtl_seq = #{ordDtlSeq}
+	</select>
+	
+</mapper>

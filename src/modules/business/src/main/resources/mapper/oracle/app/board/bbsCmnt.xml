@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.bbsCmnt">
+    <sql id="selectBbsInfoWhere">
+         AND cmnt.LETT_NO = #{lettNo}
+         AND cmnt.DEL_YN = 'N'
+         ORDER BY cmnt.REG_DTTM DESC
+    </sql>
+
+    <select id="selectBbsCmntList" resultType="bbsCmntManageVO">
+        /* board.bbsCmnt.selectBbsCmntList */
+        select *
+        from (
+            select ROWNUM AS PAGING_NUM, TOT_CNT - ROWNUM + 1 as ROW_NUM, AA.*
+            from (
+                select A.*, count(*) over() as TOT_CNT
+                from (
+                    SELECT cmnt.*,
+                           fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) AS REGR_NM,
+                           mmb.LOGIN_ID,
+                           (
+                               select MEMBER_GRADE_NM
+                               from TC_MEMBER_GRADE
+                               where SITE_NO = #{siteNo}
+                               and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO
+                            )
+                    FROM TB_STYLE_BBS_CMNT cmnt
+                        LEFT OUTER JOIN TC_MEMBER mmb ON (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+                    WHERE 1=1
+                    <include refid="selectBbsInfoWhere"/>
+                ) A
+                <if test="searchWord != null and searchWord != ''">
+                    where A.CONTENT like '%'||#{searchWord}||'%' or A.REGR_NM = #{searchWordEncrypt}
+                </if>
+            ) AA
+        )
+        <include refid="common.pageSql"></include>
+
+    </select>
+
+    <select id="selectBbsCmntListTotalCount" resultType="Integer">
+        /* board.bbsCmnt.selectBbsCmntListTotalCount */
+        select count(1)
+        from (
+            select A.*
+            from (
+                 SELECT cmnt.*,
+                        fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) AS REGR_NM,
+                        mmb.LOGIN_ID,
+                        (
+                            select MEMBER_GRADE_NM
+                            from TC_MEMBER_GRADE
+                            where SITE_NO = #{siteNo}
+                              and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO
+                        )
+                 FROM TB_STYLE_BBS_CMNT cmnt
+                          LEFT OUTER JOIN TC_MEMBER mmb ON (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+                 WHERE 1=1
+                <include refid="selectBbsInfoWhere"/>
+            ) A
+        )
+    </select>
+
+    <select id="selectBbsCmntListCount" resultType="Integer">
+        /* board.bbsCmnt.selectBbsCmntListCount */
+        select count(1)
+        from (
+            select A.*
+            from (
+                SELECT cmnt.*,
+                    fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) AS REGR_NM,
+                    mmb.LOGIN_ID,
+                    (
+                        select MEMBER_GRADE_NM
+                        from TC_MEMBER_GRADE
+                        where SITE_NO = #{siteNo}
+                        and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO
+                    )
+                FROM TB_STYLE_BBS_CMNT cmnt
+                    LEFT OUTER JOIN TC_MEMBER mmb ON (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+                WHERE 1=1
+                <include refid="selectBbsInfoWhere"/>
+            ) A
+            <if test="searchWord != null and searchWord != ''">
+                where A.CONTENT like '%'||#{searchWord}||'%' or A.REGR_NM = #{searchWordEncrypt}
+            </if>
+        )
+    </select>
+
+    <insert id="insertBbsComment">
+        /* board.bbsCmnt.insertBbsComment */
+        INSERT INTO TB_STYLE_BBS_CMNT
+        (
+            CMNT_SEQ,
+            LETT_NO,
+            CONTENT,
+            REG_DTTM,
+            REGR_NO
+        )
+        VALUES
+        (
+            fn_getSeq(0, 'CMNT_SEQ'),
+            #{lettNo},
+            #{content:CLOB},
+            sysdate,
+            #{regrNo}
+        )
+    </insert>
+
+    <update id="deleteBbsComment">
+        /* board.bbsCmnt.deleteBbsComment */
+        UPDATE  TB_STYLE_BBS_CMNT
+        SET     DEL_YN = 'Y',
+                DEL_DTTM = sysdate,
+                DELR_NO = #{delrNo}
+        WHERE   CMNT_SEQ = #{cmntSeq}
+    </update>
+
+</mapper>

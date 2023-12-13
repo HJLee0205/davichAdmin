@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="certKey">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<insert id="insertCertKey" parameterType="net.danvi.dmall.smsemail.model.CertKeyPO">
+		/* certKey.insertCertKey - 인증키 등록 */
+		INSERT INTO smsemail.SITE_CERTIFY (
+			SITE_NO, CERT_KEY, REG_DTTM
+		) VALUES (#{siteNo}, #{certKey}, NOW())
+	</insert>
+
+	<select id="selectCertKey" resultType="String">
+		SELECT CERT_KEY
+		FROM 	smsemail.SITE_CERTIFY
+		WHERE 	SITE_NO = #{siteNo}
+	</select>
+</mapper>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.logger">
+
+	<insert id="insertAccessLog" parameterType="net.danvi.dmall.biz.system.model.WebLogPO">
+		INSERT INTO TA_ACCESS_LOG
+		(
+			SITE_NO,
+			ACCESS_DTTM,
+			JSESSIONID,
+			IP,
+			DEVICE_TYPE,
+			REFERER,
+			URL,
+			MEMBER_NO
+		)
+		VALUES (
+			#{siteNo},
+			systimestamp,
+			#{jsessionid},
+			#{ip},
+			#{deviceType},
+			#{referer},
+			#{url:CLOB},
+			#{memberNo}
+		)
+	</insert>
+
+	<insert id="insertHomepageIFLog" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.HomepageIfLogPO">
+		INSERT INTO TA_HOMEPAGE_IF_LOG (
+			IF_LOG_DTTM,
+			SITE_ID,
+			SITE_NO,
+			IO_GB,
+			IF_GB_CD,
+			IF_CONTENT
+		) VALUES (
+			systimestamp,
+			#{siteId},
+			#{siteNo},
+			#{ioGb},
+			#{ifGbCd},
+			#{ifContent:CLOB}
+		)
+	</insert>
+</mapper>

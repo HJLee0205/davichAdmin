@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 백오피스 관련 프로퍼티 설정 -->
+<properties>
+    <entry key="system.upload.file.size">6291456</entry><!-- 업로드 파일 용량 6MB -->
+    <entry key="system.homepage.url">http://www.danvistory.com</entry><!-- 홈페이지 서버 URL -->
+
+    <entry key="system.https.url.list">/login/,/member/,/order/</entry>
+    <!-- https 로 연결되야할 URI 패턴, URI에 해당 문자열이 포함되어있으면 https 로 리다이렉트 -->
+
+    <entry key="system.switch.url.list">/admin/,/image/</entry>
+    <!-- http / https 둘 다 연결될 URI 패턴, URI에 해당 문자열이 포함되어있으면 프로토콜 그대로 처리 -->
+</properties>

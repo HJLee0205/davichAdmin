@@ -1,0 +1,1761 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="promotion.coupon">
+
+    <sql id="selectCouponListWhere">
+        <if test="searchStartDate != null and searchStartDate != ''">
+            <![CDATA[
+                AND TC.REG_DTTM >= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchEndDate != null and searchEndDate != ''">
+            <![CDATA[
+                AND TC.REG_DTTM < TO_DATE(#{searchEndDate}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="couponKindCds != null">
+              <choose>
+                    <when test = "couponKindCds.length> 0">
+                          AND TC.COUPON_KIND_CD IN
+                          <foreach collection="couponKindCds" item="status" index="index" open="(" close=")" separator=",">
+                              #{status}
+                          </foreach>
+                    </when>
+              </choose>
+        </if>
+        <if test="searchWordsNoChiper != null and searchWordsNoChiper != ''">
+            AND TC.COUPON_NM LIKE '%'||#{searchWordsNoChiper}||'%'
+        </if>
+    </sql>
+
+    <!-- 쿠폰 발급/사용내역 POPUP 조회조건 : 검색어가 암호화 됐을수도 있고 안됐을 수도 있어 모두 검색-->
+    <sql id="selectCouponIssueUseHistWhere">
+        <if test="searchWords != null and searchWords != ''">
+            <if test="searchKind eq 'all'">
+               AND (
+                    A.MEMBER_NM = #{searchWords}
+                    OR
+                    A.LOGIN_ID LIKE '%'||#{searchWords}||'%'
+                    OR
+                    A.MEMBER_NM = #{searchWordsNoChiper}
+                    OR
+                    A.LOGIN_ID LIKE '%'||#{searchWordsNoChiper}||'%'
+                   )
+            </if>
+            <if test="searchKind eq 'searchNm'">
+               AND A.MEMBER_NM = #{searchWords}
+            </if>
+            <if test="searchKind eq 'searchId'">
+               AND A.LOGIN_ID LIKE '%'||#{searchWordsNoChiper}||'%'
+            </if>
+        </if>
+    </sql>
+
+    <select id="selectCouponList"  resultType="CouponVO">
+		/* promotion.coupon.selectCouponList - 쿠폰목록 조회 */
+		select rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+		from
+		(
+		    select A.*,  count(*) over() as tot_cnt
+		    from
+		    (
+		    	SELECT A.*
+		    	FROM
+		    	(
+	              	SELECT CASE TC.COUPON_APPLY_PERIOD_CD
+	                          WHEN '01' THEN TO_CHAR(TC.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI') || '~' || TO_CHAR(APPLY_END_DTTM,'YYYY-MM-DD HH24:MI')
+	                          WHEN '02' THEN '발급일로부터 ' || TC.COUPON_APPLY_ISSUE_AF_PERIOD || '일 동안 사용가능' END AS COUPON_APPLY_PERIOD_EXCEL, <!-- 엑셀다운로드용 정보 -->
+	                     CASE TC.COUPON_BNF_CD
+	                          WHEN '01' THEN TC.COUPON_BNF_VALUE || '%할인, 최대' || TC.COUPON_BNF_DC_AMT || '원'
+	                          WHEN '02' THEN TC.COUPON_BNF_DC_AMT || '원 할인' END AS COUPON_BNF_EXCEL,     <!-- 엑셀다운로드용 정보 -->
+	                     (SELECT COUNT(TMC.COUPON_NO) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO)||'/'||
+	                            (SELECT COUNT(TMC.USE_YN) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND TMC.USE_YN = 'Y') AS ISSUE_USE_CNT_EXCEL, <!-- 엑셀다운로드용 정보 -->
+	                     TC.COUPON_USE_LIMIT_AMT || '원 이상 구매시' AS COUPON_USE_LIMIT_AMT_EXCEL, <!-- 엑셀다운로드용 정보 -->
+	                     TC.COUPON_NO,
+	                     TC.SITE_NO,
+	                     TC.COUPON_KIND_CD,
+	                     TC.COUPON_QTT_LIMIT_CD,
+	                     TC.COUPON_QTT_LIMIT_CNT,
+	                     TC.COUPON_NM,
+	                     TC.COUPON_BNF_CD,
+	                     TC.COUPON_BNF_VALUE,
+	                     TC.COUPON_BNF_DC_AMT,
+	                     TC.COUPON_DUPLT_DWLD_PSB_YN,
+	                     TC.COUPON_APPLY_PERIOD_CD,
+	                     TO_CHAR(TC.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI') AS APPLY_START_DTTM,
+	                     TO_CHAR(TC.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI') AS APPLY_END_DTTM,
+	                     TC.COUPON_APPLY_ISSUE_AF_PERIOD,
+	                     TC.COUPON_USE_LIMIT_AMT,
+	                     TC.REG_DTTM,
+	                     TO_CHAR(TC.REG_DTTM,'YYYY-MM-DD HH24:MI') AS REG_DTTM_EXCEL, <!-- 엑셀에서 Date타입을 인식못하는 듯 해서 -->
+	                     (SELECT COUNT(TMC.COUPON_NO) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) AS ISSUE_CNT,
+	                     (SELECT COUNT(TMC.USE_YN) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO
+	                                                               AND TMC.USE_YN = 'Y') AS USE_CNT
+	               FROM  TP_COUPON TC
+	               WHERE DEL_YN = 'N'
+	               AND   SITE_NO = #{siteNo}
+	               <include refid="common.sortSql" />
+				) A
+				WHERE 1=1
+				<if test="couponKindCd != null">
+				AND A.COUPON_KIND_CD = #{couponKindCd}
+                    <if test="couponKindCd eq '04'">
+                      AND TO_CHAR(sysdate,'YYYY-MM-DD HH24:MI') BETWEEN NVL(A.APPLY_START_DTTM,TO_CHAR(sysdate,'YYYY-MM-DD HH24:MI')) AND  NVL(A.APPLY_END_DTTM,TO_CHAR(sysdate,'YYYY-MM-DD HH24:MI'))
+                    </if>
+				</if>
+
+			) A
+		) AA
+    </select>
+
+    <select id="selectCouponListPaging" parameterType="couponSO" resultType="CouponVO">
+        /* promotion.coupon.selectCouponListPaging - 쿠폰목록 조회페이징*/
+		SELECT T.*
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+			     	SELECT
+			            AA.*
+			            ,AA.ISSUE_CNT || '/' || (SELECT /*+ INDEX_FFS(TMC IDX_TC_MEMBER_CP_PK) */ COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = AA.COUPON_NO AND TMC.USE_YN = 'Y') AS ISSUE_USE_CNT_EXCEL <!-- 엑셀다운로드용 정보 -->
+			       	FROM (
+			              SELECT CASE TC.COUPON_APPLY_PERIOD_CD
+			                          WHEN '01' THEN TO_CHAR(TC.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI') || '~' || TO_CHAR(APPLY_END_DTTM,'YYYY-MM-DD HH24:MI')
+			                          WHEN '02' THEN '발급일로부터 ' || TC.COUPON_APPLY_ISSUE_AF_PERIOD || '일 동안 사용가능'
+			                          WHEN '03' THEN '구매확정일로부터 ' || TC.COUPON_APPLY_CONFIRM_AF_PERIOD || '일 동안 사용가능'
+			                          END AS COUPON_APPLY_PERIOD_EXCEL, <!-- 엑셀다운로드용 정보 -->
+			                     CASE TC.COUPON_BNF_CD
+			                          WHEN '01' THEN TC.COUPON_BNF_VALUE || '%할인, 최대' || TC.COUPON_BNF_DC_AMT || '원'
+			                          WHEN '02' THEN TC.COUPON_BNF_DC_AMT || '원 할인' END AS COUPON_BNF_EXCEL,     <!-- 엑셀다운로드용 정보 -->
+			                     TC.COUPON_USE_LIMIT_AMT || '원 이상 구매시' AS COUPON_USE_LIMIT_AMT_EXCEL, <!-- 엑셀다운로드용 정보 -->
+			                     TC.COUPON_NO,
+			                     TC.SITE_NO,
+			                     TC.COUPON_KIND_CD,
+			                     CD.CD_NM COUPON_KIND_CD_NM,
+			                     TC.COUPON_QTT_LIMIT_CD,
+			                     TC.COUPON_QTT_LIMIT_CNT,
+			                     TC.COUPON_NM,
+			                     TC.COUPON_BNF_CD,
+			                     TC.COUPON_BNF_VALUE,
+			                     TC.COUPON_BNF_DC_AMT,
+			                     TC.COUPON_DUPLT_DWLD_PSB_YN,
+			                     TC.COUPON_APPLY_LIMIT_CD,
+			                     TC.COUPON_APPLY_PERIOD_CD,
+			                     TC.COUPON_APPLY_TARGET_CD,
+			                     TO_CHAR(TC.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AS APPLY_START_DTTM,
+			                     TO_CHAR(TC.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS') AS APPLY_END_DTTM,
+			                     TC.COUPON_APPLY_ISSUE_AF_PERIOD,
+			                     TC.COUPON_APPLY_CONFIRM_AF_PERIOD,
+			                     TC.COUPON_USE_LIMIT_AMT,
+			                     TC.OFFLINE_ONLY_YN,
+			                     TC.REG_DTTM,
+			                     TO_CHAR(TC.REG_DTTM,'YYYY-MM-DD HH24:MI') AS REG_DTTM_EXCEL, <!-- 엑셀에서 Date타입을 인식못하는 듯 해서 -->
+			                     (SELECT /*+ INDEX_FFS(TMC IDX_TC_MEMBER_CP_PK) */ COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) AS ISSUE_CNT,
+			                     (SELECT /*+ INDEX_FFS(TMC IDX_TC_MEMBER_CP_PK) */ COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND TMC.USE_YN = 'Y') AS USE_CNT
+			               FROM  TP_COUPON TC
+			               JOIN  TA_CMN_CD_DTL CD ON TC.COUPON_KIND_CD = CD.CD AND CD.GRP_CD = 'COUPON_KIND_CD' AND CD.DEL_YN = 'N'
+			               WHERE TC.DEL_YN = 'N'
+			               AND   TC.SITE_NO = #{siteNo}
+			               <include refid="selectCouponListWhere"/>
+			               <include refid="common.sortSql" />
+			           ) AA
+			       WHERE 1=1
+			        <!--<if test="couponKindCd != null and couponKindCd.length> 0">
+			         AND AA.COUPON_KIND_CD IN
+                        <foreach collection="couponKindCd" item="status" index="index" open="(" close=")" separator=",">
+                            #{status}
+                        </foreach>
+			        </if>-->
+
+				) A
+			) AA
+        ) T
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectCouponListPagingCount" resultType="Integer">
+        /* promotion.coupon.selectCouponListPagingCount - 쿠폰목록 조회결과 개수*/
+         SELECT count(*)
+           FROM TP_COUPON TC
+           WHERE TC.DEL_YN = 'N'
+           <if test="couponKindCds != null and couponKindCds.length> 0">
+             AND TC.COUPON_KIND_CD IN
+               <foreach collection="couponKindCds" item="status" index="index" open="(" close=")" separator=",">
+                   #{status}
+               </foreach>
+           </if>
+           <if test="siteNo != null">
+             AND TC.SITE_NO = #{siteNo}
+           </if>
+        <include refid="selectCouponListWhere" />
+    </select>
+
+    <select id="selectCouponListPagingTotalCount" resultType="Integer">
+        /* promotion.coupon.selectCouponListPagingTotalCount - 총 쿠폰목록 개수 */
+         SELECT count(*)
+           FROM TP_COUPON
+           WHERE DEL_YN = 'N'
+           <!--<if test="couponKindCds != null and couponKindCds.length> 0">
+             AND COUPON_KIND_CD IN
+               <foreach collection="couponKindCds" item="status" index="index" open="(" close=")" separator=",">
+                   #{status}
+               </foreach>
+           </if>-->
+           <if test="siteNo != null">
+             AND SITE_NO = #{siteNo}
+           </if>
+    </select>
+
+    <select id="selectCouponIssueUseHist" resultType="couponVO">
+        /* promotion.coupon.selectCouponIssueUseHist - 쿠폰 발급/사용내역 조회 POPUP*/
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				select AA.*
+				from
+				(
+				    select A.*, count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+				    	SELECT *
+				    	FROM
+				    	(
+			        		SELECT      MC.COUPON_NO,
+			                             M.LOGIN_ID,
+			                             M.MEMBER_NM,
+			                             M.MEMBER_NO,
+			                             fn_getGoodsImgPath(OD.GOODS_NO, '03') AS IMG_PATH,
+			                             OD.ORD_NO,
+			                             OD.GOODS_NO,
+			                             OD.GOODS_NM,
+			                             CU.CP_USE_AMT,             <!-- 할인금액 -->
+			                             TO_CHAR(MC.REG_DTTM,'YYYY-MM-DD HH24:MI:SS') AS REG_DTTM,  <!-- 발급일 -->
+			                             TO_CHAR(MC.USE_DTTM,'YYYY-MM-DD HH24:MI:SS') AS USE_DTTM,  <!-- 사용일 -->
+			                             CASE
+			                               WHEN <![CDATA[MC.USE_YN = 'Y']]> THEN '사용함'
+			                               WHEN <![CDATA[MC.CP_APPLY_END_DTTM > sysdate and MC.USE_YN = 'N']]> THEN '사용안함'
+			                               WHEN <![CDATA[MC.CP_APPLY_END_DTTM <= sysdate and MC.USE_YN = 'N']]> THEN '소멸'
+			                             END  AS COUPON_STATUS,
+			                             MC.USE_YN,
+			                             rank() over(partition by M.MEMBER_NO order by CU.CP_USE_NO DESC, OD.ORD_NO DESC) as rank
+			                 FROM        TC_MEMBER M INNER JOIN TC_MEMBER_CP MC ON ( M.MEMBER_NO = MC.MEMBER_NO and MC.COUPON_NO = #{couponNo} )
+			                                            LEFT OUTER JOIN TO_COUPON_USE CU ON CU.MEMBER_CP_NO = MC.COUPON_NO
+			                                            LEFT OUTER JOIN TO_ORD_DTL OD ON CU.ORD_NO = OD.ORD_NO
+			                  WHERE    M.SITE_NO = #{siteNo}
+			                  AND      M.MEMBER_STATUS_CD = '01'
+						)
+						WHERE RANK = 1
+		            ) A
+		         	WHERE 1=1
+		        	<include refid="selectCouponIssueUseHistWhere"/>
+			    ) AA
+			    ORDER BY SORT_NUM DESC
+			) T
+		)
+        <include refid="common.pageSql" />
+       <!--  <include refid="common.sortSql" /> -->
+    </select>
+
+    <select id="selectCouponIssueUseHistCount" resultType="Integer">
+        /* promotion.coupon.selectCouponIssueUseHistCount - 쿠폰 발급/사용내역 조회 POPUP : 결과 개수*/
+        SELECT COUNT(*)
+		  FROM (
+                SELECT *
+                FROM
+                (
+                    SELECT      MC.COUPON_NO,
+                                 M.LOGIN_ID,
+                                 M.MEMBER_NM,
+                                 M.MEMBER_NO,
+                                 fn_getGoodsImgPath(OD.GOODS_NO, '03') AS IMG_PATH,
+                                 OD.ORD_NO,
+                                 OD.GOODS_NO,
+                                 OD.GOODS_NM,
+                                 CU.CP_USE_AMT,             <!-- 할인금액 -->
+                                 TO_CHAR(MC.REG_DTTM,'YYYY-MM-DD HH24:MI:SS') AS REG_DTTM,  <!-- 발급일 -->
+                                 TO_CHAR(MC.USE_DTTM,'YYYY-MM-DD HH24:MI:SS') AS USE_DTTM,  <!-- 사용일 -->
+                                 CASE
+                                   WHEN <![CDATA[MC.USE_YN = 'Y']]> THEN '사용함'
+                                   WHEN <![CDATA[MC.CP_APPLY_END_DTTM > sysdate and MC.USE_YN = 'N']]> THEN '사용안함'
+                                   WHEN <![CDATA[MC.CP_APPLY_END_DTTM <= sysdate and MC.USE_YN = 'N']]> THEN '소멸'
+                                 END  AS COUPON_STATUS,
+                                 MC.USE_YN,
+                                 rank() over(partition by M.MEMBER_NO order by CU.CP_USE_NO DESC, OD.ORD_NO DESC) as rank
+                     FROM        TC_MEMBER M INNER JOIN TC_MEMBER_CP MC ON ( M.MEMBER_NO = MC.MEMBER_NO and MC.COUPON_NO = #{couponNo} )
+                                                LEFT OUTER JOIN TO_COUPON_USE CU ON CU.MEMBER_CP_NO = MC.COUPON_NO
+                                                LEFT OUTER JOIN TO_ORD_DTL OD ON CU.ORD_NO = OD.ORD_NO
+                      WHERE    M.SITE_NO = #{siteNo}
+                      AND      M.MEMBER_STATUS_CD = '01'
+                )
+                WHERE RANK = 1
+        ) A
+        WHERE 1=1
+        <include refid="selectCouponIssueUseHistWhere"/>
+    </select>
+
+    <select id="selectCouponIssueUseHistTotalCount" resultType="Integer">
+        /* promotion.coupon.selectCouponIssueUseHistTotalCount - 쿠폰 발급/사용내역 조회 POPUP : 총 개수*/
+            SELECT      COUNT(*)
+             FROM        TC_MEMBER M INNER JOIN TC_MEMBER_CP MC ON ( M.MEMBER_NO = MC.MEMBER_NO and MC.COUPON_NO = #{couponNo} )
+                                        LEFT OUTER JOIN TO_COUPON_USE CU ON CU.MEMBER_CP_NO = MC.COUPON_NO
+                                        LEFT OUTER JOIN TO_ORD_DTL OD ON CU.ORD_NO = OD.ORD_NO
+              WHERE    M.SITE_NO = #{siteNo}
+              AND      M.MEMBER_STATUS_CD = '01'
+    </select>
+
+    <select id="selectIssueTargetListPop" resultType="CpTargetVO">
+        /* promotion.coupon.selectIssueTargetListPop - 쿠폰발급하기POPUP_ 쿠폰발급 대상 후보군 조회*/
+		select MEMBER_GRADE_NO, max(MEMBER_GRADE_NM) as MEMBER_GRADE_NM, count(MEMBER_NO) as GRADE_CNT, max(TOTAL_CNT) as TOTAL_CNT
+		from
+		(
+			select M.MEMBER_GRADE_NO, MG.MEMBER_GRADE_NM, M.MEMBER_NO, count(1) over() as TOTAL_CNT
+			from TC_MEMBER M
+			inner join TC_MEMBER_GRADE MG ON ( MG.MEMBER_GRADE_NO = M.MEMBER_GRADE_NO and M.SITE_NO = MG.SITE_NO )
+			WHERE M.SITE_NO = #{siteNo}
+			AND   M.MEMBER_STATUS_CD = '01'
+			AND   MEMBER_NO >= 1000
+		)
+		group by MEMBER_GRADE_NO
+    </select>
+
+    <select id="selectIssuedTargetListPop" resultType="CpTargetVO">
+        /* promotion.coupon.selectIssuedTargetListPop - 쿠폰발급하기POPUP_ 이미 쿠폰발급 받은 대상 조회  : 중복방지*/
+        SELECT grade.MEMBER_GRADE_NM,
+               cp.MEMBER_NO,
+               member.LOGIN_ID,
+               member.MEMBER_NM
+        FROM   TC_MEMBER_CP cp
+        INNER JOIN TC_MEMBER member ON ( cp.MEMBER_NO = member.MEMBER_NO and member.SITE_NO = #{siteNo} AND member.MEMBER_STATUS_CD = '01' )
+        INNER JOIN TC_MEMBER_GRADE grade ON ( member.MEMBER_GRADE_NO = grade.MEMBER_GRADE_NO and grade.SITE_NO = #{siteNo} )
+	    WHERE cp.COUPON_NO = #{couponNo}
+        <if test='couponDupltDwldPsbYn eq "Y"'>
+        <!-- 쿠폰 미사용이고 유효기간을 넘기지 않았으면, 쿠폰 발급 불가능. 쿠폰 사용했거나 유효기간 지나 소멸된 쿠폰 가진 회원은 또 발급 가능 -->
+	    AND cp.USE_YN = 'N'
+	    <![CDATA[
+	    AND cp.CP_APPLY_END_DTTM >  sysdate
+        ]]>
+		</if>
+		<if test='couponDupltDwldPsbYn eq "N"'>
+		<!-- 조건 필요없고, 쿠폰 발급 불가능. 한 번이라도 쿠폰 받은 모든 회원은 재발급 불가.-->
+		</if>
+    </select>
+
+    <select id="selectMemberTotalList" resultType="CpTargetVO">
+        /* promotion.coupon.selectMemberTotalList - 쿠폰발급하기POPUP_ 쿠폰발급대상 전체회원 조회*/
+        SELECT MEMBER_NO
+        FROM  TC_MEMBER
+        WHERE SITE_NO = #{siteNo}
+        AND MEMBER_STATUS_CD = '01'
+        AND MEMBER_NO >= 1000
+    </select>
+
+    <select id="selectMemberGroupList" resultType="CpTargetVO">
+        /* promotion.coupon.selectMemberGroupList - 쿠폰발급하기POPUP_ 쿠폰발급대상 그룹회원 조회*/
+        SELECT M.MEMBER_NO
+        FROM  TC_MEMBER M INNER JOIN TC_MEMBER_GRADE MG ON MG.MEMBER_GRADE_NO = M.MEMBER_GRADE_NO
+        WHERE M.SITE_NO = #{siteNo}
+        AND   MG.SITE_NO = #{siteNo}
+        AND   M.MEMBER_GRADE_NO = #{memberGradeNo}
+        AND   M.MEMBER_STATUS_CD = '01'
+        AND   M.MEMBER_NO >= 1000
+        AND   MG.DEL_YN ='N'
+    </select>
+    
+    <select id="selectRsvOnlyCouponList" resultType="CouponPO">
+    	/* promotion.coupon.selectRsvOnlyCouponList - 예약전용쿠폰 조회*/
+    SELECT T.COUPON_NO FROM (
+        SELECT
+            AA.GOODS_NO,
+            AA.COUPON_NO,
+            AA.COUPON_KIND_CD,
+            AA.COUPON_QTT_LIMIT_CD,
+            AA.COUPON_QTT_LIMIT_CNT,
+            AA.REG_DTTM,
+            AA.COUPON_NM,
+            AA.COUPON_DSCRT,
+            AA.COUPON_SOLO_USE_YN,
+            AA.COUPON_BNF_CD,
+            AA.COUPON_BNF_VALUE,
+            AA.COUPON_BNF_DC_AMT,
+            TO_CHAR(AA.APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,
+            TO_CHAR(AA.APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,
+            AA.COUPON_APPLY_PERIOD_CD,
+            AA.COUPON_APPLY_ISSUE_AF_PERIOD,
+            AA.COUPON_APPLY_SCOPE_CD,
+            AA.COUPON_APPLY_LIMIT_CD,
+            AA.COUPON_USE_LIMIT_AMT,
+            AA.COUPON_USE_YN,
+            AA.COUPON_DUPLT_DWLD_PSB_YN,
+            (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = AA.COUPON_NO) AS ISSUE_CNT
+          FROM (
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(상품번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TCTG.GOODS_NO = #{goodsNo}
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                  <![CDATA[
+                   AND TC.DEL_YN <> 'Y'
+                   ]]>
+                    AND TC.RSV_ONLY_YN = 'Y'
+                    AND TC.COUPON_USE_YN = 'Y'
+                    AND TC.COUPON_KIND_CD IN ('99','97')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND CTG.CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                      WHERE CTG_NO IN (
+                                       SELECT
+									        CTG_NO
+									    FROM TG_GOODS_CTG
+									    WHERE SITE_NO=#{siteNo}
+									       AND GOODS_NO= #{goodsNo}
+                                      ))
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.USE_YN = 'Y'
+                   AND TC.RSV_ONLY_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('99','97')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(상품 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN (SELECT COUPON_NO
+                                              FROM TP_COUPON_TARGET_GOODS
+                                             WHERE GOODS_NO = #{goodsNo})
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TCTG.USE_YN = 'Y'
+                   AND TC.RSV_ONLY_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('99','97')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TC.COUPON_NO NOT IN
+                       (SELECT COUPON_NO FROM TP_COUPON_TARGET_CTG
+                         WHERE CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                          WHERE CTG_NO IN (
+                                          SELECT
+									        CTG_NO
+									    FROM TG_GOODS_CTG
+									    WHERE SITE_NO=#{siteNo}
+									       AND GOODS_NO= #{goodsNo}
+                                          ))
+                       )
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND CTG.USE_YN = 'Y'
+                   AND TC.RSV_ONLY_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('99','97')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 전체 -->
+                  FROM TP_COUPON TC
+                 WHERE TC.COUPON_APPLY_LIMIT_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.RSV_ONLY_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('99','97')
+               ) AA
+         WHERE AA.COUPON_USE_YN = 'Y'
+           AND AA.COUPON_KIND_CD IN ('99','97')
+           AND AA.DEL_YN = 'N'
+           AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(AA.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(AA.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                OR (AA.APPLY_START_DTTM IS NULL AND AA.APPLY_END_DTTM IS NULL))
+           AND AA.SITE_NO = #{siteNo}
+        ) T
+        <![CDATA[
+		where T.COUPON_QTT_LIMIT_CD = '01' or (T.COUPON_QTT_LIMIT_CD != '01' and T.ISSUE_CNT < T.COUPON_QTT_LIMIT_CNT)
+        ]]>
+    </select>
+
+    <select id="selectFirstOrdCouponList" resultType="CouponPO">
+    	/* promotion.coupon.selectFirstOrdCouponList - 첫구매쿠폰 조회*/
+    SELECT T.COUPON_NO FROM (
+        SELECT
+            AA.GOODS_NO,
+            AA.COUPON_NO,
+            AA.COUPON_KIND_CD,
+            AA.COUPON_QTT_LIMIT_CD,
+            AA.COUPON_QTT_LIMIT_CNT,
+            AA.REG_DTTM,
+            AA.COUPON_NM,
+            AA.COUPON_DSCRT,
+            AA.COUPON_SOLO_USE_YN,
+            AA.COUPON_BNF_CD,
+            AA.COUPON_BNF_VALUE,
+            AA.COUPON_BNF_DC_AMT,
+            TO_CHAR(AA.APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,
+            TO_CHAR(AA.APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,
+            AA.COUPON_APPLY_PERIOD_CD,
+            AA.COUPON_APPLY_ISSUE_AF_PERIOD,
+            AA.COUPON_APPLY_SCOPE_CD,
+            AA.COUPON_APPLY_LIMIT_CD,
+            AA.COUPON_USE_LIMIT_AMT,
+            AA.COUPON_USE_YN,
+            AA.COUPON_DUPLT_DWLD_PSB_YN,
+            (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = AA.COUPON_NO) AS ISSUE_CNT
+          FROM (
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(상품번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TCTG.GOODS_NO = #{goodsNo}
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                  <![CDATA[
+                   AND TC.DEL_YN <> 'Y'
+                   ]]>
+                    AND TC.COUPON_USE_YN = 'Y'
+                    AND TC.COUPON_KIND_CD IN ('07')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND CTG.CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                      WHERE CTG_NO IN (
+                                       SELECT
+									        CTG_NO
+									    FROM TG_GOODS_CTG
+									    WHERE SITE_NO=#{siteNo}
+									       AND GOODS_NO= #{goodsNo}
+                                      ))
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.USE_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('07')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(상품 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN (SELECT COUPON_NO
+                                              FROM TP_COUPON_TARGET_GOODS
+                                             WHERE GOODS_NO = #{goodsNo})
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TCTG.USE_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('07')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TC.COUPON_NO NOT IN
+                       (SELECT COUPON_NO FROM TP_COUPON_TARGET_CTG
+                         WHERE CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                          WHERE CTG_NO IN (
+                                          SELECT
+									        CTG_NO
+									    FROM TG_GOODS_CTG
+									    WHERE SITE_NO=#{siteNo}
+									       AND GOODS_NO= #{goodsNo}
+                                          ))
+                       )
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND CTG.USE_YN = 'Y'
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('07')
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 전체 -->
+                  FROM TP_COUPON TC
+                 WHERE TC.COUPON_APPLY_LIMIT_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.COUPON_USE_YN = 'Y'
+                   AND TC.COUPON_KIND_CD IN ('07')
+               ) AA
+         WHERE AA.COUPON_USE_YN = 'Y'
+           AND AA.COUPON_KIND_CD IN ('07')
+           AND AA.DEL_YN = 'N'
+           AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(AA.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(AA.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                OR (AA.APPLY_START_DTTM IS NULL AND AA.APPLY_END_DTTM IS NULL))
+           AND AA.SITE_NO = #{siteNo}
+        ) T
+        <![CDATA[
+		where T.COUPON_QTT_LIMIT_CD = '01' or (T.COUPON_QTT_LIMIT_CD != '01' and T.ISSUE_CNT < T.COUPON_QTT_LIMIT_CNT)
+        ]]>
+    </select>
+
+    <insert id="insertCouponIssueToAll">
+        /* promotion.coupon.insertCouponIssueToAll - 쿠폰발급하기_ 전체회원쿠폰발급*/
+        INSERT INTO TC_MEMBER_CP (MEMBER_CP_NO, COUPON_NO, CP_ISSUE_NO, MEMBER_NO, USE_YN, CP_APPLY_START_DTTM, CP_APPLY_END_DTTM, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM )
+        SELECT
+              fn_getSeq(0, 'MEMBER_CP_NO') ,
+              #{couponNo},
+              '38'||lpad(FN_GETSEQCURR(0, 'MEMBER_CP_NO'), 11, '0') as CP_ISSUE_NO,
+              MEMBER_NO,
+             'N',
+              (SELECT  NVL(APPLY_START_DTTM, sysdate) FROM TP_COUPON WHERE  COUPON_NO = #{couponNo} AND SITE_NO = #{siteNo}) as APPLY_START_DTTM,
+              (SELECT  NVL(APPLY_END_DTTM, sysdate + COUPON_APPLY_ISSUE_AF_PERIOD) FROM  TP_COUPON WHERE   COUPON_NO = #{couponNo} AND SITE_NO = #{siteNo}) as APPLY_END_DTTM,
+              #{regrNo},
+              sysdate,
+              #{regrNo},
+              sysdate
+            FROM  TC_MEMBER
+            WHERE SITE_NO =#{siteNo}
+            AND MEMBER_STATUS_CD = '01'
+            AND MEMBER_NO >= 1000
+    </insert>
+
+    <insert id="insertCouponIssueToGroup">
+        /* promotion.coupon.insertCouponIssueToGroup - 쿠폰발급하기_그룹회원쿠폰발급*/
+         INSERT INTO TC_MEMBER_CP (MEMBER_CP_NO, COUPON_NO, CP_ISSUE_NO, MEMBER_NO, USE_YN, CP_APPLY_START_DTTM, CP_APPLY_END_DTTM, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM )
+          SELECT
+              fn_getSeq(0, 'MEMBER_CP_NO') ,
+              #{couponNo},
+              '38'||lpad(FN_GETSEQCURR(0, 'MEMBER_CP_NO'), 11, '0') as CP_ISSUE_NO,
+              MEMBER_NO,
+             'N',
+              (SELECT  NVL(APPLY_START_DTTM, sysdate) FROM TP_COUPON WHERE  COUPON_NO = #{couponNo} AND SITE_NO = #{siteNo}) as APPLY_START_DTTM,
+              (SELECT  NVL(APPLY_END_DTTM, sysdate + COUPON_APPLY_ISSUE_AF_PERIOD) FROM  TP_COUPON WHERE   COUPON_NO = #{couponNo} AND SITE_NO = #{siteNo}) as APPLY_END_DTTM,
+              #{regrNo},
+              sysdate,
+              #{regrNo},
+              sysdate
+        FROM  TC_MEMBER M INNER JOIN TC_MEMBER_GRADE MG ON MG.MEMBER_GRADE_NO = M.MEMBER_GRADE_NO
+        WHERE M.SITE_NO = #{siteNo}
+        AND   MG.SITE_NO = #{siteNo}
+        AND   M.MEMBER_GRADE_NO = #{memberGradeNo}
+        AND   M.MEMBER_STATUS_CD = '01'
+        AND   M.MEMBER_NO >= 1000
+        AND   MG.DEL_YN ='N'
+    </insert>
+
+    <insert id="insertCouponIssue">
+        /* promotion.coupon.insertCouponIssue - 쿠폰발급하기POPUP_ 쿠폰발급*/
+        INSERT INTO TC_MEMBER_CP (MEMBER_CP_NO, COUPON_NO, CP_ISSUE_NO, MEMBER_NO, ORD_NO, USE_YN, CP_APPLY_START_DTTM, CP_APPLY_END_DTTM, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM )
+        SELECT  fn_getSeq(0, 'MEMBER_CP_NO'),
+        		#{couponNo},
+        		'38' || lpad(FN_GETSEQCURR(0, 'MEMBER_CP_NO'), 11, '0'),
+                #{memberNo},
+                #{ordNo},
+                CASE WHEN COUPON_KIND_CD ='07' THEN 'F' ELSE 'N' END ,
+                NVL(APPLY_START_DTTM, sysdate),
+                CASE WHEN COUPON_KIND_CD ='07'
+                THEN
+                    NVL(APPLY_END_DTTM, sysdate + COUPON_APPLY_CONFIRM_AF_PERIOD)
+                ELSE
+                    NVL(APPLY_END_DTTM, sysdate + COUPON_APPLY_ISSUE_AF_PERIOD)
+                END
+                ,
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                sysdate
+        FROM    TP_COUPON
+        WHERE   COUPON_NO = #{couponNo}
+          AND   SITE_NO = #{siteNo}
+          <selectKey keyProperty="cpIssueNo" resultType="String" order="AFTER">
+    		select MAX(CP_ISSUE_NO) from TC_MEMBER_CP
+    		 WHERE  COUPON_NO = #{couponNo}
+              AND MEMBER_NO=#{memberNo}
+    	</selectKey>
+    </insert>
+
+    <select id="selectCouponInfo" resultType="couponVO">
+        /* app.promotion.coupon.selectCouponInfo - 쿠폰 정보 조회 (단건)*/
+        SELECT
+                COUPON_NO,
+                COUPON_KIND_CD,             <!-- 쿠폰 종류코드 -->
+                fn_getCodeNm('COUPON_KIND_CD', COUPON_KIND_CD) AS COUPON_KIND_CD_NM,    <!-- 쿠폰 종류코드 명 -->
+                COUPON_QTT_LIMIT_CD,               <!-- 쿠폰 수량 제한 코드 -->
+                COUPON_QTT_LIMIT_CNT,              <!-- 쿠폰 수량 -->
+                REG_DTTM,                   <!-- 쿠폰 등록 일자 -->
+                COUPON_NM,                  <!-- 쿠폰명 -->
+                COUPON_DSCRT,               <!-- 쿠폰 설명 -->
+                COUPON_SOLO_USE_YN,                <!-- 단독 사용설정 -->
+                COUPON_BNF_CD,                     <!-- 혜택 코드 -->
+                COUPON_BNF_VALUE,                  <!-- 혜택 값 -->
+                COUPON_BNF_DC_AMT,                 <!-- 혜택 할인 금액 -->
+                COUPON_BNF_TXT,                  <!-- 혜택 내용 -->
+                COUPON_DUPLT_DWLD_PSB_YN,          <!-- 중복다운로드 가능여부 -->
+                TO_CHAR(APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,           <!-- 이벤트 기간 (시작일) -->
+                TO_CHAR(APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,             <!-- 이벤트 기간 (종료일) -->
+                COUPON_APPLY_PERIOD_CD,            <!-- 적용 기간 코드 -->
+                COUPON_APPLY_ISSUE_AF_PERIOD,      <!-- 적용 발급 후 기간 -->
+                COUPON_APPLY_CONFIRM_AF_PERIOD,      <!-- 구매 확정 후 기간 -->
+                COUPON_APPLY_SCOPE_CD,             <!-- 적용 발급 후 기간 -->
+                COUPON_APPLY_LIMIT_CD,               <!-- 사용 제한 (상품) -->
+                COUPON_APPLY_TARGET_CD,               <!-- 사용 대상 코드 -->
+                COUPON_USE_LIMIT_AMT,              <!-- 사용 제한 금액 -->
+                COUPON_USE_YN,                      <!-- 쿠폰 사용 유무 -->
+                CP_LOADRATE,                      	<!-- 본사 부담율 -->
+                RSV_ONLY_YN,                      	<!-- 예약전용 쿠폰 -->
+                OFFLINE_ONLY_YN,                    <!-- 오프라인전용 쿠폰 -->
+                GOODS_TYPE_CD,                      <!-- 쿠폰 제품유형 -->
+                fn_getCodeNm('GOODS_TYPE_CD', GOODS_TYPE_CD) AS GOODS_TYPE_CD_NM,    <!-- 쿠폰 제품유형 명 -->
+                AGE_CD                      		<!-- 쿠폰 연령대 -->
+        FROM
+                TP_COUPON
+        WHERE
+                SITE_NO = #{siteNo} AND COUPON_NO = #{couponNo}
+    </select>
+
+    <select id="selectCouponTargetGoodsList" parameterType="CouponSO" resultType="CpTargetVO">
+        /* promotion.coupon.selectCouponTargetGoodsList - 쿠폰 대상 상품 조회*/
+        SELECT rownum, tb.*
+        FROM
+            (SELECT fn_getGoodsImgPath(tctg.GOODS_NO, '02') AS IMG_PATH,
+                    tg.GOODS_NM,
+                    tctg.GOODS_NO,
+                    ts.SELLER_NM ,
+                    ti.SALE_PRICE ,
+                    ti.SUPPLY_PRICE ,
+                    ti.STOCK_QTT ,
+                    fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM
+             FROM TP_COUPON_TARGET_GOODS tctg
+                 INNER JOIN TG_GOODS tg ON tctg.GOODS_NO = tg.GOODS_NO
+                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                 INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+             WHERE tctg.GOODS_NO IS NOT NULL
+               AND tctg.COUPON_NO = #{couponNo}
+             ORDER BY tctg.APPLY_SEQ) tb
+    </select>
+
+    <insert id="insertCouponTargetGoodsList">
+        /* promotion.coupon.insertCouponTargetGoodsList - 쿠폰 대상 등록 : 전체상품 적용일 경우 : 전체 상품 조회*/
+        <selectKey keyProperty="applySeq" order="BEFORE" resultType="java.lang.Integer">
+             SELECT NVL(MAX(APPLY_SEQ), 0) + 1 AS APPLY_SEQ
+             FROM TP_COUPON_TARGET_GOODS
+        </selectKey>
+         INSERT INTO TP_COUPON_TARGET_GOODS
+            (
+                COUPON_NO,
+                APPLY_SEQ,
+                COUPON_APPLY_LIMIT_CD,
+                USE_YN,
+                GOODS_NO,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+        SELECT
+            #{couponNo},
+            #{applySeq},
+            #{couponApplyLimitCd},
+            #{couponUseYn},
+            GOODS_NO,
+            #{regrNo},
+            sysdate,
+            #{regrNo},
+            sysdate
+        FROM TG_GOODS
+        WHERE SITE_NO = #{siteNo}
+        AND DEL_YN = 'N'
+    </insert>
+
+    <select id="selectTotalGoodsList" parameterType="CouponPO" resultType="CouponPO">
+        SELECT /* promotion.coupon.selectTotalGoodsList - 쿠폰 대상 등록 : 전체상품 적용일 경우 : 전체 상품 조회*/
+             GOODS_NO
+        FROM TG_GOODS
+        WHERE SITE_NO = #{siteNo}
+        AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertCouponTargetGoods">
+        <selectKey keyProperty="applySeq" order="BEFORE" resultType="java.lang.Integer">
+             SELECT NVL(MAX(APPLY_SEQ), 0) + 1 AS APPLY_SEQ
+             FROM TP_COUPON_TARGET_GOODS
+        </selectKey>
+            /* promotion.coupon.insertCouponTargetGoods - 쿠폰대상 상품등록*/
+            INSERT INTO TP_COUPON_TARGET_GOODS
+            (
+                COUPON_NO,
+                APPLY_SEQ,
+                COUPON_APPLY_LIMIT_CD,
+                USE_YN,
+                GOODS_NO,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{couponNo},
+                #{applySeq},
+                #{couponApplyLimitCd},
+                #{couponUseYn},
+                #{goodsNo},
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                sysdate
+            )
+    </insert>
+
+    <delete id="deleteCouponTargetGoods">
+        /* promotion.coupon.deleteCouponTargetGoods - 쿠폰 대상 상품 삭제*/
+        DELETE  FROM TP_COUPON_TARGET_GOODS
+        WHERE   COUPON_NO = #{couponNo}
+    </delete>
+
+    <delete id="deleteCouponTargetCtg">
+        /* promotion.coupon.deleteCouponTargetCtg - 쿠폰 대상 카테고리 삭제*/
+        DELETE  FROM TP_COUPON_TARGET_CTG
+        WHERE   COUPON_NO = #{couponNo}
+    </delete>
+
+    <insert id="insertCouponTargetCtg">
+        <selectKey keyProperty="applySeq" order="BEFORE" resultType="java.lang.Integer">
+             SELECT NVL(MAX(APPLY_SEQ), 0) + 1 AS APPLY_SEQ
+             FROM   TP_COUPON_TARGET_CTG
+        </selectKey>
+            /* promotion.coupon.insertCouponTargetCtg - 쿠폰대상 카테고리등록*/
+                INSERT INTO TP_COUPON_TARGET_CTG
+            (
+                COUPON_NO,
+                APPLY_SEQ,
+                SITE_NO,
+                COUPON_APPLY_LIMIT_CD,
+                USE_YN,
+                CTG_NO,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{couponNo},
+                #{applySeq},
+                #{siteNo},
+                #{couponApplyLimitCd},
+                #{couponUseYn},
+                #{ctgNo},
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                sysdate
+            )
+    </insert>
+
+    <insert id="insertCouponInfo">
+        /* app.promotion.coupon.insertCouponInfo - 쿠폰 정보 등록*/
+        <selectKey keyProperty="couponNo" order="BEFORE" resultType="java.lang.Integer">
+        SELECT NVL(MAX(COUPON_NO), 0) + 1 AS couponNo
+        FROM   TP_COUPON
+        </selectKey>
+        INSERT INTO TP_COUPON
+            (
+                COUPON_NO,
+                SITE_NO,
+                COUPON_KIND_CD,
+                COUPON_QTT_LIMIT_CD,
+                COUPON_QTT_LIMIT_CNT,
+                COUPON_NM,
+                COUPON_DSCRT,
+                COUPON_SOLO_USE_YN,
+                COUPON_BNF_CD,
+                COUPON_BNF_VALUE,
+                COUPON_BNF_DC_AMT,
+                COUPON_BNF_TXT,
+                COUPON_DUPLT_DWLD_PSB_YN,
+                COUPON_APPLY_PERIOD_CD,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                COUPON_APPLY_ISSUE_AF_PERIOD,
+                COUPON_APPLY_CONFIRM_AF_PERIOD,
+                COUPON_APPLY_SCOPE_CD,
+                COUPON_APPLY_LIMIT_CD,
+                COUPON_APPLY_TARGET_CD,
+                COUPON_USE_LIMIT_AMT,
+                COUPON_USE_YN,
+                OFFLINE_ONLY_YN,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM,
+                DEL_YN,
+                CP_LOADRATE,
+                RSV_ONLY_YN,
+                GOODS_TYPE_CD,
+                AGE_CD
+            )
+            VALUES
+            (
+                #{couponNo},
+                #{siteNo},
+                #{couponKindCd},
+                #{couponQttLimitCd},
+                NVL(#{couponQttLimitCnt}, 0),
+                #{couponNm},
+                #{couponDscrt},
+                #{couponSoloUseYn},
+                #{couponBnfCd},
+                NVL(#{couponBnfValue}, 0),
+                NVL(#{couponBnfDcAmt}, 0),
+                #{couponBnfTxt},
+                #{couponDupltDwldPsbYn},
+                #{couponApplyPeriodCd},
+                to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                NVL(#{couponApplyIssueAfPeriod}, 0),
+                NVL(#{couponApplyConfirmAfPeriod}, 0),
+                #{couponApplyScopeCd},
+                #{couponApplyLimitCd},
+                #{couponApplyTargetCd},
+                NVL(#{couponUseLimitAmt}, 0),
+                #{couponUseYn},
+                #{offlineOnlyYn},
+                #{regrNo},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                'N',
+                #{cpLoadrate},
+                #{rsvOnlyYn},
+                #{goodsTypeCd},
+                #{ageCd}
+            )
+    </insert>
+
+    <update id="updateCouponInfo">
+			/* app.promotion.coupon.updateCouponInfo - 쿠폰 정보 수정*/
+			UPDATE TP_COUPON
+			SET
+				COUPON_KIND_CD = #{couponKindCd},
+				COUPON_QTT_LIMIT_CD = #{couponQttLimitCd},
+				COUPON_QTT_LIMIT_CNT = NVL(#{couponQttLimitCnt}, 0),
+				COUPON_NM = #{couponNm},
+				COUPON_DSCRT = #{couponDscrt},
+				COUPON_SOLO_USE_YN = #{couponSoloUseYn},
+				COUPON_BNF_CD = #{couponBnfCd},
+				COUPON_BNF_VALUE = NVL(#{couponBnfValue}, 0),
+				COUPON_BNF_DC_AMT = NVL(#{couponBnfDcAmt}, 0),
+				COUPON_BNF_TXT = #{couponBnfTxt},
+				<choose>
+					<when test="applyStartDttm != null and applyStartDttm != ''.toString()">
+						APPLY_START_DTTM = to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+					</when>
+					<otherwise>
+						APPLY_START_DTTM = null,
+					</otherwise>
+				</choose>
+				<choose>
+					<when test="applyEndDttm != null and applyEndDttm != ''.toString()">
+						APPLY_END_DTTM = to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+					</when>
+					<otherwise>
+						APPLY_END_DTTM = null,
+					</otherwise>
+				</choose>
+				COUPON_DUPLT_DWLD_PSB_YN = #{couponDupltDwldPsbYn},
+				COUPON_APPLY_PERIOD_CD = #{couponApplyPeriodCd},
+				COUPON_APPLY_ISSUE_AF_PERIOD = NVL(#{couponApplyIssueAfPeriod}, 0),
+				COUPON_APPLY_CONFIRM_AF_PERIOD = NVL(#{couponApplyConfirmAfPeriod}, 0),
+				COUPON_APPLY_SCOPE_CD = #{couponApplyScopeCd},
+				COUPON_APPLY_LIMIT_CD = #{couponApplyLimitCd},
+				COUPON_APPLY_TARGET_CD = #{couponApplyTargetCd},
+				COUPON_USE_LIMIT_AMT = NVL(#{couponUseLimitAmt}, 0),
+				COUPON_USE_YN = #{couponUseYn},
+				OFFLINE_ONLY_YN = #{offlineOnlyYn},
+				UPD_DTTM = sysdate,
+				UPDR_NO = #{updrNo},
+				CP_LOADRATE = #{cpLoadrate},
+				RSV_ONLY_YN = #{rsvOnlyYn},
+				GOODS_TYPE_CD = #{goodsTypeCd},
+				AGE_CD = #{ageCd}
+			WHERE
+			    COUPON_NO = #{couponNo}
+    </update>
+
+    <update id="deleteCouponInfo">
+        /* promotion.coupon.deleteCouponInfo - 쿠폰 삭제*/
+        UPDATE  TP_COUPON
+        SET     DEL_YN = 'Y',
+                UPDR_NO = #{delrNo},
+                UPD_DTTM = sysdate,
+                DELR_NO = #{delrNo},
+                DEL_DTTM = sysdate
+        WHERE   COUPON_NO IN <foreach collection="list" item="item" open="(" close=")" separator=",">#{item.couponNo}</foreach>
+    </update>
+
+    <delete id="deleteCouponMemberHas">
+        delete from TC_MEMBER_CP
+        where COUPON_NO = #{couponNo}
+        and USE_YN = 'N'
+    </delete>
+
+
+
+    <select id="selectAvailableGoodsCouponList" resultType="couponVO">
+        /* promotion.coupon.selectAvailableGoodsCouponList - 상품상세 사용가능한 쿠폰 리스트*/
+        SELECT T.* FROM (
+        SELECT
+            AA.GOODS_NO,
+            AA.COUPON_NO,
+            AA.COUPON_KIND_CD,
+            AA.COUPON_QTT_LIMIT_CD,
+            AA.COUPON_QTT_LIMIT_CNT,
+            AA.REG_DTTM,
+            AA.COUPON_NM,
+            AA.COUPON_DSCRT,
+            AA.COUPON_SOLO_USE_YN,
+            AA.COUPON_BNF_CD,
+            AA.COUPON_BNF_VALUE,
+            AA.COUPON_BNF_DC_AMT,
+            AA.COUPON_BNF_TXT,
+            TO_CHAR(AA.APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,
+            TO_CHAR(AA.APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,
+            AA.COUPON_APPLY_PERIOD_CD,
+            AA.COUPON_APPLY_ISSUE_AF_PERIOD,
+            AA.COUPON_APPLY_SCOPE_CD,
+            AA.COUPON_APPLY_LIMIT_CD,
+            AA.COUPON_USE_LIMIT_AMT,
+            AA.COUPON_USE_YN,
+            AA.COUPON_DUPLT_DWLD_PSB_YN,
+            AA.OFFLINE_ONLY_YN,
+            (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = AA.COUPON_NO) AS ISSUE_CNT
+          FROM (
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(상품번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TCTG.GOODS_NO = #{goodsNo}
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.COUPON_APPLY_TARGET_CD = '01'
+                   AND TC.SITE_NO = #{siteNo}
+                  <![CDATA[
+                   AND TC.DEL_YN <> 'Y'
+                   ]]>
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND CTG.CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                      WHERE CTG_NO IN (${couponCtgNoArr}))
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.COUPON_APPLY_TARGET_CD = '02'
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.USE_YN = 'Y'
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(상품 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN (SELECT COUPON_NO
+                                              FROM TP_COUPON_TARGET_GOODS
+                                             WHERE GOODS_NO = #{goodsNo})
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.COUPON_APPLY_TARGET_CD = '01'
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TCTG.USE_YN = 'Y'
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN
+                       (SELECT COUPON_NO FROM TP_COUPON_TARGET_CTG
+                         WHERE CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                          WHERE CTG_NO IN (${couponCtgNoArr}))
+                       )
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.COUPON_APPLY_TARGET_CD = '02'
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.USE_YN = 'Y'
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 전체 -->
+                  FROM TP_COUPON TC
+                 WHERE TC.COUPON_APPLY_LIMIT_CD IN ('01')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+               ) AA
+         WHERE AA.COUPON_USE_YN = 'Y'
+           AND (AA.COUPON_KIND_CD != '99' AND AA.COUPON_KIND_CD != '97' AND AA.COUPON_KIND_CD != '05' AND AA.COUPON_KIND_CD != '07')
+           AND AA.DEL_YN = 'N'
+           AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(AA.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(AA.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                OR (AA.APPLY_START_DTTM IS NULL AND AA.APPLY_END_DTTM IS NULL))
+           AND AA.SITE_NO = #{siteNo}
+        ) T
+        <![CDATA[
+		where T.COUPON_QTT_LIMIT_CD = '01'
+		or (T.COUPON_QTT_LIMIT_CD != '01' and T.ISSUE_CNT < T.COUPON_QTT_LIMIT_CNT)
+        ]]>
+    </select>
+
+    <select id="selectGoodsAvailableCouponList" resultType="couponVO">
+        /* promotion.coupon.selectGoodsAvailableCouponList - 주문적용시 사용가능한 상품 쿠폰 리스트*/
+        SELECT
+            AA.GOODS_NO,
+            AA.COUPON_NO,
+            fn_getAvlCuoponNo(AA.GOODS_NO,#{memberNo})			AS COUPON_AVL_NO,
+            TMC.MEMBER_CP_NO,
+            AA.COUPON_KIND_CD,
+            AA.COUPON_QTT_LIMIT_CD,
+            AA.COUPON_QTT_LIMIT_CNT,
+            AA.REG_DTTM,
+            AA.COUPON_NM,
+            AA.COUPON_DSCRT,
+            AA.COUPON_SOLO_USE_YN,
+            AA.COUPON_BNF_CD,
+            AA.COUPON_BNF_VALUE,
+            AA.COUPON_BNF_DC_AMT,
+            TO_CHAR(AA.APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,
+            TO_CHAR(AA.APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,
+            AA.COUPON_APPLY_PERIOD_CD,
+            AA.COUPON_APPLY_ISSUE_AF_PERIOD,
+            AA.COUPON_APPLY_SCOPE_CD,
+            AA.COUPON_APPLY_LIMIT_CD,
+            AA.COUPON_USE_LIMIT_AMT,
+            AA.COUPON_USE_YN
+          FROM (
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(상품번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TCTG.GOODS_NO = #{goodsNo}
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TCTG.USE_YN = 'Y'
+                   <![CDATA[
+                   AND TC.OFFLINE_ONLY_YN <> 'Y'
+                   ]]>
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 대상(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                      WHERE CTG_NO IN (${couponCtgNoArr}))
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND CTG.USE_YN = 'Y'
+                   <![CDATA[
+                   AND TC.OFFLINE_ONLY_YN <> 'Y'
+                   ]]>
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(상품 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+                 WHERE TC.COUPON_NO = TCTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN (SELECT COUPON_NO
+                                              FROM TP_COUPON_TARGET_GOODS
+                                             WHERE GOODS_NO = #{goodsNo})
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND TCTG.USE_YN = 'Y'
+                    <![CDATA[
+                   AND TC.OFFLINE_ONLY_YN <> 'Y'
+                   ]]>
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 예외(카테고리 번호) -->
+                  FROM TP_COUPON TC, TP_COUPON_TARGET_CTG CTG
+                 WHERE TC.COUPON_NO = CTG.COUPON_NO
+                   AND TC.COUPON_NO NOT IN
+                       (SELECT COUPON_NO FROM TP_COUPON_TARGET_CTG
+                         WHERE CTG_NO IN (SELECT CTG_NO FROM TP_COUPON_TARGET_CTG
+                                          WHERE CTG_NO IN (${couponCtgNoArr}))
+                       )
+                   AND TC.COUPON_APPLY_LIMIT_CD IN ('03')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                   AND CTG.USE_YN = 'Y'
+                    <![CDATA[
+                   AND TC.OFFLINE_ONLY_YN <> 'Y'
+                   ]]>
+                UNION
+                SELECT #{goodsNo} AS GOODS_NO, TC.*   <!-- 전체 -->
+                  FROM TP_COUPON TC
+                 WHERE TC.COUPON_APPLY_LIMIT_CD IN ('01')
+                   AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+                   AND TC.SITE_NO = #{siteNo}
+                    <![CDATA[
+                   AND TC.OFFLINE_ONLY_YN <> 'Y'
+                   ]]>
+               ) AA, TC_MEMBER_CP TMC
+         WHERE AA.COUPON_NO = TMC.COUPON_NO
+           AND AA.COUPON_USE_YN = 'Y'
+           AND AA.COUPON_KIND_CD != '99' AND AA.COUPON_KIND_CD != '97'
+           AND TMC.USE_YN = 'N'
+           AND AA.DEL_YN = 'N'
+           AND TMC.MEMBER_NO = #{memberNo}
+           AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(TMC.CP_APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TMC.CP_APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                OR (AA.APPLY_START_DTTM IS NULL AND AA.APPLY_END_DTTM IS NULL))
+           AND AA.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectOrderAvailableCouponList" resultType="couponVO">
+        /* promotion.coupon.selectOrderAvailableCouponList - 주문적용시 사용가능한 주문 쿠폰 리스트*/
+        SELECT                             <!-- 주문서 쿠폰 -->
+            '' AS GOODS_NO,
+            TC.COUPON_NO,
+            TC.COUPON_KIND_CD,
+            TC.COUPON_QTT_LIMIT_CD,
+            TC.COUPON_QTT_LIMIT_CNT,
+            TC.REG_DTTM,
+            TC.COUPON_NM,
+            TC.COUPON_DSCRT,
+            TC.COUPON_SOLO_USE_YN,
+            TC.COUPON_BNF_CD,
+            TC.COUPON_BNF_VALUE,
+            TC.COUPON_BNF_DC_AMT,
+            TO_CHAR(TC.APPLY_START_DTTM,'YYYYMMDDHH24MI') APPLY_START_DTTM,
+            TO_CHAR(TC.APPLY_END_DTTM,'YYYYMMDDHH24MI') APPLY_END_DTTM,
+            TC.COUPON_APPLY_PERIOD_CD,
+            TC.COUPON_APPLY_ISSUE_AF_PERIOD,
+            TC.COUPON_APPLY_SCOPE_CD,
+            TC.COUPON_APPLY_LIMIT_CD,
+            TC.COUPON_USE_LIMIT_AMT,
+            TC.COUPON_USE_YN
+          FROM TP_COUPON TC, TC_MEMBER_CP TMC
+         WHERE TC.COUPON_NO = TMC.COUPON_NO
+           AND TC.COUPON_APPLY_SCOPE_CD IN ('02')
+           AND TC.COUPON_USE_YN = 'Y'
+           AND TC.DEL_YN = 'N'
+           AND TMC.USE_YN = 'N'
+           AND TMC.MEMBER_NO = #{memberNo}
+           AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TMC.CP_APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TMC.CP_APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                OR (TC.APPLY_START_DTTM IS NULL AND TC.APPLY_END_DTTM IS NULL))
+           AND TC.SITE_NO = #{siteNo}
+           <![CDATA[
+           AND TC.OFFLINE_ONLY_YN <> 'Y'
+           ]]>
+    </select>
+
+    <select id="selectCouponTargetCtgList" resultType="cpTargetVO">
+        /* promotion.coupon.selectCouponTargetCtgList - 쿠폰 적용대상 카테고리 조회 */
+        SELECT
+            TP.COUPON_NO,
+            CTG.APPLY_SEQ,
+            TP.COUPON_APPLY_TARGET_CD,
+            CTG.COUPON_APPLY_LIMIT_CD,
+            CTG.USE_YN,
+            CTG.CTG_NO,
+            fn_categoryName(CTG.CTG_NO, TP.SITE_NO) AS CTG_NM
+          FROM TP_COUPON TP, TP_COUPON_TARGET_CTG CTG
+         WHERE TP.COUPON_NO = CTG.COUPON_NO
+           AND TP.COUPON_NO = #{couponNo}
+           AND TP.SITE_NO = #{siteNo}
+           AND CTG.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectGoodsCtgList" resultType="net.danvi.dmall.biz.app.goods.model.GoodsCtgVO">
+        /* promotion.coupon.selectGoodsCtgList - 쿠폰 조회용 상품 카테고리 조회*/
+        SELECT
+            CTG_NO
+          FROM TG_GOODS TG, TG_GOODS_CTG CTG
+         WHERE TG.GOODS_NO = CTG.GOODS_NO
+           AND TG.GOODS_NO = #{goodsNo}
+           AND TG.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectMemberCoupon" resultType="int">
+        /* promotion.coupon.selectMemberCoupon - 회원 보유 쿠폰 중복 조회*/
+        SELECT
+            COUNT(1) AS CNT
+          FROM TC_MEMBER_CP TMC, TC_MEMBER TM
+         WHERE TMC.MEMBER_NO = TM.MEMBER_NO
+           AND TMC.COUPON_NO = #{couponNo}
+           AND TM.MEMBER_NO = #{memberNo}
+           AND TM.MEMBER_STATUS_CD = '01'
+           <if test="useYn != null and useYn != ''">
+           AND TMC.USE_YN = #{useYn}
+           AND SYSDATE BETWEEN TMC.CP_APPLY_START_DTTM  AND   TMC.CP_APPLY_END_DTTM
+           </if>
+           AND TM.SITE_NO = #{siteNo}
+    </select>
+
+    <update id="updateMemberUseCoupon">
+        /* promotion.coupon.updateMemberUseCoupon - 회원 보유쿠폰 사용 업데이트*/
+        UPDATE TC_MEMBER_CP
+           SET USE_YN = #{useYn},
+               <if test="orderCancelYn eq 'Y'.toString()">
+               CP_APPLY_END_DTTM  =
+				    CASE
+				    <![CDATA[
+				        WHEN CP_APPLY_END_DTTM > sysdate THEN
+                                    CP_APPLY_END_DTTM + 3
+				        WHEN CP_APPLY_END_DTTM < sysdate THEN
+				                    sysdate + 3
+				    ]]>
+				    END,
+               </if>
+               USE_DTTM = #{useDttm},
+               UPDR_NO = #{updrNo},
+               UPD_DTTM = #{updDttm}
+
+         WHERE MEMBER_CP_NO = #{memberCpNo}
+    </update>
+
+    <delete id="deleteMemberCoupon">
+        /* promotion.coupon.deleteMemberCoupon - 회원 보유쿠폰 삭제(탈퇴시 사용) */
+       DELETE FROM TC_MEMBER_CP
+       WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
+     <select id="selectMemberCouponInfo" resultType="couponVO">
+        /* app.promotion.coupon.selectMemberCouponInfo - 쿠폰 정보 조회 (단건)*/
+        SELECT
+                A.COUPON_NO,
+                A.COUPON_KIND_CD,             <!-- 쿠폰 종류코드 -->
+                fn_getCodeNm('COUPON_KIND_CD', A.COUPON_KIND_CD) AS COUPON_KIND_CD_NM,    <!-- 쿠폰 종류코드 명 -->
+                A.COUPON_QTT_LIMIT_CD,               <!-- 쿠폰 수량 제한 코드 -->
+                A.COUPON_QTT_LIMIT_CNT,              <!-- 쿠폰 수량 -->
+                A.REG_DTTM,                   <!-- 쿠폰 등록 일자 -->
+                A.COUPON_NM,                  <!-- 쿠폰명 -->
+                A.COUPON_DSCRT,               <!-- 쿠폰 설명 -->
+                A.COUPON_SOLO_USE_YN,                <!-- 단독 사용설정 -->
+                A.COUPON_BNF_CD,                     <!-- 혜택 코드 -->
+                A.COUPON_BNF_VALUE,                  <!-- 혜택 값 -->
+                A.COUPON_BNF_DC_AMT,                 <!-- 혜택 할인 금액 -->
+                A.COUPON_DUPLT_DWLD_PSB_YN,          <!-- 중복다운로드 가능여부 -->
+                TO_CHAR(A.APPLY_START_DTTM,'yyyy-mm-dd hh24:mi') APPLY_START_DTTM,           <!-- 이벤트 기간 (시작일) -->
+                TO_CHAR(A.APPLY_END_DTTM,'yyyy-mm-dd hh24:mi') APPLY_END_DTTM,             <!-- 이벤트 기간 (종료일) -->
+                A.COUPON_APPLY_PERIOD_CD,            <!-- 적용 기간 코드 -->
+                A.COUPON_APPLY_ISSUE_AF_PERIOD,      <!-- 적용 발급 후 기간 -->
+                A.COUPON_APPLY_SCOPE_CD,             <!-- 적용 발급 후 기간 -->
+                A.COUPON_APPLY_LIMIT_CD,               <!-- 사용 제한 (상품) -->
+                A.COUPON_APPLY_TARGET_CD,               <!-- 사용 대상 코드 -->
+                A.COUPON_USE_LIMIT_AMT,              <!-- 사용 제한 금액 -->
+                A.COUPON_USE_YN,                      <!-- 쿠폰 사용 유무 -->
+                A.CP_LOADRATE,                      	<!-- 본사 부담율 -->
+                A.RSV_ONLY_YN,                      	<!-- 예약전용 쿠폰 -->
+                B.CP_ISSUE_NO,           <!-- 쿠폰 발급번호 -->
+                TO_CHAR(B.CP_APPLY_END_DTTM,'yyyy-mm-dd hh24:mi') as CP_APPLY_END_DTTM           <!-- 쿠폰 발급번호 -->
+        FROM
+                TP_COUPON A, TC_MEMBER_CP B
+        WHERE
+                A.COUPON_NO = B.COUPON_NO
+                AND A.SITE_NO = #{siteNo}
+                AND B.COUPON_NO = #{couponNo}
+                AND B.MEMBER_NO = #{memberNo}
+                AND B.CP_ISSUE_NO = #{cpIssueNo}
+    </select>
+
+    <select id="selectRsvCouponIssue" resultType="couponVO">
+        /* app.promotion.coupon.selectRsvCouponIssue - 예약시 발급받은 쿠폰 조회 */
+        SELECT
+                A.COUPON_NO,
+                A.COUPON_KIND_CD,             <!-- 쿠폰 종류코드 -->
+                fn_getCodeNm('COUPON_KIND_CD', A.COUPON_KIND_CD) AS COUPON_KIND_CD_NM,    <!-- 쿠폰 종류코드 명 -->
+                A.COUPON_QTT_LIMIT_CD,               <!-- 쿠폰 수량 제한 코드 -->
+                A.COUPON_QTT_LIMIT_CNT,              <!-- 쿠폰 수량 -->
+                A.REG_DTTM,                   <!-- 쿠폰 등록 일자 -->
+                A.COUPON_NM,                  <!-- 쿠폰명 -->
+                A.COUPON_DSCRT,               <!-- 쿠폰 설명 -->
+                A.COUPON_SOLO_USE_YN,                <!-- 단독 사용설정 -->
+                A.COUPON_BNF_CD,                     <!-- 혜택 코드 -->
+                A.COUPON_BNF_VALUE,                  <!-- 혜택 값 -->
+                A.COUPON_BNF_DC_AMT,                 <!-- 혜택 할인 금액 -->
+                A.COUPON_DUPLT_DWLD_PSB_YN,          <!-- 중복다운로드 가능여부 -->
+                TO_CHAR(A.APPLY_START_DTTM,'yyyy-mm-dd hh24:mi') APPLY_START_DTTM,           <!-- 이벤트 기간 (시작일) -->
+                TO_CHAR(A.APPLY_END_DTTM,'yyyy-mm-dd hh24:mi') APPLY_END_DTTM,             <!-- 이벤트 기간 (종료일) -->
+                A.COUPON_APPLY_PERIOD_CD,            <!-- 적용 기간 코드 -->
+                A.COUPON_APPLY_ISSUE_AF_PERIOD,      <!-- 적용 발급 후 기간 -->
+                A.COUPON_APPLY_SCOPE_CD,             <!-- 적용 발급 후 기간 -->
+                A.COUPON_APPLY_LIMIT_CD,               <!-- 사용 제한 (상품) -->
+                A.COUPON_APPLY_TARGET_CD,               <!-- 사용 대상 코드 -->
+                A.COUPON_USE_LIMIT_AMT,              <!-- 사용 제한 금액 -->
+                A.COUPON_USE_YN,                      <!-- 쿠폰 사용 유무 -->
+                A.CP_LOADRATE,                      	<!-- 본사 부담율 -->
+                A.RSV_ONLY_YN,                      	<!-- 예약전용 쿠폰 -->
+                B.CP_ISSUE_NO,           <!-- 쿠폰 발급번호 -->
+                TO_CHAR(B.CP_APPLY_END_DTTM,'yyyy-mm-dd hh24:mi') as CP_APPLY_END_DTTM           <!-- 쿠폰 발급번호 -->
+        FROM
+                TP_COUPON A, TC_MEMBER_CP B
+        WHERE
+                A.COUPON_NO = B.COUPON_NO
+                AND B.CP_ISSUE_NO IN
+                <foreach collection="array" item="item" index="index" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+    </select>
+    <select id="selectAvailableGoodsCouponGoodsTypeList" resultType="couponVO">
+        /* promotion.coupon.selectAvailableGoodsCouponGoodsTypeList - 쿠폰존 사용가능한 쿠폰 유형 리스트*/
+        SELECT DISTINCT A.GOODS_TYPE_CD ,fn_getCodeNm('GOODS_TYPE_CD', A.GOODS_TYPE_CD) AS GOODS_TYPE_CD_NM
+		FROM (
+		    SELECT
+		    	TC.*
+		    	, (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) AS ISSUE_CNT
+			    	<if test="memberNo != null and memberNo != ''">
+			    		, (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo} AND TMC.USE_YN = 'N' AND SYSDATE BETWEEN TMC.CP_APPLY_START_DTTM AND TMC.CP_APPLY_END_DTTM) AS USE_YN
+			    		, CASE WHEN (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo}) > 0 THEN 'Y'
+		                	ELSE 'N'
+		                	END AS EXIST_YN
+	                </if>
+	            ,fn_getCodeNm('GOODS_TYPE_CD', TC.GOODS_TYPE_CD) AS GOODS_TYPE_CD_NM
+		    FROM TP_COUPON TC
+		    WHERE TC.SITE_NO = #{siteNo}
+		    AND COUPON_USE_YN = 'Y'
+		    AND DEL_YN = 'N'
+		    AND (COUPON_KIND_CD != '99' AND COUPON_KIND_CD != '97' AND COUPON_KIND_CD != '05' AND COUPON_KIND_CD != '07')
+		    AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+		    	OR (APPLY_START_DTTM IS NULL AND APPLY_END_DTTM IS NULL))
+		    <if test="couponOnlineYn != null and couponOnlineYn != ''">
+				<choose>
+					<when test="couponOnlineYn eq 'Y'.toString()">
+						AND COUPON_KIND_CD != '99' AND OFFLINE_ONLY_YN != 'Y'
+					</when>
+					<when test="couponOnlineYn eq 'F'.toString()">
+						AND COUPON_KIND_CD = '99' OR OFFLINE_ONLY_YN = 'F'
+					</when>
+					<otherwise>
+						AND (COUPON_KIND_CD = '99' OR OFFLINE_ONLY_YN = 'Y' OR OFFLINE_ONLY_YN = 'F')
+					</otherwise>
+				</choose>
+			</if>
+			<if test="goodsTypeCd != null and goodsTypeCd != '' and goodsTypeCd != '01'">
+				AND GOODS_TYPE_CD = #{goodsTypeCd}
+			</if>
+			<if test="goodsTypeCd != null and goodsTypeCd != '' and goodsTypeCd == '01'">
+				AND GOODS_TYPE_CD IN ('01','03')
+			</if>
+			<if test="ageCd != null and ageCd != ''">
+				AND AGE_CD LIKE '%'||#{ageCd}||'%'
+			</if>
+			<if test="downloadAll != null and downloadAll eq 'Y'.toString()">
+			AND NOT EXISTS (
+	            SELECT 1 FROM TC_MEMBER_CP WHERE COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo}
+	        )
+	        </if>
+		) A
+		WHERE A.COUPON_QTT_LIMIT_CD = '01'
+		<![CDATA[
+			or (A.COUPON_QTT_LIMIT_CD != '01' and A.ISSUE_CNT < A.COUPON_QTT_LIMIT_CNT)
+		]]>
+		ORDER BY CASE WHEN GOODS_TYPE_CD IN ('01') THEN 1
+             WHEN GOODS_TYPE_CD IN ('03') THEN 2
+             WHEN GOODS_TYPE_CD IN ('02') THEN 3
+             WHEN GOODS_TYPE_CD IN ('04') THEN 4
+             ELSE 5
+        END
+    </select>
+    
+    <select id="selectAvailableGoodsCouponZoneList" resultType="couponVO">
+        /* promotion.coupon.selectAvailableGoodsCouponZoneList - 쿠폰존 사용가능한 쿠폰 리스트*/
+        SELECT A.*
+        	<choose>
+				<when test="memberNo != null and memberNo != ''">
+        			,CASE WHEN A.USE_YN = 0 AND  A.COUPON_DUPLT_DWLD_PSB_YN='Y' THEN 'N' ELSE A.EXIST_YN END AS ISSUE_YN
+        		</when>
+        		<otherwise>
+                	,'N' AS ISSUE_YN
+                </otherwise>
+			</choose>
+		FROM (
+		    SELECT 
+		    	TC.*
+		    	, (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) AS ISSUE_CNT
+			    	<if test="memberNo != null and memberNo != ''">
+			    		, (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo} AND TMC.USE_YN = 'N' AND SYSDATE BETWEEN TMC.CP_APPLY_START_DTTM AND TMC.CP_APPLY_END_DTTM) AS USE_YN
+			    		, CASE WHEN (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo}) > 0 THEN 'Y'
+		                	ELSE 'N'
+		                	END AS EXIST_YN
+	                </if>
+	            ,fn_getCodeNm('GOODS_TYPE_CD', TC.GOODS_TYPE_CD) AS GOODS_TYPE_CD_NM
+		    FROM TP_COUPON TC
+		    WHERE TC.SITE_NO = #{siteNo}
+		    AND COUPON_USE_YN = 'Y'
+		    AND DEL_YN = 'N'
+		    AND (COUPON_KIND_CD != '99' AND COUPON_KIND_CD != '97' AND COUPON_KIND_CD != '05' AND COUPON_KIND_CD != '07')
+		    AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+		    	OR (APPLY_START_DTTM IS NULL AND APPLY_END_DTTM IS NULL))
+		    <if test="couponOnlineYn != null and couponOnlineYn != ''">
+				<choose>
+					<when test="couponOnlineYn eq 'Y'.toString()">
+						AND COUPON_KIND_CD != '99' AND OFFLINE_ONLY_YN != 'Y'
+					</when>
+					<when test="couponOnlineYn eq 'F'.toString()">
+						AND COUPON_KIND_CD = '99' OR OFFLINE_ONLY_YN = 'F'
+					</when>
+					<otherwise>
+						AND (COUPON_KIND_CD = '99' OR OFFLINE_ONLY_YN = 'Y' OR OFFLINE_ONLY_YN = 'F')
+					</otherwise>
+				</choose>
+			</if>
+			<if test="goodsTypeCd != null and goodsTypeCd != ''">
+				AND GOODS_TYPE_CD = #{goodsTypeCd}
+			</if>
+			<if test="goodsTypeCd == null or goodsTypeCd == ''">
+			    <choose>
+					<when test="downloadAll != null and downloadAll eq 'Y'.toString()">
+					</when>
+					<otherwise>
+						AND GOODS_TYPE_CD is null
+					</otherwise>
+				</choose>
+			</if>
+
+			<if test="ageCd != null and ageCd != ''">
+				AND AGE_CD LIKE '%'||#{ageCd}||'%'
+			</if>
+			<if test="downloadAll != null and downloadAll eq 'Y'.toString()">
+			AND NOT EXISTS (
+	            SELECT 1 FROM TC_MEMBER_CP WHERE COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo}
+	        )
+	        </if>
+		) A
+		WHERE A.COUPON_QTT_LIMIT_CD = '01'
+		<![CDATA[
+			or (A.COUPON_QTT_LIMIT_CD != '01' and A.ISSUE_CNT < A.COUPON_QTT_LIMIT_CNT)
+		]]>
+		ORDER BY CASE WHEN GOODS_TYPE_CD IN ('01') THEN 1
+		     WHEN GOODS_TYPE_CD IN ('03') THEN 2
+             WHEN GOODS_TYPE_CD IN ('02') THEN 3
+             WHEN GOODS_TYPE_CD IN ('04') THEN 4
+             ELSE 5
+        END
+		<if test="ageRange != null and ageRange != ''">
+			  , CASE WHEN INSTR (AGE_CD,#{ageRange}) > 0  THEN 1 ELSE 2 END
+        </if>
+	</select>
+	
+	<select id="selectAvailableDownloadCouponCnt" resultType="int">
+		/* promotion.coupon.selectAvailableDownloadCouponCnt - 다운로드 가능한 쿠폰 갯수*/
+		SELECT COUNT(1) as cnt
+		FROM (
+		    SELECT TC.*, (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) AS ISSUE_CNT
+		    FROM TP_COUPON TC
+		    WHERE TC.SITE_NO = #{siteNo}
+		    AND COUPON_USE_YN = 'Y'
+		    AND DEL_YN = 'N'
+		    AND (COUPON_KIND_CD != '99' AND COUPON_KIND_CD != '97' AND COUPON_KIND_CD != '05' AND COUPON_KIND_CD != '07')
+		    AND (TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+		    	OR (APPLY_START_DTTM IS NULL AND APPLY_END_DTTM IS NULL))
+		    AND NOT EXISTS (
+	            SELECT 1 FROM TC_MEMBER_CP WHERE COUPON_NO = TC.COUPON_NO AND MEMBER_NO = #{memberNo}
+	        )
+		) A
+		WHERE A.COUPON_QTT_LIMIT_CD = '01'
+		<![CDATA[
+			or (A.COUPON_QTT_LIMIT_CD != '01' and A.ISSUE_CNT < A.COUPON_QTT_LIMIT_CNT)
+		]]>
+	</select>
+	
+	<select id="selectGoodsPreGoodsCnt" resultType="int">
+		SELECT COUNT(1) as cnt
+		FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+		WHERE TC.COUPON_NO = TCTG.COUPON_NO
+		AND TCTG.GOODS_NO = #{goodsNo}
+		AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+		AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+		AND TC.SITE_NO = #{siteNo}
+		AND TC.DEL_YN='N'
+		AND TCTG.USE_YN = 'Y'
+		AND TC.OFFLINE_ONLY_YN = 'Y'
+		AND TC.RSV_ONLY_YN = 'Y'
+		AND TC.COUPON_KIND_CD = '97'
+		AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS')  BETWEEN TO_CHAR(TC.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TC.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+	</select>
+
+	<select id="selectCouponLimitQttCheck" resultType="string">
+        <![CDATA[
+    SELECT
+        CASE WHEN MAX(RSV_AVAILABLE) IS NULL THEN 'N' ELSE MAX(RSV_AVAILABLE) END
+        FROM (
+		SELECT
+            CASE WHEN TC.COUPON_QTT_LIMIT_CD ='01' THEN 'Y' ELSE
+                CASE WHEN TC.COUPON_QTT_LIMIT_CNT <= (SELECT COUNT(1) FROM TC_MEMBER_CP TMC WHERE TMC.COUPON_NO = TC.COUPON_NO) THEN 'N'
+                ELSE 'Y'
+                END
+            END RSV_AVAILABLE
+		FROM TP_COUPON TC, TP_COUPON_TARGET_GOODS TCTG
+		WHERE TC.COUPON_NO = TCTG.COUPON_NO
+		AND TCTG.GOODS_NO = #{goodsNo}
+		AND TC.COUPON_APPLY_LIMIT_CD IN ('02')
+		AND TC.COUPON_APPLY_SCOPE_CD IN ('01')
+		AND TC.SITE_NO = #{siteNo}
+		AND TC.DEL_YN='N'
+		AND TCTG.USE_YN = 'Y'
+		AND TC.OFFLINE_ONLY_YN = 'Y'
+		AND TC.RSV_ONLY_YN = 'Y'
+		AND TC.COUPON_KIND_CD = '97'
+		AND TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TC.APPLY_START_DTTM, 'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TC.APPLY_END_DTTM, 'YYYY-MM-DD HH24:MI:SS')
+     )
+		]]>
+	</select>
+
+	<update id="updateCouponApplyDttm">
+        /* promotion.coupon.updateCouponApplyDttm - 쿠폰 사용가능일자수정 */
+        MERGE INTO TC_MEMBER_CP A
+		USING
+		(
+			 SELECT
+                    A.COUPON_NO,
+                    B.CP_ISSUE_NO,
+                    B.MEMBER_CP_NO,
+                    B.ORD_NO,
+                    NVL(B.BUY_DECIDE_DTTM, SYSDATE) AS CP_APPLY_START_DTTM,
+                    NVL(B.BUY_DECIDE_DTTM, SYSDATE + A.COUPON_APPLY_CONFIRM_AF_PERIOD) AS CP_APPLY_END_DTTM
+             FROM TP_COUPON A , TC_MEMBER_CP B
+             WHERE A.COUPON_NO = B.COUPON_NO
+             AND B.ORD_NO=#{ordNo}
+		) B
+		ON (A.ORD_NO = B.ORD_NO AND A.MEMBER_CP_NO= B.MEMBER_CP_NO AND A.COUPON_NO=B.COUPON_NO)
+		WHEN MATCHED THEN
+        UPDATE  SET
+             BUY_DECIDE_DTTM =sysdate
+            ,CP_APPLY_START_DTTM = B.CP_APPLY_START_DTTM
+            ,CP_APPLY_END_DTTM = B.CP_APPLY_END_DTTM
+            ,USE_YN ='N'
+            ,UPDR_NO = #{regrNo}
+            ,UPD_DTTM = sysdate
+    </update>
+
+
+    <insert id="copyCouponInfo">
+        /* app.promotion.coupon.copyCouponInfo - 쿠폰 정보 복사*/
+        <selectKey keyProperty="newCouponNo" order="BEFORE" resultType="java.lang.Integer">
+        SELECT NVL(MAX(COUPON_NO), 0) + 1 AS newCouponNo
+        FROM   TP_COUPON
+        </selectKey>
+        INSERT INTO TP_COUPON
+            (
+                COUPON_NO,
+                SITE_NO,
+                COUPON_KIND_CD,
+                COUPON_QTT_LIMIT_CD,
+                COUPON_QTT_LIMIT_CNT,
+                COUPON_NM,
+                COUPON_DSCRT,
+                COUPON_SOLO_USE_YN,
+                COUPON_BNF_CD,
+                COUPON_BNF_VALUE,
+                COUPON_BNF_DC_AMT,
+                COUPON_BNF_TXT,
+                COUPON_DUPLT_DWLD_PSB_YN,
+                COUPON_APPLY_PERIOD_CD,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                COUPON_APPLY_ISSUE_AF_PERIOD,
+                COUPON_APPLY_CONFIRM_AF_PERIOD,
+                COUPON_APPLY_SCOPE_CD,
+                COUPON_APPLY_LIMIT_CD,
+                COUPON_APPLY_TARGET_CD,
+                COUPON_USE_LIMIT_AMT,
+                COUPON_USE_YN,
+                OFFLINE_ONLY_YN,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM,
+                DEL_YN,
+                CP_LOADRATE,
+                RSV_ONLY_YN,
+                GOODS_TYPE_CD,
+                AGE_CD
+            )
+            SELECT
+                #{newCouponNo},
+                SITE_NO,
+                COUPON_KIND_CD,
+                COUPON_QTT_LIMIT_CD,
+                COUPON_QTT_LIMIT_CNT,
+                COUPON_NM,
+                COUPON_DSCRT,
+                COUPON_SOLO_USE_YN,
+                COUPON_BNF_CD,
+                COUPON_BNF_VALUE,
+                COUPON_BNF_DC_AMT,
+                COUPON_BNF_TXT,
+                COUPON_DUPLT_DWLD_PSB_YN,
+                COUPON_APPLY_PERIOD_CD,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                COUPON_APPLY_ISSUE_AF_PERIOD,
+                COUPON_APPLY_CONFIRM_AF_PERIOD,
+                COUPON_APPLY_SCOPE_CD,
+                COUPON_APPLY_LIMIT_CD,
+                COUPON_APPLY_TARGET_CD,
+                COUPON_USE_LIMIT_AMT,
+                COUPON_USE_YN,
+                OFFLINE_ONLY_YN,
+                REGR_NO,
+                SYSDATE,
+                UPDR_NO,
+                SYSDATE,
+                DEL_YN,
+                CP_LOADRATE,
+                RSV_ONLY_YN,
+                GOODS_TYPE_CD,
+                AGE_CD
+            FROM TP_COUPON
+            WHERE COUPON_NO = #{couponNo}
+    </insert>
+
+    <insert id="copyCouponTargetGoods">
+            /* promotion.coupon.copyCouponTargetGoods - 쿠폰대상 상품복사*/
+            INSERT INTO TP_COUPON_TARGET_GOODS
+            (
+                COUPON_NO,
+                APPLY_SEQ,
+                COUPON_APPLY_LIMIT_CD,
+                USE_YN,
+                GOODS_NO,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            SELECT
+                #{newCouponNo},
+                APPLY_SEQ,
+                COUPON_APPLY_LIMIT_CD,
+                USE_YN,
+                GOODS_NO,
+                REGR_NO,
+                SYSDATE,
+                UPDR_NO,
+                SYSDATE
+            FROM TP_COUPON_TARGET_GOODS
+            WHERE COUPON_NO=#{couponNo}
+
+    </insert>
+
+    <insert id="copyCouponTargetCtg">
+        /* promotion.coupon.copyCouponTargetCtg - 쿠폰대상 카테고리복사*/
+     INSERT INTO TP_COUPON_TARGET_CTG
+        (
+            COUPON_NO,
+            APPLY_SEQ,
+            SITE_NO,
+            COUPON_APPLY_LIMIT_CD,
+            USE_YN,
+            CTG_NO,
+            REGR_NO,
+            REG_DTTM,
+            UPDR_NO,
+            UPD_DTTM
+        )
+      SELECT
+            #{newCouponNo},
+            APPLY_SEQ,
+            SITE_NO,
+            COUPON_APPLY_LIMIT_CD,
+            USE_YN,
+            CTG_NO,
+            REGR_NO,
+            SYSDATE,
+            UPDR_NO,
+            SYSDATE
+        FROM TP_COUPON_TARGET_CTG
+        WHERE COUPON_NO=#{couponNo}
+    </insert>
+
+</mapper>

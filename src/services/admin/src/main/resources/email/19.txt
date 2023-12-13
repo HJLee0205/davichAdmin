@@ -1,0 +1,82 @@
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<div class="wrap" align="center" style="width:650px;margin:0 auto;border:1px solid #dddddd;">
+<table class="header" style="width:590px;border-collapse:collapse;margin:0 auto;">
+<tbody><tr>
+    <th class="h_logo" style="padding:20px 0 10px;font-size:12px;text-align:left;border-bottom:1px solid #dddddd;">
+        <h1 style="margin:0;padding:0;"><img src="//#[dlgtDomain]/front/img/common/logo/logo.png" style="border:0;"></h1>
+    </th>
+</tr>
+</tbody></table>
+<table class="content" style="width:590px;border-collapse:collapse;margin:0 auto;">
+<tbody><tr>
+    <td class="con_tlt" style="text-align:center;">
+        <h2 style="margin:0;padding:40px 0;font-size:24px;">문의하신 질문에 답변드립니다.</h2>
+    </td>
+</tr>
+<tr>
+    <td class="con_desc" style="padding:0 0 40px;font-size:14px;color:#787878;"><p>
+         안녕하세요 #[shopName]&nbsp;입니다. <br>
+         문의하신 질문에 답변 드립니다.
+    </p></td>
+</tr>
+<tr>
+    <th class="con_h3" style="text-align:left;">
+        <h3 style="margin:0;padding:0 0 20px;font-size:16px;">
+        <img src="//#[dlgtDomain]/front/img/email/bul_tlt.png" alt="" style="border:0;vertical-align:middle;"> 문의 처리내역</h3>
+    </th>
+</tr>
+<tr>
+    <td>
+        <table class="basic" style="width:100%;border-collapse:collapse;font-size:12px;border-top:1px solid #dddddd;">
+        <tbody><tr>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                문의제목
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryTitle]</span><br></td>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                작성일
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryRegrDtm]</span></td></tr><tr><th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">문의내용
+            </th>
+            <td colspan="3" style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryContent]</span><br></td>
+        </tr>
+        <tr>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                답변제목
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryReplyTitle]</span><br></td>
+            <th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">
+                답변일
+            </th>
+            <td style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryReplyRegrDtm]</span></td></tr><tr><th style="width:20%;padding:15px 0;text-align:center;border-bottom:1px solid #dddddd;background-color:#f9f9f9;">답변내용
+            </th>
+            <td colspan="3" style="width:30%;padding:15px 10px;text-align:left;border-bottom:1px solid #dddddd;"><span style="font-size: 13.3333px;">#[inqueryReplyContent]</span><br></td>
+        </tr>
+        </tbody></table>
+    </td>
+</tr>
+<tr>
+    <td class="btn_con" style="padding-top:30px;text-align:center;"><p><a href="" class="btn1" style="display:inline-block;height:36px;padding:0 20px;line-height:36px;text-decoration:none;font-size:12px;color:#ffffff;background-color:#373737;">#[shopName]&nbsp;바로가기</a>
+    </p></td>
+</tr>
+<tr>
+    <td class="f_desc" style="padding-top:50px;font-size:12px;color:#666;">
+        본 메일은 발신전용입니다. 궁금하신 점이나 불편한 사항은 고객센터를 통해 문의해주시기 바랍니다.
+    </td>
+</tr>
+</tbody></table>
+<table class="footer" style="width:100%;border-collapse:collapse;margin-top:20px;font-size:11px;background-color:#444444;">
+<tbody><tr>
+    <th class="f_logo" style="width:20%;">
+
+    </th>
+    <td style="width:80%;padding:20px 0;">
+        <p class="info_txt" style="font-size: 13.3333px; color: rgb(153, 153, 153);"><span style="color: rgb(119, 119, 119); font-size: 10pt;">copyright ⓒ #[shopName]. All rights Reserved.&nbsp;</span><br></p>
+<p class="copy_txt" style="font-size: 13.3333px;"><span style="color: rgb(119, 119, 119);">고객센터 무료전화&nbsp;<span style="color: rgb(255, 255, 255);">#[custCtTelNo]</span>&nbsp;문의 메일&nbsp;</span><font color="#ffffff">#[custCtEmail]</font></p>
+    </td>
+</tr>
+</tbody></table>
+</div>

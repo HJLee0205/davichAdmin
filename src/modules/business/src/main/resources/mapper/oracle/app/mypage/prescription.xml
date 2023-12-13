@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mypage.prescription">
+	<!-- 처방전 목록 조회 -->
+	<select id="selectPrecription" parameterType="net.danvi.dmall.biz.app.prescription.model.PrescriptionPO" resultType="net.danvi.dmall.biz.app.prescription.model.PrescriptionVO">
+		select member_no
+			, prescription_no
+			, to_char(checkup_dt, 'YYYY-MM-DD') as checkup_dt
+			, checkup_institute_nm
+			, prescription_org_file_nm
+			, replace(prescription_file_path, '\', '') || '_' || prescription_file_nm as prescriptionFileId
+			, reg_dttm
+		from tc_prescription_info
+		where member_no = #{memberNo}
+		  and del_yn = 'N'
+		<if test="prescriptionNo != null and prescriptionNo != ''">
+			and prescription_no = #{prescriptionNo}
+		</if>
+		order by checkup_dt desc, reg_dttm desc
+	</select>
+	
+	<!-- 등록된 처방전 개수 조회 -->
+	<select id="countPrescriptionList" parameterType="long" resultType="int">
+		select count(*) as cnt
+		from tc_prescription_info
+		where member_no = #{memberNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<!-- 처방전 번호 max+1조회 -->
+	<select id="selectMaxPrescriptionNo" parameterType="long" resultType="int">
+		select nvl(max(prescription_no), 0) + 1 as maxPrescriptionNo
+		from tc_prescription_info
+		where member_no = #{memberNo}
+	</select>
+	
+	<!-- 처방전 등록 -->
+	<insert id="insertPrescription" parameterType="net.danvi.dmall.biz.app.prescription.model.PrescriptionPO">
+		insert into tc_prescription_info (
+			member_no
+			, prescription_no
+			, checkup_dt
+			, checkup_institute_nm
+			, prescription_file_path
+			, prescription_file_nm
+			, prescription_file_size
+			, prescription_org_file_nm
+			, del_yn
+			, regr_no
+			, reg_dttm
+		) values (
+			#{memberNo}
+			, #{prescriptionNo}
+			, to_date(#{checkupDt}, 'YYYY-MM-DD')
+			, #{checkupInstituteNm}
+			, #{prescriptionFilePath}
+			, #{prescriptionFileNm}
+			, #{prescriptionFileSize}
+			, #{prescriptionOrgFileNm}
+			, 'N'
+			, #{regrNo}
+			, sysdate
+		)
+	</insert>
+	
+	<!-- 처방전 삭제 -->
+	<update id="deletePrescription" parameterType="net.danvi.dmall.biz.app.prescription.model.PrescriptionPO">
+		update tc_prescription_info
+		set del_yn = 'Y'
+		  , updr_no = #{updrNo}
+		  , upd_dttm = sysdate
+		where member_no = #{memberNo}
+		  and prescription_no = #{prescriptionNo}
+	</update>
+	
+</mapper>

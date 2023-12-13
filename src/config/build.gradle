@@ -1,0 +1,24 @@
+plugins {
+    id 'net.danvi.dmall.java-conventions'
+    id 'java'
+}
+
+
+task renameDataSource(type: Copy){
+    String destFile = buildDir.toString() + '/resources/main/spring/context/context-datasource.xml'
+    String sourceFile = projectDir.toString() + '/src/main/resources/spring/context/context-datasource-%s.xml'
+
+    System.out.println(destFile)
+
+    if ("local" == BuildProfile.getProfile()){
+        sourceFile = String.format(sourceFile, "bean")
+    } else {
+        sourceFile = String.format(sourceFile, "jndi")
+    }
+    ant.copy(
+            file: sourceFile,
+            tofile: destFile
+    )
+}
+
+description = 'config'

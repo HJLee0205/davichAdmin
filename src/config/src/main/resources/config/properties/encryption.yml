@@ -1,0 +1,31 @@
+properties:
+  encryption:
+    core.aes.key: danvistory
+    core.aes.iv: danvistory.com
+    core.des.key: kis_des_crypto
+    core.desede.key: kis_desede_crypto_123456
+    inipay.aes.key:
+    inipay.aes.iv:
+    push.firebase.key: AAAAPGJylvg:APA91bHScGbRNQxOr1rm5NqGttQ4TlYTBH4bKGgSIdafd5aTsfaSTj8ud6Lb9MWcr0Wd-vN7zNF0zuJM8ipop0zs2btTu8V-PUTY4sJHiKNTKeUZGUpxPeYarXeifxizVpu1gu0LvTMu
+    interface.aes.key: davich_interface
+    interface.aes.iv: mall_erp_interface
+
+---
+spring:
+  profile: local
+properies:
+
+---
+spring:
+  profile: dev
+properies:
+
+---
+spring:
+  profile: sandbox
+properties:
+
+---
+spring:
+  profile: stage
+properties:

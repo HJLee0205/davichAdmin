@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="sms080Reject">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<insert id="insert" parameterType="net.danvi.dmall.smsemail.model.Sms080RejectPO">
+		/* sms080Reject.insert - 080 수신거부 서비스 수신거부 전화번호 등록 */
+		MERGE INTO SMS_080_RECV_RJT
+		USING dual
+		ON (DN = #{DN} AND TELNO = #{phone})
+		WHEN MATCHED THEN
+			UPDATE SET
+			     RJT_PRC_YN ='N'
+		         ,REG_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		   INSERT (
+			CERTIFY_CD, DN, TELNO, RJT_PRC_YN, REG_DTTM
+			) VALUES (#{auth_code}, #{DN}, #{phone}, 'N', SYSDATE)
+	</insert>
+
+    <update id="updateReady">
+        UPDATE SMS_080_RECV_RJT SET
+                RJT_PRC_YN = 'R'
+        WHERE  RJT_PRC_YN = 'N'
+    </update>
+
+	<select id="select" resultType="net.danvi.dmall.smsemail.model.request.Sms080RecvRjtVO">
+		/* sms080Reject.select - 080 수신거부 서비스 수신거부 미처리 데이터 조회 */
+		SELECT CERTIFY_CD,
+				DN,
+				TELNO
+		FROM 	SMS_080_RECV_RJT
+		WHERE 	RJT_PRC_YN = 'R'
+	</select>
+
+	<update id="update" parameterType="net.danvi.dmall.smsemail.model.request.Sms080RecvRjtVO">
+		/* sms080Reject.update - 080 수신거부 서비스 수신거부 처리 상태 변경 */
+		UPDATE SMS_080_RECV_RJT SET
+			RJT_PRC_YN = 'Y',
+			RJT_PRC_DTTM = SYSDATE
+		WHERE	RJT_PRC_YN = 'R'
+		AND 	DN = #{dn}
+		AND 	TELNO = #{telno}
+
+	</update>
+</mapper>

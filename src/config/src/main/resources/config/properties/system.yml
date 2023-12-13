@@ -1,0 +1,146 @@
+properties:
+  system.profile: stage
+  system.charset: UTF-8
+  system.mall.strcode: 9500
+
+  system.server.type:
+    interface.mall: mall
+    interface.erp: erp
+
+  system.script:
+    quota: /app/solution/quota/usequota.sh  # 사용안함
+    chown: /app/solution/quota/chquota.sh   # 사용안함
+    copy: /app/solution/quota/cpquota.sh    # 사용안함
+
+  # 이메일 SMTP IP 설정
+  system.email.smtp:
+  system.email.smtp.host: smtps.hiworks.com
+  system.email.smtp.port: 465
+  system.email.smtp.username: davich000@davichmarket.com
+  system.email.smtp.password: davi13579!
+
+  # 업로드 파일 용량 6MB
+  system.upload.file.size: 6291456
+  system.review.file.size: 5242880
+
+  system.domain:
+    market: admin.davichmarket.com # test 운영 서버
+#    market: 146.56.160.8:3003 # market api1
+    image: img.davichmarket.com # market api1
+#    image: image.davichmarket.com # test 운영 서버
+    external: www.davichmarket.com
+
+  system.path:
+    siteRoot: /data/O4OPJT/front/ROOT/WEB-INF/views/site
+    originSkin: Y:/skins/orgSkin
+    upload:
+      root: /data/O4OPJT/service/upload
+      temp:
+      goods:
+      editor:
+      freebie:
+      banner:
+      favicon:
+      display:
+      image:
+
+    mobile:
+      siteRoot: /data/O4OPJT/mfront/m/WEB-INF/views/site
+      originSkin: /data/O4OPJT/upload/orgskin/site
+
+    solution:
+      conf: /data/O4OPJT/service/ext_conf
+      log: /data/O4OPJT/service/ext_log
+
+  system.url:
+    homepage: http://www.danvistory.com
+    interface: http://www.davichmarket.com/ifapi_mall
+    batch.remote.base: http://localhost/spring-batch-admin-sample
+    mall:
+      server1: http://www.davichmarket.com/ifapi_mall
+      server2: http://www.davichmarket.com/ifapi_mall
+    erp:
+      server1: http://www.davichmarket.com/ifapi_erp
+      server2: http://www.davichmarket.com/ifapi_erp
+
+  system.payment:
+    isRealService: N   # PG 전체 실서비스여부 - false : 테스트서버, true : 실서버
+
+  # 허용하지 않는 사이트 ID 접두어, admin01 같이 해당 단어로 시작하는 ID는 생성 불가
+  system.id.not.allowed.prefix: admin, master, manager
+
+  # 허용하지 않는 사이트ID 단어
+  system.id.not.allowed.word:
+    tomcat, was, root, hacluster, unbound, sshd, postfix, nobody, ftp, games,
+    operator, mail, halt, shutdown, sync, lp, adm, daemon, apache, mysql, center,
+    shop, bin, webadmin, saslauth, utmp, avahi-autoipd, passwd, user, su, www,
+    send, mailnull, sudo, input, stapdev, stapusr, ssh_keys, audio, tss, stapsys,
+    polkitd, users, dbus, utempter, kftel, parcel, postdrop, systemd-journal,
+    avahi-autoipd, systemd-bus-proxy, systemd-network, rpc, video, lock, tape,
+    ebdesign, demo, wheel, sys, tty, disk, mem, cdrom, man, kmem, floppy, dialout,
+    help, m, design
+
+  # http 연결허용 URI 패턴
+  system.market.protocol.http.allow: /front/,/promotion/leftwing-info,/image/,/front/goods/goods-image-preview,/front/member/quick-info,/front/coupon/available-ordercoupon-list,/skin/,/skins/,/visit/,/goods/,/front/open-pop,/review/,/question/,/totalsearch/
+  system.market.protocol.http:deny: /login/,/member/,/order/,/mypage/
+  system.admin.protocol.http.allow: /admin/,/image/,/img/
+  system.admin.protocol.http.deny: /login/,/member/,/order/
+
+---
+spring:
+  profile: local
+properties:
+  system.profile: local
+  system.mall.strcode: 8888
+  system.domain:
+    market: admin.davichmarket.com # test 운영 서버
+#    market: 146.56.160.8:3003 # market api1
+    image: img.davichmarket.com # market api1
+    #    image: image.davichmarket.com # test 운영 서버
+    external: localhost:8080
+
+  system.path:
+    siteRoot: /Users/kmoh/Projects/davichmarket/services/web/src/main/webapp/WEB-INF/views/site
+    upload:
+      root: /data/O4OPJT/service/upload
+
+    mobile:
+      siteRoot: /Users/kmoh/Projects/davichmarket/services/mobile/src/main/webapp/WEB-INF/views/site
+    solution:
+      conf: /data/O4OPJT/service/ext_conf
+      log: /data/O4OPJT/service/ext_log
+
+  #  system.url:
+  #    homepage: http://localhost:8080
+  #    interface: http://localhost:8088
+  #    erp.server1: http://localhost:8089
+  #    erp.server2: http://localhost:8089
+  #    mall.server1: http://localhost:8088
+  #    mall.server2: http://localhost:8088
+
+  system.market.protocol.http.allow: "
+  /front/,/promotion/leftwing-info,/image/,
+  /front/goods/goods-image-preview,
+  /front/member/quick-info,/front/coupon/available-ordercoupon-list,
+  /skin/,/skins/,/visit/,/goods/,/front/open-pop,
+  /review/,/question/,/totalsearch/,/login/,/member/,/order/,/mypage/
+  "
+  system.market.protocol.http:deny: /NONE/
+  system.admin.protocol.http.allow: /admin/,/image/,/img/,/login/,/member/,/order/
+  system.admin.protocol.http.deny: /NONE/
+---
+spring:
+  profile: dev
+properties:
+  system.profile: dev
+---
+spring:
+  profile: sandbox
+properties:
+  system.profile: sandbox
+
+---
+spring:
+  profile: stage
+properties:
+  system.profile: stage

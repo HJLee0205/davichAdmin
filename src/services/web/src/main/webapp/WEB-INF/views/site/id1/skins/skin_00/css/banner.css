@@ -1,0 +1,13 @@
+@charset "utf-8";
+
+/* === banner === */
+#banner {
+    position:absolute;
+    top:180px;
+    left:50%;
+    margin-left:-600px;
+    z-index:10
+}
+#banner img{
+    width:80px;
+}

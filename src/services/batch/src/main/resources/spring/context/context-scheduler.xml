@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/task		http://www.springframework.org/schema/task/spring-task-4.2.xsd ">
+
+	<!-- Scheduler -->
+	<context:component-scan base-package="net.danvi.dmall.admin.batch" />
+	<!--<task:annotation-driven scheduler="jobScheduler" />-->
+
+	<!-- Scheduler -->
+	<task:scheduler id="jobScheduler" pool-size="10"/>
+	<task:executor id="executor" pool-size="10"/>
+	<task:annotation-driven executor="executor"/>
+    <task:scheduled-tasks scheduler="jobScheduler">
+
+        <!-- 포인트 소멸 : 매주 매월 매일 0시 0분 0초-->
+         <task:scheduled ref="memberExcute" method="memberPointRunJob" cron="0 0 00 * * *" />
+        <!-- D-머니 소멸 : 매주 매월 매일 0시 0분 0초-->
+<!--         <task:scheduled ref="memberExcute" method="memberSavedmnRunJob" cron="0 0 00 * * *" />-->
+        <!-- 성인 여부 업데이트 : 매주 매월 매일 0시 0분 0초-->
+<!--         <task:scheduled ref="memberExcute" method="memberAdultCertifyRunJob" cron="0 0 00 * * *" />-->
+        <!-- 회원등급 산정 : 매주 매월 매일 0시 0분 0초, 멤버등급 고정으로 block -->
+         <!--<task:scheduled ref="memberExcute" method="memGradeRunJob" cron="0 0 00 * * *" />-->
+        <!-- 휴면회원 전환 알람 : 매주 매월 매일 0시 0분 0초-->
+        <task:scheduled ref="memberExcute" method="memDormantRunAlamJob" cron="0 0 00 * * *" />
+        <!-- 휴면회원 등록 : 매주 매월 매일 0시 0분 0초-->
+        <task:scheduled ref="memberExcute" method="memDormantRunJob" cron="0 0 00 * * *" />
+        <!-- 탈퇴회원 관련정보삭제 : 매주 매월 매일 0시 0분 0초-->
+        <task:scheduled ref="memberExcute" method="deleteMemberNoRelationInfoJob" cron="0 0 00 * * *" />
+        
+        <!-- 대량메일발송 결과 수정 : 매주 매월 매일 0시 0분 0초-->
+         <!--<task:scheduled ref="memberExcute" method="mailSendResultRunJob" cron="0 0 0/1 * * *" />-->
+        <!-- 080 수신거부 대상 여부 업데이트 : 5분마다  0초-->
+<!--         <task:scheduled ref="smsEmailExcute" method="sms080RejectJob" cron="0 */5 * * * *" />-->
+    
+
+        <!-- 1.사방넷 상품등록&수정 : 1시간마다 0분 0초-->
+		<!--<task:scheduled ref="sabangnetExcute" method="registGoods"         cron="0 0/60 * * * *" />-->
+		<!-- 1.사방넷 상품등록&수정 매주 매월 매일 0시 0분 0초  -->
+		<!--초 분 시간 일(Day of Month) 월 요일(Day of Week, 1-7 : SUN-SAT) 년도(생략가능)-->
+		<!--0 0 1 ? * 2" : 매주 월요일 새벽 1시 0분-->
+<!--		<task:scheduled ref="sabangnetExcute" method="registGoods"         cron="0 0 1 ? * 2" />-->
+<!--        &lt;!&ndash; 2.사방넷 상품요약수정  : 30분마다  0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="smrUpdGoods"         cron="0 0/30 * * * *" />-->
+
+<!--        &lt;!&ndash; 3.사방넷 주문 수집     : 30분마다  0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="readOrderInfo"       cron="0 0/30 * * * *" />-->
+<!--        &lt;!&ndash; 4.사방넷 송장 등록     : 30분마다  0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="registInvoice"       cron="0 0/30 * * * *" />-->
+<!--        &lt;!&ndash; 5.사방넷 클레임 수집   : 1시간마다 0분 0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="readClaimInfo"       cron="0 0/60 * * * *" />-->
+<!--        &lt;!&ndash; 6.사방넷 문의사항 수집 : 1시간마다 0분 0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="readInquiryInfo"     cron="0 0/60 * * * *" />-->
+<!--        &lt;!&ndash; 7.사방넷 문의답변 등록 : 30분마다  0초 &ndash;&gt;-->
+<!--		<task:scheduled ref="sabangnetExcute" method="registInquiryReply"  cron="0 0/30 * * * *" />-->
+		<!-- 8.사방넷 상품 수집 : 30분마다  0초 -->
+		<!--<task:scheduled ref="sabangnetExcute" method="readGoodsInfo"  cron="0 0/30 * * * *" />-->
+
+		<!-- 우체국 택배 수신 ( FILE to DB )  -->
+		<!--<task:scheduled ref="epostExcute" method="epostFileToDB" cron="0 25 14 * * *" />-->
+		<!--우체국 택배 송신 ( DB to FILE )-->
+		<!--<task:scheduled ref="epostExcute" method="epostDBToFile" cron="0 7 17 * * *" />-->
+
+        <!-- BA-O-001 입금누락 주문무효처리 : DB-to-DB Mybatis 커서 사용  -->
+         <task:scheduled ref="orderExcute" method="BaO001Job" cron="0 30 0 * * *" />
+        <!-- BA-O-002 배송완료누락 배송완료처리 : DB-to-DB Mybatis 커서 사용 -->
+         <task:scheduled ref="orderExcute" method="BaO002Job" cron="0 30 0 * * *" />
+        <!-- BA-O-003 구매확정누락 구매확정처리 : Tasklet 사용  -->
+         <task:scheduled ref="orderExcute" method="BaO003Job" cron="0 30 0 * * *" />
+        <!-- BA-O-004 입금누락 주문무효 SMS발송 : DB-to-DB Mybatis 커서 사용(오전 10시경에 수행할 예정 - sms즉시 보냄)  -->
+<!--         <task:scheduled ref="orderExcute" method="BaO004Job" cron="0 0 10 * * *" />-->
+        <!-- BA-O-005 구매확정누락 구매확정 안내 SMS발송 : DB-to-DB Mybatis 커서 사용(오전 10시경에 수행할 예정 - sms즉시 보냄) => 기획에서 배치 삭제 처리 -->
+<!--         <task:scheduled ref="orderExcute" method="BaO005Job" cron="0 0 10 * * *" /> -->
+        <!-- BA-O-006 입금누락 주문무효 이메일발송 : DB-to-DB Mybatis 커서 사용(오전 10시경에 수행할 예정 - email즉시 보냄)  -->
+<!--         <task:scheduled ref="orderExcute" method="BaO006Job" cron="0 0 10 * * *" />-->
+        <!-- BA-O-007 구매확정누락 구매확정 안내 이메일발송 : DB-to-DB Mybatis 커서 사용(오전 10시경에 수행할 예정 - email즉시 보냄) => 기획에서 배치 삭제 처리-->
+<!--         <task:scheduled ref="orderExcute" method="BaO007Job" cron="0 0 10 * * *" /> -->
+    
+      <!-- 통계 배치 -->
+        <!-- 1.방문자분석 집계        : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registVstrAnls" cron="0 0 03 * * *" />
+        <!-- 2.방문경로분석 집계      : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registVisitPathAnls" cron="0 0/60 * * * *" />
+        <!-- 3.방문자IP분석 집계     : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registVstrIpAnls" cron="0 0/60 * * * *" />
+        <!-- 4.신규회원분석 집계      : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registNwMemberAnls" cron="0 0/60 * * * *" />
+        <!-- 5.회원D-머니분석 집계    : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registMemberSvmnAnls" cron="0 0/60 * * * *" />
+        <!-- 6.카테고리상품분석 집계  : 1시간마다 -->
+		<task:scheduled ref="sttcsExcute" method="registCtgGoodsAnls" cron="0 0/60 * * * *" />
+        <!-- 7.판매순위 상품분석 집계 -->
+		<task:scheduled ref="sttcsExcute" method="registSaleRankGoodsAnls" cron="0 0/60 * * * *" />
+        <!-- 8.장바구니 상품분석 집계 -->
+		<task:scheduled ref="sttcsExcute" method="registBasketGoodsAnls" cron="0 0/60 * * * *" />
+		<!-- 9.주문통계 분석 집계 -->
+		<task:scheduled ref="sttcsExcute" method="registOrdSttcsAnls" cron="0 0/60 * * * *" />
+		<!-- 10.매출통계 분석 집계 -->
+		<task:scheduled ref="sttcsExcute" method="registSalesSttcsAnls" cron="0 0/60 * * * *" />
+		<!-- 11.로그인현황 분석 집계 : 매일 03시 -->
+		<task:scheduled ref="sttcsExcute" method="registLoginCurStatusAnls" cron="0 0 03 * * *"/>
+
+		<!-- 상품 배치 -->
+		<!-- 1.상품 상태      : 매주 매월 매일 0시 2분 0초 -->
+		<task:scheduled ref="goodsBatchExcute" method="runGoodsSaleStatusBatch" cron="0 02 0 * * *" />
+		<!-- 2.상품 정보      : 매주 매월 매일 2시 45분 0초-->
+		<!--<task:scheduled ref="goodsBatchExcute" method="runGoodsSaleInfoBatch" cron="0 45 03 * * *" />-->
+
+		<!--  임시 폴더 삭제 배치 -->
+		<!-- 1. 임시 폴더 삭제 : 매주 매월 매일 4시 0분 0초 -->
+		<task:scheduled ref="tempFileExcute" method="tempFileDel" cron="0 0 04 * * *" />
+
+		<!--  회원등급 interface -->
+		<!-- 1. 회원등급 update : 매주 매월 매일 6시 0분 0초 -->
+		<task:scheduled ref="memberBatchService" method="interfaceMemberGrade" cron="0 0 06 * * *" />
+
+        <!-- 지식쇼핑 파일 생성 매주 매월 매일 0시 0분 0초  -->
+		<task:scheduled ref="epFileCreate" method="epFileCreate" cron="0 0 00 * * *" />
+
+		<!-- 배너 종료일 이후 자동 미전시 매주 매월 매일 0시 0분 0초  -->
+		<task:scheduled ref="bannerDispExcute" method="bannerAutoDispNone" cron="0 0 00 * * *" />
+
+     </task:scheduled-tasks>
+	<!-- 
+		스케쥴러 cron 양식
+		 
+		초 0-59 , - * / 
+		분 0-59 , - * / 
+		시 0-23 , - * / 
+		일 1-31 , - * ? / L W
+		월 1-12 or JAN-DEC , - * / 
+		요일 1-7 or SUN-SAT , - * ? / L # 
+		년(옵션) 1970-2099 , - * /
+		* : 모든 값
+		? : 특정 값 없음
+		- : 범위 지정에 사용
+		, : 여러 값 지정 구분에 사용
+		/ : 초기값과 증가치 설정에 사용
+		L : 지정할 수 있는 범위의 마지막 값
+		W : 월~금요일 또는 가장 가까운 월/금요일
+		# : 몇 번째 무슨 요일 2#1 => 첫 번째 월요일
+		 
+		예제) Expression Meaning
+		 초 분 시간 일(Day of Month) 월 요일(Day of Week, 1-7 : SUN-SAT) 년도(생략가능)
+		 "0 0 12 * * ?" : 아무 요일, 매월, 매일 12:00:00
+		 "0 15 10 ? * *" : 모든 요일, 매월, 아무 날이나 10:15:00 
+		 "0 15 10 * * ?" : 아무 요일, 매월, 매일 10:15:00
+		 "0 15 10 * * ? *" : 모든 연도, 아무 요일, 매월, 매일 10:15 
+		 "0 15 10 * * ? : 2005" 2005년 아무 요일이나 매월, 매일 10:15 
+		 "0 * 14 * * ?" : 아무 요일, 매월, 매일, 14시 매분 0초 
+		 "0 0/5 14 * * ?" : 아무 요일, 매월, 매일, 14시 매 5분마다 0초 
+		 "0 0/5 14,18 * * ?" : 아무 요일, 매월, 매일, 14시, 18시 매 5분마다 0초 
+		 "0 0-5 14 * * ?" : 아무 요일, 매월, 매일, 14:00 부터 매 14:05까지 매 분 0초 
+		 "0 10,44 14 ? 3 WED" : 3월의 매 주 수요일, 아무 날짜나 14:10:00, 14:44:00 
+		 "0 15 10 ? * MON-FRI" : 월~금, 매월, 아무 날이나 10:15:00 
+		 "0 15 10 15 * ?" : 아무 요일, 매월 15일 10:15:00 
+		 "0 15 10 L * ?" : 아무 요일, 매월 마지막 날 10:15:00 
+		 "0 15 10 ? * 6L" : 매월 마지막 금요일 아무 날이나 10:15:00 
+		 "0 15 10 ? * 6L 2002-2005" : 2002년부터 2005년까지 매월 마지막 금요일 아무 날이나 10:15:00 
+		 "0 15 10 ? * 6#3" : 매월 3번째 금요일 아무 날이나 10:15:00	
+	 -->
+	
+</beans>

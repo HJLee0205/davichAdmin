@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vision">
+	<select id="selectVisonCheckDscrtList" parameterType="VisionVO" resultType="VisionCheckDscrtVO">
+		SELECT 
+			CHECK_NO,
+			CHECK_NM,
+			SIMPLE_DSCRT,
+			IMG_NM
+		FROM
+			TC_VISON_CHECK_DSCRT
+		WHERE CHECK_NO IN (${checkNo})
+		ORDER BY CHECK_NO
+	</select>
+	<select id="selectVisonCheckDscrtList2" parameterType="VisionStepVO" resultType="VisionCheckDscrtVO">
+		SELECT 
+			CHECK_NO,
+			CHECK_NM,
+			SIMPLE_DSCRT,
+			IMG_NM
+		FROM
+			TC_VISON_CHECK_DSCRT
+		WHERE LENS_GB_CD = #{visionGb}
+		<if test="checkNos != null and checkNos != ''">
+		AND CHECK_NO IN (${checkNos})
+		</if>
+		ORDER BY CHECK_NO
+	</select>
+	<insert id="insertVisionCheck" parameterType="VisionCheckVO">
+		INSERT INTO tc_vison_check (
+		    vision_check_no,
+		    member_no,
+		    relate_activity,
+		    age,
+		    lens_gb_cd,
+		    check_no,
+		    regr_no,
+		    reg_dttm,
+		    result_all
+		) VALUES (
+		    (SELECT NVL(MAX(vision_check_no),0) + 1 FROM tc_vison_check),
+		    #{memberNo},
+		    #{relateActivity},
+		    #{age},
+		    #{lensGbCd},
+		    #{checkNo},
+		    #{regrNo},
+		    sysdate,
+		    #{resultAll}
+		)
+	</insert>
+	<delete id="deleteVisionCheck" parameterType="VisionCheckVO">
+		DELETE FROM tc_vison_check WHERE member_no = #{memberNo} AND lens_gb_cd = #{lensGbCd}
+	</delete>
+	 <select id="selectVisionCheckList" parameterType="visionCheckVO" resultType="visionCheckVO">
+		SELECT
+		    A.VISION_CHECK_NO,
+		    A.MEMBER_NO,
+		    A.RELATE_ACTIVITY,
+		    A.AGE,
+		    A.LENS_GB_CD,
+		    A.CHECK_NO,
+		    A.REGR_NO,
+		    A.REG_DTTM,
+		    A.UPDR_NO,
+		    A.UPD_DTTM,
+		    A.RESULT_ALL,
+		    B.CHECK_NM,
+		    B.SIMPLE_DSCRT,
+		    B.DTL_DSCRT,
+		    B.IMG_NM
+		FROM
+		    TC_VISON_CHECK A LEFT JOIN TC_VISON_CHECK_DSCRT B ON A.CHECK_NO = B.CHECK_NO
+		WHERE A.MEMBER_NO = #{memberNo} AND A.LENS_GB_CD = #{lensGbCd}
+		ORDER BY A.VISION_CHECK_NO ASC
+	</select>
+	<select id="selectPoMatrAjax" parameterType="VisionCheckSO" resultType="VisionCheckVO">
+		SELECT 
+			A.PO_MATR_CD, 
+			B.CD_NM PO_MATR_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_CHECK A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.PO_MATR_CD = B.CD AND B.GRP_CD = 'PO_MATR_CD'
+		WHERE 
+			A.AGE_CD = #{ageCd}
+		GROUP BY 
+			A.PO_MATR_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectLifeStyleAjax" parameterType="VisionCheckSO" resultType="VisionCheckVO">
+		SELECT 
+			A.LIFE_STYLE_CD,
+			B.CD_NM LIFE_STYLE_NM,
+			utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',C.CHECK_NO) order by A.VISION_NO asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS CHECK_NOS,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_CHECK A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.LIFE_STYLE_CD = B.CD AND B.GRP_CD = 'LIFE_STYLE_CD'
+		LEFT JOIN
+            TG_VISION_CHECK_MAP C
+        ON A.VISION_NO = C.VISION_NO
+		WHERE 
+			A.PO_MATR_CD IN (${poMatrCd})
+		GROUP BY 
+			A.LIFE_STYLE_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	
+	<select id="selectContactAjax" parameterType="VisionCheckSO" resultType="VisionCheckVO">
+		SELECT 
+			A.LIFE_STYLE_CD, 
+			B.CD_NM LIFE_STYLE_NM,
+ 			utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',C.CHECK_NO) order by A.VISION_NO asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS CHECK_NOS,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_CHECK A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.LIFE_STYLE_CD = B.CD AND B.GRP_CD = 'LIFE_STYLE_CD'
+		LEFT JOIN
+            TG_VISION_CHECK_MAP C
+        ON A.VISION_NO = C.VISION_NO
+		WHERE 
+			A.AGE_CD = #{ageCd}
+		GROUP BY 
+			A.LIFE_STYLE_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionAge" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.AGE_CD, 
+			B.CD_NM AGE_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.AGE_CD = B.CD AND B.GRP_CD = 'VISION_AGE_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+		GROUP BY 
+			A.AGE_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep1" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.STEP1_CD, 
+			B.CD_NM STEP1_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP1_CD = B.CD AND B.GRP_CD = 'VISION_STEP1_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+		GROUP BY 
+			A.STEP1_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep2" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.STEP2_CD, 
+			B.CD_NM STEP2_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP2_CD = B.CD AND B.GRP_CD = 'VISION_STEP2_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+		GROUP BY 
+			A.STEP2_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep3" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.STEP3_CD, 
+			B.CD_NM STEP3_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP3_CD = B.CD AND B.GRP_CD = 'VISION_STEP3_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+			AND A.STEP2_CD IN (${step2Cd})
+		GROUP BY 
+			A.STEP3_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep4" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.STEP4_CD, 
+			B.CD_NM STEP4_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP4_CD = B.CD AND B.GRP_CD = 'VISION_STEP4_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+			AND A.STEP2_CD IN (${step2Cd})
+			AND A.STEP3_CD IN (${step3Cd})
+		GROUP BY 
+			A.STEP4_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep4g" parameterType="VisionStepVO" resultType="VisionStepVO">
+		SELECT 
+			A.STEP4_CD,
+			B.CD_NM STEP4_NM,
+			utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',C.CHECK_NO) order by A.VISION_NO asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS CHECK_NOS,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP4_CD = B.CD AND B.GRP_CD = 'VISION_STEP4_CD'
+		LEFT JOIN
+            TG_VISION_CHECK_MAP C
+        ON A.VISION_NO = C.VISION_NO
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+			AND A.STEP2_CD IN (${step2Cd})
+			AND A.STEP3_CD IN (${step3Cd})
+		GROUP BY 
+			A.STEP4_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>	
+	<select id="selectVisionStep5" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT 
+			A.STEP5_CD, 
+			B.CD_NM STEP5_NM,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP5_CD = B.CD AND B.GRP_CD = 'VISION_STEP5_CD'
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+			AND A.STEP2_CD IN (${step2Cd})
+			AND A.STEP3_CD IN (${step3Cd})
+			AND A.STEP4_CD IN (${step4Cd})
+		GROUP BY 
+			A.STEP5_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	<select id="selectVisionStep5c" parameterType="VisionStepVO" resultType="VisionStepVO">
+		SELECT 
+			A.STEP5_CD,
+			B.CD_NM STEP5_NM,
+			utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',C.CHECK_NO) order by A.VISION_NO asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS CHECK_NOS,
+			MAX(A.SORT_SEQ) SORT_SEQ
+		FROM 
+			TG_VISION_STEP A
+		LEFT JOIN 
+			TA_CMN_CD_DTL B 
+		ON A.STEP5_CD = B.CD AND B.GRP_CD = 'VISION_STEP5_CD'
+		LEFT JOIN
+            TG_VISION_CHECK_MAP C
+        ON A.VISION_NO = C.VISION_NO
+		WHERE 
+			A.VISION_GB = #{visionGb}
+			AND A.AGE_CD = #{ageCd}
+			AND A.STEP1_CD = #{step1Cd}
+			AND A.STEP2_CD IN (${step2Cd})
+			AND A.STEP3_CD IN (${step3Cd})
+			AND A.STEP4_CD IN (${step4Cd})
+			AND A.STEP10_CD IN (${step10Cd})
+		GROUP BY 
+			A.STEP5_CD, B.CD_NM
+		ORDER BY 
+			SORT_SEQ
+	</select>
+	
+	<select id="selectStepNm" parameterType="VisionStepVO" resultType="VisionStepVO">
+		SELECT CD, CD_NM FROM TA_CMN_CD_DTL WHERE GRP_CD = #{grpCd} AND CD IN (${stepCds}) AND USE_YN = 'Y'
+	</select>
+		
+	<select id="selectVisionStep10" parameterType="VisionStepVO"  resultType="VisionStepVO">
+		SELECT STEP10_CD, STEP10_NM, SORT_SEQ FROM(
+			SELECT 
+				A.STEP10_CD, 
+				B.CD_NM STEP10_NM,
+				MAX(A.SORT_SEQ) SORT_SEQ
+			FROM 
+				TG_VISION_STEP A
+			LEFT JOIN 
+				TA_CMN_CD_DTL B 
+			ON A.STEP10_CD = B.CD AND B.GRP_CD = 'VISION_STEP10_CD'
+			WHERE 
+				A.VISION_GB = #{visionGb}
+				AND A.AGE_CD = #{ageCd}
+				AND A.STEP1_CD = #{step1Cd}
+				AND A.STEP2_CD IN (${step2Cd})
+				<!-- AND A.STEP3_CD IN (${step3Cd})  -->
+			GROUP BY 
+				A.STEP10_CD, B.CD_NM
+			ORDER BY 
+				SORT_SEQ
+		) A
+		WHERE STEP10_CD IS NOT NULL
+	</select>
+	
+	<!-- 비전체크 군 관리 -->
+	<insert id="insertVisionCheckGun" parameterType="VisionGunVO">
+		<selectKey keyProperty="gunNo" resultType="int" order="BEFORE">
+			<!-- SELECT NVL(MAX(gun_no),0) + 1 AS gunNo FROM tc_vision_check_gun -->
+			SELECT fn_getSeq(0, 'LETT_NO') AS gunNo FROM DUAL
+		</selectKey>
+		INSERT INTO tc_vision_check_gun (gun_no, goods_type_cd, gun_nm,  regr_no, reg_dttm, is_use) 
+		VALUES (#{gunNo}, #{goodsTypeCd}, #{gunNm}, #{regrNo}, sysdate, 'Y')
+	</insert>	
+	<select id="selectVisionCheckGunList" parameterType="VisionGunVO"  resultType="VisionGunVO">
+		SELECT gun_no, goods_type_cd, gun_nm, price_range, simple_dscrt, rep_img_no, regr_no, reg_dttm, updr_no, upd_dttm, is_use
+		FROM tc_vision_check_gun
+		WHERE goods_type_cd = #{goodsTypeCd}
+		<if test="isUse != null and isUse != ''">
+		AND is_use = ${isUse}
+		</if>
+		ORDER BY gun_no
+	</select>	
+	<select id="selectVisionCheckGun" parameterType="VisionGunVO"  resultType="VisionGunVO">
+		SELECT gun_no, goods_type_cd, gun_nm, price_range, simple_dscrt, rep_img_no, regr_no, reg_dttm, updr_no, upd_dttm, is_use
+		FROM tc_vision_check_gun
+		WHERE gun_no = #{gunNo} AND goods_type_cd = #{goodsTypeCd}
+		ORDER BY gun_no
+	</select>
+	<update id="updateVisionCheckGun" parameterType="VisionGunVO">
+		UPDATE tc_vision_check_gun
+		SET
+			gun_nm = #{gunNm},
+			price_range = #{priceRange},
+			simple_dscrt = #{simpleDscrt},
+			updr_no = #{updrNo},
+			upd_dttm = sysdate,
+			is_use = #{isUse}
+		WHERE gun_no = #{gunNo} AND goods_type_cd = #{goodsTypeCd}
+	</update>
+	
+	<!-- 비전체크 2 -->
+	<select id="selectVisionCheckCD" parameterType="VisionCheckCdPO" resultType="VisionCheckCdPO">
+		SELECT GRP_CD, CD, CD_NM, CD_SHORT_NM, USER_DEFINE1, USER_DEFINE2, USER_DEFINE3 
+		FROM ta_cmn_cd_dtl 
+		WHERE USE_YN = 'Y' AND DEL_YN='N' 
+		AND GRP_CD = #{grpCd}
+		<if test="userDefine1 != null and userDefine1 != ''">
+		AND USER_DEFINE1 = #{userDefine1}
+		</if>		
+		ORDER BY SORT_SEQ
+	</select>
+	<!-- 비전체크 안경렌즈 권장검사 -->
+	<select id="selectVisionCheckRecommTestGr" parameterType="VisionCheckCdPO" resultType="VisionCheckCdPO">
+		SELECT CD_NM,USER_DEFINE3
+		FROM ta_cmn_cd_dtl 
+		WHERE USE_YN = 'Y' AND DEL_YN='N' 
+		AND GRP_CD = #{grpCd}
+		AND USER_DEFINE1 = #{userDefine1}
+		AND USER_DEFINE2 IN
+		<foreach collection="userDefine2Arr" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+        </foreach>
+        GROUP BY CD_NM,USER_DEFINE3
+        ORDER BY USER_DEFINE3
+	</select>
+	<!-- 비전체크 안경렌즈 눈운동 추천멘트 -->
+	<select id="selectVisionCheckRecommCmntGr" parameterType="VisionCheckCdPO" resultType="VisionCheckCdPO">
+		SELECT USER_DEFINE4
+		FROM ta_cmn_cd_dtl 
+		WHERE USE_YN = 'Y' AND DEL_YN='N' 
+		AND GRP_CD = #{grpCd}
+		AND USER_DEFINE1 = #{userDefine1}
+		AND USER_DEFINE2 IN
+		<foreach collection="userDefine2Arr" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+        </foreach>
+        GROUP BY USER_DEFINE4
+        ORDER BY USER_DEFINE4
+	</select>
+	<!-- 비전체크 콘텍트렌즈 권장검사 -->
+	<select id="selectVisionCheckRecommTestCr" parameterType="VisionCheckCdPO" resultType="VisionCheckCdPO">
+		SELECT CD_NM,USER_DEFINE2
+		FROM ta_cmn_cd_dtl 
+		WHERE USE_YN = 'Y' AND DEL_YN='N' 
+		AND GRP_CD = #{grpCd}
+		AND USER_DEFINE1 IN
+		<foreach collection="userDefine1Arr" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+        </foreach>	
+        GROUP BY CD_NM,USER_DEFINE2
+        ORDER BY USER_DEFINE2
+	</select>
+	<select id="selectVisionCheckResult" parameterType="VisionCheckCdPO" resultType="VisionCheckCdPO">
+		SELECT GRP_CD, CD, CD_NM, CD_SHORT_NM, USER_DEFINE1, USER_DEFINE2, USER_DEFINE3 
+		FROM ta_cmn_cd_dtl 
+		WHERE USE_YN = 'Y' AND DEL_YN='N' 
+		AND GRP_CD = #{grpCd}
+		AND CD IN 
+		<foreach collection="cdArr" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+        </foreach>				
+		ORDER BY SORT_SEQ
+	</select>
+	<select id="selectVisionCheckGunInGlasses" parameterType="VisionCheckGlassesPO"  resultType="VisionGunVO">
+		SELECT
+		    gun_no, goods_type_cd, gun_nm, price_range,  simple_dscrt, is_use, file_path, file_nm,
+    		(select count(*) from tb_atchfile where lett_no = A.gun_no AND file_gb='TC_VISION_CHECK_GUN' AND img_yn = 'N' AND del_yn='N') AS img_cnt
+		FROM
+		    tc_vision_check_gun A LEFT JOIN tb_atchfile B 
+		  ON A.gun_no = B.lett_no AND B.file_gb='TC_VISION_CHECK_GUN' AND B.img_yn = 'Y' AND B.del_yn='N'
+		WHERE goods_type_cd = '03' AND is_use = 'Y'
+		AND gun_no IN(
+		        SELECT
+		            DISTINCT gun_no
+		        FROM
+		            tg_vision_check_glasses
+		        WHERE vision2_age_cd = #{ageCdG}
+		          AND vision2_incon2_g_cd IN <foreach collection="incon2CdArr" item="item" index="index" open="(" separator="," close=")">
+                   								#{item}
+        									 </foreach>				
+		          AND vision2_lifestyle_cd IN <foreach collection="lifestyleCdCdArr" item="item" index="index" open="(" separator="," close=")">
+                   								#{item}
+        									 </foreach>	
+		)
+	</select>	
+	<select id="selectVisionCheckGunInContact" parameterType="VisionCheckContactPO"  resultType="VisionGunVO">
+		SELECT
+		    gun_no, goods_type_cd, gun_nm, price_range,  simple_dscrt, is_use, file_path, file_nm,
+    		(select count(*) from tb_atchfile where lett_no = A.gun_no AND file_gb='TC_VISION_CHECK_GUN' AND img_yn = 'N' AND del_yn='N') AS img_cnt
+		FROM
+		    tc_vision_check_gun A LEFT JOIN tb_atchfile B 
+		  ON A.gun_no = B.lett_no AND B.file_gb='TC_VISION_CHECK_GUN' AND B.img_yn = 'Y' AND B.del_yn='N'
+		WHERE goods_type_cd = '04' AND is_use = 'Y'
+		AND gun_no IN(
+		        SELECT
+		            DISTINCT gun_no
+		        FROM
+		            tg_vision_check_contact
+		        WHERE vision2_age_cd = #{ageCdC}
+		          AND vision2_wear_cd = #{wearCd}
+		          AND vision2_wear_time_cd = #{wearTimeCd}
+		          AND vision2_wear_day_cd = #{wearDayCd}
+		          AND vision2_incon1_c_cd IN <foreach collection="incon1CdArr" item="item" index="index" open="(" separator="," close=")">
+                   								#{item}
+        									 </foreach>		
+		)
+	</select>
+	<insert id="insertVisionCheckResult" parameterType="VisionCheckResultVO">
+		INSERT INTO tg_vision_check_result (
+		    vision_check_no, 
+		    member_no, lens_type, age_cd, wear_cd, incon1_cd, incon2_cd, lifestyle_cd, 
+		    contact_type_cd, wear_time_cd, wear_day_cd, contact_purp_cd, incon_etc, reg_dttm
+		) VALUES (
+		   (SELECT NVL(MAX(vision_check_no),0) + 1 FROM tg_vision_check_result),
+			#{memberNo}, #{lensType}, #{ageCd}, #{wearCd}, #{incon1Cd}, #{incon2Cd}, #{lifestyleCd},
+			#{contactTypeCd}, #{wearTimeCd}, #{wearDayCd}, #{contactPurpCd}, #{inconEtc}, sysdate
+		)
+	</insert>	
+	<delete id="deleteVisionCheckResult" parameterType="VisionCheckResultVO">
+		DELETE FROM tg_vision_check_result WHERE member_no = #{memberNo} AND lens_type = #{lensType}
+	</delete>
+	
+	<select id="selectVisionCheck2Result" parameterType="VisionCheckResultVO" resultType="VisionCheckResultVO">
+		SELECT vision_check_no, member_no, lens_type, age_cd, wear_cd, incon1_cd, incon2_cd, lifestyle_cd, contact_type_cd, wear_time_cd, wear_day_cd, contact_purp_cd, incon_etc, reg_dttm
+		FROM tg_vision_check_result
+		WHERE lens_type=#{lensType} AND member_no=#{memberNo}
+	</select>
+</mapper>

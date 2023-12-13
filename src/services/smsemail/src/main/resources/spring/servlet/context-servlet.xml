@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc		http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+						http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/aop		http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/util      http://www.springframework.org/schema/util/spring-util-4.2.xsd
+						http://www.springframework.org/schema/task		http://www.springframework.org/schema/task/spring-task-4.2.xsd ">
+
+	<context:component-scan base-package="net.danvi.dmall.smsemail.controller">
+	</context:component-scan>
+
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<property name="supportedMediaTypes" value="application/json;charset=UTF-8" />
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+
+	<mvc:interceptors>
+
+	<!-- 접속 체크 & 제한  -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*"/>
+			<bean class="net.danvi.dmall.smsemail.interceptor.AccessInterceptor" />
+		</mvc:interceptor>
+	</mvc:interceptors>
+
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="2" />
+	</bean>
+
+	<bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+
+	<bean name="/sms-service"
+		class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+		<property name="service" ref="smsRemoteService" />
+		<property name="serviceInterface" value="net.danvi.dmall.smsemail.service.SmsRemoteService" />
+	</bean>
+
+	<bean name="/email-service"
+		class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+		<property name="service" ref="emailRemoteService" />
+		<property name="serviceInterface" value="net.danvi.dmall.smsemail.service.EmailRemoteService" />
+	</bean>
+
+	<bean name="/point-service"
+		  class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+		<property name="service" ref="pointRemoteService" />
+		<property name="serviceInterface" value="net.danvi.dmall.smsemail.service.PointRemoteService" />
+	</bean>
+	
+	<bean name="/push-service"
+		class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+		<property name="service" ref="pushRemoteService" />
+		<property name="serviceInterface" value="net.danvi.dmall.smsemail.service.PushRemoteService" />
+	</bean>
+	
+</beans>
+

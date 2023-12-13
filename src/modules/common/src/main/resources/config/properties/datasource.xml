@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+	
+	<entry key="main.database.type">oracle</entry>
+	<entry key="main.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<!-- 개발 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.2.166:21359:davich</entry>-->
+	<!-- ghjo 개발 DB -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@211.253.11.151:1521:XE</entry>
+	<entry key="main.jdbc.user">MALL_TEST</entry>
+	<entry key="main.jdbc.password">MALL_TEST</entry>-->
+
+	<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>
+<!--	<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>-->
+	<entry key="main.jdbc.user">DAVICH_MALL</entry>
+	<entry key="main.jdbc.password">danvi2018</entry>
+	<!-- 운영 -->
+	<!--<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.2.144:21359:davich</entry>-->
+	<!-- 리눅스 운영 -->
+<!--	<entry key="main.jdbc.url">jdbc:log4jdbc:oracle:thin:@140.238.12.153:1521:davich</entry>-->
+<!--	<entry key="main.jdbc.user">davich_mall</entry>-->
+<!--	<entry key="main.jdbc.password">danvi2018</entry>-->
+
+    <!-- 개발 -->
+	<!-- push db mariadb -->
+	<!--<entry key="push.database.type">mariadb</entry>
+ 	<entry key="push.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://182.162.104.153:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="push.jdbc.user">root</entry>
+	<entry key="push.jdbc.password">1234</entry>-->
+
+	<!-- 가맹점 push db mariadb -->
+	<!--<entry key="store.database.type">mariadb</entry>
+ 	<entry key="store.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="store.jdbc.url">jdbc:log4jdbc:mysql://182.162.104.153:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="store.jdbc.user">root</entry>
+	<entry key="store.jdbc.password">1234</entry>-->
+
+    <!-- 운영 -->
+    <!-- push db mariadb -->
+	<entry key="push.database.type">oracle</entry>
+ 	<entry key="push.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://10.102.2.140:3306/push_db?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>-->
+	<!-- 리눅스 -->
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:mysql://140.238.20.115:3306/sms_push?useUnicode=true&amp;character_set_server=utf8mb4&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>-->
+	<!--<entry key="push.jdbc.user">root</entry>
+	<entry key="push.jdbc.password">1234</entry>-->
+
+	<!--<entry key="push.jdbc.url">jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>-->
+	<entry key="push.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>
+	<entry key="push.jdbc.user">sms_push</entry>
+	<entry key="push.jdbc.password">sms_push</entry>
+
+
+	<!-- 가맹점 push db mariadb -->
+	<entry key="store.database.type">oracle</entry>
+ 	<entry key="store.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<!--<entry key="store.jdbc.url">jdbc:log4jdbc:mysql://140.238.20.115:3306/store_push?useUnicode=true&amp;characterEncoding=utf8&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>-->
+	<!--<entry key="store.jdbc.url">jdbc:log4jdbc:mysql://10.102.2.165:3306/push_db?useUnicode=true&amp;characterEncoding=utf8&amp;allowMultiQueries=true&amp;autoReconnect=true</entry>
+	<entry key="store.jdbc.user">root</entry>
+	<entry key="store.jdbc.password">1234</entry>-->
+	<!--<entry key="store.jdbc.url">jdbc:log4jdbc:oracle:thin:@152.70.248.227:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>-->
+	<entry key="store.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.0.2.208:1521/DAVICH_NWB_ICN.DAVICHSHOPPINGD.DAVICHVCN.ORACLEVCN.COM</entry>
+	<entry key="store.jdbc.user">store_push</entry>
+	<entry key="store.jdbc.password">store_push</entry>
+
+	<!-- ERP DB -->
+	<!--<entry key="erp.database.type">oracle</entry>
+	<entry key="erp.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<entry key="erp.jdbc.url">jdbc:log4jdbc:oracle:thin:@10.102.4.136:1521:davich</entry>
+	<entry key="erp.jdbc.user">davich</entry>
+	<entry key="erp.jdbc.password">davich</entry>
+	<entry key="erp.database.charset">euc-kr</entry>-->
+	<entry key="erp.database.type">oracle</entry>
+	<entry key="erp.jdbc.driver">net.sf.log4jdbc.DriverSpy</entry>
+	<!-- ERP ORACLE -->
+	<!--<entry key="erp.jdbc.url">jdbc:log4jdbc:oracle:thin:@218.54.139.227:21359:davich</entry>-->
+	<!-- ERP CLOUD -->
+	<entry key="erp.jdbc.url">jdbc:log4jdbc:oracle:thin:@193.122.96.196:21359/DAVICH_PDB1.DAVICHADMINDBSU.DAVICHADMIN.ORACLEVCN.COM</entry>
+	<entry key="erp.jdbc.user">davich</entry>
+	<entry key="erp.jdbc.password">davich</entry>
+	<entry key="erp.database.charset">euc-kr</entry>
+
+</properties>

@@ -1,0 +1,838 @@
+@charset "utf-8";
+
+/* === 마이페이지 === */
+#mypage_location {
+    width:970px;
+    margin:0 auto 32px;
+    font-weight:700;
+    letter-spacing:-1px;
+    padding-left:7px;
+    background:url(../img/category/bul_h3.png) no-repeat left 5px
+}
+#mypage_location > span.location_bar {
+    display:inline-block;
+    width:2px;
+    height:11px;
+    margin:0 14px;
+    background:url(../img/customer/location_bar.png) no-repeat left 2px
+}
+#mypage_location > span  {
+    margin:0 11px;
+    font-weight:100
+}
+.mypage {
+    overflow:hidden;
+    height:100%;
+}
+/* === 마이페이지 왼쪽 메뉴 === */
+.mypage_side_area {
+    float:left;
+    width:200px;
+    height:100%;
+}
+.mypage_on {
+    margin:0 0 25px 0px;
+    background:#505050;
+    padding:25px 20px 10px;
+    font-size:14px;
+    color:#e5e5e5;
+    font-weight:700;
+    letter-spacing:-0.5px
+}
+.mypage_on ul li {
+    margin:5px 0
+}
+.mypage_on ul li.member_level {
+    margin:28px 0 8px;
+    font-size:13px
+}
+.mypage_on ul li.member_level span {
+    color:#9b9b9b
+}
+.btn_mypaeg_info_modify {
+    width:90px;
+    height:17px;
+    text-indent:-9999px;
+    background:url(../img/mypage/btn_mypaeg_info_modify.png) no-repeat left top
+}
+.mypage_side {
+    margin-bottom:20px
+}
+.mypage_side li {
+    line-height:35px;
+}
+.mypage_side li > a {
+    padding-top:6px;
+    color:#7b7b7b;
+    font-size:14px;
+    height:29px;
+    font-weight:700;
+    background:url(../img/customer/side_menu_bar.gif) no-repeat left top
+}
+.mypage_side li > a:hover,
+.mypage_side li > a.selected {
+    color:#000000;
+}
+.mypage_side_s {
+    margin:0px 0 10px 20px
+}
+.mypage_side_s li {
+    line-height:18px;
+}
+.mypage_side_s li a {
+    color:#a5a5a5;
+    font-size:12px;
+    font-weight:100;
+    background:none
+}
+.mypage_side_s li a:active,
+.mypage_side_s li a.selected {
+    color:#000000;
+}
+.mypage_side_info {
+    margin-left:40px;
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left top;
+}
+.mypage_side_info li {
+    font-size:11px;
+    line-height:16px;
+    background:url(../img/customer/customer_side_info_dotline.png) repeat-x left bottom;
+    padding:11px 0 17px
+}
+.side_info_tit {
+    display:block;
+    font-size:10px;
+    font-weight:700;
+}
+.side_info_tel {
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:14px
+}
+
+/* === 마이페이지 오른쪽 컨텐츠 === */
+.mypage_content {
+    float:right;
+    width:730px;
+    height:100%;
+    min-height:950px;
+    padding-left:39px;
+    border-left:1px solid #e5e5e5
+}
+.mypage_top {
+    overflow:hidden
+}
+.my_benefit {
+    float:left;
+    width:173px;
+    height:231px;
+    padding:16px;
+    border:1px solid #e5e5e5
+}
+.my_benefit > h4 {
+    font-size:16px;
+    font-weight:700;
+    padding:10px 0 15px
+}
+.my_point01,
+.my_point02,
+.my_point03 {
+    width:100%;
+    border:1px solid #e5e5e5;
+    overflow:hidden;
+    border-radius:4px;
+    margin-bottom:10px;
+}
+.my_point01 dt {
+    float:left;
+    width:72px;
+    padding:32px 0 9px;
+    text-align:center;
+    color:#fff;
+    font-weight:700;
+    background:#505050 url(../img/mypage/icon_point.png) no-repeat center 9px
+}
+.my_point02 dt {
+    float:left;
+    width:72px;
+    padding:32px 0 9px;
+    text-align:center;
+    color:#fff;
+    font-weight:700;
+    background:#505050 url(../img/mypage/icon_point02.png) no-repeat center 12px
+}
+.my_point03 dt {
+    float:left;
+    width:72px;
+    padding:32px 0 9px;
+    text-align:center;
+    color:#fff;
+    font-weight:700;
+    background:#505050 url(../img/mypage/icon_point03.png) no-repeat center 11px
+}
+.my_point01 dd,
+.my_point02 dd,
+.my_point03 dd {
+    float:left;
+    width:93px;
+    padding:17px 8px 0 0;
+    text-align:right
+}
+.my_point01 dd span,
+.my_point02 dd span,
+.my_point03 dd span {
+    color:#e20000;
+    font-size:16px;
+    font-weight:800;
+    margin-right:3px
+}
+.my_order {
+    float:right;
+    width:478px;
+    height:231px;
+    padding:16px 14px;
+    border:1px solid #e5e5e5
+}
+.my_order > h4 {
+    font-size:16px;
+    font-weight:700;
+    padding:10px 0 32px
+}
+.my_order_steps {
+    border:1px solid #e5e5e5;
+    overflow:hidden
+}
+.my_order_steps li {
+    float:left;
+    width:20%;
+    padding-left:5%;
+    text-align:center;
+    height:153px;
+    background:url(../img/mypage/my_order_sidebar.gif) no-repeat left top
+}
+.my_order_steps li:first-child {
+    width:23%;
+    padding-left:0;
+    background:none
+}
+.icon_my_order_steps01 {
+    margin:26px 0 12px;
+    display:block;
+    height:54px;
+    background:url(../img/mypage/icon_shipping_step01.png) no-repeat center top
+}
+.icon_my_order_steps02 {
+    margin:26px 0 12px;
+    display:block;
+    height:54px;
+    background:url(../img/mypage/icon_shipping_step02.png) no-repeat center top
+}
+.icon_my_order_steps03 {
+    margin:26px 0 12px;
+    display:block;
+    height:54px;
+    background:url(../img/mypage/icon_shipping_step03.png) no-repeat center top
+}
+.icon_my_order_steps04 {
+    margin:26px 0 12px;
+    display:block;
+    height:54px;
+    background:url(../img/mypage/icon_shipping_step04.png) no-repeat center top
+}
+.my_order_steps li span.labelB {
+    display:inline-block;
+    color:#fff;
+    width:72px;
+    height:19px;
+    line-height:19px;
+    font-size:12px;
+    font-weight:700;
+    border-radius:2px;
+    background:#505050;
+}
+.my_order_steps_no {
+    margin:8px 0
+}
+.my_order_steps_no span {
+    font-size:16px;
+    font-weight:700;
+    color:#ff0000;
+    margin-right:3px
+}
+
+.btn_myorder_view,
+.btn_myfavorite_view {
+    position:absolute;
+    right:0;
+    top:-10px;
+    width:30px;
+    height:29px;
+    background:url(../img/mypage/btn_myfavorite_view.gif) no-repeat left top
+}
+.tCart_Board td .mypage_s_list li {
+    margin:5px 0
+}
+.btn_mypage_s {
+    width:35px;
+    height:19px;
+    line-height:18px;
+    font-size:11px;
+    color:#fff;
+    background:#898989
+}
+.btn_mypage_s02 {
+    width:64px;
+    height:19px;
+    line-height:18px;
+    font-size:11px;
+    color:#fff;
+    background:#898989
+}
+.btn_mypage_s03 {
+    width:65px;
+    height:19px;
+    line-height:18px;
+    font-size:11px;
+    color:#898989;
+    border:1px solid #b9b9b9;
+    background:#fff;
+}
+/* === 나의 관심상품 리스트 === */
+.my_info_check {
+    margin-top:20px;
+    overflow:hidden
+}
+.my_info_check li {
+    float:left;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-0.5px;
+    width:197px;
+    height:118px;
+    padding:24px 17px 16px 17px;
+    border:1px solid #e5e5e5;
+    margin-left:15px;
+    position:relative
+}
+.my_info_check button {
+    position:absolute;
+    left:17px;
+    top:75px
+}
+.my_info_check li > span.tit {
+    display:block;
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:3px
+}
+.my_info_check li:first-child {
+    margin-left:0
+}
+.my_info_check li.box01 {
+    background:url(../img/mypage/icon_add.png) no-repeat 165px 20px
+}
+.my_info_check li.box02 {
+    background:url(../img/mypage/icon_email.png) no-repeat 164px 30px
+}
+.my_info_check li.box03 {
+    background:url(../img/mypage/icon_mobile.png) no-repeat 185px 20px
+}
+.my_info_check_text {
+    margin-top:36px;
+    padding-top:9px;
+    height:28px;
+    font-weight:100;
+    font-size:12px;
+    color:#838383;
+    background:url(../img/mypage/info_textbox_dot_line.png) no-repeat center top
+}
+.my_info_check_text span {
+    width:100px
+}
+
+/* === 마이페이지 하단 bottom === */
+.mypage_bottom {
+    margin:65px 0;
+    overflow:hidden
+}
+.mypage_bottom #information {
+    width:48.7%;
+    float:left;
+    height:138px;
+    border:1px solid #000000
+}
+.mypage_bottom #information dt {
+    float:left;
+    width:30%;
+    text-align:left;
+    padding:30px 0 0 5%;
+    height:58px;
+    background:url(../img/footer/information_bar.gif) no-repeat right 40px
+}
+.mypage_bottom #information dt h2.information_title {
+    font-size:16px;
+    font-weight:700;
+    color:#000;
+    padding:20px 0 0 0;
+    background:url(../img/mypage/icon_bottom_center.png) no-repeat left top
+}
+.mypage_bottom #information dt h2.information_title span {
+    display:block;
+    font-size:12px;
+}
+.mypage_bottom #information dd {
+    float:left;
+    width:64%;
+    text-align:left;
+}
+.mypage_bottom #information dd .information_list li.tel {
+    font-size:20px;
+    letter-spacing:-2px;
+    font-weight:700;
+}
+.mypage_bottom .information_list {
+    margin-top:27px;
+    margin-left:6%;
+}
+.mypage_bottom .information_list li {
+    margin:5px 0;
+    letter-spacing:-1px;
+}
+
+.mypage_bottom #bank_info {
+    width:48.7%;
+    float:right;
+    height:138px;
+    border:1px solid #000
+}
+.mypage_bottom #bank_info dt {
+    float:left;
+    width:40%;
+    text-align:left;
+    padding:30px 0 0 5%;
+    height:58px;
+    background:url(../img/footer/information_bar.gif) no-repeat right 40px
+}
+.mypage_bottom #bank_info dt h2.bank_info_title {
+    font-size:16px;
+    font-weight:700;
+    color:#000;
+    padding:20px 0 0 0;
+    background:url(../img/mypage/icon_bottom_bank.png) no-repeat left top
+}
+.mypage_bottom #bank_info dt #bank_info dt span {
+    color:#000;
+    letter-spacing:-1px
+}
+.mypage_bottom #bank_info dd {
+    float:left;
+    width:53%;
+    text-align:left;
+}
+.mypage_bottom .bank_info_no {
+    margin-top:43px;
+    margin-left:10%;
+}
+.mypage_bottom .bank_info_no li {
+    font-size:12px;
+    margin:5px 0
+}
+
+h3.mypage_con_tit {
+    margin:14px 0 20px;
+    font-size:16px;
+    color:#373737;
+    padding-left:17px;
+    background:url(../img/customer/bul_h3_tit.png) no-repeat left 2px
+}
+h3.mypage_con_tit span {
+    font-size:12px;
+    font-weight:100;
+    color:#787878;
+    margin-left:5px
+}
+h3.mypage_con_tit span.row_info_text {
+    display:block;
+    font-size:12px;
+    color:#787878;
+    margin:5px 0 0px -17px;
+}
+.date_select_area {
+    border:1px solid #e5e5e5;
+    text-align:center;
+    padding:29px 0;
+    margin-bottom:40px
+}
+.date_select_title {
+    font-size:14px;
+    text-align:left;
+    margin:0 0 12px 33px;
+    font-weight:700
+}
+.btn_date_select {
+    display:inline-block;
+    border:1px solid #e5e5e5;
+    border-left:none;
+    width:60px;
+    height:32px;
+    line-height:32px;
+    font-size:12px;
+    text-align:center;
+    color:#292929;
+}
+.btn_date_select:active {
+    color:#fff;
+    background:#898989
+}
+.date_select_area .date {
+    display:inline-block;
+    border:1px solid #e5e5e5;
+    padding:0 5px;
+    width:101px;
+    height:30px;
+    line-height:30px;
+    font-size:12px;
+    letter-spacing:-1px;
+    color:#0e0e0e;
+    background:#fff url(../img/mypage/icon_date.png) no-repeat 91px 7px
+}
+.btn_date {
+    display:inline-block;
+    width:100px;
+    height:32px;
+    line-height:32px;
+    color:#fff;
+    background:#373737
+}
+.btn_date:active {
+    background:#000
+}
+.payment_info_area {
+    border-top:1px solid #e5e5e5;
+    border-bottom:1px solid #e5e5e5;
+    padding:16px 0
+}
+.payment_info {
+    overflow:hidden
+}
+.payment_info li {
+    float:left;
+    display:block;
+    width:15%;
+    height:77px;
+    font-size:16px;
+    padding-top:28px;
+    color:#373737;
+    font-weight:700;
+    text-align:center;
+    letter-spacing:-1px;
+}
+.payment_info li > span {
+    display:block;
+    margin-top:5px;
+    font-size:18px;
+    font-weight:100;
+}
+.payment_info li.icon {
+    width:30px;
+    margin:0;
+    padding:0;
+    line-height:125px;
+    border:none
+}
+.payment_info li.total {
+    float:right;
+    display:block;
+    width:22%;
+    font-size:16px;
+    padding-top:18px;
+    color:#373737;
+    font-weight:700;
+    text-align:right;
+    letter-spacing:-1px;
+    border:none
+}
+.payment_info li.total > span.price {
+    font-size:16px;
+    font-weight:700;
+    margin-top:2px;
+}
+.payment_info li.total > span.price em {
+    font-size:28px;
+    color:#ff0000;
+    font-weight:700;
+    margin-right:3px
+}
+.payment_info li.total > span.payment_method {
+    font-size:16px;
+    color:#999999;
+    margin-top:2px;
+    font-weight:700;
+}
+.btn_prev_page {
+    width:167px;
+    height:49px;
+    line-height:49px;
+    color:#fff;
+    font-size:14px;
+    background:#323232
+}
+.btn_prev_page:active {
+    background:#000
+}
+h3.mypage_con_stit span.my_emoney_info_text {
+    display:block;
+    font-size:12px;
+    color:#787878;
+    margin-top:5px;
+    margin-left: 0px;
+}
+h3.mypage_con_stit span.my_emoney_info_text em {
+    color:#000
+}
+h3.mypage_con_stit span.my_emoney_info_text span.underline {
+    color:#000;
+    margin-left:0px;
+    text-decoration:underline
+}
+
+.mycoupon_search_area {
+    height:40px;
+    margin:19px 0 30px
+}
+.mycoupon_search_area label {
+    display:inline-block;
+    font-size:18px;
+    height:40px;
+    width:148px;
+    line-height:29px;
+    font-weight:700;
+    margin-left:30px;
+}
+.mycoupon_search_area > input {
+    font-size:12px;
+    width:425px;
+    height:40px;
+    line-height:34px;
+    padding:0 13px;
+    border:3px solid #505050;
+     -moz-box-sizing:border-box; -webkit-box-sizing:border-box; box-sizing:border-box;
+}
+.mycoupon_search_area > button {
+    font-size:14px;
+    color:#fff;
+    width:127px;
+    height:40px;
+    background:#505050
+}
+.mycoupon_search_area > span {
+    display:block;
+    margin-left:179px;
+    margin-top:2px;
+    color:#939393
+}
+.btn_coupon_ok {
+    width: 35px;
+    height: 19px;
+    line-height: 18px;
+    font-size: 11px;
+    color: #898989;
+    border: 1px solid #b9b9b9;
+    background: #fff;
+}
+.warning_box {
+    position:relative;
+    border:1px solid #e5e5e5;
+    padding:35px 94px 35px 94px;
+    background:url(../img/mypage/icon_info.png) no-repeat 29px 35px;
+    margin-bottom:18px
+}
+h4.warning_title {
+    color:#373737;
+    font-size:14px;
+    font-weight:700;
+    margin:7px 0 5px
+}
+.warning_box span {
+    color:#787878
+}
+.warning_box button {
+    position:absolute;
+    right:35px;
+    top:50%;
+    margin-top:-16px
+}
+.warning_box button:active {
+    background:#000
+}
+.warning_box ul {
+    margin:10px 0
+}
+.warning_box ul li {
+    color:#787878;
+    margin:5px 0
+}
+.warning_box_gray {
+    padding:10px;
+    font-size:11px;
+    line-height:18px;
+    color:#787878;
+    background:#e5e5e5
+}
+.btn_myqna {
+    width:100px;
+    height:32px;
+    line-height:32px;
+    font-size:12px;
+    color:#fff ;
+    background:#373737
+}
+.btn_myqna1 {
+    width:130px;
+    height:32px;
+    line-height:32px;
+    font-size:12px;
+    color:#fff ;
+    background:#373737
+}/*160608 수정*/
+.bank_info_box {
+    position:relative;
+    border:1px solid #e5e5e5;
+    padding:26px 35px 18px 94px;
+    background:url(../img/mypage/icon_bank.png) no-repeat 29px 45px;
+    margin:25px 0
+}
+h4.bank_info_box_title {
+    color:#373737;
+    font-size:14px;
+    font-weight:700;
+    margin:0px 0 5px
+}
+.bank_info_box ul li {
+    margin:5px 0;
+    color:#787878;
+    line-height:16px;
+    letter-spacing:-1px;
+    padding-left:8px;
+    background:url(../img/mypage/bul_bank_dot.png) no-repeat left 4px
+}
+.leave_member_agree {
+    text-align:center;
+    margin:45px 0 -10px
+}
+.leave_member_agree label {
+    height:20px;
+    line-height:20px;
+    font-size:12px
+}
+.leave_member_agree label input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+.leave_member_agree label span {
+    width: 13px;
+    height: 13px;
+    margin-bottom:-3px;
+    display: inline-block;
+    background: url("../img/common/input_checkbox05.gif");
+}
+.leave_member_agree label input:checked + span {
+    background: url("../img/common/input_checkbox_checked05.gif");
+}
+
+/* === datepicker === */
+.ui-datepicker .ui-datepicker-prev,
+.ui-datepicker .ui-datepicker-next {
+    position: absolute;
+    top: 2px;
+    width: 1.8em;
+    height: 1.8em;
+}
+.ui-datepicker .ui-datepicker-prev-hover,
+.ui-datepicker .ui-datepicker-next-hover {
+    top: 2px;
+    opacity:0.5
+}
+.ui-datepicker .ui-datepicker-prev {
+    left: 2px;
+    background: url("../img/mypage/date_prev.png") no-repeat center 6px;
+}
+.ui-datepicker .ui-datepicker-next {
+    right: 2px;
+    background: url("../img/mypage/date_next.png") no-repeat center 6px;
+}
+.ui-datepicker .ui-datepicker-prev-hover {
+    left: 1px;
+    background:#fdf5cc url("../img/mypage/date_prev.png") no-repeat center 6px !important;
+}
+.ui-datepicker .ui-datepicker-next-hover {
+    right: 1px;
+    background:#fdf5cc url("../img/mypage/date_next.png") no-repeat center 6px !important;
+}
+.ui-datepicker .ui-datepicker-prev span,
+.ui-datepicker .ui-datepicker-next span {
+    display: block;
+    position: absolute;
+    left: 50%;
+    margin-left: -8px;
+    top: 50%;
+    margin-top: -8px;
+}
+
+/* states and images */
+.ui-icon {
+    width:16px;
+    height:16px
+}
+.ui-icon-circle-triangle-w {
+    background-image: url("../img/mypage/date_prev.png") no-repeat center 6px !important;
+}
+.ui-icon-circle-triangle-e {
+    background-image: url("../img/mypage/date_.png") no-repeat center 6px !important;
+}
+
+/* === 비회원 주문 === */
+.nonmember_on {
+    width:200px;
+    height:150px;
+    line-height:150px;
+    background:#505050;
+    margin:0 0 25px 0px;
+    text-align:center;
+    font-size:14px;
+    color:#e5e5e5;
+    font-weight:700;
+    letter-spacing:-0.5px
+}
+
+/*160608 추가*/
+.mp_confirm {display:inline-block; width:138px; text-align:center}
+
+/* 2016-08-22 이미지 픽스 */
+.tMypage_Board td.pix_img img{
+    width:68px;
+    height:68px;
+}
+.coupon_select_list li > img{
+    width:68px;
+    height:68px;
+}
+
+.popup_my_custom_store {
+    width:783px;
+    height:800px;
+    border:8px solid #6e6e6e
+}
+
+.popup_my_store_detail {
+    width:783px;
+    height:650px;
+    border:8px solid #6e6e6e
+}

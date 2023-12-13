@@ -1,0 +1,980 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	마켓포인트, 포인트 관리 맵퍼
+-->
+<mapper namespace="operation.savedMnPoint">
+    <sql id="selectSavedmnListWhere">
+           <if test="searchVal != null and searchVal != ''">
+               <if test="searchKind eq null or searchKind eq ''">
+                   and (C.MEMBER_NM = #{memberNm} or C.LOGIN_ID = #{loginId})
+               </if>
+               <if test='searchKind eq "searchMemberNm"'>
+		           AND C.MEMBER_NM = #{memberNm}
+		       </if>
+		       <if test='searchKind eq "searchLoginId"'>
+		           AND C.LOGIN_ID = #{loginId}
+		       </if>
+		   </if>
+	          <if test="stRegDttm != null and stRegDttm != ''">
+	              <![CDATA[
+	              AND C.REG_DT >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+	              ]]>
+	          </if>
+	          <if test="endRegDttm != null and endRegDttm != ''">
+	              <![CDATA[
+	              AND C.REG_DT < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+	              ]]>
+	          </if>
+	          <if test="pointGbCd != null and pointGbCd != ''">
+	              <choose>
+	                  <when test='pointGbCd eq "10"' >
+	                  AND C.POINT_GB_CD = '10'
+	                  </when>
+	                  <when test='pointGbCd eq "20"' >
+	                  AND C.POINT_GB_CD = '20'
+	                  </when>
+	              </choose>
+	          </if>
+    </sql>
+
+    <sql id="selectPointListWhere">
+            <if test="siteNo != null and siteNo != ''">
+	            AND A.SITE_NO = #{siteNo}
+	        </if>
+            <if test="memberNoSelect != null and memberNoSelect != ''">
+                AND MEMBER_NO = #{memberNoSelect}
+            </if>
+            <if test="searchVal != null and searchVal != ''">
+               <if test='searchKind eq "searchMemberNm"'>
+                   AND A.MEMBER_NM = #{memberNm}
+               </if>
+               <if test="searchKind == 'searchLoginId'">
+                   AND A.LOGIN_ID like '%'||#{searchVal}||'%'
+               </if>
+           </if>
+            <if test="stRegDttm != null and stRegDttm != ''">
+                <![CDATA[
+                AND REG_DTTM >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="endRegDttm != null and endRegDttm != ''">
+                <![CDATA[
+                AND REG_DTTM < TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+
+            <if test="pointGbCd != null and pointGbCd != ''">
+                <choose>
+                    <when test='pointGbCd eq "10"' >
+                        AND POINT_TYPE = '(+)'
+                    </when>
+                    <when test='pointGbCd eq "20"' >
+                        AND POINT_TYPE = '(-)'
+                    </when>
+                </choose>
+            </if>
+    </sql>
+
+
+	<!-- 마켓포인트 지급 -->
+	<insert id="insertSavedMn">
+		/* operation.savedMnPoint.insertSavedMn */
+		INSERT INTO TC_MEMBER_SVMN_PVD
+			(
+				MEMBER_NO,
+				SVMN_SEQ,
+				SVMN_TYPE_CD,
+				SVMN_REASON_CD,
+				ETC_REASON,
+				PRC_AMT,
+				<if test="ordNo != null and ordNo != ''">
+                ORD_NO,
+                </if>
+				<if test="etcValidPeriod != null and etcValidPeriod != ''">
+				VALID_PERIOD,
+				</if>
+				USE_PSB_AMT,
+				SVMN_USE_PSB_YN,
+				REGR_NO,
+				REG_DTTM
+			)
+			VALUES
+			(
+				#{memberNo},
+				#{svmnSeq},
+				#{typeCd},
+				#{reasonCd},
+				#{etcReason},
+				#{prcAmt},
+                <if test="ordNo != null and ordNo != ''">
+                #{ordNo},
+                </if>
+				<if test="etcValidPeriod != null and etcValidPeriod != ''">
+				#{etcValidPeriod},
+                </if>
+				#{prcAmt},
+				#{svmnUsePsbYn},
+				#{regrNo},
+				sysdate
+			)
+	</insert>
+
+	<!-- 마켓포인트 차감 -->
+	<insert id="insertSavedMnUse">
+        /* operation.savedMnPoint.insertSavedMnUse */
+        INSERT INTO TC_MEMBER_SVMN_USE
+            (
+                MEMBER_NO,
+                USE_NO,
+                SVMN_SEQ,
+                SVMN_TYPE_CD,
+                SVMN_REASON_CD,
+                <if test="etcReason != null and etcReason != ''">
+                ETC_REASON,
+                </if>
+                PRC_AMT,
+                <if test="ordNo != null and ordNo != ''">
+                ORD_NO,
+                </if>
+                DEDUCT_GB_CD,
+                <if test="erpOrdNo != null and erpOrdNo != ''">
+                ERP_ORD_NO,
+                </if>
+                REGR_NO,
+                REG_DTTM
+            )
+            VALUES
+            (
+                #{memberNo},
+                #{useNo},
+                #{svmnSeq},
+                #{typeCd},
+                #{reasonCd},
+                <if test="etcReason != null and etcReason != ''">
+                #{etcReason},
+                </if>
+                #{prcAmt},
+                <if test="ordNo != null and ordNo != ''">
+                #{ordNo},
+                </if>
+                #{deductGbCd},
+                <if test="erpOrdNo != null and erpOrdNo != ''">
+                #{erpOrdNo},
+                </if>
+                #{regrNo},
+                sysdate
+            )
+    </insert>
+
+    <!-- 마켓포인트 차감 상세 -->
+    <insert id="insertSavedMnUseDtl">
+        /* operation.savedMnPoint.insertSavedMnUseDtl */
+        INSERT INTO TC_MEMBER_SVMN_USE_DTL
+        (
+        USE_NO,
+        USE_DTL_NO,
+        MEMBER_NO,
+        PRC_AMT,
+        ORD_NO,
+        ORD_DTL_SEQ,
+        REGR_NO,
+        REG_DTTM
+        )
+        VALUES
+        (
+        #{useNo},
+        fn_getSeq(0, 'TC_MEMBER_SVMN_USE_DTL'),
+        #{memberNo},
+        #{prcAmt},
+        #{ordNo},
+        #{ordDtlSeq},
+        #{regrNo},
+        sysdate
+        )
+    </insert>
+
+    <!-- 마켓포인트 내역 조회 -->
+    <select id="selectSavedmnGetPaging" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectSavedmnGetPaging */
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, E.*
+                FROM
+                    (
+                        SELECT D.tot_cnt - rownum + 1 AS ROW_NUM, D.*
+                        FROM
+                            (
+                                SELECT C.*, count(*) over() AS tot_cnt
+                                FROM
+                                    (
+                                        SELECT B.*, to_char(sum(B.SAL_POINT) over(partition by B.MEMBER_NO ORDER BY rownum),'FM999,999,999,999') AS CUR_POINT
+                                        FROM
+                                            (
+                                                SELECT A.*,
+                                                       (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.MEMBER_NM
+                                                             when tm.MEMBER_STATUS_CD='02' then tdm.MEMBER_NM
+                                                             when tm.MEMBER_STATUS_CD='03' then twm.MEMBER_NM END) AS MEMBER_NM,
+                                                       (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.LOGIN_ID
+                                                             when tm.MEMBER_STATUS_CD='02' then tdm.LOGIN_ID
+                                                             when tm.MEMBER_STATUS_CD='03' then twm.LOGIN_ID END) AS LOGIN_ID
+                                                FROM
+                                                    (
+                                                        SELECT to_char(tmdl.REG_DTTM,'YYYY-MM-DD') as REG_DT,
+                                                               '자동' AS TYPE_NM,
+                                                               '+' AS GUBUN,
+                                                               'point_c6' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='00' THEN '테스트 포인트'
+                                                                     WHEN tmdl.DTYPE='01' THEN '회원가입'
+                                                                     WHEN tmdl.DTYPE='02' THEN '리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='03' THEN '포토리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='06' THEN '결제취소 반환'
+                                                                     WHEN tmdl.DTYPE='07' THEN '구매확정 지급' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '10' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('00','01','02','03','06','07')
+                                                        <if test="memberNo != null and memberNo !=''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                        UNION ALL
+                                                        SELECT to_char(tmdl.REG_DTTM,'YYYY-MM-DD') as REG_DT,
+                                                               '자동' AS TYPE_NM,
+                                                               '-' AS GUBUN,
+                                                               'point_c3' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='04' THEN '회원탈퇴 소멸'
+                                                                     WHEN tmdl.DTYPE='05' THEN '포인트 사용'
+                                                                     WHEN tmdl.DTYPE='08' THEN '사용 포인트 반환' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '20' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT * -1 AS SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('04','05','08')
+                                                        <if test="memberNo != null and memberNo != ''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                    ) A
+                                                        INNER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_DORMANT_MEMBER group by MEMBER_NO) tdm ON A.MEMBER_NO = tdm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_WITHDRAWAL_MEMBER group by MEMBER_NO) twm on A.MEMBER_NO = twm.MEMBER_NO
+                                                ORDER BY A.SEED ASC
+                                            ) B
+                                    ) C
+                                where 1=1
+                                <include refid="selectSavedmnListWhere"/>
+                                ORDER BY C.SEED DESC
+                            ) D
+                    ) E
+            )
+        <include refid="common.pageSql"/>
+    </select>
+
+    <select id="selectTotalSaveUseMoney" parameterType="savedmnPointSO" resultType="String">
+         /* operation.savedMnPoint.selectTotalSaveUseMoney */
+         SELECT nvl(sum(C.SAL_POINT),0)
+         FROM
+             (
+                 SELECT A.REG_DTTM AS REG_DT,
+                        '10' AS POINT_GB_CD,
+                        A.SAL_POINT,
+                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.MEMBER_NM
+                              WHEN tm.MEMBER_STATUS_CD='02' THEN tdm.MEMBER_NM
+                              WHEN tm.MEMBER_STATUS_CD='03' THEN twm.MEMBER_NM END) AS MEMBER_NM,
+                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.LOGIN_ID
+                              WHEN tm.MEMBER_STATUS_CD='02' THEN tdm.LOGIN_ID
+                              WHEN tm.MEMBER_STATUS_CD='03' THEN twm.LOGIN_ID END) AS LOGIN_ID
+                 FROM TC_MEMBER_DPOINT_LOG A
+                          INNER JOIN TC_MEMBER tm ON A.MEMBERNO = tm.MEMBER_NO
+                          LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_DORMANT_MEMBER group by MEMBER_NO) tdm ON A.MEMBERNO = tdm.MEMBER_NO
+                          LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_WITHDRAWAL_MEMBER group by MEMBER_NO) twm on A.MEMBERNO = twm.MEMBER_NO
+                 WHERE A.DTYPE IN ('00','01','02','03','06','07')
+             ) C
+         WHERE 1=1
+         <include refid="selectSavedmnListWhere"/>
+         UNION ALL
+         SELECT nvl(sum(C.SAL_POINT),0)
+         FROM
+             (
+                 SELECT A.REG_DTTM AS REG_DT,
+                        '20' AS POINT_GB_CD,
+                        A.SAL_POINT,
+                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.MEMBER_NM
+                              WHEN tm.MEMBER_STATUS_CD='02' THEN tdm.MEMBER_NM
+                              WHEN tm.MEMBER_STATUS_CD='03' THEN twm.MEMBER_NM END) AS MEMBER_NM,
+                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.LOGIN_ID
+                              WHEN tm.MEMBER_STATUS_CD='02' THEN tdm.LOGIN_ID
+                              WHEN tm.MEMBER_STATUS_CD='03' THEN twm.LOGIN_ID END) AS LOGIN_ID
+                 FROM TC_MEMBER_DPOINT_LOG A
+                          INNER JOIN TC_MEMBER tm ON A.MEMBERNO = tm.MEMBER_NO
+                          LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_DORMANT_MEMBER group by MEMBER_NO) tdm ON A.MEMBERNO = tdm.MEMBER_NO
+                          LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_WITHDRAWAL_MEMBER group by MEMBER_NO) twm on A.MEMBERNO = twm.MEMBER_NO
+                 WHERE A.DTYPE IN ('04','05','08')
+             ) C
+         WHERE 1=1
+         <include refid="selectSavedmnListWhere"/>
+    </select>
+
+    <select id="selectSavedmnGetPagingCount" parameterType="savedmnPointSO" resultType="Integer">
+        /* operation.savedMnPoint.selectSavedmnGetPagingCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, E.*
+                FROM
+                    (
+                        SELECT D.tot_cnt - rownum + 1 AS SORT_NUM, D.*
+                        FROM
+                            (
+                                SELECT *
+                                FROM
+                                    (
+                                        SELECT B.*, sum(B.SAL_POINT) over(ORDER BY rownum) AS CUR_POINT
+                                        FROM
+                                            (
+                                                SELECT A.*,
+                                                       count(*) over() AS tot_cnt,
+                                                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.MEMBER_NM
+                                                        when tm.MEMBER_STATUS_CD='02' then tdm.MEMBER_NM||'(휴면회원)'
+                                                        when tm.MEMBER_STATUS_CD='03' then twm.MEMBER_NM||'(탈퇴회원)' END) AS MEMBER_NM,
+                                                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.LOGIN_ID
+                                                        when tm.MEMBER_STATUS_CD='02' then tdm.LOGIN_ID
+                                                        when tm.MEMBER_STATUS_CD='03' then twm.LOGIN_ID END) AS LOGIN_ID
+                                                FROM
+                                                    (
+                                                        SELECT tmdl.REG_DTTM as REG_DT,
+                                                               '자동' AS TYPE_NM,
+                                                               '+' AS GUBUN,
+                                                               'point_c6' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='00' THEN '테스트 포인트'
+                                                                     WHEN tmdl.DTYPE='01' THEN '회원가입'
+                                                                     WHEN tmdl.DTYPE='02' THEN '리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='03' THEN '포토리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='06' THEN '결제취소 반환'
+                                                                     WHEN tmdl.DTYPE='07' THEN '구매확정 지급' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '10' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('00','01','02','03','06','07')
+                                                        <if test="memberNo != null and memberNo != ''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                        UNION ALL
+                                                        SELECT tmdl.REG_DTTM as REG_DT,
+                                                               '자동' AS TYPE_NM,
+                                                               '-' AS GUBUN,
+                                                               'point_c3' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='04' THEN '회원탈퇴 소멸'
+                                                                     WHEN tmdl.DTYPE='05' THEN '포인트 사용'
+                                                                     WHEN tmdl.DTYPE='08' THEN '사용 포인트 반환' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '20' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT * -1 AS SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('04','05','08')
+                                                        <if test="memberNo != null and memberNo != ''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                    ) A
+                                                        INNER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_DORMANT_MEMBER group by MEMBER_NO) tdm ON A.MEMBER_NO = tdm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_WITHDRAWAL_MEMBER group by MEMBER_NO) twm on A.MEMBER_NO = twm.MEMBER_NO
+                                                ORDER BY A.SEED ASC
+                                            ) B
+                                    ) C
+                                where 1=1
+                                <include refid="selectSavedmnListWhere"/>
+                                ORDER BY C.SEED DESC
+                            ) D
+                    ) E
+            )
+    </select>
+
+    <select id="selectSavedmnGetPagingTotalCount" resultType="Integer">
+        /* operation.savedMnPoint.selectSavedmnGetPagingTotalCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, E.*
+                FROM
+                    (
+                        SELECT D.tot_cnt - rownum + 1 AS SORT_NUM, D.*
+                        FROM
+                            (
+                                SELECT *
+                                FROM
+                                    (
+                                        SELECT B.*, sum(B.SAL_POINT) over(ORDER BY rownum) AS CUR_POINT
+                                        FROM
+                                            (
+                                                SELECT A.*,
+                                                       count(*) over() AS tot_cnt,
+                                                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.MEMBER_NM
+                                                        when tm.MEMBER_STATUS_CD='02' then tdm.MEMBER_NM||'(휴면회원)'
+                                                        when tm.MEMBER_STATUS_CD='03' then twm.MEMBER_NM||'(탈퇴회원)' END) AS MEMBER_NM,
+                                                        (CASE WHEN tm.MEMBER_STATUS_CD='01' THEN tm.LOGIN_ID
+                                                        when tm.MEMBER_STATUS_CD='02' then tdm.LOGIN_ID
+                                                        when tm.MEMBER_STATUS_CD='03' then twm.LOGIN_ID END) AS LOGIN_ID
+                                                FROM
+                                                    (
+                                                        SELECT tmdl.REG_DTTM ,
+                                                               '자동' AS TYPE_NM,
+                                                               '+' AS GUBUN,
+                                                               'point_c6' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='00' THEN '테스트 포인트'
+                                                                     WHEN tmdl.DTYPE='01' THEN '회원가입'
+                                                                     WHEN tmdl.DTYPE='02' THEN '리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='03' THEN '포토리뷰 작성'
+                                                                     WHEN tmdl.DTYPE='06' THEN '결제취소 반환'
+                                                                     WHEN tmdl.DTYPE='07' THEN '구매확정 지급' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '10' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('00','01','02','03','06','07')
+                                                        <if test="memberNo != null and memberNo != ''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                        UNION ALL
+                                                        SELECT tmdl.REG_DTTM ,
+                                                               '자동' AS TYPE_NM,
+                                                               '-' AS GUBUN,
+                                                               'point_c3' AS CLASS_NAME,
+                                                               '온라인 '||to_char(tmdl.SAL_POINT,'FM999,999,999,999') AS PRC_POINT,
+                                                               (CASE WHEN tmdl.DTYPE='04' THEN '회원탈퇴 소멸'
+                                                                     WHEN tmdl.DTYPE='05' THEN '포인트 사용'
+                                                                     WHEN tmdl.DTYPE='08' THEN '사용 포인트 반환' END) AS REASON_NM,
+                                                               (tmdl.REG_DTTM + (INTERVAL '3' YEAR)) AS VALID_PERIOD,
+                                                               '20' AS POINT_GB_CD,
+                                                               tmdl.MEMBERNO AS MEMBER_NO,
+                                                               tmdl.SAL_POINT * -1 AS SAL_POINT,
+                                                               tmdl.SEED
+                                                        FROM TC_MEMBER_DPOINT_LOG tmdl
+                                                        WHERE tmdl.DTYPE IN ('04','05','08')
+                                                        <if test="memberNo != null and memberNo != ''">
+                                                            and tmdl.MEMBERNO = #{memberNo}
+                                                        </if>
+                                                    ) A
+                                                        INNER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_DORMANT_MEMBER group by MEMBER_NO) tdm ON A.MEMBER_NO = tdm.MEMBER_NO
+                                                        LEFT OUTER JOIN (select MEMBER_NO, max(MEMBER_NM) as MEMBER_NM, max(LOGIN_ID) as LOGIN_ID from TC_WITHDRAWAL_MEMBER group by MEMBER_NO) twm on A.MEMBER_NO = twm.MEMBER_NO
+                                                ORDER BY A.SEED ASC
+                                            ) B
+                                    ) C
+                                ORDER BY C.SEED DESC
+                            ) D
+                    ) E
+            )
+    </select>
+
+    <!-- 포인트 지급/차감 -->
+    <insert id="insertPoint">
+        /* operation.savedMnPoint.insertPoint */
+        INSERT INTO TC_MEMBER_POINT
+            (
+                MEMBER_NO,
+                POINT_SEQ,
+                POINT_GB_CD,
+                POINT_TYPE_CD,
+                POINT_REASON_CD,
+                ETC_REASON,
+                PRC_POINT,
+                <if test="etcValidPeriod != null and etcValidPeriod != ''">
+                VALID_PERIOD,
+                </if>
+                POINT_USE_PSB_YN,
+                REGR_NO,
+                REG_DTTM
+            )
+            VALUES
+            (
+                #{memberNo},
+                #{pointSeq},
+                #{gbCd},
+                #{typeCd},
+                #{reasonCd},
+                #{etcReason},
+                #{prcPoint},
+                <if test="etcValidPeriod != null and etcValidPeriod != ''">
+                #{etcValidPeriod},
+                </if>
+                #{pointUsePsbYn},
+                #{regrNo},
+                sysdate
+            )
+    </insert>
+
+    <!-- 포인트 내역 조회 -->
+    <select id="selectPointGetPaging" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectPointGetPaging */
+		SELECT *
+		FROM
+		(
+			SELECT T.*, ROWNUM AS PAGING_NUM, ROWNUM
+			FROM
+			(
+		        SELECT *
+				  FROM (
+				        SELECT ROWNUM AS SORT_NUM, TT.*
+				        <!-- 모바일 잔여포인트 추가 20160817 -->
+		        		 , SUM(TT.PLU_PRC_POINT- TT.MI_PRC_POINT) OVER(ORDER BY RNUM) AS REST_POINT
+				         <!--// 모바일 잔여포인트 추가 -->
+				          FROM
+				          (
+				          		SELECT T.*, ROWNUM AS RNUM
+				          		FROM
+				          		(
+					          		SELECT A.*
+					          		FROM
+					          		(
+						                SELECT PVD.MEMBER_NO,
+							                   MEMBER.SITE_NO,
+				                               MEMBER.LOGIN_ID,
+				                               MEMBER.MEMBER_NM,
+				                               CASE POINT_TYPE_CD WHEN 'M' THEN '수동'
+				                                                 WHEN 'A' THEN '자동' END TYPE_NM,
+				                               PVD.POINT_REASON_CD,
+				                               PVD.ETC_REASON,
+				                               Round(PVD.PRC_POINT) PRC_POINT,
+				                               <!-- 모바일 잔여포인트 추가/수정 20160817 -->
+				                               CASE WHEN PVD.POINT_GB_CD = '10' THEN NVL(PVD.PRC_POINT,0) ELSE 0 END  PLU_PRC_POINT,
+				                               CASE WHEN PVD.POINT_GB_CD = '20' THEN NVL(PVD.PRC_POINT,0) ELSE 0 END  MI_PRC_POINT,
+				                               <!--// 모바일 잔여포인트 추가/수정 -->
+				                               TO_CHAR(TO_DATE(PVD.VALID_PERIOD, 'YYYYMMDD'), 'YYYY-MM-DD') AS VALID_PERIOD,
+				                               CASE WHEN PVD.POINT_GB_CD = '10' THEN '+' ELSE '-' END POINT_TYPE,
+				                               PVD.REG_DTTM,
+				                               CASE POINT_REASON_CD WHEN '04' THEN ETC_REASON ELSE CMN_CD.CD_NM END REASON_NM,
+				                               CASE WHEN PVD.POINT_GB_CD = '10' THEN 'point_c1' ELSE 'point_c2' END CLASS_NM,
+				                               CASE WHEN PVD.POINT_GB_CD = '10' THEN '지급' ELSE '차감' END  POINT_TYPE_NM,
+				                               concat(CASE PVD.POINT_REASON_CD WHEN '04' THEN '직접입력('||PVD.ETC_REASON||')' ELSE CMN_CD.CD_NM END,
+				<!--                                       CASE when NVL(PVD.ORD_NO,'') = '' then '' else ' ('||NVL(PVD.ORD_NO,'')|| ')' end -->
+				                                      ''
+				                                      ) as CONTENT
+						                FROM TC_MEMBER_POINT PVD
+				                             INNER JOIN TC_MEMBER MEMBER ON PVD.MEMBER_NO = MEMBER.MEMBER_NO
+				                             LEFT JOIN(SELECT * FROM TA_CMN_CD_DTL WHERE GRP_CD = 'POINT_REASON_CD') CMN_CD ON POINT_REASON_CD = CMN_CD.CD
+						                WHERE POINT_USE_PSB_YN = 'Y'
+						                  AND MEMBER_STATUS_CD = '01'
+
+						                ) A
+						                <!-- 모바일 잔여포인트 추가 20160817 -->
+						                <!--// 모바일 잔여포인트 추가 -->
+						                WHERE 1=1
+						                <include refid="selectPointListWhere" />
+						                <include refid="common.sortSql" />
+					            ) T
+					        ) TT
+				      ) B
+				 ORDER BY SORT_NUM DESC
+			) T
+		)
+		<include refid="common.pageSql" />
+    </select>
+
+    <!-- 포인트 내역 조회 -->
+    <select id="selectPointGetPagingCount" resultType="Integer">
+        /* operation.savedMnPoint.selectPointGetPagingCount */
+        SELECT COUNT(*)
+          FROM (
+                SELECT A.*
+                  FROM (
+                        SELECT PVD.MEMBER_NO,
+                               MEMBER.SITE_NO,
+                               MEMBER.LOGIN_ID,
+                               MEMBER.MEMBER_NM,
+                               CASE POINT_TYPE_CD WHEN 'M' THEN '수동'
+                                                 WHEN 'A' THEN '자동' END TYPE_NM,
+                               PVD.POINT_REASON_CD,
+                               PVD.ETC_REASON,
+                               PVD.PRC_POINT,
+                               PVD.VALID_PERIOD,
+                               CASE WHEN PVD.POINT_GB_CD = '10' THEN '(+)' ELSE '(-)' END POINT_TYPE,
+                               PVD.REG_DTTM,
+                               CASE POINT_REASON_CD WHEN '05' THEN ETC_REASON ELSE CMN_CD.CD_NM END REASON_NM,
+                               CASE WHEN PVD.POINT_GB_CD = '10' THEN 'point_c1' ELSE 'point_c2' END CLASS_NM,
+                               CASE WHEN PVD.POINT_GB_CD = '10' THEN '지급' ELSE '차감' END  POINT_TYPE_NM,
+                               concat(CASE PVD.POINT_REASON_CD WHEN '05' THEN PVD.ETC_REASON ELSE CMN_CD.CD_NM END,
+<!--                                       CASE when NVL(PVD.ORD_NO,'') = '' then '' else ' ('||NVL(PVD.ORD_NO,'')|| ')' end -->
+                                      ''
+                                      ) as CONTENT
+                        FROM TC_MEMBER_POINT PVD
+                             INNER JOIN TC_MEMBER MEMBER ON PVD.MEMBER_NO = MEMBER.MEMBER_NO
+                             LEFT JOIN(SELECT * FROM TA_CMN_CD_DTL WHERE GRP_CD = 'POINT_REASON_CD') CMN_CD ON POINT_REASON_CD = CMN_CD.CD
+                        WHERE POINT_USE_PSB_YN = 'Y'
+                          AND MEMBER_STATUS_CD = '01'
+
+                        ) A
+                        WHERE 1=1
+                        <include refid="selectPointListWhere" />
+                        ORDER BY REG_DTTM ASC
+              ) B
+    </select>
+
+    <!-- 포인트 내역 조회 -->
+    <select id="selectPointGetPagingTotalCount" resultType="Integer">
+        /* operation.savedMnPoint.selectPointGetPagingTotalCount */
+        SELECT     COUNT(*)
+		FROM TC_MEMBER_POINT PVD
+		         INNER JOIN TC_MEMBER MEMBER ON PVD.MEMBER_NO = MEMBER.MEMBER_NO
+		         LEFT JOIN(SELECT * FROM TA_CMN_CD_DTL WHERE GRP_CD = 'POINT_REASON_CD') CMN_CD ON POINT_REASON_CD = CMN_CD.CD
+		WHERE POINT_USE_PSB_YN = 'Y'
+		  AND MEMBER_STATUS_CD = '01'
+		AND MEMBER.SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectTotalSaveUsePoint" parameterType="savedmnPointSO" resultType="String">
+        /* operation.savedMnPoint.selectTotalSaveUsePoint */
+        select replace(NVL(ROUND(sum(A.prc_point),3),'0'), '.000','') as totalPointPvd
+        from (
+	        select point.prc_point, point.REG_DTTM, A.LOGIN_ID, A.MEMBER_NM, A.SITE_NO, point.POINT_USE_PSB_YN,
+	               '(+)' POINT_TYPE
+	        from TC_MEMBER_POINT point inner join  TC_MEMBER A  on (point.MEMBER_NO = A.MEMBER_NO)
+	        and point.POINT_GB_CD = '10'
+	        and A.MEMBER_STATUS_CD = '01'
+	        AND POINT_USE_PSB_YN = 'Y'
+		) A
+		where 1=1
+		<include refid="selectPointListWhere" />
+		union all
+        select replace(NVL(ROUND(sum(A.prc_point) ,3),'0'), '.000','') as totalPointPvd
+        from (
+            select point.prc_point, point.REG_DTTM, A.LOGIN_ID, A.MEMBER_NM, A.SITE_NO, point.POINT_USE_PSB_YN,
+                   '(-)' POINT_TYPE
+            from TC_MEMBER_POINT point inner join  TC_MEMBER A  on (point.MEMBER_NO = A.MEMBER_NO)
+            and point.POINT_GB_CD = '20'
+            and A.MEMBER_STATUS_CD = '01'
+            AND POINT_USE_PSB_YN = 'Y'
+        ) A
+        where 1=1
+        <include refid="selectPointListWhere" />
+    </select>
+
+    <select id="selectExtinctionSavedMn" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectExtinctionSavedMn */
+        SELECT NVL(SUM(USE_PSB_AMT),0) AS USE_PSB_AMT
+          FROM TC_MEMBER_SVMN_PVD
+         WHERE VALID_PERIOD BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE) + 15
+           AND MEMBER_NO = #{memberNoSelect}
+           AND SVMN_USE_PSB_YN = 'Y'
+    </select>
+    <!-- 소멸예정포인트 추가 (모바일) 2016-09-27 -->
+    <select id="selectExtinctionPoint" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectExtinctionPoint */
+        SELECT NVL(SUM(PRC_POINT),0) AS PRC_POINT
+          FROM TC_MEMBER_POINT
+         WHERE VALID_PERIOD BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE) + 15
+           AND MEMBER_NO = #{memberNoSelect}
+           AND POINT_USE_PSB_YN = 'Y'
+    </select>
+
+    <!-- 포인트 지급 내역이 있는지 카운트 조회(출석이벤트 관련) -->
+    <select id="selectPointGiveHistoryCnt" parameterType="savedmnPointSO" resultType="Integer">
+        /* operation.savedMnPoint.selectPointGiveHistory */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_POINT
+         WHERE MEMBER_NO = #{memberNoSelect}
+        <if test="pointGbCd != null and pointGbCd != ''">
+           AND POINT_GB_CD = #{pointGbCd}
+        </if>
+        <if test="reasonCd != null and reasonCd != ''">
+           AND POINT_REASON_CD = #{reasonCd}
+        </if>
+        <if test="stRegDttm != null and stRegDttm != ''">
+           <![CDATA[
+           AND REG_DTTM >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+           ]]>
+        </if>
+        <if test="endRegDttm != null and endRegDttm != ''">
+           <![CDATA[
+           AND REG_DTTM <= TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 0.99999
+           ]]>
+        </if>
+    </select>
+    
+    <!-- 출석체크 이벤트 마켓포인트 지급 내역이  있는지 카운트 조회 -->
+    <select id="selectSvmnGiveHistoryCnt" parameterType="savedmnPointSO" resultType="Integer">
+    	/* operation.savedMnPoint.selectSvmnGiveHistoryCnt */
+    	SELECT COUNT(*)
+    	FROM TC_MEMBER_SVMN_PVD
+    	WHERE MEMBER_NO = #{memberNoSelect}
+        <if test="reasonCd != null and reasonCd != ''">
+           AND SVMN_REASON_CD = #{reasonCd}
+        </if>
+        <if test="stRegDttm != null and stRegDttm != ''">
+           <![CDATA[
+           AND REG_DTTM >= TO_DATE(#{stRegDttm}, 'YYYY-MM-DD')
+           ]]>
+        </if>
+        <if test="endRegDttm != null and endRegDttm != ''">
+           <![CDATA[
+           AND REG_DTTM <= TO_DATE(#{endRegDttm}, 'YYYY-MM-DD') + 0.99999
+           ]]>
+        </if>
+    </select>
+
+    <!-- 마켓포인트 차감을 위한 마켓포인트 지급 내역 조회 -->
+    <select id="selectSavedMnPvd" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectSavedMnPvd */
+        SELECT SVMN_SEQ,
+		       MEMBER_NO,
+		       PRC_AMT,
+		       USE_PSB_AMT,
+		       CASE NVL(VALID_PERIOD,'99990000') WHEN '' THEN '99990000'
+		                                            ELSE VALID_PERIOD  END VALID_PERIOD
+		  FROM TC_MEMBER_SVMN_PVD
+		 WHERE MEMBER_NO = #{memberNoSelect}
+		   AND SVMN_USE_PSB_YN = 'Y'
+		   AND (VALID_PERIOD IS NULL OR VALID_PERIOD = '' OR TO_DATE(VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+		   AND USE_PSB_AMT > 0
+		 ORDER BY VALID_PERIOD ASC
+    </select>
+
+    <!-- 마켓포인트 차감(지급된 마켓포인트 사용가능금액 업데이트) -->
+    <update id="updateUsePsbAmt">
+        /* operation.savedMnPoint.updateUsePsbAmt */
+        UPDATE TC_MEMBER_SVMN_PVD
+           SET USE_PSB_AMT = #{svmnUsePsbAmt},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SVMN_SEQ = #{svmnSeq}
+           AND MEMBER_NO = #{memberNo}
+
+    </update>
+
+    <!-- 주문 취소시 사용한 마켓포인트 취소 -->
+    <select id="selectSavedMnUse" parameterType="savedmnPointSO" resultType="savedmnPointVO">
+        /* operation.savedMnPoint.selectSavedMnUse */
+        SELECT MEMBER_NO,
+		       SVMN_SEQ,
+		       SVMN_TYPE_CD,
+		       SVMN_REASON_CD,
+		       PRC_AMT,
+		       ORD_NO,
+		       DEDUCT_GB_CD,
+		       ERP_ORD_NO
+		  FROM TC_MEMBER_SVMN_USE
+		 WHERE (ORD_NO = #{ordNo, jdbcType=VARCHAR} OR ERP_ORD_NO = #{erpOrdNo, jdbcType=VARCHAR})
+		   AND MEMBER_NO = #{memberNoSelect}
+    </select>
+
+    <!-- 마켓포인트 사용가능금액 업데이트(주문취소시 사용금액 원복) -->
+    <update id="updatePvdPsbAmt">
+        /* operation.savedMnPoint.updatePvdPsbAmt */
+        <selectKey keyProperty="validPeriod" order="BEFORE" resultType="String">
+            <![CDATA[
+            SELECT CASE WHEN TO_DATE(VALID_PERIOD, 'YYYYMMDD') < sysdate
+                        THEN TO_CHAR(sysdate + 3, 'YYYYMMDD')
+                        ELSE VALID_PERIOD END VALID_PERIOD
+              FROM TC_MEMBER_SVMN_PVD
+			 WHERE SVMN_SEQ = #{svmnSeq}
+			 ]]>
+        </selectKey>
+        UPDATE TC_MEMBER_SVMN_PVD
+           SET USE_PSB_AMT = USE_PSB_AMT+#{svmnUsePsbAmt},
+               VALID_PERIOD = #{validPeriod},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SVMN_SEQ = #{svmnSeq}
+           AND MEMBER_NO =  #{memberNo}
+
+    </update>
+
+    <!-- 주문 취소시 지급된 마켓포인트 사용 불가 업데이트 -->
+    <update id="updateSvmnUsePsbYn">
+        /* operation.savedMnPoint.updateSvmnUsePsbYn */
+        UPDATE TC_MEMBER_SVMN_PVD
+           SET SVMN_USE_PSB_YN = 'N',
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE ORD_NO = #{ordNo}
+
+    </update>
+
+    <!-- 지급 마켓포인트 삭제(회원탈퇴시) -->
+    <delete id="deleteSavedMnPvd">
+        /* basket.deleteSavedMnPvd */
+        DELETE FROM TC_MEMBER_SVMN_PVD
+        WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
+    <!-- 차감 마켓포인트 삭제(회원탈퇴시) -->
+    <delete id="deleteSavedMnUse">
+        /* basket.deleteSavedMnUse */
+        DELETE FROM TC_MEMBER_SVMN_USE
+        WHERE MEMBER_NO = #{memberNo}
+    </delete>
+
+	<select id="selectOfflineCouponList" resultType="SavedmnPointVO">
+		/* operation.savedMnPoint.selectOfflineCouponList */
+		SELECT COUPON_NO,
+			   COUPON_NM,
+			   COUPON_BNF_DC_AMT
+		FROM TP_COUPON
+		WHERE DEL_YN = 'N'
+			AND COUPON_KIND_CD = '99' <!-- 오프라인할인쿠폰 코드 -->
+			AND (RSV_ONLY_YN IS NULL OR RSV_ONLY_YN = 'N')
+		ORDER BY COUPON_BNF_DC_AMT ASC
+		
+	</select>
+
+    <select id="selectSavedMoneyConfig" parameterType="savedMoneyConfigSO" resultType="savedMoneyConfigVO">
+        /* operation.savedMnPoint.selectSavedMoneyConfig - 마켓포인트 설정정보 조회 */
+        SELECT
+            ts.SVMN_PVD_YN
+             , ts.SVMN_PVD_STNDRD_CD
+             , ts.SVMN_PVD_RATE
+             , ts.SVMN_TRUNC_STNDRD_CD
+             , ts.SVMN_USE_PSB_POSS_AMT
+             , ts.SVMN_MIN_USE_AMT
+             , ts.SVMN_MAX_USE_AMT
+             , ts.SVMN_USE_UNIT_CD
+             , ts.SVMN_CP_DUPLT_APPLY_YN
+             , ts.SVMN_AUTO_EXTINCTION_YN
+             , ts.SVMN_USE_LIMITDAY
+             , ts.RECOM_PVD_RATE
+             , ts.SVMN_MAX_USE_GB_CD
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 마켓포인트 설정정보 수정 -->
+    <update id="updateSavedMoneyConfig">
+        /* operation.savedMnPoint.selectSavedMoneyConfig - 마켓포인트 설정정보 수정 */
+        MERGE INTO TS_SITE
+            USING DUAL
+            ON (SITE_NO = #{siteNo})
+            WHEN MATCHED THEN
+                UPDATE SET
+                    SVMN_PVD_YN = #{svmnPvdYn}
+                    , SVMN_PVD_STNDRD_CD = #{svmnPvdStndrdCd}
+                    , SVMN_PVD_RATE = #{svmnPvdRate}
+                    , RECOM_PVD_RATE = #{recomPvdRate}
+                    , SVMN_TRUNC_STNDRD_CD = #{svmnTruncStndrdCd}
+                    , SVMN_USE_PSB_POSS_AMT = #{svmnUsePsbPossAmt}
+                    , SVMN_MIN_USE_AMT = #{svmnMinUseAmt}
+                    , SVMN_MAX_USE_AMT = #{svmnMaxUseAmt}
+                    , SVMN_MAX_USE_GB_CD = #{svmnMaxUseGbCd}
+                    , SVMN_USE_UNIT_CD = #{svmnUseUnitCd}
+                    , SVMN_CP_DUPLT_APPLY_YN = #{svmnCpDupltApplyYn}
+                    , SVMN_AUTO_EXTINCTION_YN = #{svmnAutoExtinctionYn}
+                    , SVMN_USE_LIMITDAY = #{svmnUseLimitday}
+                    , UPDR_NO = #{updrNo}
+                    , UPD_DTTM = sysdate
+            WHEN NOT MATCHED THEN
+                INSERT (
+                        SITE_NO
+                        , SVMN_PVD_YN
+                        , SVMN_PVD_STNDRD_CD
+                        , SVMN_PVD_RATE
+                        , RECOM_PVD_RATE
+                        , SVMN_TRUNC_STNDRD_CD
+                        , SVMN_USE_PSB_POSS_AMT
+                        , SVMN_MIN_USE_AMT
+                        , SVMN_MAX_USE_AMT
+                        , SVMN_MAX_USE_GB_CD
+                        , SVMN_USE_UNIT_CD
+                        , SVMN_CP_DUPLT_APPLY_YN
+                        , SVMN_AUTO_EXTINCTION_YN
+                        , SVMN_USE_LIMITDAY
+                        , REGR_NO
+                        , REG_DTTM
+                        ) VALUES (
+                                 #{siteNo}
+                             , #{svmnPvdYn}
+                             , #{svmnPvdStndrdCd}
+                             , #{svmnPvdRate}
+                             , #{recomPvdRate}
+                             , #{svmnTruncStndrdCd}
+                             , #{svmnUsePsbPossAmt}
+                             , #{svmnMinUseAmt}
+                             , #{svmnMaxUseAmt}
+                             , #{svmnMaxUseGbCd}
+                             , #{svmnUseUnitCd}
+                             , #{svmnCpDupltApplyYn}
+                             , #{svmnAutoExtinctionYn}
+                             , #{svmnUseLimitday}
+                             , #{regrNo}
+                             , sysdate
+                             )
+    </update>
+
+    <!-- 포인트 설정정보 조회 -->
+    <select id="selectPointConfig" parameterType="pointConfigSO" resultType="pointConfigVO">
+        /* operation.savedMnPoint.selectPointConfig */
+        SELECT
+            ts.POINT_PVD_YN
+             , ts.POINT_TRUNC_STNDRD_CD
+             , ts.BUY_EPLG_WRITE_POINT
+             , ts.BUY_EPLG_WRITE_PM_POINT
+             , ts.POINT_ACCU_VALID_PERIOD
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 포인트 설정정보 수정 -->
+    <update id="updatePointConfig">
+        /* operation.savedMnPoint.updatePointConfig */
+        MERGE INTO TS_SITE
+        USING DUAL
+        ON (SITE_NO = #{siteNo})
+        WHEN MATCHED THEN
+        UPDATE SET
+        POINT_PVD_YN = #{pointPvdYn}
+        , POINT_TRUNC_STNDRD_CD = #{pointTruncStndrdCd}
+        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+            , BUY_EPLG_WRITE_POINT = #{buyEplgWritePoint}
+        </if>
+        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+            , BUY_EPLG_WRITE_PM_POINT = #{buyEplgWritePmPoint}
+        </if>
+        , POINT_ACCU_VALID_PERIOD = #{pointAccuValidPeriod}
+        , UPDR_NO = #{updrNo}
+        , UPD_DTTM = sysdate
+        WHEN NOT MATCHED THEN
+        INSERT (
+        SITE_NO
+        , POINT_PVD_YN
+        , POINT_TRUNC_STNDRD_CD
+        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+            , BUY_EPLG_WRITE_POINT
+        </if>
+        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+            , BUY_EPLG_WRITE_PM_POINT
+        </if>
+        , POINT_ACCU_VALID_PERIOD
+        , REGR_NO
+        , REG_DTTM
+        ) VALUES (
+        #{siteNo}
+        , #{pointPvdYn}
+        , #{pointTruncStndrdCd}
+        <if test="buyEplgWritePoint != null and buyEplgWritePoint != ''">
+            , #{buyEplgWritePoint}
+        </if>
+        <if test="buyEplgWritePmPoint != null and buyEplgWritePmPoint != ''">
+            , #{buyEplgWritePmPoint}
+        </if>
+        , #{pointAccuValidPeriod}
+        , #{regrNo}
+        , sysdate
+        )
+    </update>
+</mapper>

@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="order.reservation">
+
+    <sql id="selectReservationWhere">
+        <where>
+            1=1
+            <if test="rsvType != null and rsvType.length > 0">
+                and AA.VISIT_STATUS_CD in (<foreach collection="rsvType" item="a" separator=",">#{a}</foreach>)
+            </if>
+            <if test="goodsTypeCd != null and goodsTypeCd.length > 0">
+                and AA.GOODS_TYPE_CD in (<foreach collection="goodsTypeCd" item="a" separator=",">#{a}</foreach>)
+            </if>
+            <if test="searchSeller != null and searchSeller != ''">
+                and AA.SELLER_NO = #{searchSeller}
+            </if>
+            <if test="searchWord != null and searchWord != ''">
+                <choose>
+                    <!-- 매장명 -->
+                    <when test="searchCd eq '02'">
+                        and AA.STORE_NM like '%'||#{searchWord}||'%'
+                    </when>
+                    <!-- 방문자 -->
+                    <when test="searchCd eq '03'">
+                        and (AA.NO_MEMBER_NM like '%'||#{searchWord}||'%' or AA.MEMBER_NM = #{searchWordEncrypt})
+                    </when>
+                    <!-- 아이디 -->
+                    <when test="searchCd eq '04'">
+                        and AA.LOGIN_ID = #{searchWordEncrypt}
+                    </when>
+                    <!-- 이메일 -->
+                    <when test="searchCd eq '05'">
+                        and AA.EMAIL like '%'||#{searchWord}||'%'
+                    </when>
+                    <!-- 휴대폰 -->
+                    <when test="searchCd eq '06'">
+                        and AA.MOBILE = #{searchWordEncrypt}
+                    </when>
+                    <!-- 상품명 -->
+                    <when test="searchCd eq '07'">
+                        and AA.GOODS_NM = '%'||#{searchWord}||'%'
+                    </when>
+                    <!-- 상품코드 -->
+                    <when test="searchCd eq '08'">
+                        and AA.GOODS_NO = '%'||#{searchWord}||'%'
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectReservationPaging" resultType="reservationVO">
+        /* order.reservation.selectReservationPaging */
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, AAA.tot_cnt - rownum + 1 AS SORT_NUM, AAA.*
+                FROM
+                    (
+                        SELECT AA.*, count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN 'G' ELSE 'V' END) AS VISIT_STATUS_CD,
+                                       (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN '상품예약' ELSE '방문예약' END) AS VISIT_STATUS_NM,
+                                       (SELECT STR_NAME FROM AM010TBL@DAVISION WHERE STR_CODE = A.STORE_NO) AS STORE_NM,
+                                       (to_char(A.RSV_DATE, 'YYYY-MM-DD')||' '||substr(A.RSV_TIME,1,2)||':'||substr(A.RSV_TIME,3,2)) AS RSV_DTTM,
+                                       tg.GOODS_NM,
+                                       tg.GOODS_TYPE_CD,
+                                       ti.ITEM_NM,
+                                       ts.SELLER_NO,
+                                       ts.SELLER_NM ,
+                                       tm.MEMBER_NM ,
+                                       tm.MOBILE,
+                                       tm.LOGIN_ID,
+                                       tm.EMAIL,
+                                       ti.SALE_PRICE ,
+                                       ti.SUPPLY_PRICE ,
+                                       A.*
+                                FROM
+                                    (
+                                        SELECT tvr.RSV_NO,
+                                               tvr.STORE_NO,
+                                               tvr.MEMBER_NO,
+                                               tvr.RSV_DATE,
+                                               tvr.RSV_TIME,
+                                               tvr.VISIT_PURPOSE_CD,
+                                               tvr.NO_MEMBER_NM,
+                                               tvr.NO_MEMBER_MOBILE,
+                                               nvl(tvr.CANCEL_YN, 'N') as CANCEL_YN,
+                                               tvrd.GOODS_NO,
+                                               tvrd.ORD_QTT,
+                                               tvrd.SALE_AMT,
+                                               tvrd.DC_AMT
+                                        FROM TO_VISIT_RSV tvr
+                                                 LEFT OUTER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO AND tvrd.RSV_DTL_SEQ = 1
+                                        WHERE tvrd.ORD_NO IS NULL
+                                          AND tvr.RSV_DATE IS NOT NULL
+                                          and regexp_instr(tvr.RSV_TIME,'[^0-9]') = 0
+                                          and length(tvr.RSV_TIME) = 4
+                                          <![CDATA[
+                                          and tvr.RSV_TIME < '2400'
+                                          ]]>
+                                        <!-- 예약일자 시작일 조건 -->
+                                        <if test="rsvDayS != null and rsvDayS != ''">
+                                            <![CDATA[
+                                                AND tvr.RSV_DATE >= TO_DATE(#{rsvDayS}, 'YYYY-MM-DD')
+                                              ]]>
+                                        </if>
+                                        <!-- 예약일자 종료일 조건 -->
+                                        <if test="rsvDayE != null and rsvDayE != ''">
+                                            <![CDATA[
+                                                AND tvr.RSV_DATE < TO_DATE(#{rsvDayE}, 'YYYY-MM-DD') + 1
+                                              ]]>
+                                        </if>
+                                        ORDER BY tvr.RSV_DATE , tvr.RSV_TIME
+                                    ) A
+                                        LEFT OUTER JOIN TG_GOODS tg ON A.GOODS_NO = tg.GOODS_NO
+                                        LEFT OUTER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                        LEFT OUTER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                                        LEFT OUTER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                            ) AA
+                        <include refid="selectReservationWhere"/>
+                    ) AAA
+            )
+        <include refid="common.pageSql"/>
+    </select>
+
+
+    <select id="selectReservationPagingTotalCount" resultType="Integer">
+        /* order.reservation.selectReservationPagingTotalCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT *
+                FROM
+                    (
+                        SELECT (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN 'G' ELSE 'V' END) AS VISIT_STATUS_CD,
+                               (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN '상품예약' ELSE '방문예약' END) AS VISIT_STATUS_NM,
+                               (SELECT STR_NAME FROM AM010TBL@DAVISION WHERE STR_CODE = A.STORE_NO) AS STORE_NM,
+                               (to_char(A.RSV_DATE, 'YYYY-MM-DD')||' '||substr(A.RSV_TIME,1,2)||':'||substr(A.RSV_TIME,3,2)) AS RSV_DTTM,
+                               A.GOODS_NM,
+                               A.GOODS_NO,
+                               tg.GOODS_TYPE_CD,
+                               A.ITEM_NM,
+                               ts.SELLER_NO,
+                               ts.SELLER_NM ,
+                               A.NO_MEMBER_NM,
+                               A.NO_MEMBER_MOBILE,
+                               tm.MEMBER_NM ,
+                               tm.MOBILE,
+                               tm.LOGIN_ID,
+                               tm.EMAIL,
+                               ti.SALE_PRICE ,
+                               ti.SUPPLY_PRICE ,
+                               A.ORD_QTT ,
+                               A.SALE_AMT ,
+                               count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT *
+                                FROM TO_VISIT_RSV tvr
+                                         LEFT OUTER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO AND tvrd.RSV_DTL_SEQ = 1
+                                WHERE tvrd.ORD_NO IS NULL
+                                  AND tvr.RSV_DATE IS NOT NULL
+                                  and regexp_instr(tvr.RSV_TIME,'[^0-9]') = 0
+                                  and length(tvr.RSV_TIME) = 4
+                                  <![CDATA[
+                                  and tvr.RSV_TIME < '2400'
+                                  ]]>
+                                ORDER BY tvr.RSV_DATE , tvr.RSV_TIME
+                            ) A
+                                LEFT OUTER JOIN TG_GOODS tg ON A.GOODS_NO = tg.GOODS_NO
+                                LEFT OUTER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                LEFT OUTER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                                LEFT OUTER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                    ) AA
+            ) AAA
+    </select>
+
+    <select id="selectReservationPagingCount" resultType="Integer">
+        /* order.reservation.selectReservationPagingCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT *
+                FROM
+                    (
+                        SELECT (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN 'G' ELSE 'V' END) AS VISIT_STATUS_CD,
+                               (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN '상품예약' ELSE '방문예약' END) AS VISIT_STATUS_NM,
+                               (SELECT STR_NAME FROM AM010TBL@DAVISION WHERE STR_CODE = A.STORE_NO) AS STORE_NM,
+                               (to_char(A.RSV_DATE, 'YYYY-MM-DD')||' '||substr(A.RSV_TIME,1,2)||':'||substr(A.RSV_TIME,3,2)) AS RSV_DTTM,
+                               A.GOODS_NM,
+                               A.GOODS_NO,
+                               tg.GOODS_TYPE_CD,
+                               A.ITEM_NM,
+                               ts.SELLER_NO,
+                               ts.SELLER_NM ,
+                               A.NO_MEMBER_NM,
+                               A.NO_MEMBER_MOBILE,
+                               tm.MEMBER_NM ,
+                               tm.MOBILE,
+                               tm.LOGIN_ID,
+                               tm.EMAIL,
+                               ti.SALE_PRICE ,
+                               ti.SUPPLY_PRICE ,
+                               A.ORD_QTT ,
+                               A.SALE_AMT ,
+                               count(*) over() AS tot_cnt
+                        FROM
+                            (
+                                SELECT *
+                                FROM TO_VISIT_RSV tvr
+                                         LEFT OUTER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO AND tvrd.RSV_DTL_SEQ = 1
+                                WHERE tvrd.ORD_NO IS NULL
+                                  AND tvr.RSV_DATE IS NOT NULL
+                                  and regexp_instr(tvr.RSV_TIME,'[^0-9]') = 0
+                                  and length(tvr.RSV_TIME) = 4
+                                  <![CDATA[
+                                  and tvr.RSV_TIME < '2400'
+                                  ]]>
+                                <!-- 예약일자 시작일 조건 -->
+                                <if test="rsvDayS != null and rsvDayS != ''">
+                                    <![CDATA[
+                                        AND tvr.RSV_DATE >= TO_DATE(#{rsvDayS}, 'YYYY-MM-DD')
+                                      ]]>
+                                </if>
+                                <!-- 예약일자 종료일 조건 -->
+                                <if test="rsvDayE != null and rsvDayE != ''">
+                                    <![CDATA[
+                                        AND tvr.RSV_DATE < TO_DATE(#{rsvDayE}, 'YYYY-MM-DD') + 1
+                                      ]]>
+                                </if>
+                                ORDER BY tvr.RSV_DATE , tvr.RSV_TIME
+                            ) A
+                                LEFT OUTER JOIN TG_GOODS tg ON A.GOODS_NO = tg.GOODS_NO
+                                LEFT OUTER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                LEFT OUTER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                                LEFT OUTER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+                    ) AA
+                <include refid="selectReservationWhere"/>
+            ) AAA
+    </select>
+
+    <!-- 엑셀 출력용 예약 상세 목록 -->
+    <select id="selectReservationList" resultType="net.danvi.dmall.biz.app.order.reservation.model.ReservationExcelVO">
+        /* order.reservation.selectReservationList */
+        SELECT AA.*
+        FROM (
+            SELECT (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN 'G' ELSE 'V' END) AS VISIT_STATUS_CD,
+                (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN '상품예약' ELSE '방문예약' END) AS VISIT_STATUS_NM,
+                (SELECT STR_NAME FROM AM010TBL@DAVISION WHERE STR_CODE = A.STORE_NO) AS STORE_NM,
+                (to_char(A.RSV_DATE, 'YYYY-MM-DD')||' '||substr(A.RSV_TIME,1,2)||':'||substr(A.RSV_TIME,3,2)) AS RSV_DTTM,
+                tg.GOODS_NM,
+                tg.GOODS_TYPE_CD,
+                ti.ITEM_NM,
+                ts.SELLER_NO,
+                ts.SELLER_NM ,
+                tm.MEMBER_NM ,
+                tm.MOBILE,
+                tm.LOGIN_ID,
+                tm.EMAIL,
+                ti.SALE_PRICE ,
+                ti.SUPPLY_PRICE ,
+                A.*
+            FROM
+            (
+                SELECT tvr.RSV_NO,
+                    tvr.STORE_NO,
+                    tvr.MEMBER_NO,
+                    tvr.RSV_DATE,
+                    tvr.RSV_TIME,
+                    tvr.VISIT_PURPOSE_CD,
+                    tvr.NO_MEMBER_NM,
+                    tvr.NO_MEMBER_MOBILE,
+                    nvl(tvr.CANCEL_YN, 'N') as CANCEL_YN,
+                    tvrd.GOODS_NO,
+                    tvrd.ORD_QTT,
+                    tvrd.SALE_AMT,
+                    tvrd.DC_AMT
+                FROM TO_VISIT_RSV tvr
+                LEFT OUTER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO AND tvrd.RSV_DTL_SEQ = 1
+                WHERE tvrd.ORD_NO IS NULL
+                  AND tvr.RSV_DATE IS NOT NULL
+                  and regexp_instr(tvr.RSV_TIME,'[^0-9]') = 0
+                  and length(tvr.RSV_TIME) = 4
+                <![CDATA[
+                  and tvr.RSV_TIME < '2400'
+                ]]>
+                <!-- 예약일자 시작일 조건 -->
+                <if test="rsvDayS != null and rsvDayS != ''">
+                <![CDATA[
+                  AND tvr.RSV_DATE >= TO_DATE(#{rsvDayS}, 'YYYY-MM-DD')
+                ]]>
+                </if>
+                <!-- 예약일자 종료일 조건 -->
+                <if test="rsvDayE != null and rsvDayE != ''">
+                <![CDATA[
+                  AND tvr.RSV_DATE < TO_DATE(#{rsvDayE}, 'YYYY-MM-DD') + 1
+                ]]>
+                </if>
+                ORDER BY tvr.RSV_DATE , tvr.RSV_TIME
+            ) A
+        LEFT OUTER JOIN TG_GOODS tg ON A.GOODS_NO = tg.GOODS_NO
+        LEFT OUTER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+        LEFT OUTER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+        LEFT OUTER JOIN TC_MEMBER tm ON A.MEMBER_NO = tm.MEMBER_NO
+        ) AA
+        <include refid="selectReservationWhere"/>
+
+    </select>
+
+    <select id="selectReservationDtl" resultType="reservationVO">
+        /* order.reservation.selectReservationDtl */
+        SELECT A.RSV_NO,
+               A.STORE_NO,
+               (SELECT STR_NAME FROM AM010TBL@DAVISION WHERE STR_CODE = A.STORE_NO) AS STORE_NM,
+               A.MEMBER_NO,
+               TC.MEMBER_NM,
+               TC.LOGIN_ID,
+               TC.MOBILE,
+               TC.EMAIL,
+               A.RSV_DATE,
+               A.RSV_TIME,
+               A.REQ_MATR,
+               A.VISIT_PURPOSE_CD,
+               A.VISIT_PURPOSE_NM,
+               (CASE WHEN A.VISIT_PURPOSE_CD = '04' THEN 'G' ELSE 'V' END) AS VISIT_STATUS_CD,
+               (case when A.VISIT_PURPOSE_CD = '04' then '상품예약' else '방문예약' end) as VISIT_STATUS_CD_NM,
+               A.CANCEL_YN,
+               A.CHECKUP_YN,
+               A.REGR_NO,
+               A.REG_DTTM,
+               A.UPDR_NO,
+               A.UPD_DTTM,
+               TO_CHAR(A.RSV_DATE, 'YYYY-MM-DD') || ' (' || TO_CHAR(A.RSV_DATE, 'dy', 'NLS_DATE_LANGUAGE=korean') ||
+               ') ' || SUBSTR(A.RSV_TIME, 0, 2) || ':' || SUBSTR(A.RSV_TIME, 3, 2) as STR_VISIT_DATE,
+               A.NO_MEMBER_MOBILE,
+               A.NO_MEMBER_NM,
+               A.MANAGER_MEMO,
+               fn_getCodeNm('GOODS_TYPE_CD', (select GOODS_TYPE_CD from TG_GOODS where GOODS_NO = (select GOODS_NO from TO_VISIT_RSV_DTL where RSV_NO = #{rsvNo} and RSV_DTL_SEQ = 1))) as GOODS_TYPE_CD_NM,
+               A.BUY_YN,
+               (case when to_date(to_char(A.RSV_DATE, 'YYYY-MM-DD')||' '||substr(A.RSV_TIME,0,2)||':'||substr(A.RSV_TIME,3,2),'YYYY-MM-DD HH24:MI') > sysdate then 'Y' else 'N' end) as CANCEL_POSSIBLE
+        FROM TO_VISIT_RSV A
+        LEFT OUTER JOIN TC_MEMBER TC
+            ON A.MEMBER_NO = TC.MEMBER_NO
+        WHERE A.RSV_NO = #{rsvNo}
+    </select>
+
+
+    <select id="selectReservationDtlList" resultType="reservationVO">
+        /* order.reservation.selectReservationDtlList */
+        SELECT A.RSV_NO,
+               A.RSV_DTL_SEQ,
+               A.RSV_GB,
+               A.ORD_NO,
+               TO_CHAR((SELECT ORD_ACCEPT_DTTM FROM TO_ORD B WHERE B.ORD_NO = A.ORD_NO),
+                       'YYYY-MM-DD HH24:MI')         ORD_ACCEPT_DTTM,
+               A.ORD_DTL_SEQ,
+               A.GOODS_NO,
+               (SELECT MAX(fn_categoryName(TGC.CTG_NO, #{siteNo}))
+                FROM TG_GOODS_CTG TGC
+                WHERE TGC.GOODS_NO  = A.GOODS_NO
+                  AND TGC.SITE_NO  =  #{siteNo}
+                  AND TGC.DEL_YN = 'N'
+               ) AS CTG_NAME,
+               A.GOODS_NM,
+               fn_getGoodsImgPath(A.GOODS_NO, '02') AS IMG_PATH,
+               A.ITEM_NO,
+               A.ITEM_NM,
+               A.ORD_QTT,
+               A.SALE_AMT,
+               A.DC_AMT,
+               ((A.SALE_AMT - A.DC_AMT) * A.ORD_QTT) as payAmt,
+               A.REGR_NO,
+               A.REG_DTTM,
+               A.UPDR_NO,
+               A.UPD_DTTM
+        FROM TO_VISIT_RSV_DTL A
+        WHERE RSV_NO = #{rsvNo}
+    </select>
+
+    <update id="updateRsvInfo">
+        /* order.reservation.updateRsvInfo */
+        UPDATE TO_VISIT_RSV
+        SET
+            <if test="prcType eq 'C'.toString() or prcType eq 'D'.toString()">
+                CANCEL_YN = 'Y',
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+            </if>
+            <if test="prcType eq 'U'.toString()">
+                MANAGER_MEMO = #{managerMemo}
+            </if>
+        WHERE RSV_NO = #{rsvNo}
+    </update>
+
+    <!-- 주문상세 이력 정보 조회 -->
+    <select id="selectRsvHistList" resultType="reservationVO">
+        /* biz.app.order.manage.selectOrdDtlHistList - 주문상세 이력 정보 조회*/
+        SELECT A.*
+        FROM
+            (
+                SELECT '예약 변경 이력' AS ORD_STATUS_CD
+                     , A.CANCEL_YN
+                     , A.CANCEL_YN_O
+                     , A.VISIT_YN
+                     , A.VISIT_YN_O
+                     , A.STORE_NM
+                     , A.STORE_NM_O
+                     , A.MANAGER_MEMO
+                     , A.MANAGER_MEMO_O
+                     , A.REG_DTTM
+                     , TO_CHAR(A.RSV_DATE, 'YYYY-MM-DD')
+                     , TO_CHAR(A.RSV_DATE_O, 'YYYY-MM-DD')
+                     , A.RSV_TIME
+                     , A.RSV_TIME_O
+                FROM TO_VISIT_RSV_HIST A, TO_VISIT_RSV B
+                WHERE A.RSV_NO = B.RSV_NO AND B.RSV_NO = #{rsvNo}
+            ) A
+        ORDER BY REG_DTTM
+    </select>
+
+    <select id="selectReservationAddOptionList" resultType="reservationVO">
+        /* order.reservation.selectReservationAddOptionList */
+        SELECT dtl.ADD_OPT_NO,
+               dtl.ADD_OPT_NM,
+               dtl.ADD_OPT_DTL_SEQ,
+               dtl.ADD_OPT_BUY_QTT,
+               optDtl.ADD_OPT_AMT,
+               optDtl.ADD_OPT_AMT_CHG_CD
+        FROM TO_VISIT_RSV_DTL dtl
+                 LEFT OUTER JOIN TG_ADD_OPT_DTL optDtl
+                                 ON (dtl.ADD_OPT_DTL_SEQ = optDtl.ADD_OPT_DTL_SEQ AND optDtl.GOODS_NO = dtl.GOODS_NO)
+        WHERE RSV_NO = #{rsvNo}
+          AND ADD_OPT_YN = 'Y'
+    </select>
+
+    <select id="selectExistOrd" resultType="Integer">
+        /* order.reservation.selectExistOrd */
+        SELECT COUNT(*)
+        FROM TO_VISIT_RSV_DTL
+        WHERE RSV_NO = #{rsvNo}
+          AND ORD_NO IS NOT NULL
+    </select>
+
+    <select id="selectRsvNo" resultType="Integer">
+        select seq_rsv_no_seq.nextval
+        from dual
+    </select>
+
+
+    <select id="selectStampNo" resultType="String">
+        select fnc_itm_chk_han(fnc_itm_chk_han(#{rsvNo}, 0), 1) || FNC_ITM_CHK_HAN(#{rsvNo}, 0)
+        from dual
+    </select>
+
+    <select id="resetRsvNo">
+        alter sequence seq_rsv_no_seq increment by 100
+    </select>
+
+    <update id="updateRsvCancel">
+        /* order.reservation.updateRsvCancel */
+        UPDATE TO_VISIT_RSV
+        SET CANCEL_YN = 'Y'
+        WHERE RSV_NO = #{rsvNo}
+    </update>
+
+    <insert id="insertReservationRsvMst">
+        /* order.reservation.insertReservationRsvMst */
+        INSERT INTO TO_VISIT_RSV
+        (RSV_NO,
+         STORE_NO,
+         STORE_NM,
+         MEMBER_NO,
+         NO_MEMBER_NM,
+         NO_MEMBER_MOBILE,
+         RSV_DATE,
+         RSV_TIME,
+         REQ_MATR,
+         VISIT_PURPOSE_CD,
+         VISIT_PURPOSE_NM,
+         CANCEL_YN,
+         INFLOW_PATH_CD,
+         CHECKUP_YN,
+         EVENT_GUBUN,
+         REGR_NO,
+         REG_DTTM,
+         UPDR_NO,
+         UPD_DTTM)
+        VALUES (#{rsvNo},
+                #{storeNo},
+                #{storeNm},
+                #{memberNo},
+                #{nomemberNm},
+                #{nomobile},
+                TO_DATE(#{rsvDate}, 'YYYY-MM-DD'),
+                #{rsvTime},
+                #{reqMatr},
+                #{visitPurposeCd},
+                #{visitPurposeNm},
+                'N',
+                #{refererType},
+                #{checkupYn},
+                #{eventGubun},
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate)
+    </insert>
+
+
+    <insert id="insertReservationRsvDtl">
+        /* order.reservation.insertReservationRsvDtl */
+        INSERT INTO TO_VISIT_RSV_DTL
+        (RSV_NO,
+         RSV_DTL_SEQ,
+         RSV_GB,
+         ORD_NO,
+         ORD_DTL_SEQ,
+         GOODS_NO,
+         GOODS_NM,
+         ITEM_NO,
+         ITEM_NM,
+         ORD_QTT,
+         SALE_AMT,
+         DC_AMT,
+         ADD_OPT_YN,
+         ADD_OPT_NO,
+         ADD_OPT_NM,
+         ADD_OPT_DTL_SEQ,
+         ADD_OPT_BUY_QTT,
+         REGR_NO,
+         REG_DTTM,
+         UPDR_NO,
+         UPD_DTTM)
+        VALUES (#{rsvNo},
+                #{rsvDtlSeq},
+                #{rsvGb},
+                #{ordNo},
+                #{ordDtlSeq},
+                #{goodsNo},
+                #{goodsNm},
+                #{itemNo},
+                #{itemNm},
+                #{ordQtt},
+                #{saleAmt},
+                #{dcAmt},
+                #{addOptYn},
+                #{addOptNo},
+                #{addOptNm},
+                #{addOptDtlSeq},
+                #{addOptBuyQtt},
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate)
+    </insert>
+
+    <select id="selectSidoCode" resultType="String">
+        /* order.reservation.selectSidoCode */
+        SELECT CD
+        FROM TA_CMN_CD_DTL
+        WHERE GRP_CD = 'STORE_AREA_CD'
+          AND CD_NM = #{sidoName}
+    </select>
+
+
+    <select id="existsRsvTime" resultType="int">
+        SELECT COUNT(*) cnt
+        FROM TO_VISIT_RSV
+        WHERE MEMBER_NO = #{memberNo}
+          AND RSV_DATE = TO_DATE(#{strRsvDate}, 'YYYY-MM-DD')
+          AND RSV_TIME = #{rsvTime}
+          AND CANCEL_YN = 'N'
+    </select>
+
+    <!--	<select id="existsRsvTime" resultType="int">-->
+    <!--		SELECT count(*) cnt FROM TO_VISIT_RSV R-->
+    <!--		LEFT JOIN TO_VISIT_RSV_DTL D on R.RSV_NO = D.RSV_NO-->
+    <!--		WHERE MEMBER_NO = #{memberNo}-->
+    <!--		  AND R.RSV_DATE = TO_DATE(#{strRsvDate}, 'YYYY-MM-DD')-->
+    <!--		  AND R.RSV_TIME = #{rsvTime}-->
+    <!--		  AND R.CANCEL_YN = 'N'-->
+    <!--		  AND (R.VISIT_PURPOSE_CD IS NULL OR D.GOODS_NO = #{goodsNo});-->
+    <!--	</select>-->
+
+
+    <select id="selectExistReservationList" resultType="reservationVO">
+        /* reservation.selectExistReservationList */
+        SELECT RSV_NO,
+               STORE_NO,
+               STORE_NM,
+               MEMBER_NO,
+               TO_CHAR(RSV_DATE, 'YYYY/MM/DD')                  STR_RSV_DATE,
+               TO_CHAR(TO_DATE(RSV_TIME, 'HH24:MI'), 'HH24:MI') RSV_TIME,
+               REQ_MATR,
+               VISIT_PURPOSE_CD,
+               VISIT_PURPOSE_NM,
+               CANCEL_YN,
+               CHECKUP_YN,
+               REGR_NO,
+               REG_DTTM,
+               UPDR_NO,
+               UPD_DTTM
+        FROM TO_VISIT_RSV
+        WHERE MEMBER_NO = #{memberNo}
+          AND CANCEL_YN = 'N'
+          AND VISIT_YN = 'N'
+         <![CDATA[
+          AND SYSDATE < TO_DATE(TO_CHAR(RSV_DATE, 'YYYY/MM/DD') || ' ' ||
+                                (CASE WHEN RSV_TIME = '2400' THEN '2359' ELSE RSV_TIME END), 'YYYY/MM/DD HH24MI')
+         ]]>
+       ORDER BY RSV_DATE DESC, RSV_TIME DESC
+    </select>
+
+
+    <update id="addReservationBook">
+        /* reservation.addReservationBook */
+        UPDATE TO_VISIT_RSV
+        SET
+        <if test="reservationPurposeNm != null and reservationPurposeNm != ''">
+            VISIT_PURPOSE_NM = VISIT_PURPOSE_NM || ' ' || #{reservationPurposeNm},
+        </if>
+        <if test="rsvDate != null and rsvDate != ''">
+            RSV_DATE = TO_DATE(#{rsvDate}, 'YYYY-MM-DD'),
+        </if>
+        <if test="rsvTime != null and rsvTime != ''">
+            RSV_TIME = #{rsvTime},
+        </if>
+        UPDR_NO = #{memberNo},
+        UPD_DTTM = sysdate
+        WHERE RSV_NO = #{rsvNo}
+    </update>
+
+    <!-- 제휴업체 조회 -->
+    <select id="selectAffiliateList" resultType="reservationVO">
+        /* reservation.selectAffiliateList */
+        SELECT seq_no          as seqNo
+             , ven_name        as venName
+             , cont
+             , dc_rate         as dcRate
+             , logo_image      as logoImage
+             , logo_image_name as logoImageName
+             , url             as venUrl
+        FROM AM018TBL
+        WHERE str_code = #{storeCode}
+          AND use_ind = '0'
+        ORDER BY seq_no
+    </select>
+
+    <!-- 푸쉬발송 후 7일이내 예약구매건수 조회 -->
+    <select id="selectPushPeriodReservationCnt" resultType="Integer">
+        /* reservation.selectPushPeriodReservationCnt */
+        SELECT COUNT(*)
+        FROM TO_VISIT_RSV
+        WHERE
+			<![CDATA[
+			REG_DTTM >= TO_DATE(#{sendDttm}, 'YYYY-MM-DD HH24:MI')
+          AND REG_DTTM < TO_DATE(#{sendDttm}, 'YYYY-MM-DD HH24:MI') + 7
+			]]>
+			AND VISIT_PURPOSE_CD = '04'
+    </select>
+
+    <!-- 방문예약 상세 조회 -->
+    <select id="selectNonMemberRsv" resultType="reservationVO">
+        /* reservation.selectNonMemberRsv - 방문예약 상세 상태 조회   */
+        SELECT NO_MEMBER_NM,
+               NO_MEMBER_MOBILE
+        FROM TO_VISIT_RSV
+        WHERE RSV_NO = #{rsvNo}
+          AND NO_MEMBER_NM = #{rsvName}
+          AND REPLACE(NO_MEMBER_MOBILE, '-', '') = #{rsvMobile}
+    </select>
+
+
+    <!-- 당첨자 체크 -->
+    <select id="winnerChk" parameterType="map" resultType="Integer">
+        SELECT COUNT(1) cnt
+        FROM VEGEMIL_WINNER
+        WHERE MEMBER_NM = #{memberNm}
+          AND MOBILE = #{mobile}
+    </select>
+
+</mapper>

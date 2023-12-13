@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="visit">
+
+	<parameterMap type="com.davichmall.ifapi.visit.dto.KioskLoginCheckReqDTO" id="kioskLoginDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.visit.dto.VisitInfoRegReqDTO" id="visitRegDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.visit.dto.VisitStatusMdfyReqDTO" id="visitStatusMdfyDto"></parameterMap>
+
+	<!-- 다비젼 로그인 정보 개수 -->	
+	<select id="countErpLoginInfo" parameterMap="kioskLoginDto" resultType="int">
+		select count(*) as cnt
+		from am030tbl
+		where use_flg = '1'
+		  and str_code = #{strCode}
+		  and login_id = #{loginId}
+		  and pswrd = #{loginPw}
+	</select>
+	
+	<!-- 매장 방문 정보 등록(to 다비젼) -->
+	<insert id="insertStoreVisitInfo" parameterMap="visitRegDto">
+		insert into mall_str_booking_list (
+			dates
+			, str_code
+			, times
+			, nm_cust
+			, handphone
+			, age
+			, flag
+			, purpose
+			, book_yn
+			, book_time
+		) values (
+			to_date(#{dates}, 'YYYYMMDD')
+			, #{strCode}
+			, #{visitTime}
+			, #{custName}
+			, #{hp}
+			, #{age}
+			, '1'
+			, #{purpose, jdbcType=VARCHAR}
+			, #{bookYn, jdbcType=VARCHAR}
+			, #{bookTime}
+		)
+	</insert>
+	
+	<!-- 매장방문 고객 상태 수정(to 다비젼) -->
+	<update id="updateErpStoreVisitStatus" parameterMap="visitStatusMdfyDto">
+		update mall_str_booking_list
+		set flag = #{flag}
+		where dates = to_date(#{dates}, 'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and times = #{visitTime}
+	</update>
+	
+	<!-- 매장방문 고객 상태 수정(to 키오스크) -->
+	<update id="updateKioskStoreVisitStatus" parameterMap="visitStatusMdfyDto">
+		update tc_str_booking_list
+		set flag = #{flag}
+		where to_char(dates,'YYYYMMDD') =  to_char(to_date(#{dates}, 'YYYYMMDD'),'YYYYMMDD')
+		  and str_code = #{strCode}
+		  and times = #{visitTime}
+	</update>
+	
+</mapper>

@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	주문 배송
+-->
+<mapper namespace="order.salesproof">
+    <!-- 목록 페이징 조회 검색 조건-->
+    <sql id="selectSalesProofListWhere">
+        <where>
+            1=1
+            <if test="ordDayS != null and ordDayS != ''">
+                <![CDATA[
+                AND ORD_NO >= SUBSTR(#{ordDayS},3,2)||SUBSTR(#{ordDayS},6,2)||SUBSTR(#{ordDayS},9,2)||'0000000000'
+                ]]>
+            </if>
+            <if test="ordDayE != null and ordDayE != ''">
+                <![CDATA[
+                AND ORD_NO < SUBSTR(#{ordDayE},3,2)||SUBSTR(#{ordDayE},6,2)||SUBSTR(#{ordDayE},9,2)||'9999999999'
+                ]]>
+            </if>
+            <if test="proofType != null and proofType != ''">
+                AND PROOF_TYPE IN <foreach collection="proofType" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="refundYn != null and refundYn != ''">
+                AND REFUND_YN IN <foreach collection="refundYn" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+            <if test="applicantGbCd != null and applicantGbCd != ''">
+                AND APPLICANT_GB_CD IN <foreach collection="applicantGbCd" item="item" open="(" close=")" separator=",">#{item}</foreach>
+            </if>
+
+            <if test="searchCd != null and searchCd != '' and searchWord != null and searchWord !=''">
+                <choose>
+                    <when test="searchCd eq 'all'">
+                        AND (
+                            ORDR_NM = #{searchOrdrNm} OR
+                            ORD_NO LIKE '%'||#{searchWord}||'%'
+                        )
+                    </when>
+                    <when test="searchCd eq '01'">
+                        AND ORDR_NM = #{searchOrdrNm}
+                    </when>
+                    <when test="searchCd eq '02'">
+                        AND ORD_NO LIKE '%'||#{searchWord}||'%'
+                    </when>
+                </choose>
+            </if>
+        </where>
+    </sql>
+
+    <!-- 주문목록 페이징 조회 -->
+    <select id="selectSalesProofListPaging" resultType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+        /* biz.app.order.salesproof.selectSalesProofListPaging - 매출증빙 목록 페이징 조회*/
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+		            SELECT
+		                A.*
+		            FROM
+		            (
+			            SELECT '01' AS PROOF_TYPE, '매출' AS PROOF_NM, A.ORD_NO, ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, A.ORDR_NM, A.ORDR_EMAIL,
+		                    ROUND(B.PAYMENT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+		                    B.REG_DTTM, '승인' PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+		                    TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+		                    ROUND(B.PAYMENT_AMT * 0.1,0) AS VAT_AMT, ROUND(B.PAYMENT_AMT - (B.PAYMENT_AMT * 0.1),0) AS MAIN_AMT,
+		                    '' AS  PROOF_NO,
+		                    '01' AS APPLICANT_GB_CD, PAYMENT_PG_CD, TX_NO AS LINK_TX_NO,
+		                    '연동' link_yn,
+		                    fn_getCodeNm('PAYMENT_WAY_CD', PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+		                    A.ORDR_NM AS APPLICANT_NM,
+		                    A.UPD_DTTM
+						FROM
+						    TO_PAYMENT B, TO_ORD A
+		                    LEFT JOIN
+		                    (
+		                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+		                        FROM TO_ORD_DTL C
+		                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+		                        GROUP BY ORD_NO
+		                    ) L1
+		                    ON A.ORD_NO = L1.ORD_NO
+						WHERE
+						    A.ORD_NO = B.ORD_NO
+						    AND B.PAYMENT_STATUS_CD = '02'
+						    AND (PAYMENT_WAY_CD = '23' OR PAYMENT_WAY_CD = '24' OR PAYMENT_WAY_CD = '31' OR PAYMENT_WAY_CD = '41') /* 카드 결제 매출전표, PAYPAL */
+						UNION ALL
+		                SELECT '02' AS PROOF_TYPE, '현금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, APPLICANT_NM  AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+		                    ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) >0 THEN 'Y' ELSE 'N' END REFUND_YN,
+		                    A.REG_DTTM,  fn_getCodeNm('CASH_RCT_STATUS_CD', B.CASH_RCT_STATUS_CD) PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+		                    TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+		                    ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+		                    TO_CHAR(CASH_RCT_NO) AS PROOF_NO,
+		                    APPLICANT_GB_CD, B.PAYMENT_PG_CD, LINK_TX_NO,
+		                    CASE WHEN APPLICANT_GB_CD = '01' THEN '연동' ELSE '미연동' END link_yn,
+		                    fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+		                    APPLICANT_NM,
+		                    A.UPD_DTTM
+		                FROM
+		                    TO_PAYMENT C, TO_CASH_RCT B, TO_ORD A /* 현금 영수증 */
+		                    LEFT JOIN
+		                    (
+		                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+		                        FROM TO_ORD_DTL C
+		                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+		                        GROUP BY ORD_NO
+		                    ) L1
+		                    ON A.ORD_NO = L1.ORD_NO
+		                WHERE
+		                    A.ORD_NO = B.ORD_NO
+		                    AND A.ORD_NO = C.ORD_NO
+		                UNION ALL
+		                SELECT '03' AS PROOF_TYPE, '세금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, COMPANY_NM AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+		                    ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+		                    A.REG_DTTM,  '접수' PROOF_STATUS_NM,fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+		                    '-' AS REG_DAY,
+		                    ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+		                    TO_CHAR(TAX_BILL_NO) AS PROOF_NO,
+		                    APPLICANT_GB_CD, '' PAYMENT_PG_CD, '' AS LINK_TX_NO,
+		                    '미연동' link_yn,
+		                    fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+		                    MANAGER_NM AS APPLICANT_NM,
+		                    A.UPD_DTTM
+		                FROM
+		                    TO_PAYMENT C, TO_TAX_BILL B, TO_ORD A /* 세금계산서 */
+		                    LEFT JOIN
+		                    (
+		                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+		                        FROM TO_ORD_DTL C
+		                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+		                        GROUP BY ORD_NO
+		                    ) L1
+		                    ON A.ORD_NO = L1.ORD_NO
+		                WHERE
+		                    A.ORD_NO = B.ORD_NO
+		                    AND A.ORD_NO = C.ORD_NO
+		            ) A
+		            <include refid="selectSalesProofListWhere" />
+		            <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <!-- 주문목록 페이징 조회를 위한 카운트 -->
+    <select id="selectSalesProofListPagingCount" resultType="Integer">
+        /* biz.app.order.salesproof.selectSalesProofListPagingCount - 매출증빙 목록 페이징 조회 카운트*/
+        SELECT
+        COUNT(1)
+        FROM
+        (
+        SELECT A.*
+        FROM
+        (
+        SELECT '01' AS PROOF_TYPE, '매출' AS PROOF_NM, A.ORD_NO, ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, A.ORDR_NM, A.ORDR_EMAIL,
+        ROUND(B.PAYMENT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+        B.REG_DTTM, '승인' PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+        TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+        ROUND(B.PAYMENT_AMT * 0.1,0) AS VAT_AMT, ROUND(B.PAYMENT_AMT - (B.PAYMENT_AMT * 0.1),0) AS MAIN_AMT,
+        '' AS  PROOF_NO,
+        '01' AS APPLICANT_GB_CD, PAYMENT_PG_CD, TX_NO AS LINK_TX_NO,
+        '연동' link_yn,
+        fn_getCodeNm('PAYMENT_WAY_CD', PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+        A.ORDR_NM AS APPLICANT_NM,
+        A.UPD_DTTM
+        FROM
+        TO_PAYMENT B, TO_ORD A
+        LEFT JOIN
+        (
+        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+        FROM TO_ORD_DTL C
+        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+        GROUP BY ORD_NO
+        ) L1
+        ON A.ORD_NO = L1.ORD_NO
+        WHERE
+        A.ORD_NO = B.ORD_NO
+        AND B.PAYMENT_STATUS_CD = '02'
+        AND (PAYMENT_WAY_CD = '23' OR PAYMENT_WAY_CD = '24' OR PAYMENT_WAY_CD = '31' OR PAYMENT_WAY_CD = '41') /* 카드 결제 매출전표, PAYPAL */
+        UNION ALL
+        SELECT '02' AS PROOF_TYPE, '현금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, APPLICANT_NM  AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+        ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) >0 THEN 'Y' ELSE 'N' END REFUND_YN,
+        A.REG_DTTM,  fn_getCodeNm('CASH_RCT_STATUS_CD', B.CASH_RCT_STATUS_CD) PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+        TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+        ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+        TO_CHAR(CASH_RCT_NO) AS PROOF_NO,
+        APPLICANT_GB_CD, B.PAYMENT_PG_CD, LINK_TX_NO,
+        CASE WHEN APPLICANT_GB_CD = '01' THEN '연동' ELSE '미연동' END link_yn,
+        fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+        APPLICANT_NM,
+        A.UPD_DTTM
+        FROM
+        TO_PAYMENT C, TO_CASH_RCT B, TO_ORD A /* 현금 영수증 */
+        LEFT JOIN
+        (
+        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+        FROM TO_ORD_DTL C
+        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+        GROUP BY ORD_NO
+        ) L1
+        ON A.ORD_NO = L1.ORD_NO
+        WHERE
+        A.ORD_NO = B.ORD_NO
+        AND A.ORD_NO = C.ORD_NO
+        UNION ALL
+        SELECT '03' AS PROOF_TYPE, '세금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, COMPANY_NM AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+        ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+        A.REG_DTTM,  '접수' PROOF_STATUS_NM,fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+        '-' AS REG_DAY,
+        ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+        TO_CHAR(TAX_BILL_NO) AS PROOF_NO,
+        APPLICANT_GB_CD, '' PAYMENT_PG_CD, '' AS LINK_TX_NO,
+        '미연동' link_yn,
+        fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+        MANAGER_NM AS APPLICANT_NM,
+        A.UPD_DTTM
+        FROM
+        TO_PAYMENT C, TO_TAX_BILL B, TO_ORD A /* 세금계산서 */
+        LEFT JOIN
+        (
+        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+        FROM TO_ORD_DTL C
+        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+        GROUP BY ORD_NO
+        ) L1
+        ON A.ORD_NO = L1.ORD_NO
+        WHERE
+        A.ORD_NO = B.ORD_NO
+        AND A.ORD_NO = C.ORD_NO
+        ) A
+        <include refid="selectSalesProofListWhere"/>
+        ) A
+    </select>
+
+    <select id="selectSalesProofListPagingTotalCount" resultType="Integer">
+        /* biz.app.order.salesproof.selectOrdListPagingTotalCount - 매출증빙 목록 페이징 토탈 카운트 조회*/
+        SELECT
+        COUNT(1)
+        FROM
+        (
+            SELECT A.*
+            FROM
+                (
+                    SELECT '01' AS PROOF_TYPE, '매출' AS PROOF_NM, A.ORD_NO, ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, A.ORDR_NM, A.ORDR_EMAIL,
+                           ROUND(B.PAYMENT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+                           B.REG_DTTM, '승인' PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+                           TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+                           ROUND(B.PAYMENT_AMT * 0.1,0) AS VAT_AMT, ROUND(B.PAYMENT_AMT - (B.PAYMENT_AMT * 0.1),0) AS MAIN_AMT,
+                           '' AS  PROOF_NO,
+                           '01' AS APPLICANT_GB_CD, PAYMENT_PG_CD, TX_NO AS LINK_TX_NO,
+                           '연동' link_yn,
+                           fn_getCodeNm('PAYMENT_WAY_CD', PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+                           A.ORDR_NM AS APPLICANT_NM,
+                           A.UPD_DTTM
+                    FROM
+                        TO_PAYMENT B, TO_ORD A
+                                          LEFT JOIN
+                    (
+                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+                        FROM TO_ORD_DTL C
+                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+                        GROUP BY ORD_NO
+                    ) L1
+                    ON A.ORD_NO = L1.ORD_NO
+                    WHERE
+                        A.ORD_NO = B.ORD_NO
+                      AND B.PAYMENT_STATUS_CD = '02'
+                      AND (PAYMENT_WAY_CD = '23' OR PAYMENT_WAY_CD = '24' OR PAYMENT_WAY_CD = '31' OR PAYMENT_WAY_CD = '41') /* 카드 결제 매출전표, PAYPAL */
+                    UNION ALL
+                    SELECT '02' AS PROOF_TYPE, '현금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, APPLICANT_NM  AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+                           ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) >0 THEN 'Y' ELSE 'N' END REFUND_YN,
+                           A.REG_DTTM,  fn_getCodeNm('CASH_RCT_STATUS_CD', B.CASH_RCT_STATUS_CD) PROOF_STATUS_NM, fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+                           TO_CHAR(B.REG_DTTM, 'YYYY-MM-DD') AS REG_DAY,
+                           ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+                           TO_CHAR(CASH_RCT_NO) AS PROOF_NO,
+                           APPLICANT_GB_CD, B.PAYMENT_PG_CD, LINK_TX_NO,
+                           CASE WHEN APPLICANT_GB_CD = '01' THEN '연동' ELSE '미연동' END link_yn,
+                           fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+                           APPLICANT_NM,
+                           A.UPD_DTTM
+                    FROM
+                        TO_PAYMENT C, TO_CASH_RCT B, TO_ORD A /* 현금 영수증 */
+                                                         LEFT JOIN
+                    (
+                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+                        FROM TO_ORD_DTL C
+                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+                        GROUP BY ORD_NO
+                    ) L1
+                    ON A.ORD_NO = L1.ORD_NO
+                    WHERE
+                        A.ORD_NO = B.ORD_NO
+                      AND A.ORD_NO = C.ORD_NO
+                    UNION ALL
+                    SELECT '03' AS PROOF_TYPE, '세금' AS PROOF_NM, A.ORD_NO, A.ORD_ACCEPT_DTTM, TO_DATE(A.ORD_ACCEPT_DTTM, 'YYYY-MM-DD') AS ORD_DAY, COMPANY_NM AS ORDR_NM, EMAIL AS ORDR_EMAIL,
+                           ROUND(TOT_AMT,0) AS PAYMENT_AMT , NVL(L1.CLAIM_NO, '') CLAIM_NO,  CASE WHEN NVL(L1.CLAIM_NO, 0) > 0 THEN 'Y' ELSE 'N' END REFUND_YN,
+                           A.REG_DTTM,  '접수' PROOF_STATUS_NM,fn_getCodeNm('ORD_STATUS_CD', A.ORD_STATUS_CD) ORD_STATUS_NM,
+                           '-' AS REG_DAY,
+                           ROUND(VAT_AMT,0) AS VAT_AMT, ROUND(SUPPLY_AMT,0) AS MAIN_AMT,
+                           TO_CHAR(TAX_BILL_NO) AS PROOF_NO,
+                           APPLICANT_GB_CD, '' PAYMENT_PG_CD, '' AS LINK_TX_NO,
+                           '미연동' link_yn,
+                           fn_getCodeNm('PAYMENT_WAY_CD', C.PAYMENT_WAY_CD) PAYMENT_WAY_NM,
+                           MANAGER_NM AS APPLICANT_NM,
+                           A.UPD_DTTM
+                    FROM
+                        TO_PAYMENT C, TO_TAX_BILL B, TO_ORD A /* 세금계산서 */
+                                                         LEFT JOIN
+                    (
+                        SELECT ORD_NO, NVL(MAX(CLAIM_NO),'') CLAIM_NO
+                        FROM TO_ORD_DTL C
+                        WHERE ORD_DTL_STATUS_CD IN ('21', '74')
+                        GROUP BY ORD_NO
+                    ) L1
+                    ON A.ORD_NO = L1.ORD_NO
+                    WHERE
+                        A.ORD_NO = B.ORD_NO
+                      AND A.ORD_NO = C.ORD_NO
+                ) A
+         ) A
+    </select>
+        <!-- 메모 내용 조회 -->
+    <select id="selectSalesProofMemo" resultType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+        /* biz.app.order.salesproof.selectSalesProofMemo - 메모 내용 조회*/
+        SELECT NVL(ORD_NO,'-') ORD_NO,
+            NVL(MEMO, '') MEMO
+        <if test="proofType =='02'">
+        FROM TO_CASH_RCT
+        WHERE CASH_RCT_NO = #{proofNo}
+        </if>
+        <if test="proofType =='03'">
+        FROM TO_TAX_BILL
+        WHERE TAX_BILL_NO = #{proofNo}
+        </if>
+    </select>
+
+        <!-- 메모 내용 변경 -->
+    <update id="updateSalesProofMemo" parameterType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+    /* biz.app.order.salesproof.updateSalesProofMemo - 메모 내용 변경*/
+        UPDATE
+        <if test="proofType =='02'">
+            TO_CASH_RCT
+        </if>
+        <if test="proofType =='03'">
+            TO_TAX_BILL
+        </if>
+        SET MEMO = #{memo},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        <if test="proofType =='02'">
+        WHERE CASH_RCT_NO = #{proofNo}
+        </if>
+        <if test="proofType =='03'">
+        WHERE TAX_BILL_NO = #{proofNo}
+        </if>
+    </update>
+
+    <!-- 현금 영수증 정보 등록-->
+    <insert id="insertCashRct"  parameterType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofPO">
+        /* order.salesproof.insertCashRct - 현금 영수증 정보 등록*/
+		INSERT INTO TO_CASH_RCT(
+			CASH_RCT_NO
+			,ORD_NO              /* 주문번호 */
+			,CASH_RCT_STATUS_CD  /* (1:접수,2:승인,3:보류) */
+			,APPLICANT_GB_CD     /* 신청자구분코드(01:구매자,02:관리자) */
+			,APPLICANT_NM        /* 신청자명 */
+			,MEMBER_NO           /* 회원번호 */
+			,USE_GB_CD           /* 사용구분코드(01:소득공제, 02:지출증빙) */
+			,ISSUE_WAY_CD        /* 발급수단코드(1:주민등록번호,2:휴대폰번호,3:사업자번호) */
+			,ISSUE_WAY_NO        /* 발급수단번호 */
+			,SUPPLY_AMT          /* 공급가액 */
+			,VAT_AMT             /* 부가세금액 */
+			,SVCCHRG_AMT         /* 봉사료금액 */
+			,TOT_AMT             /* 총금액 */
+			,ACCEPT_DTTM         /* 접수일시 */
+			,LINK_DTTM           /* 연동일시 */
+			,LINK_TX_NO          /* 연동거래번호 */
+			,LINK_RESULT_CD      /* 연동결과코드(공통코드없음) */
+			,LINK_RESULT_MSG     /* 연동결과메시지 */
+			,EMAIL               /* 이메일 */
+			,TEL_NO              /* 전화번호 */
+			,GOODS_NM            /* 상품명 */
+			,MEMO                /* 메모 */
+			,PAYMENT_PG_CD       /* 결제 PG 코드 */
+			,REGR_NO
+			,REG_DTTM
+		) SELECT
+			fn_getSeq(0, 'CASH_RCT_NO')
+			,#{ordNo}             /* 주문번호 */
+			,#{cashRctStatusCd}  /* (01:접수,02:승인,03:보류) */
+			,#{applicantGbCd}    /* 신청자구분코드(01:구매자,02:관리자) */
+			,#{applicantNm}      /* 신청자명 */
+			, MEMBER_NO          /* 회원번호 */
+			,#{useGbCd}          /* 사용구분코드(01:소득공제, 02:지출증빙) */
+			,#{issueWayCd}       /* 발급수단코드(01:주민등록번호,02:휴대폰번호,03:사업자번호) */
+			,#{issueWayNo}       /* 발급수단번호 */
+			,#{supplyAmt}        /* 공급가액 */
+			,#{vatAmt}           /* 부가세금액 */
+			,#{svcchrgAmt}       /* 봉사료금액 */
+			,#{totAmt}           /* 총금액 */
+			, sysdate              /* 접수일시 */
+			, sysdate           /* 연동일시 */
+			,#{linkTxNo}         /* 연동거래번호 */
+			,#{linkResultCd}     /* 연동결과코드(공통코드없음) */
+			,#{linkResultMsg:CLOB}    /* 연동결과메시지 */
+			,#{email}            /* 이메일 */
+			,#{telNo}            /* 전화번호 */
+			,#{goodsNm}          /* 상품명 */
+			,#{memo}             /* 메모 */
+			,#{paymentPgCd}
+			,#{regrNo}
+			, sysdate
+		FROM TO_ORD
+		WHERE ORD_NO = #{ordNo}
+    </insert>
+
+    <!-- 세금계산서 정보 등록-->
+    <insert id="insertTaxBill"  parameterType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofPO">
+    /*order.salesproof.insertTaxBill - 세금계산서 정보 등록*/
+        INSERT INTO TO_TAX_BILL(
+        	TAX_BILL_NO,
+			ORD_NO,              /* 주문번호 */
+			TAX_BILL_STATUS_CD,  /* 세금 계산서상태(1:접수,2:승인,3:보류) */
+			APPLICANT_GB_CD,     /* 신청자구분코드(01:구매자,02:관리자) */
+			MEMBER_NO,           /* 회원번호 */
+			USE_GB_CD,           /* 사용구분코드(공통코드없음) */
+			ISSUE_WAY_CD,        /* 발급수단코드(과세세금계산서,비과세세금계산서) */
+			ISSUE_WAY_NO,        /* 발급수단번호 */
+			COMPANY_NM,          /* 업체명 */
+			BIZ_NO,              /* 사업자번호 */
+			CEO_NM,              /* 대표자명 */
+			BSNS_CDTS,           /* 업태 */
+			ITEM,                /* 종목 */
+			POST_NO,             /* 우편번호 */
+			ROADNM_ADDR,         /* 도로명주소 */
+			NUM_ADDR,            /* 지번주소 */
+			DTL_ADDR,            /* 상세주소 */
+			SUPPLY_AMT,          /* 공급가액 */
+			VAT_AMT,             /* 부가세금액 */
+			TOT_AMT,             /* 총금액 */
+			ACCEPT_DTTM,         /* 접수일시 */
+			MEMO,
+			MANAGER_NM,
+			EMAIL,
+			TEL_NO,
+			REGR_NO,
+			REG_DTTM
+		) VALUES (
+			fn_getSeq(0, 'TAX_BILL_NO')
+			,#{ordNo}
+			,#{taxBillStatusCd}
+			,#{applicantGbCd}
+			,#{memberNo}
+			,#{useGbCd}
+			,#{issueWayCd}
+			,#{issueWayNo}
+			,#{companyNm}
+			,#{bizNo}
+			,#{ceoNm}
+			,#{bsnsCdts}
+			,#{item}
+			,#{postNo}
+			,#{roadnmAddr}
+			,#{numAddr}
+			,#{dtlAddr}
+			,#{supplyAmt}
+			,#{vatAmt}
+			,#{totAmt}
+			,sysdate
+			,#{memo}
+			,#{managerNm}
+			,#{email}
+			,#{telNo}
+			,#{regrNo}
+			,sysdate
+		)
+    </insert>
+    <!-- 현금 영수증 등록정보 조회 -->
+    <select id="selectCashRct"  resultType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+        /* order.salesproof.selectCashRct - 현금 영수증 등록정보 조회 */
+        SELECT
+            CASH_RCT_NO      /* 현금영수증번호 */
+            ,ORD_NO              /* 주문번호 */
+            ,CASH_RCT_STATUS_CD  /* (1:접수,2:승인,3:보류) */
+            ,APPLICANT_GB_CD     /* 신청자구분코드(01:구매자,02:관리자) */
+            ,APPLICANT_NM        /* 신청자명 */
+            ,MEMBER_NO           /* 회원번호 */
+            ,USE_GB_CD           /* 사용구분코드(01:소득공제, 02:지출증빙) */
+            ,ISSUE_WAY_CD        /* 발급수단코드(1:주민등록번호,2:휴대폰번호,3:사업자번호) */
+            ,ISSUE_WAY_NO        /* 발급수단번호 */
+            ,SUPPLY_AMT          /* 공급가액 */
+            ,VAT_AMT             /* 부가세금액 */
+            ,SVCCHRG_AMT         /* 봉사료금액 */
+            ,TOT_AMT             /* 총금액 */
+            ,ACCEPT_DTTM         /* 접수일시 */
+            ,LINK_DTTM           /* 연동일시 */
+            ,LINK_TX_NO          /* 연동거래번호 */
+            ,LINK_RESULT_CD      /* 연동결과코드(공통코드없음) */
+            ,LINK_RESULT_MSG     /* 연동결과메시지 */
+            ,EMAIL               /* 이메일 */
+            ,TEL_NO              /* 전화번호 */
+            ,GOODS_NM            /* 상품명 */
+            ,MEMO                /* 메모 */
+            ,PAYMENT_PG_CD       /* 결제 PG 코드 */
+            ,REGR_NO
+            ,REG_DTTM
+        FROM TO_CASH_RCT
+        WHERE CASH_RCT_NO = #{proofNo}
+    </select>
+
+        <!-- 세금계산서 정보 조회-->
+    <select id="selectTaxBill"  resultType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+    /*order.salesproof.selectTaxBill - 세금계산서 정보 조회*/
+     SELECT
+            TAX_BILL_NO,      /* 세금계산서번호 */
+            ORD_NO,              /* 주문번호 */
+            TAX_BILL_STATUS_CD,  /* 세금 계산서상태(1:접수,2:승인,3:보류) */
+            APPLICANT_GB_CD,     /* 신청자구분코드(01:구매자,02:관리자) */
+            MEMBER_NO,           /* 회원번호 */
+            USE_GB_CD,           /* 사용구분코드(공통코드없음) */
+            ISSUE_WAY_CD,        /* 발급수단코드(1:주민등록번호,2:휴대폰번호,3:사업자번호) */
+            ISSUE_WAY_NO,        /* 발급수단번호 */
+            COMPANY_NM,          /* 업체명 */
+            BIZ_NO,              /* 사업자번호 */
+            CEO_NM,              /* 대표자명 */
+            BSNS_CDTS,           /* 업태 */
+            ITEM,                /* 종목 */
+            POST_NO,             /* 우편번호 */
+            ROADNM_ADDR,         /* 도로명주소 */
+            NUM_ADDR,            /* 지번주소 */
+            DTL_ADDR,            /* 상세주소 */
+            SUPPLY_AMT,          /* 공급가액 */
+            VAT_AMT,             /* 부가세금액 */
+            TOT_AMT,             /* 총금액 */
+            ACCEPT_DTTM,         /* 접수일시 */
+            LINK_DTTM,           /* 연동일시 */
+            LINK_TX_NO,          /* 연동거래번호 */
+            LINK_RESULT_CD,      /* 연동결과코드(공통코드없음) */
+            LINK_RESULT_MSG,     /* 연동결과메세지 */
+            MEMO,
+            MANAGER_NM,
+            EMAIL,
+            TEL_NO,
+            REGR_NO,
+            REG_DTTM
+    FROM TO_TAX_BILL
+    WHERE TAX_BILL_NO = #{proofNo}
+    </select>
+
+    <!-- 영수증 또는 세금계산서 발급을 위한 주문번호 조회-->
+    <select id="selectSalesProofOrdNo" resultType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+    /* biz.app.order.salesproof.selectSalesProofOrdNo - 영수증 또는 세금계산서 발급을 위한 주문번호 조회 */
+    SELECT
+        NVL2(proof.ORD_NO, 'N', ord.ORD_NO) ORD_NO,
+        ord.ORDR_NM AS APPLICANT_NM, ord.ORDR_EMAIL AS EMAIL, ord.ORDR_TEL as TEL_NO, dtl.GOODS_NM, ord.PAYMENT_AMT AS TOT_AMT, ord.ORDR_MOBILE AS ISSUE_WAY_NO,
+        D.PAYMENT_PG_CD ,proof.LINK_TX_NO, proof.CASH_RCT_NO proofNo, proof.ACCEPT_DTTM
+    FROM
+        (
+			select ORD_NO, GOODS_NM
+			from
+			(
+				SELECT ORD_NO, GOODS_NM, rank() over(partition by ORD_NO order by ORD_DTL_SEQ desc) as rank
+				FROM TO_ORD_DTL
+				WHERE ORD_NO = #{ordNo}
+			)
+			where rank = 1
+        ) dtl, TO_ORD ord
+    LEFT JOIN
+    (
+       <if test="proofType eq '02'">
+       select ORD_NO , LINK_TX_NO, CASH_RCT_NO, ACCEPT_DTTM
+	 	 from
+			(
+            SELECT ORD_NO , LINK_TX_NO, CASH_RCT_NO, ACCEPT_DTTM, rank() over(partition by ORD_NO order by ACCEPT_DTTM desc) as rank
+            FROM TO_CASH_RCT
+       </if>
+       <if test="proofType eq '03'">
+       select ORD_NO , LINK_TX_NO, '' as CASH_RCT_NO, ACCEPT_DTTM
+ 		 from
+			(
+            SELECT ORD_NO , LINK_TX_NO, '' as CASH_RCT_NO, ACCEPT_DTTM, rank() over(partition by ORD_NO order by ACCEPT_DTTM desc) as rank
+              FROM TO_TAX_BILL
+       </if>
+             WHERE ORD_NO = #{ordNo}
+            )
+			where rank = 1
+    ) proof ON proof.ORD_NO = ord.ORD_NO
+    LEFT JOIN (
+        SELECT A.ORD_NO, A.PAYMENT_PG_CD
+        FROM
+        TO_PAYMENT A,
+        (
+            SELECT ORD_NO, MAX(PAYMENT_TURN) PAYMENT_TURN
+            FROM TO_PAYMENT
+            WHERE SITE_NO = #{siteNo}
+            GROUP BY ORD_NO
+        ) B
+        WHERE A.ORD_NO = B.ORD_NO
+            AND A.PAYMENT_TURN = B.PAYMENT_TURN
+            AND A.PAYMENT_WAY_CD NOT IN ('01', '23') /* 마켓포인트 카드결제 아닌경우 */
+    ) D ON (D.ORD_NO = ord.ORD_NO)
+    WHERE ord.ORD_NO = #{ordNo}
+    </select>
+
+
+        <!-- 상태 변경 -->
+    <update id="updateSalesProofStatus" parameterType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofVO">
+    /* biz.app.order.salesproof.updateSalesProofStatus - 현금영수증 처리 상태 변경*/
+        UPDATE TO_CASH_RCT
+        SET CASH_RCT_STATUS_CD = #{cashRctStatusCd},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE CASH_RCT_NO = #{proofNo}
+    </update>
+
+        <!-- 메모 내용 변경 -->
+    <update id="updateCashRct" parameterType="net.danvi.dmall.biz.app.order.salesproof.model.SalesProofPO">
+    /* biz.app.order.salesproof.updateCashRct - 현금 영수증 메모 내용 변경*/
+        UPDATE
+            TO_CASH_RCT
+        SET CASH_RCT_STATUS_CD = #{cashRctStatusCd},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        WHERE CASH_RCT_NO = #{proofNo}
+    </update>
+</mapper>

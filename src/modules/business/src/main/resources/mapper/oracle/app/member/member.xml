@@ -1,0 +1,747 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="member.info">
+    <!-- 회원등록 -->
+    <insert id="insertMember">
+		<selectKey resultType="java.lang.Long" keyColumn="MEMBER_NO" keyProperty="memberNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'MEMBER_NO') as MEMBER_NO FROM DUAL
+		</selectKey>
+		INSERT INTO TC_MEMBER(
+		 MEMBER_NO
+		,MEMBER_CARD_NO
+		,MEMBER_TYPE_CD
+		,BIZ_REG_NO
+		,BIZ_FILE_PATH
+		,BIZ_FILE_NM
+		,BIZ_FILE_SIZE
+		,BIZ_ORG_FILE_NM
+		,MANAGER_NM
+		,SITE_NO
+		,MEMBER_NM
+		,BIRTH
+		,BORN_YEAR
+		,BORN_MONTH
+		,GENDER_GB_CD
+		,NTN_GB_CD
+		,JOIN_DTTM
+		,CERTIFY_METHOD_CD
+		,EMAIL_RECV_YN
+		,SMS_RECV_YN
+		,MEMBER_STATUS_CD
+		,LOGIN_ID
+		,PW
+		,TEL
+		,MOBILE
+		,MOBILE_SMR
+		,EMAIL
+		,JOIN_PATH_CD
+		,PW_CHG_DTTM
+		,STRTNB_ADDR
+		,ROAD_ADDR
+		,DTL_ADDR
+		,NEW_POST_NO
+		,REALNM_CERTIFY_YN
+		,MEMBER_GRADE_NO
+		,MEMBER_CI
+		,MEMBER_DI
+		,MEMBER_GB_CD
+		,ADULT_CERTIFY_YN
+		,NEXT_PW_CHG_SCD_DTTM
+		,FRG_ADDR_COUNTRY
+		,FRG_ADDR_CITY
+		,FRG_ADDR_STATE
+		,FRG_ADDR_ZIP_CODE
+		,FRG_ADDR_DTL1
+		,FRG_ADDR_DTL2
+		,REG_DTTM
+		,INTEGRATION_MEMBER_GB_CD
+		,RECOM_MEMBER_NO
+		,CEO_NM
+		,PRIVACY_POLICY_YN
+		,LOC_INFO_TERMS_YN
+		,YOUTH_PROT_POLICY_YN
+		,MEMBERSHIP_TERMS_YN
+		,ONLINE_TERMS_YN
+		) VALUES (
+		fn_getSeq(0, 'MEMBER_NO')
+		,#{memberCardNo}
+		,#{memberTypeCd}
+		,#{bizRegNo}
+		,#{bizFilePath}
+		,#{bizFileNm}
+		,#{bizFileSize}
+		,#{bizOrgFileNm}
+		,#{managerNm}
+		,#{siteNo}
+		,#{memberNm}
+		,#{birth}
+		,#{bornYear}
+		,#{bornMonth}
+		,#{genderGbCd}
+		,#{ntnGbCd}
+		,sysdate
+		,#{certifyMethodCd}
+		,#{emailRecvYn}
+		,#{smsRecvYn}
+		,#{memberStatusCd}
+		,#{loginId}
+		,#{pw}
+		,#{tel}
+		,#{mobile}
+		,#{mobileSmr}
+		,#{email}
+		,#{joinPathCd}
+		,sysdate
+		,#{strtnbAddr}
+		,#{roadAddr}
+		,#{dtlAddr}
+		,#{newPostNo}
+		,#{realnmCertifyYn}
+		,#{memberGradeNo}
+		,#{memberCi}
+		,#{memberDi}
+		,#{memberGbCd}
+		,#{adultCertifyYn}
+		,#{nextPwChgScdDttm}
+		,#{frgAddrCountry}
+		,#{frgAddrCity}
+		,#{frgAddrState}
+		,#{frgAddrZipCode}
+		,#{frgAddrDtl1}
+		,#{frgAddrDtl2}
+		,sysdate
+		,#{integrationMemberGbCd}
+		,#{recomMemberNo}
+		,#{ceoNm}
+		,#{rule04Agree}
+		,#{rule22Agree}
+		,#{rule21Agree}
+		,#{rule09Agree}
+		,#{rule10Agree}
+		)
+    </insert>
+
+	<!-- 아이디 찾기 -->
+	<select id="selectMemeberId" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.info.selectMemeberId */
+		SELECT MEMBER_NO,
+		       LOGIN_ID,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD
+		  FROM TC_MEMBER
+         <where>
+		 <if test="certifyMethodCd != null and certifyMethodCd != ''">
+             <choose>
+                 <when test = "certifyMethodCd eq 'EMAIL'">
+                     MEMBER_NM = #{memberNm}
+			         AND EMAIL = #{email}
+			         AND BIRTH = #{birth}
+			         <if test="mode eq 'pass'">
+			         AND LOGIN_ID = #{loginId}
+			         </if>
+                 </when>
+                 <when test = "certifyMethodCd eq 'IPIN'">
+                     MEMBER_DI = #{memberDi}
+                 </when>
+                 <when test = "certifyMethodCd eq 'MOBILE'">
+					 <if test="searchName !=null and searchName!=''">
+                         AND MEMBER_NM=#{searchName}
+					 </if>
+					 <if test="searchMobile !=null and searchMobile!=''">
+						 AND MOBILE =#{searchMobile}
+					 </if>
+					 <if test="searchBizName !=null and searchBizName!=''">
+                         AND MEMBER_NM=#{searchBizName}
+					 </if>
+					 <if test="searchBizNo !=null and searchBizNo!=''">
+						 AND BIZ_REG_NO =#{searchBizNo}
+					 </if>
+				 </when>
+                 <when test = "certifyMethodCd eq 'PASSWORD'">
+                     AND LOGIN_ID =#{searchLoginId}
+                     <choose>
+                     	<when test="searchMethod eq 'email'">
+                     		AND EMAIL =#{searchEmail}
+                     	</when>
+                     	<otherwise>
+                     		AND MOBILE =#{searchMobile}
+                     	</otherwise>
+                     </choose>
+                     <if test="searchName !=null and searchName!=''">
+                         AND MEMBER_NM=#{searchName}
+                     </if>
+                     <if test="searchBizNo !=null and searchBizNo!=''">
+                         AND BIZ_REG_NO =#{searchBizNo}
+                     </if>
+
+                 </when>
+             </choose>
+         </if>
+         <if test="certifyMethodCd == null and certifyMethodCd == ''">
+         			MEMBER_DI = #{memberDi}
+         </if>
+         </where>
+         <choose>
+	         <when test="memberTypeCd eq '02'">
+	         	AND MEMBER_TYPE_CD IN ('02','03')
+	         </when>
+	         <otherwise>
+	         	AND MEMBER_TYPE_CD= #{memberTypeCd}
+	         </otherwise>
+         </choose>
+         AND SITE_NO = #{siteNo}
+         
+         UNION ALL
+         
+         SELECT MEMBER_NO,
+		       LOGIN_ID,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD
+		  FROM TC_DORMANT_MEMBER
+         <where>
+		 <if test="certifyMethodCd != null and certifyMethodCd != ''">
+             <choose>
+                 <when test = "certifyMethodCd eq 'EMAIL'">
+                     MEMBER_NM = #{memberNm}
+			         AND EMAIL = #{email}
+			         AND BIRTH = #{birth}
+			         <if test="mode eq 'pass'">
+			         AND LOGIN_ID = #{loginId}
+			         </if>
+                 </when>
+                 <when test = "certifyMethodCd eq 'IPIN'">
+                     MEMBER_DI = #{memberDi}
+                 </when>
+                 <when test = "certifyMethodCd eq 'MOBILE'">
+					 <if test="searchName !=null and searchName!=''">
+                         AND MEMBER_NM=#{searchName}
+					 </if>
+					 <if test="searchMobile !=null and searchMobile!=''">
+						 AND MOBILE =#{searchMobile}
+					 </if>
+					 <if test="searchBizName !=null and searchBizName!=''">
+                         AND MEMBER_NM=#{searchBizName}
+					 </if>
+					 <if test="searchBizNo !=null and searchBizNo!=''">
+						 AND BIZ_REG_NO =#{searchBizNo}
+					 </if>
+				 </when>
+                 <when test = "certifyMethodCd eq 'PASSWORD'">
+                     AND LOGIN_ID =#{searchLoginId}
+                     <choose>
+                     	<when test="searchMethod eq 'email'">
+                     		AND EMAIL =#{searchEmail}
+                     	</when>
+                     	<otherwise>
+                     		AND MOBILE =#{searchMobile}
+                     	</otherwise>
+                     </choose>
+                     <if test="searchName !=null and searchName!=''">
+                         AND MEMBER_NM=#{searchName}
+                     </if>
+                     <if test="searchBizNo !=null and searchBizNo!=''">
+                         AND BIZ_REG_NO =#{searchBizNo}
+                     </if>
+
+                 </when>
+             </choose>
+         </if>
+         <if test="certifyMethodCd == null and certifyMethodCd == ''">
+         			MEMBER_DI = #{memberDi}
+         </if>
+         </where>
+         <choose>
+	         <when test="memberTypeCd eq '02'">
+	         	AND MEMBER_TYPE_CD IN ('02','03')
+	         </when>
+	         <otherwise>
+	         	AND MEMBER_TYPE_CD= #{memberTypeCd}
+	         </otherwise>
+         </choose>
+         AND SITE_NO = #{siteNo}
+         
+	</select>
+
+	<!-- 휴면 회원 정보 조회-->
+	<select id="selectInactiveMember" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.info.selectInactiveMember */
+		SELECT MEMBER_NO,
+		       LOGIN_ID,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD
+		  FROM TC_MEMBER
+         <where>
+         1=1
+		 <if test="certifyMethodCd != null and certifyMethodCd != ''">
+             <choose>
+                 <when test = "certifyMethodCd eq 'EMAIL'">
+                     AND EMAIL = #{email}
+                 </when>
+                 <when test = "certifyMethodCd eq 'MOBILE'">
+					 <if test="searchMobile !=null and searchMobile!=''">
+						 AND MOBILE =#{searchMobile}
+					 </if>
+				 </when>
+             </choose>
+         </if>
+         </where>
+         AND SITE_NO = #{siteNo}
+         AND LOGIN_ID =#{searchLoginId}
+
+         UNION ALL
+
+         SELECT MEMBER_NO,
+		       LOGIN_ID,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD
+		  FROM TC_DORMANT_MEMBER
+         <where>
+         1=1
+		 <if test="certifyMethodCd != null and certifyMethodCd != ''">
+             <choose>
+                 <when test = "certifyMethodCd eq 'EMAIL'">
+			         AND EMAIL = #{email}
+                 </when>
+                 <when test = "certifyMethodCd eq 'MOBILE'">
+					 <if test="searchMobile !=null and searchMobile!=''">
+						AND MOBILE =#{searchMobile}
+					 </if>
+				 </when>
+             </choose>
+         </if>
+         </where>
+         AND SITE_NO = #{siteNo}
+         AND LOGIN_ID =#{searchLoginId}
+
+	</select>
+
+	<!-- 휴면 회원 정보 조회-->
+	<select id="selectInactiveMemberById" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.info.selectInactiveMemberById */
+		 SELECT MEMBER_NO,
+		       LOGIN_ID,
+                MOBILE,
+                EMAIL,
+                JOIN_PATH_CD
+		  FROM TC_DORMANT_MEMBER
+         WHERE SITE_NO = #{siteNo}
+         AND LOGIN_ID =#{searchLoginId}
+	</select>
+
+	<!-- 비밀번호 찾기에 사용할 인증 수단 조회 -->
+	<select id="selectCertifyList" parameterType="memberManageSO" resultType="personCertifyConfigVO">
+	    /* member.info.selectCertifyList */
+	    SELECT CERTIFY_TYPE_CD,
+	           SITE_CD,
+	           SITE_PW,
+	           CERTIFY_FILE_PATH,
+	           MEMBER_JOIN_USE_YN,
+	           PW_FIND_USE_YN,
+	           DORMANTMEMBER_CERTIFY_USE_YN,
+	           ADULT_CERTIFY_ACCESS_USE_YN
+	      FROM TS_PRSN_CHECK_CERTIFY
+	     WHERE SITE_NO = #{siteNo}
+	       AND PW_FIND_USE_YN ='Y'
+	</select>
+
+	<!-- 비밀번호 변경 -->
+	<update id="updatePwd" parameterType="memberManagePO" >
+	    /* member.info.updatePwd */
+	    UPDATE
+
+		/*+ INDEX(TC_MEMBER IDX_TC_MEMBER_001) */
+		TC_MEMBER
+	       SET PW = #{pw},
+	       	   PW_CHG_DTTM = sysdate,
+	       	   <if test="nextPwChgScdDttm != null">
+               NEXT_PW_CHG_SCD_DTTM = #{nextPwChgScdDttm},
+               </if>
+	       	   UPDR_NO = #{updrNo},
+	       	   UPD_DTTM = sysdate
+	     WHERE SITE_NO = ${siteNo} AND LOGIN_ID = #{loginId}
+	</update>
+
+    <!-- 아이디 중복확인 -->
+    <select id="checkDuplicationId" parameterType="memberManageSO" resultType="Integer">
+        /* member.info.checkDuplicationId */
+		SELECT COUNT(MEMBER.LOGIN_ID) FROM
+		(
+		SELECT LOGIN_ID
+		FROM TC_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{loginId}
+		UNION ALL
+		SELECT LOGIN_ID
+		FROM TC_WITHDRAWAL_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{loginId}
+		UNION ALL
+		SELECT LOGIN_ID
+		FROM TC_DORMANT_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND LOGIN_ID = #{loginId}
+		) MEMBER
+    </select>
+    
+    <!-- 휴대전화 중복확인 -->
+    <select id="checkDuplicationMobile" parameterType="memberManagePO" resultType="Integer">
+        /* member.info.checkDuplicationMobile */
+		SELECT COUNT(MEMBER.MOBILE) FROM
+		(
+		SELECT MOBILE
+		FROM TC_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND MOBILE = #{mobile}
+		           AND REALNM_CERTIFY_YN = 'Y'
+		UNION ALL
+		SELECT MOBILE
+		FROM TC_DORMANT_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND MOBILE = #{mobile}
+		           AND REALNM_CERTIFY_YN = 'Y'
+		) MEMBER
+    </select>
+    
+    <!-- 회원 중복확인 -->
+    <select id="checkDuplicationMem" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.info.checkDuplicationMem */
+		SELECT MEMBER.LOGIN_ID, MEMBER.JOIN_PATH_CD, MEMBER.INTEGRATION_MEMBER_GB_CD FROM
+		(
+		SELECT LOGIN_ID, JOIN_PATH_CD, INTEGRATION_MEMBER_GB_CD
+		FROM TC_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND MEMBER_NM = #{memberNm}
+		           AND MOBILE = #{mobile}
+		           AND (INTEGRATION_MEMBER_GB_CD = '01' OR INTEGRATION_MEMBER_GB_CD = '03')
+		UNION ALL
+		SELECT LOGIN_ID, JOIN_PATH_CD, INTEGRATION_MEMBER_GB_CD
+		FROM TC_DORMANT_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND MEMBER_NM = #{memberNm}
+		           AND MOBILE = #{mobile}
+		           AND (INTEGRATION_MEMBER_GB_CD = '01' OR INTEGRATION_MEMBER_GB_CD = '03')
+		) MEMBER
+    </select>
+
+	<!-- 사업자번호 중복확인 -->
+	<select id="checkDuplicationBizNo" parameterType="memberManageSO" resultType="Integer">
+		/* member.info.checkDuplicationBizNo */
+		SELECT COUNT(MEMBER.LOGIN_ID) FROM
+		(
+			SELECT LOGIN_ID
+			  FROM TC_MEMBER
+			 WHERE SITE_NO = #{siteNo}
+			   AND BIZ_REG_NO = #{searchBizNo}
+			UNION ALL
+			SELECT LOGIN_ID
+			  FROM TC_WITHDRAWAL_MEMBER
+			WHERE SITE_NO = #{siteNo}
+			  AND BIZ_REG_NO = #{searchBizNo}
+			UNION ALL
+			SELECT LOGIN_ID
+			  FROM TC_DORMANT_MEMBER
+			 WHERE SITE_NO = #{siteNo}
+			   AND BIZ_REG_NO = #{searchBizNo}
+		) MEMBER
+	</select>
+
+     <!-- 휴면회원 해제인증 -->
+    <select id="selectDormantMemberNo" parameterType="memberManageSO" resultType="memberManageVO">
+        SELECT MEMBER_NO , LOGIN_ID, MEMBER_DI
+        FROM TC_DORMANT_MEMBER
+        WHERE 1=1
+        <choose>
+            <when test="memberDi == null">
+                AND SITE_NO = #{siteNo}
+                AND LOGIN_ID = #{loginId}
+            </when>
+            <otherwise>
+                AND SITE_NO = #{siteNo}
+                AND MEMBER_DI = #{memberDi}
+            </otherwise>
+        </choose>
+    </select>
+    
+    <!-- 탈퇴회원 해제인증 -->
+    <select id="selectWithdrawalMemberNo" parameterType="memberManageSO" resultType="memberManageVO">
+        SELECT MEMBER_NO , LOGIN_ID, MEMBER_DI
+        FROM TC_WITHDRAWAL_MEMBER
+        WHERE 1=1
+        <choose>
+            <when test="memberDi == null">
+                AND SITE_NO = #{siteNo}
+                AND LOGIN_ID = #{loginId}
+            </when>
+            <otherwise>
+                AND SITE_NO = #{siteNo}
+                AND MEMBER_DI = #{memberDi}
+            </otherwise>
+        </choose>
+    </select>
+
+	<insert id="insertAuthEmail" parameterType="memberManagePO">
+		INSERT INTO TC_MEMBER_AUTH
+		VALUES(#{email},#{emailCertifyValue},SYSDATE)
+	</insert>
+	<select id="getEmailAuthKey" resultType="memberManageVO">
+		SELECT
+			A.USER_EMAIL as email,
+			A.AUTH_KEY as emailCertifyValue,
+			TO_CHAR(A.AUTH_DATE,'yyyy.MM.dd AM HH:MI:SS') as authDate
+		FROM TC_MEMBER_AUTH A
+		WHERE A.USER_EMAIL = #{email}
+		AND A.AUTH_KEY = #{emailCertifyValue}
+		AND A.AUTH_DATE >= (sysdate-30/1440)
+	</select>
+
+	<delete id="deleteAuthKey">
+		DELETE FROM TC_MEMBER_AUTH
+		WHERE 	USER_EMAIL = #{email}
+		AND 	AUTH_KEY = #{emailCertifyValue}
+	</delete>
+	
+	<!-- 통합회원 여부를 조회 -->
+	<select id="checkMemberCombined" parameterType="long" resultType="string">
+		select case 
+				when count(*) > 0 then 'Y' 
+				else 'N' 
+			end as combinedYn
+		from TI_ERP_MEM_MAPPING
+		where mall_member_no = #{memberNo}
+		  and del_yn = 'N'
+	</select>
+	
+	<update id="updateMemberIntegration" parameterType="memberManagePO">
+		/* member.info.updateMemberIntegration */
+	    UPDATE  TC_MEMBER
+	       SET INTEGRATION_MEMBER_GB_CD = '03',
+	       	   UPDR_NO = #{updrNo},
+	       	   MEMBER_INTEGRATION_DTTM = sysdate
+	     WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo}
+	</update>
+	
+	<!-- 추천인 아이디 체크 -->
+    <select id="checkRecomMemberId" parameterType="memberManageSO" resultType="string">
+        /* member.info.checkRecomMemberId */
+		SELECT MEMBER_NO
+		FROM TC_MEMBER
+		WHERE LOGIN_ID = #{recomId}
+    </select>
+    
+    <update id="updateAppToken" parameterType="memberManagePO">
+		/* member.info.updateAppToken */
+	    UPDATE  TC_MEMBER
+	    SET APP_TOKEN = NULL
+		WHERE SITE_NO = ${siteNo} 
+		AND APP_TOKEN = #{appToken}			
+	</update>
+	
+	<update id="updateAppInfo" parameterType="memberManagePO">
+		/* member.info.updateAppInfo */
+	    UPDATE  TC_MEMBER
+		<trim prefix="SET" suffixOverrides=",">	    
+			<if test="appToken != null and appToken != ''">APP_TOKEN=#{appToken},</if> 
+			<if test="osType != null and osType != ''">OS_TYPE=#{osType},</if> 
+			<if test="autoLoginGb != null and autoLoginGb != ''">AUTO_LOGIN_GB = #{autoLoginGb},</if> 
+			<if test="notiGb != null and notiGb != ''">NOTI_GB = #{notiGb},</if> 
+			<if test="eventGb != null and eventGb != ''">EVENT_GB = #{eventGb},</if> 
+			<if test="newsGb != null and newsGb != ''">NEWS_GB = #{newsGb},</if> 
+			<if test="locaGb != null and locaGb != ''">LOCA_GB = #{locaGb},</if> 
+		</trim> WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo}			
+	</update>
+	
+	
+    <select id="selectAppInfo" resultType="memberManagePO">
+        /* member.info.selectAppInfo */
+		SELECT APP_TOKEN,
+			   (CASE WHEN AUTO_LOGIN_GB IS NULL THEN '0' ELSE AUTO_LOGIN_GB END) AUTO_LOGIN_GB,
+			   (CASE WHEN NOTI_GB IS NULL THEN '0' ELSE NOTI_GB END) NOTI_GB,
+			   (CASE WHEN EVENT_GB IS NULL THEN '0' ELSE EVENT_GB END) EVENT_GB,
+			   (CASE WHEN NEWS_GB IS NULL THEN '0' ELSE NEWS_GB END) NEWS_GB,
+			   (CASE WHEN LOCA_GB IS NULL THEN '0' ELSE LOCA_GB END) LOCA_GB,
+			   (CASE WHEN FORCE_PUSH_AGREE_YN IS NULL THEN '0' ELSE FORCE_PUSH_AGREE_YN END) FORCE_PUSH_AGREE_YN
+		FROM TC_MEMBER
+		WHERE SITE_NO = ${siteNo} AND MEMBER_NO = #{memberNo}
+    </select>	
+    
+    <select id="selectRecomMember" resultType="memberManagePO">
+		SELECT RECOM_MEMBER_NO  
+		  FROM TO_ORD
+		 WHERE ORD_NO = #{ordNo}
+    </select>	
+    
+    <update id="updateAppFirstLogin" parameterType="memberManagePO">
+    	UPDATE  TC_MEMBER
+    	SET APP_FIRST_LOGIN_DTTM = sysdate
+    	WHERE 
+    		SITE_NO = ${siteNo} 
+    	AND MEMBER_NO = #{memberNo}
+    	AND APP_FIRST_LOGIN_DTTM IS NULL
+    
+    </update>
+    
+    <update id="updateAppPushAgree" parameterType="memberManagePO">
+    	UPDATE  TC_MEMBER
+    	SET NOTI_GB = '1'
+    		,EVENT_GB = '1'
+    		,NEWS_GB = '1'
+    	    ,FORCE_PUSH_AGREE_YN ='N'
+    	WHERE MEMBER_NO = #{memberNo}
+    </update>
+    
+    <update id="updateCertify" parameterType="memberManagePO">
+    	UPDATE  TC_MEMBER
+    	SET MOBILE = #{mobile}
+    		,REALNM_CERTIFY_YN = #{realnmCertifyYn}
+    	WHERE MEMBER_NO = #{memberNo}
+    </update>
+
+	<select id="selectPushListPaging" parameterType="memberManageSO" resultType="memberManageVO">
+		/* member.manage.selectPushListPaging -- 회원 리스트 조회 */
+		SELECT *
+		FROM
+		(
+			SELECT T.*, ROW_NUMBER() OVER(ORDER BY ${sidx} ${sord}) PAGING_NUM
+			FROM
+			(
+                SELECT
+					 to_char(A.APP_DATE,'YYYY-MM-DD') AS APP_DATE/* 수신일자 */
+					,A.MEMO AS MEMO/* 내용 */
+				    ,to_char(A.APP_DATE,'HH24:MI:SS') AS APP_TIME/* 수신일자 */
+					,A.PUSH_STR_CODE AS STR_CODE/* 발송매장 */
+					,(SELECT STR_NAME FROM AM010TBL@DAVI WHERE STR_CODE = A.PUSH_STR_CODE) AS STR_NAME
+					,A.INPUT_DATE
+					,A.APP_YMD
+					,A.IMG_URL
+				 FROM PUSH_TBL@DAVI A
+				 WHERE A.PUSH_GB ='01'
+				 AND A.APP_YN='Y'
+				 AND A.MALL_NO_CARD =#{memberCardNo}
+				 <if test="stAppDate != null and stAppDate != ''">
+					<![CDATA[
+						AND A.INPUT_DATE >= TO_DATE(#{stAppDate}, 'YYYY-MM-DD')
+					]]>
+				</if>
+				<if test="endAppDate != null and endAppDate != ''">
+					<![CDATA[
+						AND A.INPUT_DATE <= TO_DATE(#{endAppDate}, 'YYYY-MM-DD')
+					]]>
+				</if>
+			) T
+		)
+		<include refid="common.pageSql" />
+	</select>
+
+	<!-- 푸시메세지 총건수 조회 -->
+    <select id="selectPushListPagingTotalCount" resultType="Integer">
+        /* push.selectPushListPagingTotalCount */
+        SELECT  count(*)
+        FROM    PUSH_TBL@DAVI A
+        WHERE A.MALL_NO_CARD =#{memberCardNo}
+    </select>
+
+    <!-- 푸시메세지 조건적용 총건수 조회 -->
+    <select id="selectPushListPagingCount" resultType="Integer">
+        /* push.selectPushMessageListPagingCount */
+        SELECT  COUNT(*)
+        FROM    PUSH_TBL@DAVI A
+		 WHERE A.PUSH_GB ='01'
+		 AND A.MALL_NO_CARD =#{memberCardNo}
+		<if test="stAppDate != null and stAppDate != ''">
+			<![CDATA[
+				AND A.INPUT_DATE >= TO_DATE(#{stAppDate}, 'YYYY-MM-DD')
+			]]>
+		</if>
+		<if test="endAppDate != null and endAppDate != ''">
+			<![CDATA[
+				AND A.INPUT_DATE <= TO_DATE(#{endAppDate}, 'YYYY-MM-DD')
+			]]>
+		</if>
+
+    </select>
+    
+    <!-- 매장코드로 매장명 조회 -->
+    <select id="selectStrName" parameterType="String" resultType="String">
+        /* member.info.selectStrName */
+        SELECT 
+        	STR_NAME 
+        FROM AM010TBL@DAVI 
+        WHERE STR_CODE = #{strCode}
+    </select>
+
+    <!-- 비비엠 워런티 내역 조회 -->
+    <select id="selectBibiemWarrantyList" parameterType="memberManageSO" resultType="memberManageVO">
+        /* member.manage.selectBibiemWarrantyList -- 비비엠 워런티 내역 조회 */
+		SELECT *
+		FROM
+		(
+			SELECT T.*, ROW_NUMBER() OVER(ORDER BY T.DATES DESC) PAGING_NUM
+			FROM
+			(
+               SELECT CD_CUST,
+					   MALL_NO_CARD,
+					   TO_CHAR(DATES,'YYYY-MM-DD') AS DATES,
+					   STR_CODE,
+					   STR_NAME,
+					   POS_NO,
+					   TRXN_NO,
+					   SEQ_NO,
+					   EN_DATE,
+					   ITM_CODE,
+					   ITM_NAME,
+					   GUBUN,
+					   (SELECT MEMBER_NM FROM TC_MEMBER  WHERE MEMBER_NO= #{memberNo}) AS MEMBER_NM
+				  FROM DAVICH_MALL.V_BIBIEM_WARRANTY
+				  WHERE MALL_NO_CARD = (SELECT MEMBER_CARD_NO FROM TC_MEMBER WHERE MEMBER_NO= #{memberNo})
+			) T
+		)
+		<include refid="common.pageSql" />
+    </select>
+
+    <!-- 푸시메세지 총건수 조회 -->
+    <select id="selectBibiemWarrantyListTotalCount" resultType="Integer">
+        /* push.selectBibiemWarrantyListTotalCount */
+        SELECT count(*)
+          FROM DAVICH_MALL.V_BIBIEM_WARRANTY
+         WHERE MALL_NO_CARD = (SELECT MEMBER_CARD_NO FROM TC_MEMBER WHERE MEMBER_NO= #{memberNo})
+    </select>
+
+    <!-- 푸시메세지 조건적용 총건수 조회 -->
+    <select id="selectBibiemWarrantyListCount" resultType="Integer">
+        /* push.selectBibiemWarrantyListCount */
+        SELECT  COUNT(*)
+          FROM    DAVICH_MALL.V_BIBIEM_WARRANTY
+	     WHERE MALL_NO_CARD = (SELECT MEMBER_CARD_NO FROM TC_MEMBER WHERE MEMBER_NO= #{memberNo})
+    </select>
+
+	<update id="updateTermsApply" parameterType="memberManagePO">
+    	UPDATE  TC_MEMBER
+    	   SET  PRIVACY_POLICY_YN = 'Y'
+    			,LOC_INFO_TERMS_YN = 'Y'
+    			,YOUTH_PROT_POLICY_YN = 'Y'
+				,MEMBERSHIP_TERMS_YN = 'Y'
+				,ONLINE_TERMS_YN = 'Y'
+    			,SMS_RECV_YN=#{smsRecvYn}
+    			,EMAIL_RECV_YN=#{emailRecvYn}
+    	WHERE MEMBER_CARD_NO = #{memberCardNo}
+    </update>
+
+	<update id="updateTermsApplyForErp" parameterType="memberManagePO">
+    	UPDATE EAA07_INFO_NEW@davi
+    	   SET  CLAUSE_AGREEMENT_1 = 'Y'/* 개인정보 처리방침 */
+				,CLAUSE_AGREEMENT_2 = 'Y'/* 위치정보 이용약관 */
+				,CLAUSE_AGREEMENT_3 = 'Y'/* 멤버쉽 이용약관 */
+				,CLAUSE_AGREEMENT_4 = 'Y'/* 온라인몰 이용약관 */
+				,CLAUSE_AGREEMENT_5 = 'Y'/* 청소년 보호정책 */
+    			,SMS_AGREEMENT =#{smsRecvYn}
+    			,CNG_DATE = SYSDATE
+    			,CNG_ID = #{deviceType}
+    	WHERE KEY_DATA = #{keyData}
+    </update>
+    
+</mapper>

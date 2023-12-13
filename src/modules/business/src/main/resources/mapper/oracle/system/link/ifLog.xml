@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.link.ifLog">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <!-- 연계 번호 채번 -->
+    <select id="selectIfNo" resultType="String">
+        SELECT fn_getIfNo(0, 'TI_IF_NO') AS IF_NO FROM DUAL
+    </select>
+
+    <!-- 연계 일련번호 채번 -->
+    <select id="selectIfSno" resultType="String">
+        SELECT fn_getIfSno(0, 'TI_IF_SNO') AS IF_SNO FROM DUAL
+    </select>
+
+    <!-- 연계 로그 등록 -->
+    <insert id="insertIfLog" parameterType="net.danvi.dmall.biz.batch.common.model.IfLogVO">
+	    INSERT INTO TI_IF_LOG (
+	           IF_NO
+	         , IF_ID
+	         , SITE_NO
+	         , IF_PGM_ID
+	         , IF_PGM_NM
+	         , IF_GB_CD
+	         , UP_IF_NO
+	         , START_IF_SNO
+	         , END_IF_SNO
+	         , START_DTTM
+             , END_DTTM
+	         , SEND_DT
+	         , SUCS_YN
+	         , ERR_CD
+	         , RESULT_CONTENT
+	         , DATA_CNT
+	         , DATA_TOT_CNT
+	         , START_KEY
+	         , END_KEY
+             , SEND_CONTS
+             , RECV_CONTS
+             , MEDIA_CD
+	         , REGR_NO
+	         , REG_DTTM
+	    ) VALUES (
+	           #{ifNo}
+	         , #{ifId}
+	         , #{siteNo}
+	         , #{ifPgmId}
+	         , #{ifPgmNm}
+	         , #{ifGbCd}
+	         , #{upIfNo}
+	         , #{startIfSno}
+	         , #{endIfSno}
+	         , TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+             , TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+	         , TO_CHAR(sysdate, 'YYYYMMDD%')
+	         , #{sucsYn}
+	         , #{errCd}
+	         , #{resultContent}
+	         , #{dataCnt}
+	         , #{dataTotCnt}
+	         , #{startKey}
+	         , #{endKey}
+             , #{sendConts:CLOB}
+             , #{recvConts:CLOB}
+             , #{mediaCd}
+	         , #{regrNo}
+	         , sysdate
+	         )
+    </insert>
+
+    <!-- 연계 로그 수정 -->
+    <update id="updateIfLog" parameterType="net.danvi.dmall.biz.batch.common.model.IfLogVO">
+        UPDATE TI_IF_LOG
+        SET
+               END_IF_SNO     = #{endIfSno}
+             , END_DTTM       = TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+            <if test="startIfSno != null and startIfSno != ''">
+             , START_IF_SNO   = #{startIfSno}
+            </if>
+             , SUCS_YN        = #{sucsYn}
+             , ERR_CD         = #{errCd}
+             , RESULT_CONTENT = #{resultContent}
+             , DATA_CNT       = #{dataCnt}
+             , DATA_TOT_CNT   = #{dataTotCnt}
+             , START_KEY      = #{startKey}
+             , END_KEY        = #{endKey}
+             , SEND_CONTS     = #{sendConts:CLOB}
+             , RECV_CONTS     = #{recvConts:CLOB}
+             , MEDIA_CD       = #{mediaCd}
+             , UPDR_NO        = #{updrNo}
+             , UPD_DTTM       = sysdate
+        WHERE
+               IF_NO          = #{ifNo}
+    </update>
+
+    <!-- 연계 실행 로그 등록 -->
+    <insert id="insertIfExecLog" parameterType="net.danvi.dmall.biz.batch.common.model.IfExecLogVO">
+        INSERT INTO TI_IF_EXEC_LOG (
+               IF_SNO
+             , IF_NO
+             , IF_PGM_NM
+             , START_DTTM
+             , SUCS_YN
+             , ERR_CD
+             , RESULT_CONTENT
+             , EXEC_KEY
+             , EXEC_CONTS
+             , LOG_FILE_PATH
+             , LOG_FILE_NM
+             , REGR_NO
+             , REG_DTTM
+        ) VALUES (
+               #{ifSno}
+             , #{ifNo}
+             , #{ifPgmNm}
+             , TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+             , #{sucsYn}
+             , #{errCd}
+             , #{resultContent}
+             , #{execKey}
+             , #{execConts:CLOB}
+             , #{logFilePath}
+             , #{logFileNm}
+             , #{regrNo}
+             , sysdate
+             )
+    </insert>
+
+    <!-- 연계 실행 로그 수정 -->
+    <update id="updateIfExecLog" parameterType="net.danvi.dmall.biz.batch.common.model.IfExecLogVO">
+        UPDATE TI_IF_EXEC_LOG
+        SET
+               END_DTTM       = TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+             , SUCS_YN        = #{sucsYn}
+             , ERR_CD         = #{errCd}
+             , RESULT_CONTENT = #{resultContent}
+             , EXEC_CONTS     = #{execConts:CLOB}
+             , UPDR_NO        = #{updrNo}
+             , UPD_DTTM       = sysdate
+        WHERE
+               IF_SNO          = #{ifSno}
+    </update>
+
+    <!-- execKey = srchKey 조건으로 연계 실행 로그 - 연계 일련번호 조회 -->
+    <select id="selectIfExecLogBySrchKey" resultType="String" parameterType="net.danvi.dmall.biz.batch.common.model.IfExecLogVO">
+        SELECT IF_SNO
+          FROM TI_IF_EXEC_LOG
+         WHERE 1=1
+           AND IF_NO    = #{ifNo}
+           AND EXEC_KEY = #{srchKey}
+           AND ROWNUM = 1
+    </select>
+
+    <!-- execKey = srchKey 조건으로 연계 실행 로그 수정 -->
+    <update id="updateIfExecLogBySrchKey" parameterType="net.danvi.dmall.biz.batch.common.model.IfExecLogVO">
+        UPDATE TI_IF_EXEC_LOG A
+           SET
+               A.END_DTTM       = TO_CHAR(sysdate, 'YYYYMMDDHH24MISS')
+             , A.SUCS_YN        = CASE WHEN #{resultContent} LIKE '%성공%' THEN 'Y' ELSE 'N' END
+             , A.ERR_CD         = CASE WHEN #{resultContent} LIKE '%성공%' THEN '0' ELSE '-9999' END
+             , A.RESULT_CONTENT = #{resultContent}
+             , A.EXEC_CONTS     = #{execConts:CLOB}
+             , A.UPDR_NO        = #{updrNo}
+             , A.UPD_DTTM       = sysdate
+         WHERE
+               A.IF_SNO =(SELECT IF_SNO
+                  FROM TI_IF_EXEC_LOG
+                 WHERE 1=1
+                   AND IF_NO    = #{ifNo}
+                   AND LENGTH(NVL(EXEC_KEY,'')) > 0 AND EXEC_KEY LIKE CONCAT(#{srchKey},'%'))
+    </update>
+</mapper>

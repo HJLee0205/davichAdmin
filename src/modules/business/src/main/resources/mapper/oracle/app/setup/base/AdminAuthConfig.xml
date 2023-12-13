@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.base.AdminAuthConfig">
+
+	<select id="selectManagerGroupList" resultType="net.danvi.dmall.biz.app.setup.base.model.ManagerGroupVO">
+		/* setup.base.AdminAuthConfig.selectManagerGroupList - 관리자/운영자  그룹 목록 조회 */
+		SELECT A.RN AS SORT_NUM,
+			   A.AUTH_GRP_NO,
+			   A.AUTH_GB_CD,
+			   A.AUTH_NM,
+			   A.CNT,
+			   decode(A.AUTH_GB_CD, 'A', '전체', substr(xmlagg(xmlelement(A,','||A.MENU_NM) ORDER BY A.MENU_ID).extract('//text()'),2)) AS MENU_NM
+		FROM
+			(
+				SELECT tmag.RN,
+					   tmag.AUTH_GRP_NO,
+					   tmag.AUTH_GB_CD,
+					   tmag.AUTH_NM,
+					   tmam.MENU_ID,
+					   (CASE WHEN tm.MENU_ID LIKE '2'||'%' THEN tm.MENU_NM||'(S)' ELSE tm.MENU_NM END) AS MENU_NM,
+					   (SELECT count(*) FROM TA_MANAGER tm2
+					 		INNER JOIN TC_MEMBER tc ON tm2.MEMBER_NO = tc.MEMBER_NO AND tc.MEMBER_STATUS_CD = '01'
+							WHERE tm2.AUTH_GRP_NO = tmag.AUTH_GRP_NO) AS CNT
+				FROM
+					(
+						SELECT row_number() over(ORDER BY tmag.REG_DTTM, tmag.AUTH_GRP_NO) AS RN, tmag.*
+						FROM TA_MANAGER_AUTH_GRP tmag
+					) tmag
+						LEFT OUTER JOIN TA_MANAGER_AUTH_MENU tmam ON tmag.AUTH_GRP_NO = tmam.AUTH_GRP_NO
+						LEFT OUTER JOIN TA_MENU tm ON tmam.MENU_ID = tm.MENU_ID
+				WHERE tmag.SITE_NO = #{siteNo}
+			) A
+		GROUP BY A.RN, A.AUTH_GRP_NO, A.AUTH_GB_CD, A.AUTH_NM, A.CNT
+	</select>
+
+	<select id="selectManagerGroup" resultType="net.danvi.dmall.biz.app.setup.base.model.ManagerGroupVO">
+		/* setup.base.AdminAuthConfig.selectManagerGroup - 관리자/운영자  그룹 상세 조회 */
+		SELECT
+				MAG.AUTH_GRP_NO,
+				MAG.AUTH_GB_CD,
+				MAG.AUTH_NM,
+				(SELECT COUNT(*) FROM TA_MANAGER A
+				 	inner join TC_MEMBER tc on tc.MEMBER_NO = A.MEMBER_NO and tc.MEMBER_STATUS_CD = '01'
+					WHERE AUTH_GRP_NO = MAG.AUTH_GRP_NO) AS CNT,
+				utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',MAM.MENU_ID) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS MENU_ID,
+				utl_i18n.unescape_reference(substr(XMLAGG(XMLELEMENT(A,',',M.MENU_NM) order by 1 asc ).EXTRACT ('//text()').GETSTRINGVAL(),2)) AS MENU_NM
+		FROM	TA_MANAGER_AUTH_GRP MAG
+					LEFT OUTER JOIN TA_MANAGER_AUTH_MENU MAM
+						ON MAG.AUTH_GRP_NO = MAM.AUTH_GRP_NO
+					LEFT OUTER JOIN TA_MENU M
+						ON MAM.MENU_ID = M.MENU_ID
+		WHERE	MAG.SITE_NO = #{siteNo}
+		<if test="authGrpNo != null and authGrpNo != ''">
+			AND MAG.AUTH_GRP_NO = #{authGrpNo}
+		</if>
+		<if test="authNm != null and authNm != ''">
+			AND MAG.AUTH_NM = #{authNm}
+		</if>
+		GROUP BY MAG.AUTH_GRP_NO, MAG.AUTH_GB_CD, MAG.AUTH_NM
+	</select>
+
+	<select id="selectSuperManagerGroupCount" resultType="Integer">
+		/* setup.base.AdminAuthConfig.selectSuperManagerGroupCount - 최고 관리자 그룹에 속한 그룹 카운트 */
+		SELECT 	COUNT(*)
+		FROM	TA_MANAGER_AUTH_GRP
+		WHERE	SITE_NO = #{siteNo}
+		AND 	AUTH_GB_CD = 'A'
+	</select>
+
+	<insert id="insertManagerGroup">
+		/* setup.base.AdminAuthConfig.insertManagerGroup - 관리자/운영자 권한 그룹 등록 */
+		<selectKey resultType="java.lang.Long" keyColumn="AUTH_GRP_NO" keyProperty="authGrpNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'AUTH_GRP_NO') FROM DUAL
+		</selectKey>
+		INSERT INTO TA_MANAGER_AUTH_GRP (
+			AUTH_GRP_NO,
+			SITE_NO,
+			AUTH_GB_CD,
+			AUTH_NM,
+			REG_DTTM,
+			REGR_NO
+		) VALUES (
+			fn_getSeq(0, 'AUTH_GRP_NO'),
+			#{siteNo},
+			#{authGbCd},
+			#{authNm},
+			sysdate,
+			#{regrNo}
+		)
+	</insert>
+
+	<update id="updateManagerGroup">
+		/* setup.base.AdminAuthConfig.updateManagerGroup - 관리자/운영자 권한 그룹 수정 */
+		UPDATE TA_MANAGER_AUTH_GRP
+		SET 	AUTH_NM = #{authNm},
+			 	AUTH_GB_CD = #{authGbCd},
+				UPDR_NO = #{updrNo},
+				UPD_DTTM = sysdate
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	AUTH_GRP_NO = #{authGrpNo}
+	</update>
+
+	<delete id="deleteManagerAuthGrp">
+		/* setup.base.AdminAuthConfig.deleteManagerAuthGrp - 관리자/운영자 권한 그룹 삭제 */
+		DELETE FROM TA_MANAGER_AUTH_GRP
+		WHERE	AUTH_GRP_NO = #{authGrpNo}
+		AND 	SITE_NO = #{siteNo}
+		AND    	AUTH_GB_CD != 'A'
+	</delete>
+
+	<insert id="insertManagerAuthMenu">
+		/* setup.base.AdminAuthConfig.insertManagerAuthMenu - 관리자/운영자 권한 메뉴 등록 */
+		INSERT INTO TA_MANAGER_AUTH_MENU (
+			AUTH_GRP_NO,
+			MENU_ID,
+			SITE_NO,
+			REG_DTTM,
+			REGR_NO
+		) VALUES (
+			#{authGrpNo},
+			#{menuId},
+			#{siteNo},
+			sysdate,
+			#{regrNo}
+		)
+	</insert>
+
+	<delete id="deleteAllManagerAuthMenu">
+		/* setup.base.AdminAuthConfig.deleteAllManagerAuthMenu - 관리자/운영자 권한 그룹에 속한 메뉴 삭제 */
+		DELETE FROM TA_MANAGER_AUTH_MENU
+		WHERE	AUTH_GRP_NO = #{authGrpNo}
+		AND 	SITE_NO = #{siteNo}
+	</delete>
+
+	<delete id="deleteManagerAuthMenu">
+		/* setup.base.AdminAuthConfig.deleteManagerAuthMenu - 관리자/운영자 권한 메뉴 삭제 */
+		DELETE TA_MANAGER_AUTH_MENU
+		WHERE 	AUTH_GRP_NO = #{authGrpNo}
+		AND 	MENU_ID = #{menuId}
+		AND 	SITE_NO = #{siteNo}
+	</delete>
+
+	<sql id="selectManagerPagingWhere">
+		<where>
+			MEM.SITE_NO = #{siteNo}
+			AND MEM.MEMBER_STATUS_CD = '01'
+			AND MEM.MEMBER_NO >= 1000
+			<if test="type == 'ID' and keyword != ''">
+			AND		MEM.LOGIN_ID = #{keyword}
+			</if>
+			<if test="type == 'NAME' and keyword != ''">
+			AND		MEM.MEMBER_NM = #{keyword}
+			</if>
+			<if test="type == 'ALL' and keyword != null and keyword != ''">
+				AND (MEM.LOGIN_ID = #{encKeyword} OR
+					MEM.MEMBER_NM = #{encKeyword} OR
+					MAG.AUTH_NM LIKE '%'||#{keyword}||'%')
+			</if>
+		</where>
+	</sql>
+	<select id="selectManagerPaging" resultType="net.danvi.dmall.biz.app.setup.base.model.ManagerVO">
+		/* setup.base.AdminAuthConfig.selectManagerPaging - 관리자/운영자 페이징 조회*/
+
+        SELECT *
+        FROM
+        (
+        	select ROWNUM AS PAGING_NUM, T.*
+        	FROM
+        	(
+				select AA.tot_cnt - rownum + 1 as SORT_NUM, AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt
+				    from
+				    (
+						SELECT
+								MEM.MEMBER_NO,
+								MEMBER_NM,
+								JOIN_DTTM,
+								LOGIN_ID,
+								(SELECT MAX(LOGIN_DTTM) FROM TC_MEMBER_LOGIN_HIST WHERE MEMBER_NO = MEM.MEMBER_NO) AS LOGIN_DTTM,
+								MAG.AUTH_GB_CD,
+								MAG.AUTH_NM,
+								NVL(MAG.AUTH_GRP_NO, 0) AS AUTH_GRP_NO
+						FROM	TC_MEMBER MEM LEFT OUTER JOIN TA_MANAGER MGR
+										ON MEM.SITE_NO = MGR.SITE_NO
+										AND MEM.MEMBER_NO = MGR.MEMBER_NO
+									LEFT OUTER JOIN TA_MANAGER_AUTH_GRP MAG
+										ON MGR.SITE_NO = MAG.SITE_NO
+										AND MGR.AUTH_GRP_NO = MAG.AUTH_GRP_NO
+						<include refid="selectManagerPagingWhere" />
+						order by MEM.MEMBER_NO desc
+					) A
+				) AA
+			) T
+		)
+		<include refid="common.pageSql" />
+	</select>
+
+	<select id="selectManagerPagingCount" resultType="Integer">
+		/* setup.base.AdminAuthConfig.selectManagerPagingCount - 관리자/운영자 페이징 카운트 */
+		SELECT
+				COUNT(*)
+		FROM	TC_MEMBER MEM LEFT OUTER JOIN TA_MANAGER MGR
+						ON MEM.SITE_NO = MGR.SITE_NO
+						AND MEM.MEMBER_NO = MGR.MEMBER_NO
+					LEFT OUTER JOIN TA_MANAGER_AUTH_GRP MAG
+						ON MGR.SITE_NO = MAG.SITE_NO
+						AND MGR.AUTH_GRP_NO = MAG.AUTH_GRP_NO
+		<include refid="selectManagerPagingWhere" />
+	</select>
+
+	<select id="selectSuperManagerCount" resultType="Integer">
+		/* setup.base.AdminAuthConfig.selectSuperManagerCount - 관리자/운영자 페이징 전체 카운트 */
+		select count(*)
+		from TA_MANAGER_AUTH_GRP tmag
+			inner join (select tm.AUTH_GRP_NO,
+			                   tm.SITE_NO
+			            from TA_MANAGER tm
+			            	inner join TC_MEMBER tc
+			            		on tm.MEMBER_NO = tc.MEMBER_NO
+			            where tc.MEMBER_STATUS_CD = '01') jtb
+				on tmag.AUTH_GRP_NO = jtb.AUTH_GRP_NO and tmag.SITE_NO = jtb.SITE_NO
+		where tmag.SITE_NO = #{siteNo}
+		and tmag.AUTH_GRP_NO = #{authGrpNo}
+		and tmag.AUTH_GB_CD = 'A'
+	</select>
+
+	<insert id="insertManager">
+		/* setup.base.AdminAuthConfig.insertManager - 관리자/운영자 추가 */
+		INSERT INTO TA_MANAGER (
+			MEMBER_NO,
+			AUTH_GRP_NO,
+			SITE_NO,
+			REG_DTTM,
+			REGR_NO
+		) VALUES (
+			#{memberNo},
+			#{authGrpNo},
+			#{siteNo},
+			sysdate,
+			#{regrNo}
+		)
+	</insert>
+
+	<update id="updateManager">
+		/* setup.base.AdminAuthConfig.updateManager - 관리자/운영자의 관리자 그룹 변경 */
+		UPDATE TA_MANAGER
+		SET 	AUTH_GRP_NO = #{authGrpNo},
+				UPD_DTTM = sysdate,
+				UPDR_NO = #{updrNo}
+		WHERE 	SITE_NO = #{siteNo}
+		AND 	MEMBER_NO = #{memberNo}
+		AND 	AUTH_GRP_NO = #{orgAuthGrpNo}
+	</update>
+
+	<delete id="deleteManager">
+		/* setup.base.AdminAuthConfig.deleteManager - 관리자/운영자 삭제 */
+		DELETE FROM TA_MANAGER
+		WHERE 	MEMBER_NO = #{memberNo}
+		AND 	AUTH_GRP_NO = #{orgAuthGrpNo}
+		AND 	SITE_NO = #{siteNo}
+	</delete>
+
+	<delete id="deleteAllManagerOfAuthGrp">
+		/* setup.base.AdminAuthConfig.deleteAllManagerOfAuthGrp - 관리자 그룹에 속하는 관리자/운영자를 모두 삭제 */
+		DELETE FROM TA_MANAGER
+		WHERE 	AUTH_GRP_NO = #{authGrpNo}
+		AND 	SITE_NO = #{siteNo}
+	</delete>
+
+	<select id="selectManagerGbCd" resultType="String">
+		select tmag.AUTH_GB_CD
+		from TA_MANAGER_AUTH_GRP tmag
+		inner join TA_MANAGER tm on tm.MEMBER_NO = #{memberNo} and tm.AUTH_GRP_NO = tmag.AUTH_GRP_NO
+		where tmag.SITE_NO = #{siteNo}
+		and tm.SITE_NO = #{siteNo}
+	</select>
+</mapper>

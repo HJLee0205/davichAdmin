@@ -1,0 +1,213 @@
+@charset "utf-8";
+
+/* === event === */
+.event_head {
+	color:#fff;
+	font-size:15px;
+	font-weight:700;
+	text-align:center;
+	height:46px;
+	line-height:46px;
+	background:#7e8083;
+	border-top:1px solid #fff;
+	position:relative
+}
+.event_head .btn_go_prev {
+	position:absolute;
+	top:50%;
+	margin-top:-18px;
+	left:3%;
+	width:36px;
+	height:36px;
+	border:1px solid #a5a6a8
+}
+.icon_go_prev {
+	display:inline-block;
+	width:9px;
+	height:36px;
+	background:url(../img/common/icon_go_prev.png) no-repeat left 8px;
+	background-size:10px
+}
+h2.event_stit {
+	padding:15px 3%;
+	color:#000;
+	font-size:15px;
+	font-weight:700;
+	border-top:1px solid #d8d9da;
+	border-bottom:1px solid #d8d9da;
+	background:#f2f2f2;
+	position:relative
+}
+h2.event_stit span {
+	display:inline-block;
+	padding-left:10px;
+	background:url(../img/common/bul_dot.png) no-repeat left 6px;
+	background-size:5px
+}
+h2.event_stit button {
+	position:absolute;
+	right:3%;
+	top:50%;
+	margin-top:-17px
+}
+.btn_event_view, 
+.btn_event_more {
+	width: 120px;
+    height: 32px;
+	letter-spacing:-1px;
+    border: 1px solid #cacaca;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    background: #fff;	
+}
+.event_ing_list {
+	margin:10px 0 0 0
+}
+.event_ing_list li {
+	margin:0 0 5px 0
+}
+.event_ing_list li a img {
+	width:100%;
+}
+.event_list_bottom {
+	margin:5px 0 10px 0;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #bebfc1;
+    overflow: hidden;
+}
+
+/* === 당첨자 리스트 === */
+.winner_list {
+}
+.winner_list li {
+	padding:15px 3%;
+	border-bottom:1px solid #d8d9da
+}
+.winner_list li:last-child {
+	border-bottom:none
+}
+.winner_ellipsis {
+    overflow: hidden;
+	text-overflow: ellipsis; 
+	white-space:nowrap; 
+	float:left; 
+}
+.winner_new {
+	float:left;
+	color:#00a2e5;
+	font-size:11px;
+	margin-left:7px;
+	font-weight:700
+}
+.winner_list li a {
+	font-size:15px
+}
+.winner_list li span.winner_date {
+	display:block;
+	clear:both;
+	margin-top:3px;
+	font-size:13px;
+	color:#797979
+}
+.event_content {
+	margin:10px 0 0 0
+}
+.event_content img {
+	width:100%
+}
+.event_comment_write {
+	padding:10px 3%;
+	overflow:hidden
+}
+.event_comment_write textarea {
+	width:calc(80% - 14px);
+	float:left;
+	height:58px;
+}
+.event_comment_write button {
+	float:right;
+	width:20%;
+	height:80px;
+	font-size:14px;
+	font-weight:700;
+	color:#fff;
+	background:#7e8083
+}
+.comment_list > div {	
+	background:url(../img/product/dotline_01.png) repeat-x left top
+}
+.comment_list > div:first-child {	
+	background:none
+}
+.event_comment_area div.comment_view {
+    overflow: hidden;
+    position: relative;
+    padding: 15px 3%;
+}
+.comment_view span.comment_writer {
+    display: inline-block;
+    float: left;
+	overflow: hidden;
+	text-overflow: ellipsis; 
+	white-space:nowrap; 
+    width: 20%;
+    color: #000;
+	padding-right:12px;
+    background: url(../img/event/bar_commen_writer.png) no-repeat right 4px;
+}
+.comment_content {
+    float: right;
+    width: calc(78% - 20px);
+    color: #000;
+	font-size:14px
+}
+.comment_content div {
+	margin-top:5px;
+	font-size:13px;
+	color: #909090;
+}
+.comment_content div > span {
+	margin-left:8px
+}
+.btn_comment_del {
+    font-size: 12px;
+    padding: 0px 10px;
+    height: 20px;
+    color: #717171;
+    background: #fff;
+    border: 1px solid #d7d7d7;
+    border-radius: 4px;
+}
+/* === 당첨자 발표 보기 === */
+.winner_view {
+	padding:0 3% 15px;
+	border-bottom:1px solid #d7d7d7
+}
+.winner_view li {
+	padding:15px
+}
+.winner_view li.winner_view_title {
+	padding:15px 0;
+	font-size:15px
+}
+span.winner_view_new {
+	color:#00a2e5;
+	font-size:11px;
+	margin-left:7px;
+	font-weight:700
+}
+.winner_view li.winner_view_title div.winner_date {
+	color:#797979;
+	font-size:13px
+}
+.winner_view li.winner_view_title span.winner_time {
+	margin-left:10px
+}
+.winner_view li.winner_view_text {
+	font-size:13px;
+	color:#000000;
+	line-height:20px;
+	letter-spacing:-1px;
+	background:#f3f4f4 url(../img/product/dotline_01.png) repeat-x left top
+}

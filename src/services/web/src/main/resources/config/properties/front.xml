@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 프론트 관련 프로퍼티 설정 -->
+<properties>
+
+    <entry key="system.ssl.seal.mark.image">/front/img/footer/logo_comodo.png</entry>
+    <entry key="system.pg.01.seal.mark.image">/front/img/footer/safe_01.jpg</entry>
+    <entry key="system.pg.02.seal.mark.image">/front/img/footer/safe_02.png</entry>
+    <entry key="system.pg.03.seal.mark.image">/front/img/footer/safe_03.png</entry>
+    <entry key="system.pg.04.seal.mark.image">/front/img/footer/safe_04.png</entry>
+
+    <entry key="system.upload.file.size">6291456</entry><!-- 업로드 파일 용량 6MB -->
+    <entry key="system.review.file.size">5242880</entry><!-- 상품후기 업로드 파일 용량 5MB -->
+
+    <!-- https 로 연결되야할 URI 패턴, URI에 해당 문자열이 포함되어있으면 https 로 리다이렉트 -->
+    <entry key="system.https.url.list">
+        /login/,
+        /member/,
+        /order/,
+        /mypage/</entry>
+
+    <!-- http / https 둘 다 연결될 URI 패턴, URI에 해당 문자열이 포함되어있으면 프로토콜 그대로 처리 -->
+    <entry key="system.switch.url.list">
+        /login/,
+        /member/,
+        /order/,
+        /mypage/,
+
+        /front/,
+        /promotion/leftwing-info,
+        /image/,
+        /front/goods/goods-image-preview,
+        /front/member/quick-info,
+        /front/coupon/available-ordercoupon-list,
+        /skin/,
+        /skins/,
+        /visit/,
+        /goods/,
+        /front/open-pop,
+        /review/,
+        /question/,
+        /totalsearch/</entry>
+
+</properties>

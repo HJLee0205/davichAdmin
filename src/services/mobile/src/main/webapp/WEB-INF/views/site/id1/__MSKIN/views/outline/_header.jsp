@@ -1,0 +1,304 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<sec:authentication var="user" property='details'/>
+<script src="${_SKIN_JS_PATH}/jquery-barcode.js" charset="utf-8"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+	$('#move_cart_top').on('click',function(){
+         location.href = "${_MOBILE_PATH}/front/basket/basket-list"
+    });
+
+    $('.popup').hide();
+    $(".btn_view_card").click(function() {
+        $('#member_card_popup').show();
+    });
+
+    //    바코드 타입
+    //    codabar
+    //    code11 (code 11)
+    //    code39 (code 39)
+    //    code93 (code 93)
+    //    code128 (code 128)
+    //    ean8 (ean 8)
+    //    ean13 (ean 13)
+    //    std25 (standard 2 of 5 - industrial 2 of 5)
+    //    int25 (interleaved 2 of 5)
+    //    msi
+    //    datamatrix (ASCII + extended)
+
+    $("#bcTarget").barcode("${user.session.memberCardNo}", "code128");
+
+    $("#searchText").on("keyup", function() {
+    	$("#akc > li").remove();
+    	var sugUse = getCookie("sugUse");
+    	if(sugUse != "N"){
+        	var searchWord = $('#searchText').val();
+        	if(searchWord != null && searchWord != ""){
+    	    	var encodeWord = encodeURI(searchWord);
+    			var konanUrl = '<spring:eval expression="@konan['KSF_URL']"></spring:eval>';
+        	   $.ajax({
+
+        	       url: "https://search.davichmarket.com:443/ksf/"+"api/suggest?target=complete&domain_no=0&term="+encodeWord+"&mode=s&max_count=5",
+
+        	       dataType: "jsonp",
+        	       success: function(data) {
+
+        	       	var dataArray = data.suggestions[0];
+
+        	       	var akc = "";
+        	       	if(dataArray.length > 0){
+    	    	       	for(var i = 0; i < dataArray.length; i++){
+    	    	       		akc += "<li style='cursor:pointer;'>"+dataArray[i]+"</li>";
+    	    	       	}
+    	        		$("#akc").prepend(akc);
+    	        		$("#akc").css("display","block");
+        	       		//$("#akc").html(akc);
+        	       	}else{
+        	       		$("#akc").css("display","none");
+        	       	}
+        	       },
+        	       error: function(xhr) {
+        	    	   $("#akc").css("display","none");
+        	           alert("실패")
+        	       }
+        	   });
+        	}else{
+        		$("#akc").css("display","none");
+        	}
+    	}
+    	   return false;
+    	});
+
+    $("#akcCloseBtn").click(function(){
+    	$("#akc").css("display","none");
+    });
+
+    $("#btn_search").click(function() {
+        if($('#searchText').val() === '') {
+            Dmall.LayerUtil.alert("입력된 검색어가 없습니다.", "알림");
+            return false;
+        }
+	    var param = {searchType:'1',searchWord : $("#searchText").val()}
+	    if($('#searchText').val().indexOf("쿠폰") != -1) {
+	    Dmall.FormUtil.submit("/front/coupon/coupon-zone");
+	     return false;
+        }
+       Dmall.FormUtil.submit(MOBILE_CONTEXT_PATH+"/front/totalsearch/main", param);
+    });
+
+    $("#sugUseBtn").click(function(){
+    	var sugUse = getCookie("sugUse");
+    	if(sugUse != "N"){
+    		//setCookie("sugUse","N",0);
+    		document.cookie = "sugUse=N; path=/;"
+    		$("#akc").css("display","none");
+    	}else{
+    		document.cookie = "sugUse=; path=/;"
+    	}
+    });
+
+    $(document).on("click","#akc > li",function(){
+    	Dmall.FormUtil.submit('/front/totalsearch/main?searchType=1&searchWord='+$(this).text());
+    });
+
+});
+</script>
+
+<!-- head banner area -->
+<c:if test="${fn:length(top_banner.resultList)>0}">
+	<div class="head_banner_area">
+		<div class="inner">
+			<button type="button" class="btn_close_tbanner">창닫기</button>
+			<a href="javascript:click_banner('${top_banner.resultList[0].dispLinkCd}','${top_banner.resultList[0].linkUrl}');">
+				<%-- <img src="${_SKIN_IMG_PATH}/header/head_banner01.gif" alt=""> --%>
+				<img src="${_IMAGE_DOMAIN}/image/image-view?type=BANNER&id1=${top_banner.resultList[0].imgFileInfo}" alt="${top_banner.resultList[0].bannerNm}" title="${top_banner.resultList[0].bannerNm}">
+			</a>
+		</div>
+	</div>
+</c:if>
+<!--// head banner area -->
+
+<div id="header">
+	<div id="head">
+		<div class="logo_area">
+			<div class="head_left_btn">
+				<button id="c-button--slide-left" class="btn_all_menu">전체메뉴보기</button>
+			</div>
+			<!--- logo --->
+			<%@ include file="header/logo.jsp"%>
+			<!---// logo --->
+			<div class="head_right_btn">
+				<button type="button" class="btn_view_search">검색창열기</button>
+				<a href="${_MOBILE_PATH}/front/coupon/coupon-zone" id="coupon_count" class="btn_couponzone">%</a>
+				<sec:authorize access="hasRole('ROLE_USER')">
+				<button type="button" class="btn_view_card">카드보기</button>
+				</sec:authorize>
+				<%--<button type="button" id="move_cart_top" class="btn_cart">장바구니</button>--%>
+			</div>
+		</div>
+	</div>
+	<div id="search_area">
+		<input type="text" id="searchText" onkeydown="if(event.keyCode == 13){$('#btn_search').click();}">
+		<button type="button" class="btn_search" id="btn_search">검색</button>
+		<div id ="akc" style="display:none;">
+			<div class="btm_setting">
+				<a href="#">검색어저장 끄기</a>
+				<a href="#" id="sugUseBtn">자동완성끄기</a>
+				<a href="#" id="akcCloseBtn">닫기</a>
+			</div>
+		</div>
+		<%--<button type="button" class="btn_close_search" id="btn_search">검색닫기</button>--%>
+	</div>
+</div>
+
+<!--- Lnb Area --->
+<div id="lnb">
+	<div class="lnb_slick_area">
+		<ul>
+		<%--<li class="lnb_event"><a href="/m/front/promotion/promotion-detail?prmtNo=25"><span>SALE 30%</span></a></li><!-- 임시 이벤트 링크 -->--%>
+		<%-- <c:forEach var="ctgList" items="${gnb_info.get('0')}" varStatus="status">
+			<li class=""><a href="#gnb0${ctgList.ctgNo}" onclick="javascript:move_category('${ctgList.ctgNo}');return false;">${ctgList.ctgNm}</a></li>
+		</c:forEach> --%>
+			<%--<li class=""><a href="javascript:;" onclick="move_category('434','best');return false;">BEST</a></li>--%>
+			<%--<li class=""><a href="/m/front/vision2/vision-check">맞춤렌즈</a></li>--%>
+			<%--<li class=""><a href="javascript:;" onclick="move_category('747');return false;">D.매거진</a></li>--%>
+			<li class=""><a href="javascript:;" onclick="move_category('1');return false;">안경테</a></li>
+			<li class=""><a href="javascript:;" onclick="move_category('2');return false;">선글라스</a></li>
+			<li class=""><a href="javascript:;" onclick="move_category('4');return false;">콘택트렌즈</a></li>
+			<li class=""><a href="javascript:;" onclick="move_category('3');return false;">안경렌즈</a></li>
+			<li class=""><a href="/m/front/promotion/promotion-list">기획전</a></li>
+			<%--<li class=""><a href="/m/front/event/event-list">이벤트</a></li>--%>
+		</ul>
+	</div>
+	<!--button type="button" class="btn_view_all" id="btn_view_all">전체보기</button-->
+	<div class="view_sitemap_area">
+		<ul class="view_lnb_menu">
+			<!-- <li class=""><a href="/m/front">홈</a></li> -->
+			<c:forEach var="ctgList" items="${gnb_info.get('0')}" varStatus="status">
+				<li class=""><a href="#gnb0${ctgList.ctgNo}" onclick="javascript:move_category('${ctgList.ctgNo}');return false;">${ctgList.ctgNm}</a></li>
+			</c:forEach>
+		</ul>
+	</div>
+</div>
+<!---// Lnb Area --->
+
+
+	<%--<div id="header">
+		<div id="head">
+			<div class="logo_area">
+				<div class="head_left_btn">
+					<button id="c-button--slide-left" class="c-button btn_allmenu"><span class="icon_menu"></span></button>
+					<button type="button" class="btn_search_view"><span class="icon_search"></span></button>
+				</div>
+				<!-- <div id="logo">
+					<h1><a href=""><img src="../inc/skin/basic/img/main/logo.png" alt="Danvi"></a></h1>
+				</div> -->
+				<!--- logo --->
+	            <%@ include file="header/logo.jsp"%>
+	            <!---// logo --->
+				<div class="head_right_btn">
+					<button type="button" class="btn_cart"  id="move_cart_top">
+						<!-- <span class="cart_no">153</span> -->
+						<span class="icon_cart" ></span>
+					</button>
+				<sec:authorize access="!hasRole('ROLE_USER')">
+				<a href="${_DMALL_HTTPS_SERVER_URL}${_MOBILE_PATH}/front/login/member-login" class="menu01"><button type="button" class="btn_login"><span class="icon_login"></span></button></a></li>
+				</sec:authorize>
+				<sec:authorize access="hasRole('ROLE_USER')">
+				<button type="button" class="btn_login" id="a_id_logout"><span class="icon_logout"></span></button></a>
+				</sec:authorize>
+				</div>
+			</div>
+		</div>
+		<div id="search_area">
+			<input type="text" id="searchText" onkeydown="if(event.keyCode == 13){$('#btn_search').click();}" style="width:calc(98% - 50px);">
+			<button type="button" class="btn_search"  id="btn_search"><span class="icon_search02"></span></button>
+		</div>
+	</div>--%>
+
+<!--- popup --->
+<%--<div class="popup_outline popup" style="display: none;">
+	<div class="inner card">
+		<button type="button" class="btn_close_popup">창닫기</button>
+		<div class="popup_head">
+			<h1><img src="${_SKIN_IMG_PATH}/header/logo_view_card.png"></h1>
+		</div>
+		<div class="popup_body">
+			<p class="name"><em>${user.session.memberNm}</em> 님</p>
+			<div class="card_area">
+				<img src="${_SKIN_IMG_PATH}/header/view_card.png" alt="멤버쉽 카드">
+			</div>
+			<div &lt;%&ndash;class="barcode_area"&ndash;%&gt;>
+				<div id="bcTarget" style="margin: 0 auto"></div>
+				&lt;%&ndash;<img src="${_SKIN_IMG_PATH}/header/view_barcode.gif" alt="바코드">&ndash;%&gt;
+			</div>
+
+			<p class="serial_no">NO. ${fn:substring(user.session.memberCardNo,0,2)} - ${fn:substring(user.session.memberCardNo,2,5)}-${fn:substring(user.session.memberCardNo,5,9)}</p>
+		</div>
+	</div>
+</div>--%>
+<%-- <div class="popup" id="member_card_popup" style="display: none;">
+    <div class="inner card">
+        <div class="popup_head">
+            <button type="button" class="btn_close_popup">창닫기</button>
+        </div>
+        <div class="popup_body">
+            <div class="card_area <c:if test="${user.session.memberGradeNo eq '2'}">vip</c:if>">
+				<div class="member_card_name">DAVICH Membership<!-- <br><c:if test="${user.session.memberGradeNo eq '2'}">vip</c:if> --></div>
+                <div class="member_barcode">
+					<div class="member_name"><em>${user.session.memberNm}</em>님</div>
+                    <div id="bcTarget" style="margin: 0 auto"></div>
+                    <p class="member_no"><span>NO.</span>${fn:substring(user.session.memberCardNo,0,2)} - ${fn:substring(user.session.memberCardNo,2,5)}-${fn:substring(user.session.memberCardNo,5,9)}</p>
+                </div>
+            </div>
+			<div class="card_area_bottom">
+				<span class="dot"><em>마켓포인트:</em> <b><fmt:formatNumber value="${memberPrcAmt }" type="currency" maxFractionDigits="0" currencySymbol=""/></b> 원</span>
+				<span class="dot"><em>포인트:</em> <b><fmt:formatNumber value="${memberPrcPoint }" type="currency" maxFractionDigits="0" currencySymbol=""/></b> P</span>
+			</div>
+        </div>
+    </div>
+</div> --%>
+<div class="popup" id="member_card_popup" style="display: none;">
+    <div class="inner card2">
+        <div class="popup_head mhead">
+			<div class="logo_title"><em>DAVICH</em> MEMBERSHIP</div>
+			<button type="button" class="btn_close_popup btn_close_popup2" >창닫기</button>
+        </div>
+        <div class="popup_body popup_body2">
+			<div class="card_area2">
+				<ul class="card_info">
+					<li>${user.session.memberNm} 님
+						<p><c:choose><c:when test="${user.session.memberGradeNo eq '2'}">V.I.P</c:when><c:otherwise>일반</c:otherwise></c:choose></p>
+					</li>
+					<%--<li><b>마켓</b>포인트<span><b class="price"><fmt:formatNumber value="${memberPrcAmt }" type="currency" maxFractionDigits="0" currencySymbol=""/></b><em>원</em></span></li>--%>
+					<%--<li><c:choose><c:when test="${user.session.memberGradeNo eq '2'}">V.I.P</c:when><c:otherwise>일반</c:otherwise></c:choose></li>--%>
+					<li style="float: right;text-align: right;">다비치포인트<br><span style="float: none;"><b class="price"><c:choose><c:when test="${memberPrcPoint ne null}"><fmt:formatNumber value="${memberPrcPoint }" type="currency" maxFractionDigits="0" currencySymbol=""/></c:when><c:otherwise>0</c:otherwise></c:choose>P</b><em></em></span>&nbsp;</li>
+				</ul>
+				<div class="member_barcode">
+					<div id="bcTarget" style="margin: 0 auto"></div>
+					<p class="member_no"><span>NO.</span><span>${fn:substring(user.session.memberCardNo,0,2)}</span><span>${fn:substring(user.session.memberCardNo,2,5)}</span><span>${fn:substring(user.session.memberCardNo,5,9)}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!---// popup --->
+<!-- slide menu script -->
+<script>
+  var slideLeft = new Menu({
+    wrapper: '#o-wrapper',
+    type: 'slide-left',
+    menuOpenerClass: '.c-button',
+    maskId: '#c-mask'
+  });
+  var slideLeftBtn = document.querySelector('#c-button--slide-left');
+  slideLeftBtn.addEventListener('click', function(e) {
+    e.preventDefault;
+    slideLeft.open();
+  });
+</script>
+<!--// slide menu script -->

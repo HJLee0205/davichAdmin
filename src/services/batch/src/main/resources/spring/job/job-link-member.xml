@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+
+    <!-- 회원 포인트 소멸 : 마이바티스를 이용한 DB-to-DB 작업 : 커서 리더 사용 -->
+    <!-- Mybatis 커서 리더 -->
+    <bean id="memPointReader" class="org.mybatis.spring.batch.MyBatisCursorItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="batch.member.selectMemberPoint" />
+    </bean>
+    <!-- Mybatis 라이터 -->
+    <bean id="memPointWriter" class="org.mybatis.spring.batch.MyBatisBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.member.insertPoint" />
+    </bean>
+    <batch:job id="memPointJob">
+        <batch:step id="memPointStep">
+            <batch:tasklet>
+                <batch:chunk reader="memPointReader" writer="memPointWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+    
+   <!-- 회원 D-머니 소멸 : 마이바티스를 이용한 DB-to-DB 작업 : 커서 리더 사용 -->
+    <!-- Mybatis 커서 리더 -->
+    <bean id="memSavedmnReader" class="org.mybatis.spring.batch.MyBatisCursorItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="batch.member.selectMemberSavedmn" />
+    </bean>
+    <!-- Mybatis 라이터 -->
+    <bean id="memSavedmnWriter" class="org.mybatis.spring.batch.MyBatisBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.member.insertSavedmn" />
+    </bean>
+    <batch:job id="memSavedmnJob">
+        <batch:step id="memSavedmnStep">
+            <batch:tasklet>
+                <batch:chunk reader="memSavedmnReader" writer="memSavedmnWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+    
+        
+    <!-- 성인 인증 : 마이바티스를 이용한 DB-to-DB 작업 : 커서 리더 사용 -->
+    <!-- Mybatis 커서 리더 -->
+    <!-- Map에서 값을 꺼내 자바 Beans 에 담는 프로세서 -->
+    <bean id="memAdultCertifyProcessor" class="net.danvi.dmall.admin.batch.member.MapEncryptToDecodingProcessor"></bean>
+    <bean id="memAdultCertifyReader" class="org.mybatis.spring.batch.MyBatisCursorItemReader">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="queryId" value="batch.member.memAdultCertifyReader" />
+    </bean>
+    <!-- Mybatis 라이터 -->
+    <bean id="memAdultCertifyWriter" class="org.mybatis.spring.batch.MyBatisBatchItemWriter">
+        <property name="sqlSessionFactory" ref="sqlSessionFactory" />
+        <property name="statementId" value="batch.member.memAdultCertifyWriter" />
+    </bean>
+    <batch:job id="memAdultCertifyReaderJob">
+        <batch:step id="memAdultCertifyReaderStep">
+            <batch:tasklet>
+                <batch:chunk reader="memAdultCertifyReader" processor="memAdultCertifyProcessor" writer="memAdultCertifyWriter" commit-interval="10" />
+            </batch:tasklet>
+        </batch:step>
+    </batch:job>
+    
+   <!-- 회원 등급 산정 Job, 멤버등급 고정으로 block -->
+    <!--<bean id="memGradeTasklet" class="net.danvi.dmall.biz.batch.member.job.MemberTasklet" />
+    <batch:job id="memGradeJob">
+        <batch:step id="memGradeStep1">
+            <batch:tasklet ref="memGradeTasklet" />
+        </batch:step>
+    </batch:job>-->
+    
+    <!-- 휴면 회원 등록  -->
+    <bean id="memDormantAlamTasklet" class="net.danvi.dmall.biz.batch.member.job.MemberDormantAlamTasklet" />
+    <batch:job id="memDormantRunAlamJob">
+        <batch:step id="memDormantRunAlamJobStep">
+            <batch:tasklet ref="memDormantAlamTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 휴면 회원 등록  -->
+    <bean id="memDormantTasklet" class="net.danvi.dmall.biz.batch.member.job.MemberDormantTasklet" />
+    <batch:job id="memDormantRunJob">
+        <batch:step id="memDormantRunJobStep">
+            <batch:tasklet ref="memDormantTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 탈퇴 회원 관련 정보 삭제-->
+    <bean id="MemberWithdrawalTasklet" class="net.danvi.dmall.biz.batch.member.job.MemberWithdrawalTasklet" />
+    <batch:job id="deleteMemberNoRelationInfoJob" >
+        <batch:step id="deleteMemberNoRelationInfoJobStep">
+            <batch:tasklet ref="MemberWithdrawalTasklet" />
+        </batch:step>
+    </batch:job>
+        
+    <!-- 대량메일발송 결과 코드 업데이트 Job -->
+    <bean id="mailSendResultTasklet" class="net.danvi.dmall.biz.batch.member.job.MailSendResultTasklet" />
+    <batch:job id="mailSendResultJob">
+        <batch:step id="mailSendResultStep1">
+            <batch:tasklet ref="mailSendResultTasklet" />
+        </batch:step>
+    </batch:job>
+    
+    <!-- 방문예약 회원 알림 -->
+    <bean id="visitAlamTasklet" class="net.danvi.dmall.biz.batch.member.job.MemberVisitRsvAlamTasklet" />
+    <batch:job id="visitAlarmRunJob">
+        <batch:step id="visitAlarmRunJobStep">
+            <batch:tasklet ref="visitAlamTasklet" />
+        </batch:step>
+    </batch:job>
+    
+
+</beans>

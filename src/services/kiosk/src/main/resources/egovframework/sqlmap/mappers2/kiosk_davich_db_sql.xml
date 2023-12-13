@@ -1,0 +1,1004 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.kiosk.monitor.mapper.SimpleMonitorMapper">
+	<select id="selectSimpleMonitor" parameterType="String" resultType="egovframework.kiosk.monitor.vo.SimpleMonitorVO">
+	 SELECT 
+           MAX(CNT_1) AS CNT_1,
+           MAX(CNT_2) AS CNT_2,
+           MAX(CNT_3) AS CNT_3,
+           MAX(CNT_4) AS CNT_4,
+           MAX(CNT_5) AS CNT_5,
+           MAX(CNT_6) AS CNT_6,
+           MAX(CNT_7) AS CNT_7,
+           MAX(SEQ_NO2_1) AS SEQ_NO2_1,
+           MAX(SEQ_NO2_2) AS SEQ_NO2_2,
+           MAX(SEQ_NO2_3) AS SEQ_NO2_3,
+           MAX(SEQ_NO2_4) AS SEQ_NO2_4,
+           MAX(SEQ_NO2_5) AS SEQ_NO2_5,
+           MAX(SEQ_NO2_6) AS SEQ_NO2_6,
+           MAX(SEQ_NO2_7) AS SEQ_NO2_7    
+      FROM (            
+            SELECT SUM(CASE WHEN KIND = '1' THEN 1 ELSE 0 END) AS CNT_1,
+                   SUM(CASE WHEN KIND = '2' THEN 1 ELSE 0 END) AS CNT_2,
+                   SUM(CASE WHEN KIND = '3' THEN 1 ELSE 0 END) AS CNT_3,
+                   SUM(CASE WHEN KIND = '4' THEN 1 ELSE 0 END) AS CNT_4,
+                   SUM(CASE WHEN KIND = '5' THEN 1 ELSE 0 END) AS CNT_5,
+                   SUM(CASE WHEN KIND = '6' THEN 1 ELSE 0 END) AS CNT_6,
+                   SUM(CASE WHEN KIND = '7' THEN 1 ELSE 0 END) AS CNT_7,
+                                    
+                   0 AS SEQ_NO2_1,
+                   0 AS SEQ_NO2_2,
+                   0 AS SEQ_NO2_3,
+                   0 AS SEQ_NO2_4,
+                   0 AS SEQ_NO2_5,
+                   0 AS SEQ_NO2_6,
+                   0 AS SEQ_NO2_7,
+                                    
+                   0 AS SEQ_NO_1,
+                   0 AS SEQ_NO_2,
+                   0 AS SEQ_NO_3,
+                   0 AS SEQ_NO_4,
+                   0 AS SEQ_NO_5,
+                   0 AS SEQ_NO_6,
+                   0 AS SEQ_NO_7
+                 
+              FROM MALL_STR_BOOKING_EASY
+             
+             WHERE DATES    = to_char(sysdate,'YYYYMMDD')  
+               AND STR_CODE = #{storeCode}     
+               AND FLAG     = 1
+          
+        UNION ALL        
+            SELECT 0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   0,
+                   
+                   MAX(CASE WHEN KIND = '1' THEN A.SEQ_NO END) AS SEQ_NO2_1,
+                   MAX(CASE WHEN KIND = '2' THEN A.SEQ_NO END) AS SEQ_NO2_2,
+                   MAX(CASE WHEN KIND = '3' THEN A.SEQ_NO END) AS SEQ_NO2_3,
+                   MAX(CASE WHEN KIND = '4' THEN A.SEQ_NO END) AS SEQ_NO2_4,
+                   MAX(CASE WHEN KIND = '5' THEN A.SEQ_NO END) AS SEQ_NO2_5,
+                   MAX(CASE WHEN KIND = '6' THEN A.SEQ_NO END) AS SEQ_NO2_6,
+                   MAX(CASE WHEN KIND = '7' THEN A.SEQ_NO END) AS SEQ_NO2_7,                                    
+                   0,           
+                   0,           
+                   0,           
+                   0,           
+                   0,           
+                   0,           
+                   0              
+              FROM (
+                    SELECT ROW_NUMBER() OVER(PARTITION BY KIND ORDER BY TIMES DESC, SEQ DESC) AS ROW_NUM, SEQ_NO, KIND
+                      FROM MALL_STR_BOOKING_EASY
+                     WHERE DATES    = to_char(sysdate,'YYYYMMDD')    
+                       AND STR_CODE = #{storeCode}       
+                       AND FLAG     = 2
+                   ) A              
+             WHERE A.ROW_NUM = 1
+       
+           ) A
+	</select>
+	<!-- <select id="countDavichStrBooking" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*) AS CNT
+		  FROM (
+		  
+		SELECT ROWNUM 
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+		
+		UNION ALL
+		SELECT ROWNUM 
+		FROM MALL_STR_BOOKING A,
+             MALL_STR_BOOKING_LIST B
+        WHERE A.DATES = B.DATES(+)
+          AND A.NM_CUST = B.NM_CUST(+)
+          AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+          AND TO_CHAR(A.DATES,'YYYY-MM-DD') = #{dates}                                                                
+          AND A.STR_CODE = #{str_code}
+          AND (TO_NUMBER(A.TIMES_FR) <![CDATA[>=]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) OR ( TO_NUMBER(A.TIMES_FR) <![CDATA[<]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) AND TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) <![CDATA[+]]> 200,'0000')) <![CDATA[>=]]> TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))  ) )
+          AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>'Y'                                                                
+          AND B.DATES IS NULL                                                                          
+		)
+		
+		  
+	</select> -->
+	
+	<select id="countDavichStrBooking" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_VIW2 A
+		WHERE STR_CODE = #{str_code}
+	</select>
+	
+	<!-- <select id="selectStrDavichBookingList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT B.*
+		FROM(
+			SELECT ROWNUM RNUM, A.*,
+			(SELECT COUNT(*) 
+			   FROM MALL_STR_BOOKING_LIST 
+			  WHERE STATUS = 0 
+			    AND STR_CODE = #{str_code} 
+			    AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+			    AND FLAG = '1' 			
+			
+			) AS WAITING_CNT
+	        FROM( 
+				
+				
+				SELECT  '1' as SEQ,
+						'예약' as SEQ_NO, 
+					   TO_CHAR(A.DATES,'YYYY-MM-DD HH24:MI:SS') , 
+					   A.STR_CODE, 
+					   '예약' AS TIMES, 
+					   A.NM_CUST, 
+					   REPLACE(A.CT_TELNO,'-','') AS HANDPHONE, 
+					   '1' AS FLAG, 
+					   A.PURPOSE, 
+					   '' AS PURPOSE_ETC, 
+					   '' AS BOOK_YN, 
+					   A.TIMES_FR AS BOOK_TIME, 
+					   SYSDATE AS INPUT_DATE, 
+					   SYSDATE AS CNG_DATE, 
+					   '-1' AS STATUS 
+				FROM MALL_STR_BOOKING A,
+		             MALL_STR_BOOKING_LIST B
+		        WHERE A.DATES = B.DATES(+)
+		          AND A.NM_CUST = B.NM_CUST(+)
+		          AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+		          AND A.DATES = #{dates}                                                                
+		          AND A.STR_CODE = #{str_code}
+		          AND (TO_NUMBER(A.TIMES_FR) <![CDATA[>=]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) OR ( TO_NUMBER(A.TIMES_FR) <![CDATA[<]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) AND TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) <![CDATA[+]]> 200,'0000')) <![CDATA[>=]]> TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))  ) )
+		          AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>'Y'                                                                
+		          AND B.DATES IS NULL
+				
+				UNION ALL
+				SELECT '2' as SEQ,
+					   to_char(SEQ_NO) as SEQ_NO, 
+					   TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, 
+					   STR_CODE, 
+					   TIMES, 
+					   NM_CUST, 
+					   HANDPHONE, 
+					   FLAG, 
+					   PURPOSE, 
+					   PURPOSE_ETC, 
+					   BOOK_YN, 
+					   BOOK_TIME, 
+					   INPUT_DATE, 
+					   CNG_DATE, 
+					   STATUS
+				FROM MALL_STR_BOOKING_LIST 
+				WHERE STR_CODE = #{str_code} 
+				AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+				AND FLAG = '1'
+				
+			) A
+			<if test='book_yn != null and book_yn == "Y"'>
+				ORDER BY SEQ , BOOK_TIME ASC
+				</if>
+				<if test='book_yn == null or book_yn == ""'>
+				ORDER BY SEQ , TIMES ASC
+				</if>
+        ) B
+		WHERE RNUM BETWEEN ((#{page_index}-1) * #{page_unit} +1) AND (#{page_index} * #{page_unit})
+	</select> -->
+	
+	<select id="selectStrDavichBookingList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT *
+		FROM
+		(SELECT ROWNUM AS RNUM, 
+		       A.*
+		FROM  MALL_STR_BOOKING_VIW2 A
+		WHERE STR_CODE = #{str_code}
+  		  )
+  		  WHERE RNUM BETWEEN ((#{page_index}-1) * #{page_unit} +1) AND (#{page_index} * #{page_unit})
+	</select>
+	
+	<select id="selectDavichStrBookingListComplete" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, STR_CODE, TIMES,  HANDPHONE, FLAG, PURPOSE, PURPOSE_ETC, BOOK_YN, BOOK_TIME, INPUT_DATE, CNG_DATE, SEQ_NO, NM_CUST, CD_CUST, STATUS
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1' AND STATUS = 7
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectDavichCountStrBookingListTts" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1' 
+		<![CDATA[AND IP = #{ip, jdbcType=VARCHAR}||'_'||#{login_id}]]>
+		AND INPUT_DATE = #{input_date2}
+		AND SEQ_NO = #{seq_no}
+		AND LOGIN_ID = #{login_id}
+		AND TTS_GUBUN='3'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<insert id="insertDavichStrBoonikgTtsList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		INSERT INTO MALL_STR_BOOKING_TTS_LIST (
+		    DATES,
+		    STR_CODE,
+		    TIMES,
+		    NM_CUST,
+		    HANDPHONE,
+		    FLAG,
+		    PURPOSE,		    
+		    BOOK_YN,
+		    BOOK_TIME,
+		    INPUT_DATE,
+		    CNG_DATE,
+		    CD_CUST,
+		    PURPOSE_ETC,
+		    STATUS,
+		    SEQ_NO,
+		    IP,
+		    TTS_INPUT_DATE,
+		    TTS_GUBUN,
+		    LOGIN_ID
+		) VALUES (
+		    TO_CHAR(sysdate,'YYYY-MM-DD'),
+		    #{str_code},
+		    #{times},
+		    #{nm_cust},
+		    #{handphone},
+		    #{flag},
+		    #{purpose},		   
+		    #{book_yn},
+		    #{book_time},
+		    #{input_date2},
+		    #{cng_date2},
+		    #{cd_cust},
+		    #{purpose_etc},
+		    #{status},
+		    #{seq_no2},		    
+		    #{ip}||'_'||#{login_id},
+		    sysdate,
+		    #{tts_gubun},
+		    #{login_id}
+		)
+	</insert>
+	
+	<insert id="insertVisitInfo" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		insert into mall_str_booking_list (
+			dates
+			, str_code
+			, times
+			, nm_cust
+			, handphone
+			, age
+			, flag
+			, purpose
+			, book_yn
+			, book_time
+			, cd_cust
+		) values (
+			to_date(#{dates}, 'YYYYMMDD')
+			, #{str_code}
+			, #{times}
+			, #{nm_cust}
+			, #{handphone}
+			, #{age}
+			, '1'
+			, #{purpose, jdbcType=VARCHAR}
+			, #{book_yn, jdbcType=VARCHAR}
+			, #{book_time}
+			, #{cd_cust}
+		)
+	</insert>
+	<select id="selectDavichCardNo" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(CD_CUST,'')
+		  FROM EAA07 
+		 WHERE MALL_NO_CARD = #{mallNoCard}
+	</select>
+	<select id="selectDavichVisitCount" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="int">
+		SELECT COUNT(*) AS CNT
+	    FROM MALL_STR_BOOKING
+	    WHERE STR_CODE = #{store_no}
+	    AND DATES = #{rsv_date}
+	    AND DEL_YN = #{cancel_yn}
+	    AND CT_TELNO = #{mobile}
+	</select>
+	
+	<select id="selectDavichVisitList" parameterType="egovframework.kiosk.customer.vo.CustomerVO" resultType="egovframework.kiosk.customer.vo.CustomerVO">
+		SELECT 
+		       NM_CUST as MEMBER_NM, 
+		       TIMES_FR as RSV_TIME, 
+		       PURPOSE as VISIT_PURPOSE_NM,
+		       MALL_RSV_NO as RSV_NO,
+		       MEMO as REQ_MATR,
+		       CD_CUST AS CD_CUST
+	    FROM MALL_STR_BOOKING
+	    WHERE STR_CODE = #{store_no}
+	    AND DATES = #{rsv_date}
+	    AND DEL_YN = #{cancel_yn}
+	    AND CT_TELNO = #{mobile}
+	</select>
+	
+	<select id="selectDavichCustomerCount" parameterType="java.lang.String" resultType="int">
+		SELECT COUNT(*)
+          FROM EAA07
+         WHERE HAND_PHONE = #{mobile2}
+           AND CD_GUBUN   = '0'
+	</select>
+	
+	<select id="selectDavichCustomerList" parameterType="java.lang.String" resultType="egovframework.kiosk.customer.vo.CustomerVO">
+		SELECT A.CD_CUST as cd_cust, 
+			   A.NM_CUST as member_nm, 
+			   A.HAND_PHONE as mobile, 
+			   A.MALL_NO_CARD as mall_no_card,
+			   B.STR_NAME AS recent_str_name,
+			   NVL2( A.MALL_NO_CARD,'통합회원','다비젼회원') as customerGubun
+          FROM EAA07 A,
+               AM010TBL B
+         WHERE A.MAN_CODE = B.STR_CODE
+           AND A.HAND_PHONE = #{mobile2}
+           AND A.CD_GUBUN   = '0'
+      ORDER BY customerGubun DESC, member_nm
+	</select>
+	<select id="countKvisionStrBooking" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*) AS CNT FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+	</select>
+	
+	<select id="selectKvisionStrBookingListAll" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, STR_CODE, TIMES, NM_CUST, HANDPHONE, FLAG, PURPOSE, PURPOSE_ETC, BOOK_YN, BOOK_TIME, INPUT_DATE, CNG_DATE
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} AND FLAG = '1'
+		<if test="book_yn != null and book_yn != ''">
+			AND BOOK_YN = #{book_yn}
+		</if>
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectStrDavichBookingMobileList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT *
+		FROM
+		(SELECT ROWNUM AS RNUM, 
+		       A.*
+		FROM  MALL_STR_BOOKING_VIW_test A
+		WHERE STR_CODE = #{str_code}
+  		  )
+	</select>
+	
+	<update id="updateMallStrBookingFlag" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE MALL_STR_BOOKING_LIST SET FLAG = #{flag}
+		WHERE DATES = #{input_date2}
+		AND STR_CODE = #{str_code}
+		AND TIMES = #{times}
+	</update>
+	
+	<update id="updateComplete" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE MALL_STR_BOOKING_LIST SET STATUS = #{status}
+		WHERE DATES = #{input_date2}
+		AND STR_CODE = #{str_code}
+		AND TIMES = #{times}
+	</update>
+	
+	<select id="selectMallStrBooking" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO">
+		SELECT * 
+		  FROM MALL_STR_BOOKING
+		 WHERE SEQ_NO = #{rsv_seq}
+		   AND DATES = to_date(to_char(SYSDATE,'YYYY-MM-DD'),'YYYY-MM-DD')
+		   AND STR_CODE = #{str_code}
+	</select>
+	
+	<select id="maxSeqNo" parameterType="java.lang.String" resultType="int">
+		SELECT MAX(NVL(SEQ_NO,0))+1
+	      FROM MALL_STR_BOOKING_LIST
+	     WHERE DATES    = TO_DATE(SYSDATE)
+	       AND STR_CODE = #{str_code}
+	</select>
+
+	<select id="insertMallStrBookingList" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" statementType="CALLABLE"> 
+		 CALL PRC_KIOSK_BOOKING_V2( #{str_code}, 
+		 							#{cd_cust}, 
+		 							#{nm_cust}, 
+		 							REPLACE(#{ct_telno},'-',''), 
+		 							#{purpose}, 
+		 							nvl(#{purpose_etc},''), 
+		 							'', 
+		 							'', 
+		 							#{seq_no2},
+		 							'1',
+		 							#{returnTime, mode=OUT, jdbcType=VARCHAR})
+	</select>
+	
+	<update id="updateMallStrBookingTTS_01" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE MALL_STR_BOOKING_LIST 
+		   SET TTS_01 = #{tts_01}
+		 WHERE DATES =  TO_DATE(SYSDATE)
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+	</update>
+	
+	<update id="updateMallStrBookingTTS_02" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE MALL_STR_BOOKING_LIST 
+		   SET TTS_02 = #{tts_02}
+		 WHERE DATES =  TO_DATE(SYSDATE)
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+	</update>
+	
+	<select id="selectDavichStrBookingListTTS01" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO"> 
+		 SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, 
+		 		STR_CODE, 
+		 		TIMES,  
+		 		HANDPHONE, 
+		 		FLAG, 
+		 		PURPOSE, 
+		 		PURPOSE_ETC, 
+		 		BOOK_YN, 
+		 		BOOK_TIME, 
+		 		INPUT_DATE, 
+		 		CNG_DATE, 
+		 		SEQ_NO, 
+		 		NM_CUST, 
+		 		CD_CUST, 
+		 		STATUS
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} 
+		  AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+		  AND FLAG = '1' 
+		  AND TTS_01 = '1'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectDavichStrBookingListTTS02" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO"> 
+		 SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, 
+		 		STR_CODE, 
+		 		TIMES,  
+		 		HANDPHONE, 
+		 		FLAG, 
+		 		PURPOSE, 
+		 		PURPOSE_ETC, 
+		 		BOOK_YN, 
+		 		BOOK_TIME, 
+		 		INPUT_DATE, 
+		 		CNG_DATE, 
+		 		SEQ_NO, 
+		 		NM_CUST, 
+		 		CD_CUST, 
+		 		STATUS
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} 
+		  AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+		  AND FLAG = '1' 
+		  AND TTS_02 = '1'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectCountStrBookingListTts01" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1' 
+		<![CDATA[AND IP = #{ip, jdbcType=VARCHAR}||'_'||#{login_id}]]>
+		AND INPUT_DATE = #{input_date2}
+		AND SEQ_NO = #{seq_no}
+		AND TTS_gubun = '1'
+		AND LOGIN_ID = #{login_id}
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectCountStrBookingListTts02" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1'
+		<if test="ip != null and ip != ''"> 
+			<![CDATA[AND IP = #{ip, jdbcType=VARCHAR}||'_'||#{login_id}]]>
+		</if>
+		AND INPUT_DATE = #{input_date2}
+		AND SEQ_NO = #{seq_no}
+		AND TTS_gubun = '2'
+		AND LOGIN_ID = #{login_id}
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectCountStrBookingListTts02Dates" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1'
+		AND DATES = TO_CHAR(sysdate,'YYYY-MM-DD')
+		AND SEQ_NO = #{seq_no3}
+		AND TTS_gubun = '2'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<delete id="deleteStrBookingListTts02" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		DELETE 
+		  FROM MALL_STR_BOOKING_TTS_LIST
+		 WHERE DATES = TO_CHAR(sysdate,'YYYY-MM-DD')
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+		   AND TTS_gubun = '2'
+	</delete>
+	
+	<select id="selectTtsOption" parameterType="java.lang.String" resultType="egovframework.kiosk.monitor.vo.TtsOptionVO">
+		SELECT STR_CODE,
+       		   TIMER 
+  		  FROM TTS_OPTION 
+ 		  WHERE STR_CODE = NVL((SELECT STR_CODE 
+           			              FROM TTS_OPTION 
+                     			 WHERE STR_CODE = #{str_code}),'8888')
+	</select>
+	
+	<select id="selectCountCheck" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int"> 
+		 SELECT COUNT(*) 
+		   FROM MALL_STR_BOOKING_LIST
+          WHERE STR_CODE = #{str_code}
+            AND NM_CUST = #{nm_cust}
+            AND DATES = TO_DATE(SYSDATE)
+            AND FLAG = '1'
+            AND HANDPHONE = REPLACE(#{ct_telno},'-','')
+	</select>
+	
+	<select id="countDuplicateChck" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE TIMES = #{times} 
+		  AND STR_CODE = #{str_code} 
+		  AND DATES = to_date(#{dates}, 'YYYYMMDD')
+		  AND TTS_INPUT_DATE = #{SYSDATE}
+		  AND FLAG = '1'
+	</select>
+	
+	<select id="pushInsert" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="java.lang.String">
+		SELECT fnc_mall_push (#{mallCardNo}, #{content}, #{strCode})
+		  FROM DUAL
+	</select>
+	
+	<select id="selectDavichMallNoCard" parameterType="java.lang.String" resultType="egovframework.kiosk.customer.vo.CustomerVO">
+		SELECT NM_CUST as member_nm,
+		       MALL_NO_CARD as mall_no_card 
+		  FROM EAA07 
+		 WHERE CD_CUST=#{cd_cust}
+	</select>
+	
+	
+	<select id="selectAm700tbl" parameterType="egovframework.kiosk.customer.vo.Am700tblVO" resultType="egovframework.kiosk.customer.vo.Am700tblVO">
+		SELECT ctr_desc
+		  FROM AM700TBL 
+		 WHERE CTR_ID = #{ctr_id}
+		   and CTR_CODE = #{ctr_code}
+	</select>
+	
+	<update id="updateMallStrBookingListStatus" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		UPDATE MALL_STR_BOOKING_LIST 
+		   SET STATUS = #{status}
+		 WHERE DATES =  TO_DATE(SYSDATE)
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+	</update>
+	
+	<select id="selectCountStrBookingListTts01Dates" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1'
+		AND DATES = TO_CHAR(sysdate,'YYYY-MM-DD')
+		AND SEQ_NO = #{seq_no3}
+		AND TTS_gubun = '1'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<delete id="deleteStrBookingListTts01" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		DELETE 
+		  FROM MALL_STR_BOOKING_TTS_LIST
+		 WHERE DATES = TO_CHAR(sysdate,'YYYY-MM-DD')
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+		   AND TTS_gubun = '1'
+	</delete>
+	
+	<select id="selectDavichStrBookingListTTS04" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="egovframework.kiosk.customer.vo.StrBookingVO"> 
+		 SELECT TO_CHAR(DATES,'YYYY-MM-DD HH24:MI:SS') AS DATES, 
+		 		STR_CODE, 
+		 		TIMES,  
+		 		HANDPHONE, 
+		 		FLAG, 
+		 		PURPOSE, 
+		 		PURPOSE_ETC, 
+		 		BOOK_YN, 
+		 		BOOK_TIME, 
+		 		INPUT_DATE, 
+		 		CNG_DATE, 
+		 		SEQ_NO, 
+		 		NM_CUST, 
+		 		CD_CUST, 
+		 		STATUS
+		FROM MALL_STR_BOOKING_LIST 
+		WHERE STR_CODE = #{str_code} 
+		  AND TO_CHAR(DATES,'YYYY-MM-DD') = #{dates} 
+		  AND FLAG = '1' 
+		  AND TTS_04 = '1'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectCountStrBookingListTts04" parameterType="egovframework.kiosk.customer.vo.StrBookingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM MALL_STR_BOOKING_TTS_LIST 
+		WHERE STR_CODE = #{str_code} 
+		AND  FLAG = '1'
+		<if test="ip != null and ip != ''"> 
+			<![CDATA[AND IP = #{ip, jdbcType=VARCHAR}||_||#{login_id}]]>
+		</if>
+		AND INPUT_DATE = #{input_date2}
+		AND SEQ_NO = #{seq_no}
+		AND TTS_gubun = '4'
+		ORDER BY TIMES ASC
+	</select>
+	
+	<select id="selectTestStoreCount" parameterType="java.lang.String" resultType="int">
+		  SELECT COUNT(*)
+    		FROM AM010TBL_TEST 
+   		   WHERE TEST_CODE = 'A026'
+    		 AND TO_CHAR(SYSDATE,'YYYYMMDD') BETWEEN S_DATE AND E_DATE
+     		 AND STR_CODE  = #{str_code}
+	</select>
+	
+	<delete id="deleteStrBookingListTts03" parameterType="egovframework.kiosk.customer.vo.StrBookingVO">
+		DELETE 
+		  FROM MALL_STR_BOOKING_TTS_LIST
+		 WHERE DATES = TO_CHAR(sysdate,'YYYY-MM-DD')
+		   AND STR_CODE = #{str_code}
+		   AND TIMES = #{times}
+		   AND TTS_gubun = '3'
+	</delete>
+	
+	<select id="selectAm030tbl8888" parameterType="egovframework.kiosk.manager.vo.LoginVO"  resultType="int">
+		SELECT COUNT(*) 
+		  FROM AM030TBL 
+		 WHERE STR_CODE = '0000' 
+		   AND LOGIN_ID = #{loginId}
+		   AND PSWRD  = #{loginPw}
+	</select>
+	
+	<select id="selectSimpleData" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="egovframework.kiosk.customer.vo.SimpleDataVO">
+			 SELECT * FROM
+			 (SELECT ROWNUM AS RW, 
+			 		A.SEQ_NO as seq_no,
+					A.NM_CUST as nm_cust,
+					A.STATUS as status,
+					A.BOOK_TIME as book_time,
+					A.INPUT_TIME as input_time
+			  FROM (
+					SELECT '예약' AS SEQ_NO,
+        					A.NM_CUST,
+        					'' AS STATUS,
+        					TIMES_FR AS BOOK_TIME,
+        					'' AS INPUT_TIME,
+        					ROW_NUMBER() OVER(ORDER BY TIMES_FR) AS ROW_NUM,
+        					'1' AS SEQ
+                       FROM MALL_STR_BOOKING A,
+                            MALL_STR_BOOKING_LIST B
+                      WHERE A.DATES   = B.DATES(+)
+                        AND A.NM_CUST = B.NM_CUST(+)
+                        AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+                        AND A.DATES = #{dates}                                                                 
+                        AND A.STR_CODE = #{str_code}
+                        AND (TO_NUMBER(A.TIMES_FR) >= TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) 
+                             OR (TO_NUMBER(A.TIMES_FR) <![CDATA[ < ]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI'))
+                                 AND                                                            
+                                 TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) + 200,'0000')) >= TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))
+                                ) 
+                            )
+                        AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>  'Y'                                                                  
+                        AND B.DATES IS NULL                                                                           
+                        AND '4' = #{purpose}
+			   
+		   UNION ALL
+
+				SELECT (CASE WHEN BOOK_YN = 'Y' THEN '예약' ELSE TO_CHAR(SEQ_NO) END) AS SEQ_NO,
+         			   (CASE WHEN NM_CUST IS NULL THEN '' ELSE NM_CUST END) AS NM_CUST,    
+        			   (CASE WHEN STATUS = '0' THEN '대기' 
+              				 WHEN STATUS = '1' THEN '상담시작' 
+              				 WHEN STATUS = '2' THEN '검사중' 
+              				 WHEN STATUS = '3' THEN '검사완료'
+              				 WHEN STATUS = '4' THEN '상담중'
+              				 WHEN STATUS = '5' THEN '상담완료'
+              				 WHEN STATUS = '6' THEN '가공중'    
+              				 WHEN STATUS = '7' THEN '안경완성' END) AS STATUS,
+              		    BOOK_TIME,
+              			TO_CHAR(INPUT_DATE,'HH24MI') AS INPUT_TIME,
+              			ROW_NUMBER() OVER(ORDER BY INPUT_DATE) AS ROW_NUM,
+              			'2' AS SEQ
+				   FROM MALL_STR_BOOKING_LIST
+				  WHERE DATES = #{dates}
+					AND STR_CODE = #{str_code}
+					AND (CASE WHEN SEQ_NO BETWEEN   1 AND  99 THEN '5' 
+          					  WHEN SEQ_NO BETWEEN 101 AND 199 THEN '1' 
+          	 				  WHEN SEQ_NO BETWEEN 201 AND 299 THEN '2' 
+          					  WHEN SEQ_NO BETWEEN 301 AND 399 THEN '3' 
+          					  WHEN SEQ_NO BETWEEN 401 AND 499 THEN '4' END) =  #{purpose}   <!-- 1=안경,2=콘택트,3=as,4=예약,5=제품수령 -->
+					AND FLAG = '1'
+					) A
+		ORDER BY A.SEQ,A.ROW_NUM) B WHERE B.RW BETWEEN ((#{page_index}-1) * #{page_unit} +1) AND (#{page_index} * #{page_unit})
+	</select>
+	
+	<select id="selectSimpleDataCount" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="int">
+			SELECT COUNT(*)
+			  FROM (
+					SELECT '예약' AS SEQ_NO,
+        					A.NM_CUST,
+        					'' AS STATUS,
+        					TIMES_FR AS BOOK_TIME,
+        					'' AS INPUT_TIME,
+        					ROW_NUMBER() OVER(ORDER BY TIMES_FR) AS ROW_NUM,
+        					'1' AS SEQ
+                       FROM MALL_STR_BOOKING A,
+                            MALL_STR_BOOKING_LIST B
+                      WHERE A.DATES   = B.DATES(+)
+                        AND A.NM_CUST = B.NM_CUST(+)
+                        AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+                        AND A.DATES = #{dates}                                                                 
+                        AND A.STR_CODE = #{str_code}
+                        AND (TO_NUMBER(A.TIMES_FR) >= TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) 
+                             OR (TO_NUMBER(A.TIMES_FR) <![CDATA[ < ]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI'))
+                                 AND                                                            
+                                 TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) + 200,'0000')) >= TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))
+                                ) 
+                            )
+                        AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>  'Y'                                                                  
+                        AND B.DATES IS NULL                                                                           
+                        AND '4' = #{purpose}
+			   
+		   UNION ALL
+
+				SELECT (CASE WHEN BOOK_YN = 'Y' THEN '예약' ELSE TO_CHAR(SEQ_NO) END) AS SEQ_NO,
+         			   (CASE WHEN NM_CUST IS NULL THEN TO_CHAR(INPUT_DATE,'HH24:MI') ELSE NM_CUST END) AS NM_CUST,    
+        			   (CASE WHEN STATUS = '0' THEN '대기' 
+              				 WHEN STATUS = '1' THEN '상담시작' 
+              				 WHEN STATUS = '2' THEN '검사중' 
+              				 WHEN STATUS = '3' THEN '검사완료'
+              				 WHEN STATUS = '4' THEN '상담중'
+              				 WHEN STATUS = '5' THEN '상담완료'
+              				 WHEN STATUS = '6' THEN '가공중'    
+              				 WHEN STATUS = '7' THEN '안경완성' END) AS STATUS,
+              		    BOOK_TIME,
+              			TO_CHAR(INPUT_DATE,'HH24MI') AS INPUT_TIME,
+              			ROW_NUMBER() OVER(ORDER BY INPUT_DATE) AS ROW_NUM,
+              			'2' AS SEQ
+				   FROM MALL_STR_BOOKING_LIST
+				  WHERE DATES = #{dates}
+					AND STR_CODE = #{str_code}
+					AND (CASE WHEN SEQ_NO BETWEEN   1 AND  99 THEN '5' 
+          					  WHEN SEQ_NO BETWEEN 101 AND 199 THEN '1' 
+          	 				  WHEN SEQ_NO BETWEEN 201 AND 299 THEN '2' 
+          					  WHEN SEQ_NO BETWEEN 301 AND 399 THEN '3' 
+          					  WHEN SEQ_NO BETWEEN 401 AND 499 THEN '4' END) =  #{purpose}   <!-- 1=안경,2=콘택트,3=as,4=예약,5=제품수령 -->
+					AND FLAG = '1'
+					) A
+	</select>
+	
+	<select id="selectAm010tblTestCount" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="int">
+		SELECT COUNT(*) 
+		  FROM AM010TBL_TEST
+		 WHERE TEST_CODE =  #{test_code}
+		   AND STR_CODE = #{str_code}
+		   AND S_DATE <![CDATA[<=]]> TO_CHAR(SYSDATE,'YYYYMMDD')
+		   AND E_DATE <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD')
+	</select>
+	
+	<select id="selectSimpleDataOptionList" parameterType="egovframework.kiosk.customer.vo.SimpleDataOptionVO"  resultType="egovframework.kiosk.customer.vo.SimpleDataOptionVO">
+		select str_code,
+       		   login_id,
+       		   unit_size,
+       		   input_date
+  		  from simple_data_option
+  		 where str_code = #{str_code}
+  		   and login_id = #{login_id}
+	</select>
+	
+	<select id="selectSimpleDataOptionCount" parameterType="egovframework.kiosk.customer.vo.SimpleDataOptionVO"  resultType="int">
+		select count(*)
+  		  from simple_data_option
+  		 where str_code = #{str_code}
+  		   and login_id = #{login_id}
+	</select>
+	
+	<insert id="insertSimpleDataOption" parameterType="egovframework.kiosk.customer.vo.SimpleDataOptionVO">
+		insert into simple_data_option (
+			str_code,
+       		login_id,
+       		unit_size,
+       		input_date
+		) values (
+			  #{str_code}
+			, #{login_id}
+			, #{unit_size}
+			, sysdate
+		)
+	</insert>
+	
+	<update id="updateSimpleDataOption" parameterType="egovframework.kiosk.customer.vo.SimpleDataOptionVO">
+		UPDATE simple_data_option 
+		   SET unit_size = #{unit_size}
+		 WHERE STR_CODE = #{str_code}
+		   AND login_id = #{login_id}
+	</update>
+	
+	<select id="selectSimpleData_test" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="egovframework.kiosk.customer.vo.SimpleDataVO">
+			 SELECT * FROM
+			 (SELECT ROWNUM AS RW, 
+			 		A.SEQ_NO as seq_no,
+					A.NM_CUST as nm_cust,
+					A.STATUS as status,
+					A.BOOK_TIME as book_time,
+					A.INPUT_TIME as input_time
+			  FROM (
+					SELECT '예약' AS SEQ_NO,
+        					A.NM_CUST,
+        					'' AS STATUS,
+        					TIMES_FR AS BOOK_TIME,
+        					'' AS INPUT_TIME,
+        					ROW_NUMBER() OVER(ORDER BY TIMES_FR) AS ROW_NUM,
+        					'1' AS SEQ
+                       FROM MALL_STR_BOOKING A,
+                            MALL_STR_BOOKING_LIST B
+                      WHERE A.DATES   = B.DATES(+)
+                        AND A.NM_CUST = B.NM_CUST(+)
+                        AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+                        AND A.DATES = #{dates}                                                                 
+                        AND A.STR_CODE = #{str_code}
+                        AND (TO_NUMBER(A.TIMES_FR) >= TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) 
+                             OR (TO_NUMBER(A.TIMES_FR) <![CDATA[ < ]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI'))
+                                 AND                                                            
+                                 TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) + 200,'0000')) >= TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))
+                                ) 
+                            )
+                        AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>  'Y'                                                                  
+                        AND B.DATES IS NULL                                                                           
+                        AND '4' in  (3,4,5)
+			   
+		   UNION ALL
+
+				SELECT (CASE WHEN BOOK_YN = 'Y' THEN '예약' ELSE TO_CHAR(SEQ_NO) END) AS SEQ_NO,
+         			   (CASE WHEN NM_CUST IS NULL THEN '' ELSE NM_CUST END) AS NM_CUST,    
+        			   (CASE WHEN STATUS = '0' THEN '대기' 
+              				 WHEN STATUS = '1' THEN '상담시작' 
+              				 WHEN STATUS = '2' THEN '검사중' 
+              				 WHEN STATUS = '3' THEN '검사완료'
+              				 WHEN STATUS = '4' THEN '상담중'
+              				 WHEN STATUS = '5' THEN '상담완료'
+              				 WHEN STATUS = '6' THEN '가공중'    
+              				 WHEN STATUS = '7' THEN '안경완성' END) AS STATUS,
+              		    BOOK_TIME,
+              			TO_CHAR(INPUT_DATE,'HH24MI') AS INPUT_TIME,
+              			ROW_NUMBER() OVER(ORDER BY INPUT_DATE) AS ROW_NUM,
+              			'2' AS SEQ
+				   FROM MALL_STR_BOOKING_LIST
+				  WHERE DATES = #{dates}
+					AND STR_CODE = #{str_code}
+					AND (CASE WHEN SEQ_NO BETWEEN   1 AND  99 THEN '5' 
+          					  WHEN SEQ_NO BETWEEN 101 AND 199 THEN '1' 
+          	 				  WHEN SEQ_NO BETWEEN 201 AND 299 THEN '2' 
+          					  WHEN SEQ_NO BETWEEN 301 AND 399 THEN '3' 
+          					  WHEN SEQ_NO BETWEEN 401 AND 499 THEN '4' END) in  (3,4,5)  <!-- 1=안경,2=콘택트,3=as,4=예약,5=제품수령 -->
+					AND FLAG = '1'
+					) A
+		ORDER BY A.SEQ,A.ROW_NUM) B WHERE B.RW BETWEEN ((#{page_index}-1) * #{page_unit} +1) AND (#{page_index} * #{page_unit})
+	</select>
+	
+	<select id="selectSimpleDataCount_test" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="int">
+			SELECT COUNT(*)
+			  FROM (
+					SELECT '예약' AS SEQ_NO,
+        					A.NM_CUST,
+        					'' AS STATUS,
+        					TIMES_FR AS BOOK_TIME,
+        					'' AS INPUT_TIME,
+        					ROW_NUMBER() OVER(ORDER BY TIMES_FR) AS ROW_NUM,
+        					'1' AS SEQ
+                       FROM MALL_STR_BOOKING A,
+                            MALL_STR_BOOKING_LIST B
+                      WHERE A.DATES   = B.DATES(+)
+                        AND A.NM_CUST = B.NM_CUST(+)
+                        AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+                        AND A.DATES = #{dates}                                                                 
+                        AND A.STR_CODE = #{str_code}
+                        AND (TO_NUMBER(A.TIMES_FR) >= TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) 
+                             OR (TO_NUMBER(A.TIMES_FR) <![CDATA[ < ]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI'))
+                                 AND                                                            
+                                 TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) + 200,'0000')) >= TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))
+                                ) 
+                            )
+                        AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>  'Y'                                                                  
+                        AND B.DATES IS NULL                                                                           
+                        AND '4' in  (3,4,5)
+			   
+		   UNION ALL
+
+				SELECT (CASE WHEN BOOK_YN = 'Y' THEN '예약' ELSE TO_CHAR(SEQ_NO) END) AS SEQ_NO,
+         			   (CASE WHEN NM_CUST IS NULL THEN TO_CHAR(INPUT_DATE,'HH24:MI') ELSE NM_CUST END) AS NM_CUST,    
+        			   (CASE WHEN STATUS = '0' THEN '대기' 
+              				 WHEN STATUS = '1' THEN '상담시작' 
+              				 WHEN STATUS = '2' THEN '검사중' 
+              				 WHEN STATUS = '3' THEN '검사완료'
+              				 WHEN STATUS = '4' THEN '상담중'
+              				 WHEN STATUS = '5' THEN '상담완료'
+              				 WHEN STATUS = '6' THEN '가공중'    
+              				 WHEN STATUS = '7' THEN '안경완성' END) AS STATUS,
+              		    BOOK_TIME,
+              			TO_CHAR(INPUT_DATE,'HH24MI') AS INPUT_TIME,
+              			ROW_NUMBER() OVER(ORDER BY INPUT_DATE) AS ROW_NUM,
+              			'2' AS SEQ
+				   FROM MALL_STR_BOOKING_LIST
+				  WHERE DATES = #{dates}
+					AND STR_CODE = #{str_code}
+					AND (CASE WHEN SEQ_NO BETWEEN   1 AND  99 THEN '5' 
+          					  WHEN SEQ_NO BETWEEN 101 AND 199 THEN '1' 
+          	 				  WHEN SEQ_NO BETWEEN 201 AND 299 THEN '2' 
+          					  WHEN SEQ_NO BETWEEN 301 AND 399 THEN '3' 
+          					  WHEN SEQ_NO BETWEEN 401 AND 499 THEN '4' END) in  (3,4,5)   <!-- 1=안경,2=콘택트,3=as,4=예약,5=제품수령 -->
+					AND FLAG = '1'
+					) A
+	</select>
+	<select id="nullJudg" parameterType="egovframework.kiosk.customer.vo.SimpleDataVO"  resultType="egovframework.kiosk.customer.vo.SimpleDataVO">
+	 SELECT * FROM
+			 (SELECT ROWNUM AS RW, 
+			 		A.SEQ_NO as seq_no,
+					A.NM_CUST as nm_cust,
+					A.STATUS as status,
+					A.BOOK_TIME as book_time,
+					A.INPUT_TIME as input_time
+			  FROM (
+					SELECT '예약' AS SEQ_NO,
+        					A.NM_CUST,
+        					'' AS STATUS,
+        					TIMES_FR AS BOOK_TIME,
+        					'' AS INPUT_TIME,
+        					ROW_NUMBER() OVER(ORDER BY TIMES_FR) AS ROW_NUM,
+        					'1' AS SEQ
+                       FROM MALL_STR_BOOKING A,
+                            MALL_STR_BOOKING_LIST B
+                      WHERE A.DATES   = B.DATES(+)
+                        AND A.NM_CUST = B.NM_CUST(+)
+                        AND REPLACE(A.CT_TELNO,'-','') = B.HANDPHONE(+)
+                        AND A.DATES = #{dates}                                                                 
+                        AND A.STR_CODE = #{str_code}
+                        AND (TO_NUMBER(A.TIMES_FR) >= TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI')) 
+                             OR (TO_NUMBER(A.TIMES_FR) <![CDATA[ < ]]> TO_NUMBER(TO_CHAR(SYSDATE ,'HH24MI'))
+                                 AND                                                            
+                                 TO_NUMBER(TO_CHAR(TO_NUMBER(A.TIMES_FR) + 200,'0000')) >= TO_NUMBER(TO_CHAR(SYSDATE  ,'HH24MI'))
+                                ) 
+                            )
+                        AND NVL(A.DEL_YN,'N') <![CDATA[<>]]>  'Y'                                                                  
+                        AND B.DATES IS NULL                                                                           
+                        AND '4' in  (3,4,5)
+			   
+		   UNION ALL
+
+				SELECT (CASE WHEN BOOK_YN = 'Y' THEN '예약' ELSE TO_CHAR(SEQ_NO) END) AS SEQ_NO,
+         			   (CASE WHEN NM_CUST IS NULL THEN '' ELSE NM_CUST END) AS NM_CUST,    
+        			   (CASE WHEN STATUS = '0' THEN '대기' 
+              				 WHEN STATUS = '1' THEN '상담시작' 
+              				 WHEN STATUS = '2' THEN '검사중' 
+              				 WHEN STATUS = '3' THEN '검사완료'
+              				 WHEN STATUS = '4' THEN '상담중'
+              				 WHEN STATUS = '5' THEN '상담완료'
+              				 WHEN STATUS = '6' THEN '가공중'    
+              				 WHEN STATUS = '7' THEN '안경완성' END) AS STATUS,
+              		    BOOK_TIME,
+              			TO_CHAR(INPUT_DATE,'HH24MI') AS INPUT_TIME,
+              			ROW_NUMBER() OVER(ORDER BY INPUT_DATE) AS ROW_NUM,
+              			'2' AS SEQ
+				   FROM MALL_STR_BOOKING_LIST
+				  WHERE DATES = #{dates}
+					AND STR_CODE = #{str_code}
+					AND (CASE WHEN SEQ_NO BETWEEN   1 AND  99 THEN '5' 
+          					  WHEN SEQ_NO BETWEEN 101 AND 199 THEN '1' 
+          	 				  WHEN SEQ_NO BETWEEN 201 AND 299 THEN '2' 
+          					  WHEN SEQ_NO BETWEEN 301 AND 399 THEN '3' 
+          					  WHEN SEQ_NO BETWEEN 401 AND 499 THEN '4' END) in  (3,4,5)  <!-- 1=안경,2=콘택트,3=as,4=예약,5=제품수령 -->
+					AND FLAG = '1'
+					) A)
+	</select>
+</mapper>

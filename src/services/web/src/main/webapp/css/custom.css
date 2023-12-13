@@ -1,0 +1,328 @@
+.alert_body, .layer_popup {
+	z-index:999; 
+	position: absolute;
+	width: 394px;
+    height: auto;
+    border: 1px solid #666;
+    background: #fff;
+}
+.alert_content {
+    padding: 27px;
+}
+.alert_text {
+    padding: 34px 0 33px;
+    text-align: center;
+    color: #666;
+    font-size: 15px;
+    line-height: 20px;
+}
+/* div.dimmed{z-index:800;position:fixed;left:0;top:0;width:100%;height:100%;background-color:#000;opacity:0.6;filter:alpha(opacity=60);}*/
+div.dimmed2{z-index:900;position:fixed;left:0;top:0;width:100%;height:100%;background-color:#000;opacity:0.7;filter:alpha(opacity=70);}
+.pop_wrap {
+    z-index: 999999;
+    position: relative;
+    background-color: #fff;
+    height: 100%;
+}
+.btn_alert_close {
+    position: absolute;
+    right: 11px;
+    top: 12px;
+	background:none
+}
+.alert_btn_area {
+    text-align: center;
+}
+.btn_popup_ok,
+.btn_alert_ok {
+    color:#fff;
+    font-size:13px;
+    height:32px;
+    line-height:30px;
+    width:100px;
+    background:#1f59ff;
+    border:1px solid #4d4f52;
+    margin-left:3px;
+}
+.btn_alert_cancel {
+	color:#fff;
+    font-size:13px;
+    height:32px;
+    line-height:30px;
+    width:100px;
+    background:#666;
+    border:1px solid #4d4f52;
+}
+
+/* validator 라디오 등의 텍스트 표시를 위해 */
+.formError .formErrorContent {
+    text-indent: 0;
+}
+
+.popup_coupon {
+	width:700px
+}
+.popup_evidence,
+.popup_safe_checkout,
+.popup_safe_click,
+.popup_official,
+.popup_bank {
+	width:600px
+}
+.popup_address {
+	width:395px;
+	height:560px;
+}
+.popup_address .popup_header {
+	margin:0;
+	padding:0 24px;
+}
+.popup_address .popup_header .btn_close_popup {
+	right:24px
+}
+.popup_header {
+    position:relative;
+	width:auto;
+    height:68px;
+    margin:0 24px;
+	background:#fff;
+    border-bottom:1px solid #d6d6d6
+}
+.popup_header h1.popup_tit {
+    padding:16px 0 15px 10px;
+	margin-left:0;
+    color:#222222;
+    font-size:25px;
+	line-height:inherit;
+    font-weight:400;
+	background:#fff
+}
+
+.popup_content {
+	padding:0px 24px 20px 24px;
+	overflow-y:auto;
+	overflow-x:hidden;
+}
+
+.btn_popup_cancel {
+	color:#fff;
+    font-size:13px;
+    height:32px;
+    line-height:32px;
+    width:100px;
+    background:#666;
+    border:1px solid #4d4f52;
+}
+h3.cart_popup_title {
+	font-size:16px;
+	font-weight:400;
+	color:#333;
+	margin-bottom:5px
+}
+.popup_middle,
+.popup_middle02,
+.popup_middle03 {
+	margin:10px 0;	
+	color:#666;
+	font-size:14px;
+	font-weight:300;
+}
+.mobile_payment_info_text > li {
+	margin-bottom:5px
+}
+.mobile_payment_info_text_s {
+	margin-left:10px;
+}
+.popup_middle03 .tProduct_Con th {
+    font-size:13px;
+    font-weight:300;
+    text-align:center;
+    color:#333333;
+    padding:4px 16px;
+    border-right:1px solid #d6d6d6;
+    border-bottom: 1px solid #d6d6d6;
+    background: #f8f8f8;
+}
+.popup_middle03 .tProduct_Con th:last-child {
+	border-right:none
+}
+.popup_middle03 .tProduct_Con td {
+    font-size:13px;
+    text-align:center;
+    padding:6px 10px;
+    line-height:20px;
+    color: #666;
+    border-bottom: 1px solid #d6d6d6;
+}
+
+.btn_my_coupon {
+	width:65px;
+    height:25px;
+    vertical-align:2px;
+    font-size:12px;
+    color:#666666;
+    line-height:20px;
+    background:#fff;
+    border-radius:3px;
+    border-top:1px solid #cccccc;
+    border-left:1px solid #cccccc;
+    border-right:1px solid #cccccc;
+    border-bottom:1px solid #666666;
+}
+.coupon_scroll_tit {
+	font-weight:700;
+    margin:27px 0 5px;
+    overflow: hidden;
+}
+.coupon_scroll_tit span {
+	font-weight:400;
+	color:#666
+}
+.coupon_scroll_tit02 {
+    font-weight:700;
+    margin:27px 0 13px;
+    overflow:hidden;
+}
+.coupon_scroll {
+	height:250px;
+    border-top:1px solid #000;
+    border-bottom:1px solid #000;
+    overflow-y:scroll;
+}
+.tCoupon_List {
+	width:100%;
+    margin:0 auto;
+    padding:8px 0px;
+    letter-spacing:-1px;
+    border-bottom:1px solid #e5e5e5;
+    overflow: hidden;
+}
+.tCoupon_List li {
+	height:31px;
+	line-height:31px
+}
+.tCoupon_List li.col01 {
+    float:left;
+    width:55%;
+    margin-left:5px;
+}
+.tCoupon_List li.col02 {
+    float:left;
+    width:25%;
+    text-align:left;
+}
+.tCoupon_List li.col03 {
+    float:left;
+    width:18%;
+    text-align:right;
+}
+div.select_box28 {
+    width:200px;
+}
+div.select_box28 label {
+    display:none
+}
+.tCoupon_List li.col02_02 {
+    float:left;
+    width:25%;
+    text-align:right;
+    color:#e34000
+}
+.tCoupon_List li.col03 {
+    float:left;
+    width:18%;
+    text-align:right;
+}
+.coupon_scroll02 {
+    height:132px;
+    border-top:1px solid #666;
+    border-bottom:1px solid #666;
+    overflow-y:scroll;
+}
+.tCoupon_List02 li {
+    height:28px;
+    line-height:28px;
+    padding:8px 0px;
+    border-bottom:1px solid #d6d6d6
+}
+.popup_coupon_price {
+    margin-top:10px;
+	padding-bottom:10px;
+    border:1px solid #666;
+    text-align:center;
+    overflow:hidden;
+}
+.popup_coupon_price li {
+    float:left;
+    width:28%;
+    margin-top:15px;
+    font-size:15px;
+    color:#666;
+    text-align: center;
+}
+.popup_coupon_price li span {
+    display:block;
+    margin-top:5px;
+    font-size:18px;	
+    font-weight:700;
+}
+.popup_coupon_price li.icon {
+    width:6%;
+    margin:0;
+    height:77px;
+    line-height:102px;
+}
+.fRed {
+	color:#e34000
+}
+.radio_chack2_c,
+.radio_chack2_a {
+	width: 100px;
+    margin-right: 73px;
+    display: inline-block;
+}
+.tCart_Insert td input[type="radio"].order_radio + label.radio_chack2_c span,
+.tCart_Insert td input[type="radio"].order_radio + label.radio_chack2_a span {
+	margin-left:0
+}
+
+#popup_shipping_address_plus .popup_content {
+	margin:10px 0;
+	color:#666;
+	font-weight:300
+}
+#popup_shipping_address_plus .tProduct_Insert {
+	border-top:1px solid #666;
+	width:100%
+}
+#popup_shipping_address_plus .tProduct_Insert th,
+#popup_shipping_address_plus .tProduct_Insert td {
+	padding:10px;
+	font-size:15px;
+	font-weight:400;
+	border-bottom: 1px solid #d6d6d6;
+}
+#popup_shipping_address_plus .tProduct_Insert th {
+	border-right:1px solid #d6d6d6;
+	background:#f3f3f3
+}
+.address_insert li {
+	margin-bottom:5px
+}
+.address_tit {
+	display:inline-block;
+	font-size:14px
+}
+.btn_post {
+	width:100px;
+    height:31px;
+    line-height:29px;
+    border:1px solid #b1b1b1;
+    vertical-align: middle;
+    background: #ededed;
+    background: -moz-linear-gradient(top, #ededed 0%, #ffffff 100%);
+    background: -webkit-linear-gradient(top, #ededed 0%, #ffffff 100%);
+    background: linear-gradient(to bottom, #ededed 0%, #ffffff 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ededed', endColorstr='#ffffff',GradientType=0 );
+    box-shadow: 0 1px 0 0 #fff inset;
+}

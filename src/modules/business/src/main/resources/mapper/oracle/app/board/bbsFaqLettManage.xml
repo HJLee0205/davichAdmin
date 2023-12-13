@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.bbsFaqLettManage">
+
+    <sql id="selectBbsInfoWhere">
+        AND bbs.SITE_NO = #{siteNo}
+        AND lett.SITE_NO = #{siteNo}
+        AND lett.DEL_YN = 'N'
+        <if test="bbsId != null and bbsId != ''">
+            AND lett.BBS_ID = #{bbsId}
+        </if>
+        <if test="fromRegDt != null and fromRegDt != ''">
+            <![CDATA[
+            AND lett.REG_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="toRegDt != null and toRegDt != ''">
+            <![CDATA[
+            AND lett.REG_DTTM <= TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 0.99999
+            ]]>
+        </if>
+        <if test="searchKind == 'all'">
+            AND  (
+                 lett.title like '%'||#{searchVal}||'%'
+                 or
+                 lett.content like '%'||#{searchVal}||'%'
+                 )
+        </if>
+        <if test="searchKind == 'searchBbsLettTitle'">
+            AND lett.title like '%'||#{searchVal}||'%'
+        </if>
+        <if test="searchKind == 'searchBbsLettContent'">
+            AND lett.content like '%'||#{searchVal}||'%'
+        </if>
+        <if test="lettNo != null and lettNo != ''">
+            AND lett.lett_no = #{lettNo}
+        </if>
+        <if test="faqGbCds != null and faqGbCds != ''">
+            AND lett.faq_gb_cd IN <foreach collection="faqGbCds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test="faqGbCd != null and faqGbCd != ''">
+            AND lett.faq_gb_cd = #{faqGbCd}
+        </if>
+        <if test="regrNo != null and regrNo != ''">
+            AND lett.REGR_NO = #{regrNo}
+        </if>
+        <if test="searchVal != null and searchVal != ''">
+            AND lett.TITLE like '%'||#{searchVal}||'%'
+        </if>
+    </sql>
+
+    <select id="selectBbsLettPaging" resultType="bbsLettManageVO">
+        /* board.bbsFaqLettManage.selectBbsLettPaging */
+		SELECT *
+		FROM
+		(
+			SELECT ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt
+			    from
+			    (
+						        SELECT  lett.BBS_ID,
+						                lett.LETT_NO,
+						                lett.TITLE,
+						                lett.CONTENT,
+						                lett.REGR_NO,
+						                lett.REG_DTTM,
+						                NVL(lett.INQ_CNT, 0) as INQ_CNT ,
+						                lett.FAQ_GB_CD,
+						                fn_getCodeNm('FAQ_GB_CD', lett.FAQ_GB_CD) as FAQ_GB_NM
+						        FROM    TB_FAQ lett    INNER JOIN TB_BBS bbs ON (lett.bbs_id = bbs.bbs_id)
+						        WHERE 1=1
+						        <include refid="selectBbsInfoWhere" />
+						        <include refid="common.sortSql" />
+			    ) A
+			) AA
+        )
+        <include refid="common.pageSql" />
+
+    </select>
+
+    <select id="selectBbsLettPagingCount" resultType="Integer">
+        /* board.bbsFaqLettManage.selectBbsLettPagingCount */
+        SELECT COUNT(*)
+        FROM TB_FAQ lett INNER JOIN TB_BBS bbs ON (lett.bbs_id = bbs.bbs_id)
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <select id="selectBbsLettPagingTotalCount" resultType="Integer">
+        /* board.bbsFaqLettManage.selectBbsLettPagingTotalCount */
+        SELECT COUNT(*)
+        FROM TB_FAQ lett INNER JOIN TB_BBS bbs ON (lett.bbs_id = bbs.bbs_id)
+        WHERE 1=1
+        AND bbs.SITE_NO = #{siteNo}
+        AND lett.BBS_ID = #{bbsId}
+        AND lett.SITE_NO = #{siteNo}
+        AND lett.DEL_YN = 'N'
+    </select>
+
+    <!-- 공통 코드 그룹 상세 -->
+    <select id="selectBbsLettDtl" resultType="bbsLettManageVO">
+        /* board.bbsFaqLettManage.selectBbsLettDtl */
+        SELECT  lett.BBS_ID,
+                lett.LETT_NO,
+                lett.TITLE,
+                lett.REGR_NO,
+                lett.REG_DTTM,
+                lett.content,
+                bbs.NOTICE_LETT_SET_YN,
+                lett.FAQ_GB_CD,
+                fn_getCodeNm('FAQ_GB_CD', lett.FAQ_GB_CD) as FAQ_GB_NM
+        FROM    TB_FAQ lett  INNER JOIN TB_BBS bbs ON (lett.bbs_id = bbs.bbs_id)
+        WHERE 1=1
+        <include refid="selectBbsInfoWhere" />
+    </select>
+
+    <insert id="insertBbsLett">
+        /* board.bbsFaqLettManage.insertBbsLett */
+        INSERT INTO TB_FAQ
+        (
+            BBS_ID, LETT_NO, SITE_NO, FAQ_GB_CD, TITLE,
+            CONTENT, INQ_CNT, OPEN_YN,
+            REG_DTTM, REGR_NO, DEL_YN
+        )
+        VALUES
+        (
+            #{bbsId}, to_number(#{lettNo}), #{siteNo}, #{faqGbCd}, #{title},
+            #{content:CLOB}, 0, #{openYn},
+            sysdate, #{regrNo}, 'N'
+        )
+    </insert>
+
+    <update id="updateBbsLett">
+        /* board.bbsFaqLettManage.updateBbsLett */
+        UPDATE  TB_FAQ
+        SET     FAQ_GB_CD = #{faqGbCd},
+                TITLE  = #{title},
+                CONTENT = #{content:CLOB},
+                OPEN_YN = #{openYn},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE   LETT_NO = #{lettNo}
+        AND     SITE_NO = #{siteNo}
+    </update>
+
+    <update id="deleteBbsLett">
+        /* board.bbsFaqLettManage.deleteBbsLett */
+        UPDATE  TB_FAQ
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{delrNo},
+                DEL_DTTM = sysdate
+        WHERE   LETT_NO = #{lettNo}
+        AND     SITE_NO = #{siteNo}
+    </update>
+
+    <update id="updateInqCnt">
+        /* board.bbsFaqLettManage.updateInqCnt */
+        UPDATE  TB_FAQ
+        SET     INQ_CNT = INQ_CNT+1
+        WHERE   LETT_NO = #{lettNo}
+        AND     SITE_NO = #{siteNo}
+    </update>
+
+    <select id="selectBbsLettLvl" resultType="bbsLettManageVO">
+
+    </select>
+
+    <select id="nextBbsLettNo" resultType="bbsLettManageVO">
+         /* board.bbsFaqLettManage.nextBbsLettNo */
+         SELECT
+          *
+         FROM TB_FAQ
+         WHERE DEL_YN = 'N'
+         <![CDATA[
+         AND LETT_NO > #{lettNo}
+         ]]>
+         AND GRP_NO IS NULL
+         AND ROWNUM = 1
+    </select>
+
+    <select id="preBbsLettNo" resultType="bbsLettManageVO">
+         /* board.bbsFaqLettManage.preBbsLettNo */
+         SELECT
+          *
+         FROM TB_FAQ
+         WHERE DEL_YN = 'N'
+         <![CDATA[
+         AND LETT_NO < #{lettNo}
+         AND SITE_NO = #{siteNo}
+         ]]>
+         AND GRP_NO IS NULL
+         AND ROWNUM = 1
+    </select>
+    <!-- 신규등록 게시글번호 생성 -->
+    <select id="selectNewLettNo"  resultType="String">
+        /* board.bbsManage.selectNewLettNo */
+        SELECT fn_getSeq(0, 'FAQ_LETT_NO') FROM DUAL
+    </select>
+</mapper>

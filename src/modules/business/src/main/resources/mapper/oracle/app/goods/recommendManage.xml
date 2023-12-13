@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.recommend">
+    <!-- 상품목록 검색 조건절 -->
+    <sql id="selectRecommendListWhere">
+        <!-- 등록일 조건 -->
+
+        <if test="goodsTypeCds != null and goodsTypeCds.length > 0">
+            AND TG.GOODS_TYPE_CD IN (
+            <foreach collection="goodsTypeCds" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+    </sql>
+
+    <sql id="onlyPromotion">
+        <if test="isPromotion != null and isPromotion != ''">
+            , (SELECT IMG_PATH FROM TG_GOODS_RECOMMEND_IMG_DTL WHERE RECOMMEND_NO = TGR.RECOMMEND_NO AND
+            RECOMMEND_IMG_TYPE = '05') AS IMG_PATH
+            , (SELECT IMG_NM FROM TG_GOODS_RECOMMEND_IMG_DTL WHERE RECOMMEND_NO = TGR.RECOMMEND_NO AND
+            RECOMMEND_IMG_TYPE = '05') AS IMG_NM
+        </if>
+    </sql>
+
+    <!-- 추천 상품 목록 조회 -->
+    <select id="selectRecommendList" resultType="recommendVO">
+        SELECT row_number() over(PARTITION BY tg.GOODS_TYPE_CD ORDER BY tgr.SORT_SEQ) AS ROW_NUM,
+               fn_getGoodsImgPath(tg.GOODS_NO, '02') AS LATELY_IMG,
+               tg.GOODS_NM,
+               tg.GOODS_NO,
+               tg.GOODS_TYPE_CD,
+               tb.BRAND_NM,
+               ts.SELLER_NM,
+               ti.SALE_PRICE,
+               ti.SUPPLY_PRICE,
+               ti.STOCK_QTT,
+               fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+               tepm.ERP_ITM_CODE,
+               tgr.SORT_SEQ
+        FROM TG_GOODS_RECOMMEND tgr
+                 INNER JOIN TG_GOODS tg ON tgr.GOODS_NO = tg.GOODS_NO
+                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                 LEFT OUTER JOIN TG_BRAND tb ON tg.BRAND_NO = tb.BRAND_NO
+                 INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                 LEFT OUTER JOIN TI_ERP_PRD_MAPPING tepm ON ti.ITEM_NO = tepm.MALL_ITM_CODE
+        WHERE tg.DEL_YN = 'N'
+          AND tgr.REC_TYPE = #{recType}
+        ORDER BY tgr.SORT_SEQ
+    </select>
+
+    <!-- 추천 상품 목록(페이징) 조회 -->
+    <select id="selectRecommendListPaging" resultType="recommendVO">
+        /* goods.recommend.selectRecommendListPaging */
+        SELECT *
+        FROM
+        (select ROWNUM AS PAGING_NUM, ROWNUM, rownum as NUM, tot_cnt - rownum + 1 as ROW_NUM, AA.*
+        from
+            (select A.*, count(*) over() as tot_cnt
+            from
+                (SELECT
+                    TG.GOODS_NO
+                    , TG.GOODS_TYPE_CD
+                    , (SELECT MAX(ERP_ITM_CODE) FROM TI_ERP_PRD_MAPPING TPM
+                        WHERE TPM.MALL_GOODS_NO=TG.GOODS_NO
+                          AND TPM.MALL_ITM_CODE=TG.ITEM_NO
+                      ) AS ERP_ITM_CODE
+                    , TG.SELLER_NO
+                    , (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO=TG.SELLER_NO) AS SELLER_NM
+                    , TG.GOODS_NM
+                    , (SELECT MAX(fn_categoryName(TGC.CTG_NO, #{siteNo}))
+                         FROM TG_GOODS_CTG TGC
+                        WHERE TGC.GOODS_NO = TG.GOODS_NO
+                          AND TGC.SITE_NO = #{siteNo}
+                          AND TGC.DEL_YN = 'N'
+                      ) AS CTG_NAME
+                    , fn_getBrandNm(TG.BRAND_NO) AS BRAND_NM
+                    , TI.STOCK_QTT
+                    , fn_getGoodsImgPath(TG.GOODS_NO,'03') AS LATELY_IMG
+                    , fn_getGoodsImgPath(TG.GOODS_NO,'02') AS SNS_IMG
+                    , NVL((SELECT TS.AVAIL_STOCK_QTT FROM TS_SITE WHERE TS.SITE_NO = #{siteNo} AND TS.AVAIL_STOCK_SALE_YN = 'Y'), 0) AS AVAIL_STOCK_QTT
+                    , TGR.REC_START_DTTM
+                    , TGR.REC_END_DTTM
+                    , TG.ACCM_SALE_AMT
+                    , TO_CHAR(NVL(TI.SUPPLY_PRICE, 0), 'FM999,999,999,999')  AS SUPPLY_PRICE
+                    , TO_CHAR(NVL(TI.SALE_PRICE, 0), 'FM999,999,999,999') AS SALE_PRICE
+                    , fn_getCodeNm('GOODS_SALE_STATUS_CD', TG.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM
+                    , TGR.SORT_SEQ
+                 FROM TG_GOODS TG
+                    , TG_ITEM TI
+                    , TS_SITE TS
+                    , TG_GOODS_RECOMMEND TGR
+                WHERE TG.ITEM_NO = TI.ITEM_NO
+                  AND TG.SITE_NO = TS.SITE_NO
+                  AND TG.GOODS_NO = TGR.GOODS_NO
+                  AND TG.DEL_YN = 'N'
+                  AND TI.DEL_YN = 'N'
+                  AND TGR.REC_TYPE = #{recType}
+                <include refid="selectRecommendListWhere"/>
+                ) A
+            ) AA
+        )
+        <include refid="common.pageSql"/>
+    </select>
+
+    <!-- 추천 상품 총건수 조회 -->
+    <select id="selectRecommendListPagingTotalCount" resultType="Integer">
+        /* goods.recommend.selectRecommendListPagingTotalCount */
+        SELECT count(*)
+        FROM TG_GOODS TG
+        , TG_ITEM TI
+        , TS_SITE TS
+        , TG_GOODS_RECOMMEND TGR
+        WHERE TG.ITEM_NO = TI.ITEM_NO
+        AND TG.SITE_NO = TS.SITE_NO
+        AND TG.GOODS_NO = TGR.GOODS_NO
+        AND TG.DEL_YN = 'N'
+        AND TI.DEL_YN = 'N'
+        AND TGR.REC_TYPE = #{recType}
+        <include refid="selectRecommendListWhere"/>
+    </select>
+
+    <!-- 추천 상품 조건적용 총건수 조회 -->
+    <select id="selectRecommendListPagingCount" resultType="Integer">
+        /* goods.recommend.selectRecommendListPagingCount */
+        SELECT count(*)
+        FROM TG_GOODS TG
+        , TG_ITEM TI
+        , TS_SITE TS
+        , TG_GOODS_RECOMMEND TGR
+        WHERE TG.ITEM_NO = TI.ITEM_NO
+        AND TG.SITE_NO = TS.SITE_NO
+        AND TG.GOODS_NO = TGR.GOODS_NO
+        AND TG.DEL_YN = 'N'
+        AND TI.DEL_YN = 'N'
+        AND TGR.REC_TYPE = #{recType}
+        <include refid="selectRecommendListWhere"/>
+    </select>
+
+    <!-- 추천 상품 목록 상세 조회 -->
+    <select id="selectRecommendContents" resultType="recommendVO">
+        /* goods.recommend.selectRecommendContents */
+        SELECT TGR.RECOMMEND_NO
+             , TGR.SITE_NO
+             , TGR.RECOMMEND_NM
+             , TGR.SIMPLE_DSCRT
+             , TGR.RECOMMEND_DSCRT
+             , TGR.MANAGE_MEMO
+             , TGR.USE_YN
+             , TGR.REGR_NO
+             , TGR.REG_DTTM
+             , TGR.UPDR_NO
+             , TGR.UPD_DTTM
+        FROM TG_GOODS_RECOMMEND TGR
+        WHERE TGR.SITE_NO = #{siteNo}
+          AND TGR.RECOMMEND_NO = #{recommendNo}
+          AND TGR.DEL_YN = 'N'
+    </select>
+
+
+    <!-- 신규등록 추천 상품번호 생성 -->
+    <select id="selectRecommendNo" resultType="String">
+        /* goods.recommend.selectRecommendNo */
+        SELECT fn_getSeq(0, 'RECOMMEND_NO')
+        from dual
+    </select>
+
+    <!-- 추천 상품 정보 등록 -->
+    <insert id="insertGoodsRecommendItems">
+        /* goods.recommend.insertGoodsRecommendItems */
+        MERGE INTO TG_GOODS_RECOMMEND
+            USING DUAL
+            ON (GOODS_NO = #{goodsNo} AND REC_TYPE = #{recType})
+            WHEN NOT MATCHED THEN
+        INSERT ( GOODS_NO
+               , SITE_NO
+               , REC_TYPE
+               , REGR_NO
+               , REG_DTTM
+               , SORT_SEQ)
+        VALUES ( #{goodsNo}
+               , #{siteNo}
+               , #{recType}
+               , #{regrNo}
+               , sysdate
+               , (select max(nvl(SORT_SEQ, 0)) + 1 from TG_GOODS_RECOMMEND where REC_TYPE = #{recType}))
+    </insert>
+
+    <!-- 추천 상품 정보 수정 -->
+    <update id="updateRecommendContents">
+        /* goods.recommend.updateRecommendContents */
+        UPDATE TG_GOODS_RECOMMEND
+        SET RECOMMEND_NM    = #{recommendNm}
+          , SIMPLE_DSCRT    = #{simpleDscrt}
+          , RECOMMEND_DSCRT = #{recommendDscrt}
+          , MANAGE_MEMO     = #{manageMemo}
+          , USE_YN          = #{useYn}
+          , UPDR_NO         = #{updrNo}
+          , UPD_DTTM        = sysdate
+        WHERE SITE_NO = #{siteNo}
+          AND RECOMMEND_NO = #{recommendNo}
+    </update>
+
+    <delete id="deleteRecommendContents">
+        /* goods.recommend.deleteRecommendContents */
+        DELETE FROM TG_GOODS_RECOMMEND
+        WHERE GOODS_NO = #{goodsNo}
+          AND SITE_NO = #{siteNo}
+          AND REC_TYPE = #{recType}
+    </delete>
+
+    <!-- 추천 상품 이미지 정보 삭제 -->
+    <delete id="deleteRecommendImageDtl">
+        /* goods.manage.deleteRecommendImageDtl */
+        DELETE
+        FROM TG_GOODS_RECOMMEND_IMG_DTL
+        WHERE RECOMMEND_NO = #{recommendNo}
+    </delete>
+
+    <!-- 추천 상품 이미지 상세 정보 등록 -->
+    <insert id="insertRecommendImageDtl">
+        /* recommend.manage.insertRecommendImageDtl */
+        MERGE INTO TG_GOODS_RECOMMEND_IMG_DTL
+            USING DUAL
+            ON (RECOMMEND_NO = #{recommendNo} AND RECOMMEND_IMG_TYPE = #{recommendImgType})
+            WHEN MATCHED THEN
+                UPDATE SET
+                    IMG_PATH = #{imgPath}
+                    , IMG_NM = #{imgNm}
+                    , IMG_WIDTH = #{imgWidth}
+                    , IMG_HEIGHT = #{imgHeight}
+                    , UPDR_NO = #{updrNo}
+                    , UPD_DTTM = sysdate
+            WHEN NOT MATCHED THEN
+                INSERT (
+                        RECOMMEND_NO, RECOMMEND_IMG_TYPE, IMG_PATH, IMG_NM, IMG_WIDTH, IMG_HEIGHT, REGR_NO, REG_DTTM
+                    ) VALUES ( #{recommendNo}
+                             , #{recommendImgType}
+                             , #{imgPath}
+                             , #{imgNm}
+                             , #{imgWidth}
+                             , #{imgHeight}
+                             , #{regrNo}
+                             , sysdate)
+    </insert>
+
+    <update id="updateRecommendSort">
+        update TG_GOODS_RECOMMEND
+        set SORT_SEQ = #{sortSeq}
+        where REC_TYPE = #{recType}
+          and GOODS_NO = #{orgGoodsNo}
+    </update>
+</mapper>

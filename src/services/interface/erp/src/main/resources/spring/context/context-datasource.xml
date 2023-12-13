@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/tx		http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+						http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+
+	<!-- ERP접속 -->
+	<bean id="dataSource2" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${erp.jdbc.driver}"/>
+		<property name="url" value="${erp.jdbc.url}" />
+		<property name="username" value="${erp.jdbc.user}"/>
+		<property name="password" value="${erp.jdbc.password}"/>
+	</bean>
+	<!--<jee:jndi-lookup id="dataSource2" jndi-name="jdbc/mall_IF_DB" resource-ref="true" />-->
+
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSource2" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean id="sqlSessionFactory2" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource2" />
+        <property name="configLocation" value="classpath:config/mybatis/myBatisConfig_if.xml" />
+		<property name="mapperLocations" value="classpath:mapper/*.xml" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager="transactionManager2"/>
+	<bean id="transactionManager2" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource2"></property>
+	</bean>
+
+	<bean id="sqlSession2" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="sqlSessionFactory2" />
+	</bean>
+	
+
+</beans>

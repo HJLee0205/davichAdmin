@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress ALL -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:jee="http://www.springframework.org/schema/jee"
+	   xsi:schemaLocation="
+	   		http://www.springframework.org/schema/beans
+	   		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+			http://www.springframework.org/schema/jee
+			http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+    <!--  ### Main DB ### -->
+    <jee:jndi-lookup id="dataSourceMarket" jndi-name="jdbc/dmallDB" resource-ref="true" />
+    <bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+        <constructor-arg ref="dataSourceMarket" />
+        <property name="logFormatter">
+            <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+                <property name="loggingType" value="MULTI_LINE" />
+                <property name="sqlPrefix" value="SQL         :  "/>
+            </bean>
+        </property>
+    </bean>
+
+	<!-- 가맹점 PUSH DB -->
+	<jee:jndi-lookup id="dataSourcePushSt" jndi-name="jdbc/storeDB" resource-ref="true" />
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePushSt" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+    <!-- PUSH DB -->
+	<jee:jndi-lookup id="dataSourcePush" jndi-name="jdbc/pushDB" resource-ref="true" />
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourcePush" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- ERP DB -->
+	<jee:jndi-lookup id="dataSourceErp" jndi-name="jdbc/mall_IF_DB" resource-ref="true" />
+	<bean class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+		<constructor-arg ref="dataSourceErp" />
+		<property name="logFormatter">
+			<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+				<property name="loggingType" value="MULTI_LINE" />
+				<property name="sqlPrefix" value="SQL         :  "/>
+			</bean>
+		</property>
+	</bean>
+</beans>

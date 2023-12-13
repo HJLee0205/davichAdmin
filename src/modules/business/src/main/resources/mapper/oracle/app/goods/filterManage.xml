@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.filter">
+    <select id="selectFilterList" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterList */
+        SELECT T.*
+        FROM (
+            SELECT tf.FILTER_NO as ID,
+                to_char(decode(tf.UP_FILTER_NO, 0, '#', tf.UP_FILTER_NO)) as PARENT,
+                tf.FILTER_NM as TEXT,
+                TO_NUMBER(tf.FILTER_LVL) FILTER_LVL,
+                tf.SORT_SEQ,
+                tf.FILTER_MENU_TYPE,
+                tf.FILTER_DISP_TYPE,
+                tf.FILTER_CHILD_CD,
+                tf.FILTER_REQUIRE,
+                tf.FILTER_TYPE,
+                (SELECT FILTER_DISP_TYPE
+                   FROM TG_FILTER
+                  WHERE FILTER_NO = tf.UP_FILTER_NO) AS UP_FILTER_DISP_TYPE,
+                (SELECT FILTER_MAIN_DISP_YN
+                   FROM TG_FILTER
+                  WHERE FILTER_NO = tf.UP_FILTER_NO) AS UP_FILTER_MAIN_DISP_YN
+            FROM TG_FILTER tf
+            WHERE tf.SITE_NO = #{siteNo}
+            AND tf.DEL_YN = 'N'
+            <if test='goodsTypeCd != null and goodsTypeCd != ""'>
+                AND tf.GOODS_TYPE_CD = #{goodsTypeCd}
+            </if>
+        ) T
+        ORDER BY T.FILTER_LVL, T.SORT_SEQ
+    </select>
+
+    <select id="selectFilterList1depth" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterList1depth */
+        SELECT (#{udv1} || FILTER_NO) AS DTL_CD,
+               FILTER_NM              AS DTL_NM
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = '1'
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+        ORDER BY SORT_SEQ
+    </select>
+
+    <select id="selectFilterListDepth" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterListDepth */
+        SELECT FILTER_NO                                                                            as ID,
+               to_char(NVL(UP_FILTER_NO, 0))                                                        as PARENT,
+               FILTER_NM                                                                            as TEXT,
+               TO_NUMBER(FILTER_LVL)                                                                   FILTER_LVL,
+               (SELECT MAX(A.FILTER_LVL)
+                from (SELECT TO_NUMBER(FILTER_LVL) FILTER_LVL
+                      FROM TG_FILTER
+                      WHERE SITE_NO = #{siteNo}
+                        AND USE_YN = 'Y'
+                        AND DEL_YN = 'N'
+                        AND GOODS_TYPE_CD IN
+                            (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+                      ) A) AS MAX_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               FILTER_DISP_TYPE,
+               FILTER_CHILD_CD
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL >= #{filterLvl}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+        ORDER BY SORT_SEQ
+    </select>
+
+    <select id="selectFilterListGoodsType" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterListDepth */
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               GOODS_TYPE_CD,
+               FILTER_REQUIRE,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL >= #{filterMenuLvl}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo} AND DEL_YN = 'N')
+          AND UP_FILTER_NO = #{filterNo}
+        UNION ALL
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               GOODS_TYPE_CD,
+               FILTER_REQUIRE,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = #{filterItemLvl}
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo} AND DEL_YN = 'N')
+          AND UP_FILTER_NO IN (SELECT FILTER_NO
+                               FROM TG_FILTER
+                               WHERE SITE_NO = #{siteNo}
+                                 AND FILTER_LVL = #{filterMenuLvl}
+                                 AND DEL_YN = 'N'
+                                 AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD
+                                                       FROM TG_FILTER
+                                                       WHERE FILTER_NO = #{filterNo}
+                                                         AND DEL_YN = 'N'))
+        ORDER BY PARENT, SORT_SEQ
+    </select>
+
+    <select id="selectFilterListContact" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterListContact */
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               FILTER_REQUIRE,
+               GOODS_TYPE_CD,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = '2'
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+          AND UP_FILTER_NO = #{filterNo}
+        UNION ALL
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               FILTER_REQUIRE,
+               GOODS_TYPE_CD,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = #{filterMenuLvl}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+          AND UP_FILTER_NO IN (
+        <choose>
+            <when test = "selectedFilterNo != null and selectedFilterNo != ''">
+                                #{selectedFilterNo}
+            </when>
+            <when test = "selectedFilterNo == null or selectedFilterNo == ''">
+                              SELECT FILTER_NO
+                               FROM TG_FILTER
+                               WHERE SITE_NO = #{siteNo}
+                                 AND FILTER_LVL = '2'
+                                 AND USE_YN = 'Y'
+                                 AND DEL_YN = 'N'
+                                 AND GOODS_TYPE_CD IN
+                                     (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+                                 AND SORT_SEQ = (SELECT MIN(SORT_SEQ)
+                                                 FROM TG_FILTER
+                                                 WHERE UP_FILTER_NO = #{filterNo}
+                                                   AND USE_YN = 'Y'
+                                                   AND DEL_YN = 'N' )
+            </when>
+        </choose>
+                               )
+        UNION ALL
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               FILTER_REQUIRE,
+               GOODS_TYPE_CD,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = #{filterItemLvl}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+          AND UP_FILTER_NO IN (SELECT FILTER_NO
+                               FROM TG_FILTER
+                               WHERE SITE_NO = #{siteNo}
+                                 AND FILTER_LVL = #{filterMenuLvl}
+                                 AND USE_YN = 'Y'
+                                 AND DEL_YN = 'N'
+                                 AND GOODS_TYPE_CD IN
+                                     (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+                                 AND UP_FILTER_NO IN (
+        <choose>
+            <when test = "selectedFilterNo != null and selectedFilterNo != ''">
+                                                        #{selectedFilterNo}
+            </when>
+            <when test = "selectedFilterNo == null or selectedFilterNo == ''">
+                                                    SELECT FILTER_NO
+                                                      FROM TG_FILTER
+                                                      WHERE SITE_NO = '1'
+                                                        AND FILTER_LVL = '2'
+                                                        AND USE_YN = 'Y'
+                                                        AND DEL_YN = 'N'
+                                                        AND GOODS_TYPE_CD IN
+                                                            (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+                                                        AND SORT_SEQ = (SELECT MIN(SORT_SEQ)
+                                                                        FROM TG_FILTER
+                                                                        WHERE UP_FILTER_NO = #{filterNo}
+                                                                          AND USE_YN = 'Y'
+                                                                          AND DEL_YN = 'N')
+            </when>
+        </choose>
+                                                    )
+                              )
+        ORDER BY PARENT, SORT_SEQ
+    </select>
+
+    <select id="selectFilterLvl2" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterLvl2 */
+        SELECT UP_FILTER_NO
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = '3'
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD IN (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+          AND FILTER_NO IN (SELECT UP_FILTER_NO
+                               FROM TG_FILTER
+                               WHERE SITE_NO = #{siteNo}
+                                 AND FILTER_LVL = '4'
+                                 AND USE_YN = 'Y'
+                                 AND DEL_YN = 'N'
+                                 AND GOODS_TYPE_CD IN
+                                     (SELECT GOODS_TYPE_CD FROM TG_FILTER WHERE FILTER_NO = #{filterNo})
+                                 AND FILTER_NO = #{filterNo})
+    </select>
+
+    <update id="deleteFilter">
+        /* biz.app.goods.filter.deleteFilter */
+        UPDATE TG_FILTER
+        SET DEL_YN          = 'Y',
+            FILTER_IMG_PATH = NULL,
+            FILTER_IMG_NM   = NULL,
+            DELR_NO         = #{regrNo},
+            DEL_DTTM        = sysdate
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_NO IN
+        <foreach collection="childFilterNoList" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </update>
+
+    <select id="selectChildFilterNo" resultType="Integer" parameterType="filterManagePO">
+        /* biz.app.goods.filter.selectChildFilterNo */
+        SELECT FILTER_NO,
+               UP_FILTER_NO,
+               FILTER_NM,
+               0 FILTER_LVL
+        FROM TG_FILTER
+        WHERE FILTER_NO = #{filterNo}
+        UNION ALL
+        SELECT DC.FILTER_NO AS FILTER_NO,
+               UP_FILTER_NO,
+               FILTER_NM,
+               DC2.LEV      AS FILTER_LVL
+        FROM (SELECT DISTINCT FILTER_NO, LEVEL AS LEV
+              FROM TG_FILTER START WITH FILTER_NO = #{filterNo} AND SITE_NO = #{siteNo}
+              CONNECT BY PRIOR FILTER_NO = UP_FILTER_NO AND SITE_NO = #{siteNo}
+              ORDER SIBLINGS BY FILTER_NO ASC) DC2,
+             TG_FILTER DC
+        WHERE DC.FILTER_NO = DC2.FILTER_NO
+          AND SITE_NO = #{siteNo}
+    </select>
+
+<select id="selectFilter" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilter */
+        SELECT FILTER_NO,
+               FILTER_NM,
+               FILTER_IMG_PATH,
+               FILTER_IMG_NM,
+               FILTER_DSCRT,
+               FILTER_LVL,
+               FILTER_IMG_USE_YN,
+               USE_YN,
+               FILTER_MENU_TYPE,
+               FILTER_DISP_TYPE,
+               FILTER_SLIDE_MIN,
+               FILTER_SLIDE_MAX,
+               FILTER_CHILD_CD,
+               GOODS_TYPE_CD,
+               FILTER_TYPE,
+               FILTER_REQUIRE,
+               (SELECT FILTER_DISP_TYPE
+                  FROM TG_FILTER
+                 WHERE FILTER_NO = TF.UP_FILTER_NO) AS UP_FILTER_DISP_TYPE,
+               (SELECT FILTER_MAIN_DISP_YN
+                  FROM TG_FILTER
+                 WHERE FILTER_NO = TF.UP_FILTER_NO) AS UP_FILTER_MAIN_DISP_YN
+        FROM TG_FILTER TF
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_NO = #{filterNo}
+    </select>
+
+    <update id="updateFilter">
+        /* biz.app.goods.filter.updateFilter */
+        UPDATE TG_FILTER
+        SET
+        <if test='filterNm != null and filterNm != ""'>
+            FILTER_NM = #{filterNm},
+        </if>
+        <if test='filterDscrt != null and filterDscrt != ""'>
+            FILTER_DSCRT = #{filterDscrt},
+        </if>
+        <if test='filterImgUseYn != null and filterImgUseYn != ""'>
+            FILTER_IMG_USE_YN = #{filterImgUseYn},
+        </if>
+        <if test='filterImgPath != null'>
+            FILTER_IMG_PATH = #{filterImgPath},
+        </if>
+        <if test='filterImgNm != null'>
+            FILTER_IMG_NM = #{filterImgNm},
+        </if>
+        <if test='filterDispType != null and filterDispType != ""'>
+            FILTER_DISP_TYPE = #{filterDispType},
+        </if>
+        <if test='filterSlideMin != null and filterSlideMin != ""'>
+            FILTER_SLIDE_MIN = #{filterSlideMin},
+        </if>
+        <if test='filterSlideMax != null and filterSlideMax != ""'>
+            FILTER_SLIDE_MAX = #{filterSlideMax},
+        </if>
+        <if test='useYn != null and useYn != ""'>
+            USE_YN = #{useYn},
+        </if>
+        <if test='goodsTypeCd != null and goodsTypeCd != ""'>
+            GOODS_TYPE_CD = #{goodsTypeCd},
+        </if>
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND FILTER_NO = #{filterNo}
+    </update>
+
+    <insert id="insertFilter">
+        /* biz.app.goods.filter.insertFilter */
+        INSERT INTO TG_FILTER
+        (FILTER_NO,
+         SITE_NO,
+         UP_FILTER_NO,
+         FILTER_LVL,
+         FILTER_NM,
+         FILTER_MENU_TYPE,
+         FILTER_TYPE,
+         FILTER_IMG_USE_YN,
+         FILTER_DISP_TYPE,
+         GOODS_TYPE_CD,
+         DEL_YN,
+         USE_YN,
+         REGR_NO,
+         REG_DTTM,
+         SORT_SEQ,
+         FILTER_CHILD_CD)
+        VALUES (#{filterNo},
+                #{siteNo},
+                #{upFilterNo},
+                #{filterLvl},
+                #{filterNm},
+                #{filterMenuType},
+                #{filterType},
+                'Y',
+                'CH1',
+                #{goodsTypeCd},
+                'N',
+                'Y',
+                #{regrNo},
+                sysdate,
+                (SELECT NVL(MAX(SORT_SEQ), 0) + 1 FROM TG_FILTER WHERE UP_FILTER_NO = NVL(#{upFilterNo}, 0)),
+                LPAD((SELECT NVL(MAX(TO_NUMBER(FILTER_CHILD_CD)), 0) + 1
+                      FROM TG_FILTER
+                      WHERE UP_FILTER_NO = #{upFilterNo}
+                        AND FILTER_MENU_TYPE = #{filterMenuType}
+                        AND FILTER_LVL = '3'), 2, 0))
+    </insert>
+
+    <select id="selectFilterFileInfo" resultType="filterManageVO" parameterType="filterManagePO">
+        /* biz.app.goods.filter."selectFilterFileInfo" */
+        SELECT FILTER_NO,
+        FILTER_IMG_PATH,
+        FILTER_IMG_NM,
+        MOUSEOVER_IMG_PATH,
+        MOUSEOVER_IMG_NM
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+        AND FILTER_NO IN
+        <foreach collection="childFilterNoList" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <update id="filterSortInit">
+        /* biz.app.goods.filter.filterSortInit */
+        UPDATE TG_FILTER T
+        SET T.SORT_SEQ = (SELECT RANK
+                          FROM (SELECT RANK() OVER (ORDER BY C.SORT_SEQ) RANK, C.FILTER_NO
+                                FROM TG_FILTER C
+                                WHERE C.SITE_NO = #{siteNo}
+                                  AND C.FILTER_LVL = #{filterLvl}
+                                  AND C.UP_FILTER_NO = #{upFilterNo}
+                      	  <![CDATA[
+                                  AND C.FILTER_NO <> #{filterNo}
+                      	  ]]>
+               		)
+                          WHERE FILTER_NO = T.FILTER_NO)
+        WHERE T.SITE_NO = #{siteNo}
+          AND T.FILTER_LVL = #{filterLvl}
+          AND T.UP_FILTER_NO = #{upFilterNo}
+    </update>
+
+    <update id="updateFilterSort">
+        /* biz.app.goods.filter.updateFilterSort */
+        UPDATE TG_FILTER
+        SET UP_FILTER_NO = #{upFilterNo},
+            SORT_SEQ     = #{sortSeq},
+            FILTER_LVL   = #{filterLvl}
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_NO = #{filterNo}
+    </update>
+
+    <update id="filterSortSetting">
+        /* biz.app.goods.filter.filterSortSetting */
+        UPDATE TG_FILTER
+        SET SORT_SEQ = SORT_SEQ + 1
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL = #{filterLvl}
+          AND UP_FILTER_NO = #{upFilterNo}
+		   <![CDATA[
+          AND FILTER_NO <> #{filterNo}
+           ]]>
+           <![CDATA[
+           AND SORT_SEQ >= ${sortSeq}
+        ]]>
+    </update>
+
+    <update id="filterLvlSetting">
+        /* biz.app.goods.filter.filterLvlSetting */
+        UPDATE TG_FILTER
+        SET FILTER_LVL = FILTER_LVL + ${calcLvl}
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_NO IN (${downFilterNo})
+    </update>
+
+    <select id="selectFiltersGoodsType" resultType="filterManageVO" parameterType="filterManageSO">
+        /* biz.app.goods.filter.selectFilterListDepth */
+        SELECT FILTER_NO                     as ID,
+               to_char(NVL(UP_FILTER_NO, 0)) as PARENT,
+               FILTER_NM                     as TEXT,
+               TO_NUMBER(FILTER_LVL)            FILTER_LVL,
+               SORT_SEQ,
+               FILTER_MENU_TYPE,
+               GOODS_TYPE_CD,
+               FILTER_REQUIRE,
+               FILTER_DISP_TYPE
+        FROM TG_FILTER
+        WHERE SITE_NO = #{siteNo}
+          AND FILTER_LVL >= #{filterMenuLvl}
+          AND USE_YN = 'Y'
+          AND DEL_YN = 'N'
+          AND GOODS_TYPE_CD = #{goodsTypeCd}
+        ORDER BY PARENT, SORT_SEQ
+    </select>
+</mapper>

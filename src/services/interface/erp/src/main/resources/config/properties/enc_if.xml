@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<!-- 시스템/공통 관련 프로퍼티 -->
+<!-- SMS/EMAIL 시스템의 프로퍼티 값도 변경해야함 -->
+<properties>
+    <entry key="core.encryption.aes.key">davich_interface</entry><!-- 128bit, 16byte -->
+    <entry key="core.encryption.aes.iv">mall_erp_interface</entry><!-- 128bit, 16byte -->
+</properties>

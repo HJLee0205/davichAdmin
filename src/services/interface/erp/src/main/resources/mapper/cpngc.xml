@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cpngc">
+
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.OffCouponSearchReqDTO" id="offCpnSearchDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.OffCouponUseReqDTO" id="offCpnUseDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.GiftCardCheckReqDTO" id="gcCheckDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.GiftCardUseReqDTO" id="gcUseDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.OnCouponIssueReqDTO" id="onCpnIssueDto"></parameterMap>
+	<parameterMap type="com.davichmall.ifapi.cpngc.dto.OnCouponIssueCancelReqDTO" id="onCpnIssueCancelDto"></parameterMap>
+	
+	<resultMap type="com.davichmall.ifapi.cpngc.dto.OffCouponSearchResDTO$OffCouponDTO" id="offCpnDto" autoMapping="true"></resultMap>
+
+	<!-- 오프라인 쿠폰 목록 조회 -->
+	<select id="selectOffCouponList" parameterMap="offCpnSearchDto" resultMap="offCpnDto">
+		select
+		 	  cp.coupon_nm as cpnNm
+		 	, cp.coupon_no as cpnOrgNo
+            , cp.coupon_dscrt as cpnDscrt
+            , cp.coupon_use_limit_amt as cpnUseLimitAmt
+		    , mcp.cp_issue_no as cpnNo
+		    , mcp.member_cp_no as memberCpNo
+			, cp.coupon_bnf_dc_amt as cpnAmt
+			, to_char(mcp.cp_apply_end_dttm, 'YYYYMMDD') as cpnEndDate
+			, cp.coupon_bnf_cd   as couponBnfCd                  <!-- 혜택 코드 01(율),02(금액) -->
+			, fn_getCodeNm('COUPON_BNF_CD', cp.coupon_bnf_cd) AS couponBnfNm   <!-- 혜택 명 -->
+			, cp.coupon_bnf_value as couponBnfValue                  <!-- 혜택 값 -->
+		from tc_member_cp mcp
+		inner join tp_coupon cp
+		on mcp.coupon_no = cp.coupon_no
+		and (cp.coupon_kind_cd = '99' or cp.OFFLINE_ONLY_YN='Y' or cp.OFFLINE_ONLY_YN='F')
+		inner join tc_member mem
+		on mcp.member_no = mem.member_no
+		where mem.member_card_no = #{onlineCardNo}
+		and mcp.use_yn = 'N'
+		and sysdate between mcp.cp_apply_start_dttm and mcp.cp_apply_end_dttm
+	</select>
+	
+	<!-- 오프라인 쿠폰 사용 여부 확인 -->
+	<select id="selectOffCouponUseYn" parameterMap="offCpnUseDto" resultType="string">
+		select use_yn as useYn
+		from tc_member_cp
+		where cp_issue_no = #{cpnNo} 
+	</select>
+	
+	<!-- 쿠폰 사용/취소 처리 -->
+	<update id="updateOffCouponUse" parameterMap="offCpnUseDto">
+		update tc_member_cp a
+		set use_yn = #{useFlg}
+		  	<if test="useFlg eq 'N'.toString()">
+			, use_dttm = null
+			</if>
+			<if test="useFlg eq 'Y'.toString()">
+			, use_dttm = sysdate
+			</if>
+		  , updr_no = #{updrNo}
+		  , upd_dttm = sysdate
+		where cp_issue_no = #{cpnNo}
+		and (
+		 	(select coupon_kind_cd from tp_coupon where coupon_no = a.coupon_no) = '99'
+			or
+			(select offline_only_yn from tp_coupon where coupon_no = a.coupon_no) = 'Y'
+			or
+			(select offline_only_yn from tp_coupon where coupon_no = a.coupon_no) = 'F'
+		)
+	</update>
+	
+	<!-- 상품권 정보 조회 -->
+	<select id="selectGiftCardInfo" parameterMap="gcCheckDto" resultType="map">
+		select gift_card_no as "giftCardNo"
+			, gift_card_amt as "giftCardAmt"
+			, issue_date as "issueDate"
+			, last_use_date as "lastUseDate"
+			, last_use_str_code as "lastUseStrCode"
+			, use_yn as "useYn"
+		from gift_card
+		where gift_card_no = #{giftCardNo}
+	</select>
+	
+	<!-- 상품권 사용/취소 -->
+	<update id="updateGiftCardUse" parameterMap="gcUseDto">
+		update gift_card
+		set use_yn = #{useYn}
+		<if test="useYn eq 'Y'.toString()">
+		  , last_use_date = sysdate
+		  , last_use_str_code = #{strCode}
+		</if>
+		<if test="useYn eq 'N'.toString()">
+		  , last_use_date = null
+		  , last_use_str_code = null
+		</if>
+		where gift_card_no = #{giftCardNo}
+	</update>
+	
+	<!-- 상품권 사용 이력 max seq 조회 -->
+	<select id="getGiftCardHistoryMaxSeq" parameterMap="gcUseDto" resultType="int">
+		select nvl(max(seq), 0) + 1 as seq 
+		from gift_card_history
+		where gift_card_no = #{giftCardNo}
+	</select>
+	
+	<!-- 상품권 사용/취소 이력 등록 -->
+	<insert id="insertGiftCardUseHistory" parameterMap="gcUseDto">
+		insert into gift_card_history
+		(gift_card_no, seq, str_code, use_datetime, use_flg)
+		values
+		(#{giftCardNo}, #{seq}, #{strCode}, sysdate, #{useFlg})
+	</insert>
+	
+	<!-- 온라인 쿠폰 발급을 위한 쿠폰 번호 (쿠폰종류번호) 조회 -->
+	<select id="getMallCouponNoByBnfAmt" parameterMap="onCpnIssueDto" resultType="int">
+		select coupon_no
+		from tp_coupon
+		where coupon_kind_cd = '98'
+		  and coupon_bnf_dc_amt = #{cpnAmt}
+		  and coupon_use_limit_amt = #{cpnUseMinPayAmt}
+		  and coupon_use_yn = 'Y'
+		  and del_yn = 'N'
+		  and rownum = 1
+	</select>
+	
+	<!-- 오프라인에서 온라인 쿠폰 발급 -->
+	<insert id="insertMallCoupon" parameterMap="onCpnIssueDto">
+		<selectKey keyProperty="memberCpNo" resultType="string" order="BEFORE">
+			select fn_getSeq(0, 'MEMBER_CP_NO') from dual
+		</selectKey>
+		INSERT INTO TC_MEMBER_CP (MEMBER_CP_NO, COUPON_NO,  MEMBER_NO, USE_YN, CP_APPLY_START_DTTM, CP_APPLY_END_DTTM, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM )
+		SELECT  #{memberCpNo}
+			  , #{couponNo}
+			  , #{memNo}
+			  , 'N'
+			  , NVL(APPLY_START_DTTM, sysdate)
+			  , NVL(APPLY_END_DTTM, sysdate + COUPON_APPLY_ISSUE_AF_PERIOD)
+			  , #{regrNo}
+			  , sysdate
+			  , #{regrNo}
+			  , sysdate
+		FROM    TP_COUPON
+		WHERE   COUPON_NO = #{couponNo}
+		AND   SITE_NO = #{siteNo}
+	</insert>
+	
+	<!-- 오프라인에서 발급한 온라인 쿠폰 사용 여부 확인 -->
+	<select id="selectMallCouponUseYn" parameterMap="onCpnIssueCancelDto" resultType="string">
+		select use_yn
+		from tc_member_cp
+		where member_cp_no = #{cpnNo}
+		  and member_no = #{memNo}
+	</select>
+	
+	<!-- 오프라인에서 온라인 쿠폰 발급 취소 (삭제) -->
+	<delete id="deleteMallCoupon" parameterMap="onCpnIssueCancelDto">
+		delete from tc_member_cp
+		where member_cp_no = #{cpnNo}
+		  and member_no = #{memNo}
+	</delete>
+		
+</mapper>

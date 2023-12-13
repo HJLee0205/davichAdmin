@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.link.sample">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<select id="selectTest" resultType="Map">
+		SELECT GRP_CD, CD, CD_NM
+		FROM TA_CMN_CD_DTL
+		ORDER BY GRP_CD, CD ASC
+	</select>
+	<select id="selectTestPaging" resultType="Map">
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT GRP_CD, CD, CD_NM
+				FROM TA_CMN_CD_DTL
+				ORDER BY GRP_CD, CD ASC
+			) T
+		)
+		WHERE PAGING_NUM BETWEEN #{_skiprows} AND #{_pagesize}
+	</select>
+	<select id="selectTestPagingToBean" resultType="net.danvi.dmall.biz.common.model.BizCodeVO">
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT GRP_CD, CD AS DTL_CD, CD_NM AS DTL_NM
+				FROM TA_CMN_CD_DTL
+				ORDER BY GRP_CD, CD ASC
+			) T
+		)
+		WHERE PAGING_NUM BETWEEN #{_skiprows} AND #{_pagesize}
+	</select>
+
+	<insert id="insertTest" parameterType="Map">
+		INSERT INTO T_CMN_CD_DTL(GRP_CD, CD, CD_NM) VALUES(#{GRP_CD}, #{CD}, #{CD_NM})
+	</insert>
+
+</mapper>

@@ -1,0 +1,1069 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.category">
+    <select id="selectCategoryList" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectCategoryList */
+        SELECT T.*        
+		FROM (
+	        SELECT CTG_NO as ID,
+	               to_char(decode(UP_CTG_NO, 0, '#', UP_CTG_NO)) as PARENT,
+	               CTG_NM as TEXT,
+	               TO_NUMBER(CTG_LVL) CTG_LVL,
+	               GOODS_TYPE_CD,
+                   CTG_REQUIRE,
+				   SORT_SEQ
+	          FROM TG_CTG
+	         WHERE SITE_NO = #{siteNo}
+	           AND DEL_YN = 'N'
+		) T
+		ORDER BY T.CTG_LVL, T.SORT_SEQ
+    </select>
+    
+    <select id="selectCategoryList1depth" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectCategoryList1depth */
+        SELECT 
+        	(#{udv1} || CTG_NO) AS DTL_CD, 
+        	CTG_NM AS DTL_NM
+		FROM TG_CTG 
+		WHERE SITE_NO = #{siteNo}
+		AND CTG_LVL = '1'
+		AND DEL_YN = 'N'
+		ORDER BY SORT_SEQ
+    </select>
+
+    <select id="selectCtgGoodsYn" resultType="Integer" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectCtgGoodsYn */
+        SELECT COUNT(*)
+          FROM TG_GOODS_CTG tgc
+               inner JOIN TG_GOODS tg ON tg.GOODS_NO = tgc.GOODS_NO AND tg.DEL_YN = 'N'
+        WHERE tgc.SITE_NO = #{siteNo}
+           AND tgc.CTG_NO IN
+               <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+           AND tgc.DEL_YN = 'N'
+    </select>
+
+    <select id="selectCpYn" resultType="Integer" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectCpYn */
+        SELECT COUNT(*)
+          FROM TP_COUPON A,
+               TP_COUPON_TARGET_CTG B
+         WHERE A.COUPON_NO = B.COUPON_NO AND A.COUPON_APPLY_LIMIT_CD = '01'
+           AND A.DEL_YN = 'N'
+           AND B.CTG_NO IN
+               <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+    </select>
+
+    <update id="deleteCategory">
+        /* biz.app.goods.category.deleteCategory */
+        UPDATE TG_CTG
+           SET DEL_YN = 'Y',
+               CTG_IMG_PATH = NULL,
+               CTG_IMG_NM = NULL,
+               MOUSEOVER_IMG_PATH = NULL,
+               MOUSEOVER_IMG_NM = NULL,
+               DELR_NO = #{regrNo},
+               DEL_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO IN
+              <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                  #{item}
+              </foreach>
+    </update>
+
+    <update id="deleteCtgDispZone">
+        /* biz.app.goods.category.deleteCtgDispZone */
+        UPDATE TG_CTG_DISPZONE
+           SET DEL_YN = 'Y',
+               CTG_DISPZONE_IMG_PATH = NULL,
+               CTG_DISPZONE_IMG_NM = NULL,
+               DELR_NO = #{regrNo},
+               DEL_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_DISPZONE_NO IN
+              <foreach collection="dispNoList" item="item" index="index" open="(" separator="," close=")">
+                  #{item}
+              </foreach>
+    </update>
+
+    <delete id="deleteCtgDispGoods">
+        /* biz.app.goods.category.deleteCtgDispGoods */
+        delete from TG_CTG_DISP_GOODS
+        where SITE_NO = #{siteNo}
+        and CTG_DISPZONE_NO = #{ctgDispzoneNo}
+    </delete>
+
+    <update id="deleteGoodsCtg">
+        /* biz.app.goods.category.deleteGoodsCtg */
+        UPDATE TG_GOODS_CTG
+           SET DEL_YN = 'Y',
+               DELR_NO = #{regrNo},
+               DEL_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO IN
+              <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                  #{item}
+              </foreach>
+    </update>
+
+    <select id="selectCtgDispZone" resultType="categoryDisplayManageVO" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectCtgDispZone */
+        SELECT CTG_DISPZONE_NO,
+               CTG_DISPZONE_IMG_PATH,
+               CTG_DISPZONE_IMG_NM
+          FROM TG_CTG_DISPZONE
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO IN
+               <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectCategory" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectCategory */
+        SELECT CTG_NM,
+               CTG_NO,
+               CTG_EXHBTION_TYPE_CD,
+               CTG_IMG_PATH,
+               CTG_IMG_NM,
+               MOUSEOVER_IMG_PATH,
+               MOUSEOVER_IMG_NM,
+               CTG_DISP_TYPE_CD,
+               CTG_MAIN_USE_YN,
+               CTG_MAIN_CONTENT CONTENT,
+               BEST_BRAND_USE_YN ,
+               BEST_BRAND_NO,
+               DISP_GOODS_EXPS_YN,
+               NO_DISP_GOODS_EXPS_YN,
+               SALEMEDIUM_GOODS_EXPS_YN,
+               SALESTNBY_GOODS_EXPS_YN,
+               SOLDOUT_GOODS_EXPS_YN,
+               EXPS_GOODS_SORT_CD,
+               NAVIG_EXPS_YN,
+               CTG_CMS_RATE,
+               RECOM_PVD_RATE,
+               CTG_SVMN_GB_CD,
+               CTG_SVMN_AMT,
+               CTG_SVMN_MAX_USE_RATE,
+               CTG_LVL,
+               CTG_TYPE,
+               FILTER_APPLY_YN,
+               GOODS_TYPE_CD,
+               USE_YN,
+               MAIN_EXPS_YN,
+               MAIN_EXPS_SEQ,
+               CTG_REQUIRE,
+               GOODS_CONTS_GB_CD
+          FROM TG_CTG
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO = #{ctgNo}
+    </select>
+
+    <select id="selectCtgGoodsCnt" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectCtgGoodsCnt */
+        SELECT A.CNT CTG_GOODS_CNT, B.CNT CTG_SALES_GOODS_CNT
+          FROM (SELECT COUNT(*) CNT
+                  FROM TG_GOODS_CTG
+                 WHERE SITE_NO = #{siteNo} AND CTG_NO = #{ctgNo} ) A,
+               (SELECT COUNT(*) CNT
+                  FROM TG_GOODS_CTG A, TG_GOODS B
+                 WHERE A.SITE_NO = #{siteNo}
+                   AND A.GOODS_NO = B.GOODS_NO
+                   AND A.CTG_NO = #{ctgNo}
+                   AND B.GOODS_SALE_STATUS_CD = 1) B
+    </select>
+
+    <update id="updateCatagory">
+        /* biz.app.goods.category.updateCatagory */
+        UPDATE TG_CTG
+           SET
+               <if test='ctgNm != null and ctgNm != ""'>
+                   CTG_NM = #{ctgNm},
+               </if>
+               <if test='ctgExhbtionTypeCd != null and ctgExhbtionTypeCd != ""'>
+                   CTG_EXHBTION_TYPE_CD = #{ctgExhbtionTypeCd},
+               </if>
+               <if test='ctgDispTypeCd != null and ctgDispTypeCd != ""'>
+                   CTG_DISP_TYPE_CD = #{ctgDispTypeCd},
+               </if>
+               <if test='ctgMainUseYn != null and ctgMainUseYn != ""'>
+                   CTG_MAIN_USE_YN = #{ctgMainUseYn},
+               </if>
+               <if test='content != null and content != ""'>
+                   CTG_MAIN_CONTENT = #{content:CLOB},
+               </if>
+
+              BEST_BRAND_USE_YN = #{bestBrandUseYn},
+              BEST_BRAND_NO = #{bestBrandNo},
+
+               <if test='ctgImgPath != null'>
+                   CTG_IMG_PATH = #{ctgImgPath},
+               </if>
+               <if test='ctgImgNm != null'>
+                   CTG_IMG_NM = #{ctgImgNm},
+               </if>
+               <if test='mouseoverImgPath != null'>
+                   MOUSEOVER_IMG_PATH = #{mouseoverImgPath},
+               </if>
+               <if test='mouseoverImgNm != null'>
+                   MOUSEOVER_IMG_NM = #{mouseoverImgNm},
+               </if>
+               <if test='navigExpsYn != null and navigExpsYn != ""'>
+                   NAVIG_EXPS_YN = #{navigExpsYn},
+               </if>
+               <if test='useYn != null and useYn != ""'>
+                   USE_YN = #{useYn},
+               </if>
+               <if test='mainExpsYn != null and mainExpsYn != ""'>
+                   MAIN_EXPS_YN = #{mainExpsYn},
+               </if>
+			   MAIN_EXPS_SEQ = #{mainExpsSeq},
+               FILTER_APPLY_YN = #{filterApplyYn},
+               GOODS_TYPE_CD = #{goodsTypeCd},
+               CTG_CMS_RATE = #{ctgCmsRate},
+               RECOM_PVD_RATE = #{recomPvdRate},
+               CTG_SVMN_GB_CD = #{ctgSvmnGbCd},
+               CTG_SVMN_AMT = #{ctgSvmnAmt},
+               CTG_SVMN_MAX_USE_RATE = #{ctgSvmnMaxUseRate},
+               <if test='ctgType != null and ctgType != ""'>
+               CTG_TYPE = #{ctgType},
+               </if>
+               GOODS_CONTS_GB_CD = #{goodsContsGbCd},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO = #{ctgNo}
+    </update>
+
+    <update id="updateSubCtgCmsRate">
+        /* biz.app.goods.category.updateSubCtgCmsRate */
+        UPDATE TG_CTG
+        SET
+        CTG_CMS_RATE = #{ctgCmsRate},
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND UP_CTG_NO = #{ctgNo}
+    </update>
+    
+    
+    <update id="updateSubRecomPvdRate">
+        /* biz.app.goods.category.updateSubRecomPvdRate */
+        UPDATE TG_CTG
+        SET
+        RECOM_PVD_RATE = #{recomPvdRate},
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND UP_CTG_NO = #{ctgNo}
+    </update>
+    
+    <update id="updateSubCtgSvmnRate">
+        /* biz.app.goods.category.updateSubCtgSvmnRate */
+        UPDATE TG_CTG
+        SET
+        CTG_SVMN_GB_CD = #{ctgSvmnGbCd},
+        CTG_SVMN_AMT = #{ctgSvmnAmt},
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND UP_CTG_NO = #{ctgNo}
+    </update>
+    
+    
+    <update id="updateSubMaxUseRate">
+        /* biz.app.goods.category.updateSubMaxUseRate */
+        UPDATE TG_CTG
+        SET
+        CTG_SVMN_MAX_USE_RATE = #{ctgSvmnMaxUseRate},
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND UP_CTG_NO = #{ctgNo}
+    </update>    
+
+
+    <update id="updateSupplyPrice">
+        /* biz.app.goods.category.updateSupplyPrice  해당카테고리 상품 공급가 일괄 변경 */
+        UPDATE TG_ITEM
+        SET SUPPLY_PRICE = ROUND(SALE_PRICE-(SALE_PRICE * (#{ctgCmsRate} / 100)))
+        , UPD_DTTM = sysdate
+        , UPDR_NO=#{regrNo}
+        WHERE 1=1
+        AND NVL(SEP_SUPPLY_PRICE_YN, 'N') <![CDATA[ <> ]]> 'Y'
+        AND ITEM_NO IN
+        (
+        SELECT B.ITEM_NO
+          FROM TG_GOODS_CTG A, TG_GOODS B
+         WHERE A.GOODS_NO = B.GOODS_NO
+           AND B.MULTI_OPT_YN = 'N'
+           AND A.SITE_NO = #{siteNo}
+           AND (
+               A.CTG_NO = #{ctgNo}
+              <if test='subCtgCmsRateApplyYn!="" and subCtgCmsRateApplyYn!=null'>
+               OR A.CTG_NO IN ( SELECT CTG_NO FROM TG_CTG WHERE UP_CTG_NO = #{ctgNo})
+              </if>
+            )
+        )
+    </update>
+
+
+    <update id="updateCatagoryDisplayManage">
+        /* biz.app.goods.category.updateCatagoryDisplayManage */
+        UPDATE TG_CTG_DISPZONE
+           SET
+               <if test='dispzoneNm != null and dispzoneNm != ""'>
+                   DISPZONE_NM = #{dispzoneNm},
+               </if>
+               <if test='useYn != null and useYn != ""'>
+                   USE_YN = #{useYn},
+               </if>
+               <if test='ctgDispDispTypeCd != null and ctgDispDispTypeCd != ""'>
+                   CTG_DISP_DISP_TYPE_CD = #{ctgDispDispTypeCd},
+               </if>
+               <if test='ctgDispzoneImgPath != null'>
+                   CTG_DISPZONE_IMG_PATH = #{ctgDispzoneImgPath},
+               </if>
+               <if test='ctgDispzoneImgNm != null'>
+                   CTG_DISPZONE_IMG_NM = #{ctgDispzoneImgNm},
+               </if>
+               CTG_EXHBTION_TYPE_CD = #{ctgExhbtionTypeCd},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_DISPZONE_NO = #{ctgDispzoneNo}
+    </update>
+
+    <insert id="insertCatagoryDisplayManage">
+        /* biz.app.goods.category.insertCatagoryDisplayManage */
+        INSERT INTO TG_CTG_DISPZONE
+               (CTG_DISPZONE_NO,
+                CTG_NO,
+                SITE_NO,
+                DISPZONE_NM,
+                USE_YN,
+                CTG_DISP_DISP_TYPE_CD,
+                CTG_EXHBTION_TYPE_CD,
+                <if test='ctgDispzoneImgPath != null and ctgDispzoneImgPath != ""'>
+                    CTG_DISPZONE_IMG_PATH,
+                </if>
+                <if test='ctgDispzoneImgNm != null and ctgDispzoneImgNm != ""'>
+                    CTG_DISPZONE_IMG_NM,
+                </if>
+                DEL_YN,
+                REGR_NO,
+                REG_DTTM
+                )
+        VALUES (fn_getSeq(0, 'CTG_DISPZONE_NO'),
+        		#{ctgNo},
+                #{siteNo},
+                #{dispzoneNm},
+                <choose>
+                    <when test='useYn eq "Y"'>
+                        #{useYn},
+                    </when>
+                    <otherwise>
+                        'N',
+                    </otherwise>
+                </choose>
+                #{ctgDispDispTypeCd},
+                #{ctgExhbtionTypeCd},
+                <if test='ctgDispzoneImgPath != null'>
+                    #{ctgDispzoneImgPath},
+                </if>
+                <if test='ctgDispzoneImgNm != null'>
+                    #{ctgDispzoneImgNm},
+                </if>
+                'N',
+                #{regrNo},
+                sysdate
+                )
+    </insert>
+
+    <insert id="insertCategory">
+        /* biz.app.goods.category.insertCategory */
+        INSERT INTO TG_CTG
+               (CTG_NO,
+                SITE_NO,
+                UP_CTG_NO,
+                CTG_LVL,
+                CTG_NM,
+                CTG_EXHBTION_TYPE_CD,
+                CTG_DISP_TYPE_CD,
+                MOBILE_SPMALL_APPLY_YN,
+                CTG_MAIN_USE_YN,
+                NAVIG_EXPS_YN,
+                DEL_YN,
+                USE_YN,
+                MAIN_EXPS_YN,
+                MAIN_EXPS_SEQ,
+                GOODS_TYPE_CD,
+                REGR_NO,
+                REG_DTTM,
+                SORT_SEQ,
+                CTG_TYPE
+                )
+        VALUES (#{ctgNo},
+                #{siteNo},
+                #{upCtgNo},
+                #{ctgLvl},
+                #{ctgNm},
+                #{ctgExhbtionTypeCd},
+                #{ctgDispTypeCd},
+                #{mobileSpmallApplyYn},
+                #{ctgMainUseYn},
+                'Y',
+                'N',
+                'Y',
+                'N',
+                0,
+                #{goodsTypeCd},
+                #{regrNo},
+                sysdate,
+                (SELECT NVL(MAX(SORT_SEQ),0)+1 FROM TG_CTG WHERE UP_CTG_NO = NVL(#{upCtgNo},0) ),
+                #{ctgType}
+                )
+    </insert>
+
+    <select id="selectCtgDispMngList" resultType="categoryDisplayManageVO" parameterType="categoryDisplayManageSO">
+        /* biz.app.goods.category.selectCtgDispMngList */
+        SELECT CTG_DISPZONE_NO,
+               CTG_NO,
+               DISPZONE_NM,
+               USE_YN,
+               CTG_DISP_DISP_TYPE_CD,
+               CTG_EXHBTION_TYPE_CD,
+               CTG_DISPZONE_IMG_PATH,
+               CTG_DISPZONE_IMG_NM,
+               fn_categoryNavigation(#{ctgNo}, #{siteNo}) AS CATEGORY_NAVIGATION
+          FROM TG_CTG_DISPZONE
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO = #{ctgNo}
+           AND DEL_YN = 'N'
+           <if test='useYn != null and useYn != ""'>
+           AND USE_YN = #{useYn}
+           </if>
+        ORDER BY CTG_DISPZONE_NO
+    </select>
+
+    <select id="selectCtgDispGoodsList" resultType="goodsVO" parameterType="categoryDisplayManageSO">
+        /* biz.app.goods.category.selectCtgDispGoodsList */
+        SELECT  TSDG.CTG_DISPZONE_NO,
+                TSDG.GOODS_NO,
+                TSDS.CTG_DISP_DISP_TYPE_CD,
+                (SELECT fn_getGoodsImgPath(TSDG.GOODS_NO, '02') FROM DUAL) AS GOODS_IMG_02,
+                (SELECT fn_getGoodsImgPath(TSDG.GOODS_NO, '03') FROM DUAL) AS GOODS_IMG_03,
+                (SELECT fn_getGoodsImgPath(TSDG.GOODS_NO, '04') FROM DUAL) AS GOODS_IMG_04,
+                (SELECT fn_getGoodsImgPath(TSDG.GOODS_NO, '05') FROM DUAL) AS GOODS_IMG_05,
+                (SELECT fn_getGoodsImgPath(TSDG.GOODS_NO, '06') FROM DUAL) AS GOODS_IMG_06,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'A') FROM DUAL) AS GOODS_DISP_IMG_A,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'B') FROM DUAL) AS GOODS_DISP_IMG_B,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'C') FROM DUAL) AS GOODS_DISP_IMG_C,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'D') FROM DUAL) AS GOODS_DISP_IMG_D,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'E') FROM DUAL) AS GOODS_DISP_IMG_E,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'F') FROM DUAL) AS GOODS_DISP_IMG_F,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'G') FROM DUAL) AS GOODS_DISP_IMG_G,
+                (SELECT fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'S') FROM DUAL) AS GOODS_DISP_IMG_S,
+                (SELECT B.IMG_PATH||'_'||B.IMG_NM
+				    FROM TG_GOODS_IMG_SET A, TG_GOODS_IMG_DTL B
+				    WHERE A.GOODS_IMGSET_NO = B.GOODS_IMGSET_NO
+				    AND A.GOODS_NO = TSDG.GOODS_NO
+				    AND B.GOODS_IMG_TYPE = '02'
+				    AND A.DLGT_IMG_YN = 'N'
+	                AND ROWNUM = 1
+	                ) AS GOODS_THUM_IMG,
+                TB.BRAND_NO,
+                TB.BRAND_NM,
+                TG.GOODS_NM,
+                TG.PR_WORDS,
+                TI.CUSTOMER_PRICE,
+                TI.SALE_PRICE,
+                decode(nvl(TI.CUSTOMER_PRICE,0), 0, 0, 100-(TI.SALE_PRICE/TI.CUSTOMER_PRICE)*100) as SALE_RATE,
+                (SELECT fn_getGoodsIcon(TG.GOODS_NO, '5') FROM DUAL) AS ICON_IMGS,
+                TG.GOODS_SVMN_AMT,
+                TG.GOODS_SCORE,
+                TG.ACCM_GOODSLETT_CNT,
+                TG.RSV_ONLY_YN,
+                NVL( (SELECT MAX(PRMT_DC_VALUE)
+                     FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                     WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                       AND TPTG.GOODS_NO = TG.GOODS_NO
+                       AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                       AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') ,0) AS PRMT_DC_VALUE,
+               (SELECT MAX(PRMT_DC_GB_CD)
+                  FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                 WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                   AND TPTG.GOODS_NO = TG.GOODS_NO
+                   AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                   AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS PRMT_DC_GB_CD
+/*                ,(SELECT fn_getCuoponApplyAmt(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCouponDcAmt(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCouponDcRate(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponDcValue(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCouponBnfCd(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCouponBnfTxt(TSDG.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_TXT
+*/
+                /*,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'APPLYAMT','') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'DCAMT','') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'DCTRATE','') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'DCVALUE','') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'BNFCD','') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCuoponAvailable(TSDG.GOODS_NO,'BNFTXT','') FROM DUAL) AS COUPON_BNF_TXT*/
+                ,(SELECT fn_getCuoponAvailInfo(TSDG.GOODS_NO,'CPAVL','') FROM DUAL) AS COUPON_AVL_INFO
+          FROM  TG_CTG_DISPZONE TSDS
+                JOIN TG_CTG_DISP_GOODS TSDG
+                  ON TSDS.CTG_DISPZONE_NO = TSDG.CTG_DISPZONE_NO
+                JOIN TG_GOODS TG
+                  ON TSDG.GOODS_NO      = TG.GOODS_NO
+                  <![CDATA[AND TG.DEL_YN <> 'Y']]>
+                JOIN TG_ITEM TI
+                  ON TG.ITEM_NO        = TI.ITEM_NO
+                LEFT OUTER JOIN TG_BRAND TB
+                  ON TB.BRAND_NO       = TG.BRAND_NO
+                LEFT OUTER JOIN TG_GOODS_IMG_SET TGI
+                  ON TG.GOODS_NO = TGI.GOODS_NO
+                 AND TGI.DLGT_IMG_YN = 'Y'
+        WHERE   TSDS.DEL_YN        = 'N'
+          AND   TSDS.CTG_DISPZONE_NO    = #{ctgDispzoneNo}
+          AND   TSDS.SITE_NO = #{siteNo}
+         <!-- 판매여부 -->
+		 <if test="saleYn != null and saleYn != ''">
+		     <choose>
+		         <when test="saleYn eq 'Y'.toString()">
+		          <![CDATA[
+		            AND (TG.SALE_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_START_DT IS NULL)
+		            AND (TG.SALE_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_END_DT IS NULL)
+		            AND TG.DISP_YN = 'Y'
+		            AND TG.GOODS_SALE_STATUS_CD = '1'
+		          ]]>
+		         </when>
+		         <when test="saleYn eq 'N'.toString()">
+		             AND TG.SALE_YN = #{saleYn}
+		         </when>
+		     </choose>
+		 </if>
+		   ORDER BY TSDG.SORT_SEQ
+    </select>
+
+    <delete id="deleteCatagoryDisplayGoods">
+        /* biz.app.goods.category.deleteCatagoryDisplayGoods */
+        DELETE FROM TG_CTG_DISP_GOODS
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_DISPZONE_NO = #{ctgDispzoneNo}
+    </delete>
+
+    <select id="selectCtgDispzoneNo" resultType="Integer" parameterType="categoryDisplayManagePO">
+        /* biz.app.goods.category.selectCtgDispzoneNo */
+        SELECT MAX(CTG_DISPZONE_NO) CTG_DISPZONE_NO
+          FROM TG_CTG_DISPZONE
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <insert id="insertCatagoryDisplayGoods">
+        /* biz.app.goods.category.insertCatagoryDisplayGoods */
+        INSERT INTO TG_CTG_DISP_GOODS
+               (CTG_DISPZONE_NO,
+                SITE_NO,
+                GOODS_NO,
+                DEL_YN,
+                REGR_NO,
+                REG_DTTM,
+                SORT_SEQ
+                )
+        VALUES (#{ctgDispzoneNo},
+                #{siteNo},
+                #{dispZoneGoods},
+                'N',
+                #{regrNo},
+                sysdate,
+                #{sortSeq}
+                )
+    </insert>
+
+    <select id="selectCtgGoodsList" resultType="goodsVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectCtgGoodsList */
+        SELECT         A.GOODS_NO,
+               A.DISP_YN,
+               A.DLGT_CTG_YN,
+               A.EXPS_PRIOR_RANK,
+               A.DEL_YN,
+               TG.PR_WORDS,
+               TG.GOODS_NM,
+               TG.GOODS_SALE_STATUS_CD,
+               TG.GOODS_SVMN_AMT,
+                   TG.GOODS_SCORE,
+                   TG.ACCM_GOODSLETT_CNT,
+               TB.BRAND_NO,
+               TB.BRAND_NM,
+               fn_getCodeNm('GOODS_SALE_STATUS_CD', TG.GOODS_SALE_STATUS_CD) GOODS_SALE_STATUS_NM,
+               CASE A.DISP_YN WHEN 'Y' THEN '전시'ELSE '미전시' END DISP_NM,
+               fn_getGoodsImgPath(A.GOODS_NO, '02') AS GOODS_IMG_02,
+               fn_getGoodsImgPath(A.GOODS_NO, '03') AS GOODS_IMG_03,
+               fn_getGoodsImgPath(A.GOODS_NO, '04') AS GOODS_IMG_04,
+               fn_getGoodsImgPath(A.GOODS_NO, '05') AS GOODS_IMG_05,
+               fn_getGoodsImgPath(A.GOODS_NO, '06') AS GOODS_IMG_06,
+               fn_getGoodsIcon(TG.GOODS_NO, '5') AS ICON_IMGS,
+               NVL(C.SALE_PRICE,0) SALE_PRICE
+          FROM (SELECT GOODS.GOODS_NO,
+                       GOODS.CTG_NO,
+                       GOODS.DISP_YN,
+                       GOODS.DLGT_CTG_YN,
+                       GOODS.EXPS_PRIOR_RANK,
+                       GOODS.DEL_YN,
+                       GOODS.SITE_NO
+                  FROM TG_GOODS_CTG GOODS
+                  GROUP BY GOODS_NO
+                ) A
+                LEFT OUTER JOIN TG_GOODS TG ON (A.GOODS_NO = TG.GOODS_NO)
+                LEFT OUTER JOIN TG_ITEM C ON (TG.ITEM_NO = C.ITEM_NO)
+                LEFT OUTER JOIN TG_BRAND TB ON (TB.BRAND_NO = TG.BRAND_NO)
+           WHERE A.SITE_NO = #{siteNo}
+           AND A.CTG_NO IN (
+           SELECT DC.CTG_NO AS CTG_NO
+              FROM
+              (
+					SELECT DISTINCT CTG_NO
+					FROM TG_CTG
+					START WITH CTG_NO = #{ctgNo} AND SITE_NO = #{siteNo}
+					CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+					ORDER SIBLINGS BY CTG_NO ASC
+               ) DC2,
+                   TG_CTG DC
+             WHERE DC.CTG_NO = DC2.CTG_NO
+               AND SITE_NO = #{siteNo}
+           )
+           ORDER BY GOODS_NO,GOODS_SALE_STATUS_CD, EXPS_PRIOR_RANK
+    </select>
+
+    <update id="updateCtgGoodsDispYn">
+        /* biz.app.goods.category.updateCtgGoodsDispYn */
+        UPDATE TG_GOODS_CTG
+           SET DISP_YN = #{dispYn},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND GOODS_NO = #{goodsNo}
+           AND CTG_NO = #{ctgNo}
+    </update>
+
+    <update id="updateCtgShowGoodsManage">
+        /* biz.app.goods.category.updateCtgShowGoodsManage */
+        UPDATE TG_CTG
+           SET
+               <choose>
+                   <when test='expsGoodsSortCd eq "6"'>
+                       DISP_GOODS_EXPS_YN = NULL,
+                       NO_DISP_GOODS_EXPS_YN = NULL,
+                       SALEMEDIUM_GOODS_EXPS_YN = NULL,
+                       SALESTNBY_GOODS_EXPS_YN = NULL,
+                       SOLDOUT_GOODS_EXPS_YN = NULL,
+                   </when>
+                   <otherwise>
+                       <if test='dispGoodsExpsYn != null and dispGoodsExpsYn != ""'>
+                           DISP_GOODS_EXPS_YN = #{dispGoodsExpsYn},
+                       </if>
+                       <if test='noDispGoodsExpsYn != null and noDispGoodsExpsYn != ""'>
+                           NO_DISP_GOODS_EXPS_YN = #{noDispGoodsExpsYn},
+                       </if>
+                       <if test='salemediumGoodsExpsYn != null and salemediumGoodsExpsYn != ""'>
+                           SALEMEDIUM_GOODS_EXPS_YN = #{salemediumGoodsExpsYn},
+                       </if>
+                       <if test='salestnbyGoodsExpsYn != null and salestnbyGoodsExpsYn != ""'>
+                           SALESTNBY_GOODS_EXPS_YN = #{salestnbyGoodsExpsYn},
+                       </if>
+                       <if test='soldoutGoodsYn != null and soldoutGoodsYn != ""'>
+                           SOLDOUT_GOODS_EXPS_YN = #{soldoutGoodsExpsYn},
+                       </if>
+                   </otherwise>
+               </choose>
+               <if test='expsGoodsSortCd != null and expsGoodsSortCd != ""'>
+                   EXPS_GOODS_SORT_CD = #{expsGoodsSortCd},
+               </if>
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE CTG_NO = #{ctgNo}
+           AND SITE_NO = #{siteNo}
+    </update>
+
+    <insert id="insertShowGoods">
+        /* biz.app.goods.category.insertShowGoods */
+        INSERT INTO TG_GOODS_CTG
+                   (SITE_NO,
+                    GOODS_NO,
+                    CTG_NO,
+                    DLGT_CTG_YN,
+                    DISP_YN,
+                    EXPS_PRIOR_RANK,
+                    REGR_NO,
+                    REG_DTTM
+                    )
+            VALUES (#{siteNo},
+                    #{goodsNo},
+                    #{ctgNo},
+                    #{dlgtCtgYn},
+                    #{dispYn},
+                    #{expsPriorRank},
+                    #{regrNo},
+                    sysdate
+                    )
+    </insert>
+
+    <delete id="deleteShowGoods">
+        /* biz.app.goods.category.insertShowGoods */
+        DELETE FROM TG_GOODS_CTG
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO = #{ctgNo}
+    </delete>
+
+	<select id="selectFrontGnbList" resultType="categoryManageVO" parameterType="long">
+        /* biz.app.goods.category.selectFrontGnbList */
+        SELECT DC.CTG_NO AS CTG_NO,
+               0 UP_CTG_NO,
+               CTG_NM,
+               TO_CHAR(DC2.LEV) AS CTG_LVL,
+               CTG_EXHBTION_TYPE_CD,
+               CTG_IMG_PATH,
+               CTG_IMG_NM,
+               MOUSEOVER_IMG_PATH,
+               MOUSEOVER_IMG_NM,
+               CTG_MAIN_CONTENT AS CONTENT,
+               DC2.MAIN_EXPS_YN,
+               DC2.MAIN_EXPS_SEQ,
+               DC.GOODS_CONTS_GB_CD,
+               (
+               		SELECT 
+                   		MAX(CTG_LVL)
+					FROM TG_CTG
+					START WITH UP_CTG_NO = dc.ctg_no AND SITE_NO = #{siteNo}
+					CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+	           ) as MAX_LVL
+          FROM
+	          (
+					SELECT DISTINCT CTG_NO, LEVEL AS LEV,MAIN_EXPS_SEQ, MAIN_EXPS_YN
+					FROM TG_CTG
+					START WITH UP_CTG_NO = 0 AND SITE_NO = #{siteNo}
+					CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+					ORDER SIBLINGS BY MAIN_EXPS_SEQ , CTG_NO ASC
+	           ) DC2,
+               TG_CTG DC
+         WHERE DC.CTG_NO = DC2.CTG_NO
+           AND SITE_NO = #{siteNo}
+           AND DC.DEL_YN = 'N'
+           AND DC.USE_YN = 'Y'
+           AND DC2.MAIN_EXPS_YN = 'Y'
+           ORDER BY DC2.MAIN_EXPS_SEQ
+    </select>
+    
+    <select id="selectFrontLnbList" resultType="categoryManageVO" parameterType="long">
+        /* biz.app.goods.category.selectFrontLnbList */
+        SELECT DC.CTG_NO AS CTG_NO,
+               UP_CTG_NO,
+               CTG_NM,
+               TO_CHAR(DC2.LEV) AS CTG_LVL,
+               CTG_EXHBTION_TYPE_CD,
+               CTG_IMG_PATH,
+               CTG_IMG_NM,
+               MOUSEOVER_IMG_PATH,
+               MOUSEOVER_IMG_NM,
+               CTG_MAIN_CONTENT AS CONTENT,
+               CTG_MAIN_USE_YN,
+               DC2.SORT_SEQ
+          FROM
+	          (
+					SELECT DISTINCT CTG_NO, LEVEL AS LEV,SORT_SEQ
+					FROM TG_CTG
+					START WITH UP_CTG_NO = 0 AND SITE_NO = #{siteNo}
+					CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+					ORDER SIBLINGS BY SORT_SEQ , CTG_NO ASC
+	           ) DC2,
+               TG_CTG DC
+         WHERE DC.CTG_NO = DC2.CTG_NO
+           AND SITE_NO = #{siteNo}
+           AND DC.DEL_YN = 'N'
+           AND DC.USE_YN = 'Y'
+           ORDER BY DC2.SORT_SEQ
+    </select>
+    <!-- 상위카테고리 조회  -->
+    <select id="selectUpNavagation" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectUpNavagation */
+        SELECT (SELECT CTG_NM
+                  FROM TG_CTG
+                 WHERE CTG_NO = A.TMP_CTG_NO AND SITE_NO = #{siteNo})
+                  AS CTG_NM,
+               A.TMP_CTG_NO AS CTG_NO,
+               A.UP_CTG_NO AS UP_CTG_NO,
+               A.CTG_LVL
+          FROM
+          (
+				select CTG_NO as TMP_CTG_NO, UP_CTG_NO, CTG_LVL
+				from TG_CTG
+				start with CTG_NO = #{ctgNo} and SITE_NO = #{siteNo}
+				connect by CTG_NO = prior UP_CTG_NO and SITE_NO = #{siteNo}
+           ) A
+        ORDER BY CTG_LVL, CTG_NO ASC
+    </select>
+
+    <!-- 해당카테고리정보 조회 -->
+    <select id="selectNavigationInfo" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectNavigationInfo */
+        SELECT CTG_NO,UP_CTG_NO,CTG_NM,CTG_LVL FROM TG_CTG
+        WHERE SITE_NO = #{siteNo} AND CTG_NO = #{ctgNo}
+    </select>
+
+    <!-- 동일레벨 카테고리 조회 -->
+    <select id="selectNavigationList" resultType="categoryManageVO" parameterType="categoryManageSO">
+        /* biz.app.goods.category.selectNavigationInfo */
+        SELECT CTG_NO,UP_CTG_NO,CTG_NM,CTG_LVL FROM TG_CTG
+        WHERE SITE_NO = #{siteNo} AND UP_CTG_NO = (
+        SELECT UP_CTG_NO FROM TG_CTG WHERE SITE_NO = #{siteNo} AND CTG_NO = #{ctgNo}
+        ) ORDER BY CTG_NO ASC
+    </select>
+
+    <select id="selectChildCtgNo" resultType="Integer" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectChildCtgNo */
+        SELECT CTG_NO,
+               UP_CTG_NO,
+               CTG_NM,
+               0 CTG_LVL
+          FROM TG_CTG
+         WHERE CTG_NO = #{ctgNo}
+        UNION ALL
+        SELECT DC.CTG_NO AS CTG_NO,
+               UP_CTG_NO,
+               CTG_NM,
+               DC2.LEV AS CTG_LVL
+          FROM
+	          (
+					SELECT DISTINCT CTG_NO, LEVEL AS LEV
+					FROM TG_CTG
+					START WITH CTG_NO = #{ctgNo} AND SITE_NO = #{siteNo}
+					CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+					ORDER SIBLINGS BY CTG_NO ASC
+	           ) DC2,
+                TG_CTG DC
+          WHERE DC.CTG_NO = DC2.CTG_NO
+            AND SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectCtgDispZoneFileInfo" resultType="categoryDisplayManageVO" parameterType="categoryDisplayManageSO">
+        /* biz.app.goods.category."selectCtgDispZoneFileInfo" */
+        SELECT CTG_DISPZONE_NO,
+               CTG_NO,
+               CTG_DISPZONE_IMG_PATH,
+               CTG_DISPZONE_IMG_NM
+          FROM TG_CTG_DISPZONE
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_DISPZONE_NO = #{ctgDispzoneNo}
+    </select>
+
+    <select id="selectCtgFileInfo" resultType="categoryManageVO" parameterType="categoryManagePO">
+        /* biz.app.goods.category."selectCtgFileInfo" */
+        SELECT CTG_NO,
+               CTG_IMG_PATH,
+               CTG_IMG_NM,
+               MOUSEOVER_IMG_PATH,
+               MOUSEOVER_IMG_NM
+          FROM TG_CTG
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO IN
+              <foreach collection="childCtgNoList" item="item" index="index" open="(" separator="," close=")">
+                  #{item}
+              </foreach>
+    </select>
+    
+    <update id="catagorySortInit">
+    	/* biz.app.goods.category.catagorySortInit */
+    	UPDATE TG_CTG T
+   			SET 
+   				T.SORT_SEQ = (
+					SELECT RANK FROM (
+						SELECT 
+							RANK() OVER (ORDER BY C.SORT_SEQ) RANK,
+							C.CTG_NO
+						FROM TG_CTG C
+                    	WHERE C.SITE_NO = #{siteNo}
+                      	  AND C.CTG_LVL = #{ctgLvl}
+                      	  AND C.UP_CTG_NO = #{upCtgNo}
+                      	  <![CDATA[
+                      	  AND C.CTG_NO <> #{ctgNo}
+                      	  ]]>
+               		) WHERE CTG_NO = T.CTG_NO
+				)
+		WHERE T.SITE_NO = #{siteNo}
+		  AND T.CTG_LVL = #{ctgLvl}
+		  AND T.UP_CTG_NO = #{upCtgNo}
+    </update>
+    
+    <update id="updateCatagorySort">
+        /* biz.app.goods.category.updateCatagorySort */
+        UPDATE TG_CTG
+           SET
+               UP_CTG_NO = #{upCtgNo},
+               SORT_SEQ = #{sortSeq},
+               CTG_LVL = #{ctgLvl}
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_NO = #{ctgNo}
+    </update>
+    
+    <update id="catagorySortSetting">
+    	/* biz.app.goods.category.catagorySortSetting */
+        UPDATE TG_CTG
+           SET
+               SORT_SEQ = SORT_SEQ + 1
+         WHERE SITE_NO = #{siteNo}
+           AND CTG_LVL = #{ctgLvl}
+		   AND UP_CTG_NO = #{upCtgNo}
+		   <![CDATA[
+           AND CTG_NO <> #{ctgNo}
+           ]]>
+           <![CDATA[
+           AND SORT_SEQ >= ${sortSeq}
+           ]]>
+    </update>
+    
+    <update id="catagoryLvlSetting">
+    	/* biz.app.goods.category.catagoryLvlSetting */
+		UPDATE TG_CTG
+		   SET
+				CTG_LVL = CTG_LVL + ${calcLvl}
+		WHERE SITE_NO = #{siteNo}
+		  AND CTG_NO IN ( ${downCtgNo} )
+	</update>
+
+    <update id="catagoryGoodsTypeCdSetting">
+        /* biz.app.goods.category.catagoryGoodsTypeCdSetting */
+        UPDATE TG_CTG
+        SET
+            GOODS_TYPE_CD = #{goodsTypeCd}
+        WHERE SITE_NO = #{siteNo}
+          AND CTG_NO = #{ctgNo}
+    </update>
+
+	<select id="selectMainExpsList" resultType="categoryManageVO" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectMainExpsList */
+		SELECT CTG_NO
+		FROM TG_CTG 
+		WHERE SITE_NO = #{siteNo}
+		  AND MAIN_EXPS_YN = 'Y'
+		  AND DEL_YN = 'N'
+		  AND USE_YN = 'Y'
+		ORDER BY MAIN_EXPS_SEQ
+    </select>
+    
+    <update id="updateMainExpsSort">
+    	/* biz.app.goods.category.updateMainExpsSort */
+		UPDATE TG_CTG
+		   SET
+				MAIN_EXPS_SEQ = ${mainExpsSeq}
+		WHERE SITE_NO = #{siteNo}
+		  AND CTG_NO = #{ctgNo}
+	</update>
+	
+	<select id="selectMainDispGoodsList" resultType="categoryManageVO" parameterType="categoryManagePO">
+        /* biz.app.goods.category.selectMainDispGoodsList */
+        SELECT A.CTG_NO, B.GOODS_NO
+        	, NVL((SELECT TG.SMR_GOODS_NM FROM TG_GOODS TG WHERE TG.GOODS_NO = B.GOODS_NO AND TG.SITE_NO = #{siteNo} AND TG.DEL_YN = 'N'), fn_getGoodsNm(B.GOODS_NO)) AS GOODS_NM
+        	, A.CTG_EXHBTION_TYPE_CD, fn_getGoodsDispImgPath(B.GOODS_NO, 'O') AS CTG_IMG_PATH
+        	, (SELECT fn_getBrandNm(TG.BRAND_NO) FROM TG_GOODS TG WHERE TG.GOODS_NO = B.GOODS_NO AND TG.SITE_NO = #{siteNo} AND TG.DEL_YN = 'N') AS BRAND_NM
+			, (SELECT ITM.SALE_PRICE FROM TG_GOODS TG, TG_ITEM ITM WHERE TG.GOODS_NO = B.GOODS_NO AND TG.ITEM_NO = ITM.ITEM_NO AND TG.SITE_NO = #{siteNo} AND TG.DEL_YN = 'N' AND ITM.DEL_YN = 'N') AS SALE_PRICE
+			, (SELECT ITM.CUSTOMER_PRICE FROM TG_GOODS TG, TG_ITEM ITM WHERE TG.GOODS_NO = B.GOODS_NO AND TG.ITEM_NO = ITM.ITEM_NO AND TG.SITE_NO = #{siteNo} AND TG.DEL_YN = 'N' AND ITM.DEL_YN = 'N') AS CUSTOMER_PRICE
+		FROM TG_CTG_DISPZONE A 
+		JOIN TG_CTG_DISP_GOODS B ON A.ctg_dispzone_no = B.ctg_dispzone_no AND A.DISPZONE_NM = 'MAIN_DISP_GOODS'
+    </select>
+
+    <select id="selectCtgBannerImgNm" resultType="String">
+        select ORG_IMG_NM
+        from TG_CTG_IMG
+        where CTG_NO = #{ctgNo}
+        and DEVICE_TYPE = #{deviceType}
+    </select>
+
+    <delete id="deleteNotExistImg">
+        delete from TG_CTG_IMG
+        where CTG_IMG_NO = #{ctgImgNo}
+    </delete>
+
+    <select id="selectNewCtgImgNo" resultType="Integer">
+        select nvl(max(CTG_IMG_NO),0)+1
+        from TG_CTG_IMG
+    </select>
+
+    <insert id="insertCtgBannerImg">
+        insert into TG_CTG_IMG
+            (CTG_IMG_NO,
+             CTG_NO,
+             DEVICE_TYPE,
+             SORT_SEQ,
+             IMG_PATH,
+             IMG_NM,
+             ORG_IMG_NM,
+             REGR_NO,
+             REG_DTTM)
+        VALUES (#{ctgImgNo},
+                #{ctgNo},
+                #{deviceType},
+                (select nvl(max(SORT_SEQ),0)+1
+                 from TG_CTG_IMG
+                 where CTG_NO = #{ctgNo}
+                   and DEVICE_TYPE = #{deviceType}),
+                #{imgPath},
+                #{imgNm},
+                #{orgImgNm},
+                #{regrNo},
+                sysdate)
+    </insert>
+
+    <select id="selectMainDispzoneNo" resultType="String">
+        select CTG_DISPZONE_NO
+        from TG_CTG_DISPZONE
+        where CTG_NO = #{ctgNo}
+          and DISPZONE_NM = 'MAIN_DISP_GOODS'
+    </select>
+
+    <select id="selectMainDispGoods" resultType="goodsVO">
+        select rownum as SORT_NUM, A.*
+        from (SELECT fn_getGoodsImgPath(tg.GOODS_NO, '02') AS GOODS_IMG_02,
+                     tg.GOODS_NM,
+                     tg.GOODS_NO,
+                     (SELECT BRAND_NM FROM TG_BRAND WHERE BRAND_NO = tg.BRAND_NO) AS BRAND_NM,
+                     (SELECT SELLER_NM FROM TS_SELLER WHERE SELLER_NO = tg.SELLER_NO) AS SELLER_NM,
+                     ti.SALE_PRICE ,
+                     ti.STOCK_QTT ,
+                     (SELECT CD_NM FROM TA_CMN_CD_DTL tccd WHERE tccd.GRP_CD='GOODS_SALE_STATUS_CD' AND tccd.CD = tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                     tepm.ERP_ITM_CODE
+              FROM TG_CTG_DISP_GOODS tcdg
+                       INNER JOIN TG_GOODS tg ON tcdg.GOODS_NO = tg.GOODS_NO
+                       INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                       LEFT OUTER JOIN TI_ERP_PRD_MAPPING tepm ON tg.GOODS_NO = tepm.MALL_GOODS_NO AND ti.ITEM_NO = tepm.MALL_ITM_CODE
+              WHERE tcdg.CTG_DISPZONE_NO = #{ctgDispzoneNo}
+              and tg.DEL_YN = 'N'
+              ORDER BY tcdg.SORT_SEQ) A
+    </select>
+
+    <select id="selectCtgBannerImg" resultType="net.danvi.dmall.biz.app.goods.model.CtgImgPO">
+        select IMG_PATH,
+               IMG_NM,
+               ORG_IMG_NM
+        from TG_CTG_IMG
+        where CTG_NO = #{ctgNo}
+        order by SORT_SEQ
+    </select>
+
+    <select id="selectNotExistImg" resultType="net.danvi.dmall.biz.app.goods.model.CtgImgPO">
+        select *
+        from TG_CTG_IMG
+        where CTG_NO = #{ctgNo}
+        and DEVICE_TYPE = #{deviceType}
+        <if test="existImgNm != null and existImgNm.length != 0">
+            and ORG_IMG_NM not in
+                <foreach collection="existImgNm" item="imgNm" open="(" separator="," close=")">
+                    #{imgNm}
+                </foreach>
+        </if>
+    </select>
+</mapper>

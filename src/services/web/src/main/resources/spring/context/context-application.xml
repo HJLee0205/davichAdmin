@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+                        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd ">
+
+    <util:properties id="business" location="classpath:config/properties/business.xml"/>
+    <util:properties id="enc" location="classpath:config/properties/enc.xml"/>
+    <util:properties id="core" location="classpath:config/properties/core.xml"/>
+    <util:properties id="system" location="classpath:config/properties/system.xml"/>
+    <util:properties id="front" location="classpath:config/properties/front.xml"/>
+    <util:properties id="datasource" location="classpath:config/properties/datasource.xml"/>
+    
+	<util:properties id="konan" location="classpath:config/konan/default.properties"/>  
+
+    <context:component-scan base-package="dmall.framework">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    <context:component-scan base-package="net.danvi.dmall.core">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    <context:component-scan base-package="net.danvi.dmall.biz">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+    <context:component-scan base-package="net.danvi.dmall.front.web">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Component"/>
+    </context:component-scan>
+
+    <!-- ### Message ###-->
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="basenames">
+            <list>
+                <value>classpath:config/messages/core</value>
+                <value>classpath:config/messages/business</value>
+                <value>classpath:config/messages/validation/common</value>
+                <value>classpath:config/messages/validation/design</value>
+                <value>classpath:config/messages/validation/goods</value>
+                <value>classpath:config/messages/validation/marketing</value>
+                <value>classpath:config/messages/validation/member</value>
+                <value>classpath:config/messages/validation/operation</value>
+                <value>classpath:config/messages/validation/order</value>
+                <value>classpath:config/messages/validation/promotion</value>
+                <value>classpath:config/messages/validation/setup</value>
+                <value>classpath:config/messages/validation/statistics</value>
+                <value>classpath:config/messages/front_web</value>
+            </list>
+        </property>
+        <property name="cacheSeconds" value="30"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+    </bean>
+
+    <!--### Message Accessor : class에서 message 호출을 위하여 설정 ###-->
+    <bean id="message" class="org.springframework.context.support.MessageSourceAccessor">
+        <constructor-arg ref="messageSource"/>
+    </bean>
+
+    <!--### LocaleResolver ###-->
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver">
+        <property name="defaultLocale" value="ko"/>
+    </bean>
+
+    <bean id="validator"
+          class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+        <property name="validationMessageSource" ref="messageSource" />
+    </bean>
+
+    <!-- sms 전송 원격 서비스 -->
+    <bean id="smsRemoteService" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean">
+        <property name="serviceUrl" value="#{core['system.smsemail.url']}/sms-service" />
+        <property name="serviceInterface" value="net.danvi.dmall.smsemail.service.SmsRemoteService" />
+    </bean>
+
+    <!-- 이메일 전송 원격 서비스 -->
+    <bean id="emailRemoteService" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean">
+        <property name="serviceUrl" value="#{core['system.smsemail.url']}/email-service" />
+        <property name="serviceInterface" value="net.danvi.dmall.smsemail.service.EmailRemoteService" />
+    </bean>
+
+    <!-- 포인트 원격 서비스 -->
+    <bean id="pointRemoteService" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean">
+        <property name="serviceUrl" value="#{core['system.smsemail.url']}/point-service" />
+        <!--<property name="serviceUrl" value="http://localhost:8082/email-service" />-->
+        <property name="serviceInterface" value="net.danvi.dmall.smsemail.service.PointRemoteService" />
+    </bean>
+
+    <!-- push 전송 원격 서비스 -->
+    <bean id="pushRemoteService" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean">
+        <property name="serviceUrl" value="#{core['system.push.url']}/push-service" />
+        <!--<property name="serviceUrl" value="http://localhost:8082/sms-service" />-->
+        <property name="serviceInterface" value="net.danvi.dmall.smsemail.service.PushRemoteService" />
+    </bean>
+
+    <bean name='handlerMapping' class='org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping'></bean>
+
+    <!-- 메일 보내기 -->
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="smtps.hiworks.com" />
+        <property name="port" value="465" />
+        <property name="username" value="davich000@davichmarket.com" />
+        <property name="password" value="davi13579!" />
+
+
+        <!-- email 요청시는 SMTP -->
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.transport.protocol">smtp</prop>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.debug">true</prop>
+            </props>
+        </property>
+    </bean>
+
+</beans>

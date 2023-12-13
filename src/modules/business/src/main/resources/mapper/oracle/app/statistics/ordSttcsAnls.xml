@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   주문통계 관리 맵퍼
+-->
+<mapper namespace="statistics.ordSttcsAnls">
+    <sql id="selectOrdSttcsListWhere">
+        AND SITE_NO = #{siteNo}
+        <if test=' periodGb == "T" ' >
+        <!-- 시간별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            AND DT = #{dd}
+        GROUP BY SITE_NO, YR, MM, DT, HR
+        </if>
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+        GROUP BY SITE_NO, YR, MM, DT
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+        GROUP BY SITE_NO, YR, MM
+        </if>
+        <if test="searchFrom != null and searchFrom != ''">
+            <![CDATA[
+            and to_date(DTTM, 'YYYYMMDD') >= to_date(#{searchFrom}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchTo != null and searchTo != ''">
+            <![CDATA[
+            and to_date(DTTM, 'YYYYMMDD') < to_date(#{searchTo}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        group by DTTM
+    </sql>
+    
+    <!-- 주문통계 전체 총 합 -->
+    <select id="selectTotOrdSttcsList" parameterType="ordSttcsSO" resultType="ordSttcsVO">
+        /* statistics.ordSttcsAnls.selectTotMemberSvmnList */
+        SELECT ROUND(NVL(SUM(A.ALL_BUYR_CNT),0), 0) AS TOT_BUYR_CNT
+             , ROUND(NVL(SUM(A.ALL_BUY_CNT),0), 0) AS TOT_BUY_CNT
+             , ROUND(NVL(SUM(A.ALL_SALE_AMT),0), 0) AS TOT_SALE_AMT
+          FROM (
+                   SELECT SUM(PC_BUYR_CNT) + SUM(MOBILE_BUYR_CNT) AS ALL_BUYR_CNT
+                        , SUM(PC_BUY_CNT) + SUM(MOBILE_BUY_CNT) AS ALL_BUY_CNT
+                        , SUM(PC_SALE_AMT) + SUM(MOBILE_SALE_AMT) AS ALL_SALE_AMT
+                     FROM (SELECT YR||MM||DT AS DTTM,
+                            PC_BUYR_CNT,
+                            MOBILE_BUYR_CNT,
+                            PC_BUY_CNT,
+                            MOBILE_BUY_CNT,
+                            PC_SALE_AMT,
+                            MOBILE_SALE_AMT
+                            FROM TT_ORD_STTCS)
+                    WHERE 1 = 1
+                    <if test="searchFrom != null and searchFrom != ''">
+                        <![CDATA[
+                        and to_date(DTTM, 'YYYYMMDD') >= to_date(#{searchFrom}, 'YYYY-MM-DD')
+                        ]]>
+                    </if>
+                    <if test="searchTo != null and searchTo != ''">
+                        <![CDATA[
+                        and to_date(DTTM, 'YYYYMMDD') < to_date(#{searchTo}, 'YYYY-MM-DD') + 1
+                        ]]>
+                    </if>
+                ) A
+    </select>
+    
+    <!-- 주문통계 전체조회 -->
+    <select id="selectOrdSttcsList" parameterType="ordSttcsSO" resultType="ordSttcsVO">
+        /* statistics.ordSttcsAnls.selectOrdSttcsList */
+        SELECT A.*
+          FROM (
+                   SELECT rownum as PAGING_NUM
+                        , rownum as RANK
+                        , ROUND(NVL(A.ALL_BUYR_CNT,0), 0) AS ALL_BUYR_CNT
+                        , ROUND(NVL(A.ALL_BUY_CNT,0), 0) AS ALL_BUY_CNT
+                        , ROUND(NVL(A.ALL_SALE_AMT,0), 0) AS ALL_SALE_AMT
+                        , ROUND(NVL(A.PC_BUYR_CNT,0), 0) AS PC_BUYR_CNT
+                        , ROUND(NVL(A.PC_BUY_CNT,0), 0) AS PC_BUY_CNT
+                        , ROUND(NVL(A.PC_SALE_AMT,0), 0) AS PC_SALE_AMT
+                        , ROUND(NVL(A.MOBILE_BUYR_CNT,0), 0) AS MOBILE_BUYR_CNT
+                        , ROUND(NVL(A.MOBILE_BUY_CNT,0), 0) AS MOBILE_BUY_CNT
+                        , ROUND(NVL(A.MOBILE_SALE_AMT,0), 0) AS MOBILE_SALE_AMT
+                     FROM (
+                              SELECT SUM(NVL(PC_BUYR_CNT, 0)) + SUM(NVL(MOBILE_BUYR_CNT, 0)) AS ALL_BUYR_CNT
+                                   , SUM(NVL(PC_BUY_CNT, 0)) + SUM(NVL(MOBILE_BUY_CNT, 0)) AS ALL_BUY_CNT
+                                   , SUM(NVL(PC_SALE_AMT, 0)) + SUM(NVL(MOBILE_SALE_AMT, 0)) AS ALL_SALE_AMT
+                                   , SUM(NVL(PC_BUYR_CNT, 0)) AS PC_BUYR_CNT
+                                   , SUM(NVL(PC_BUY_CNT, 0)) AS PC_BUY_CNT
+                                   , SUM(NVL(PC_SALE_AMT, 0)) AS PC_SALE_AMT
+                                   , SUM(NVL(MOBILE_BUYR_CNT, 0)) AS MOBILE_BUYR_CNT
+                                   , SUM(NVL(MOBILE_BUY_CNT, 0)) AS MOBILE_BUY_CNT
+                                   , SUM(NVL(MOBILE_SALE_AMT, 0)) AS MOBILE_SALE_AMT
+                                FROM (SELECT YR||MM||DT AS DTTM,
+                                         SITE_NO,
+                                        PC_BUYR_CNT,
+                                        MOBILE_BUYR_CNT,
+                                        PC_BUY_CNT,
+                                        MOBILE_BUY_CNT,
+                                        PC_SALE_AMT,
+                                        MOBILE_SALE_AMT
+                                        FROM TT_ORD_STTCS)
+                               WHERE 1 = 1
+                              <include refid="selectOrdSttcsListWhere" />
+                              order by ALL_BUYR_CNT desc, PC_BUYR_CNT desc, MOBILE_BUYR_CNT desc
+                           ) A
+               ) A
+        <include refid="common.pageSql"/>
+    </select>
+    
+    <!-- 주문통계 총건수 조회 -->
+    <select id="selectOrdSttcsListTotalCount" parameterType="ordSttcsSO" resultType="Integer">
+        /* statistics.ordSttcsAnls.selectOrdSttcsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT *
+                   FROM (SELECT YR||MM||DT AS DTTM,
+                                SITE_NO,
+                                PC_BUYR_CNT,
+                                MOBILE_BUYR_CNT,
+                                PC_BUY_CNT,
+                                MOBILE_BUY_CNT,
+                                PC_SALE_AMT,
+                                MOBILE_SALE_AMT
+                         FROM TT_ORD_STTCS)
+                  WHERE 1 = 1
+                ) TCNT
+    </select>
+    <!-- 주문통계 조건적용 총건수 조회 -->
+    <select id="selectOrdSttcsListCount" parameterType="ordSttcsSO" resultType="Integer">
+        /* statistics.ordSttcsAnls.selectOrdSttcsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT DTTM
+                   FROM (SELECT YR||MM||DT AS DTTM,
+                        SITE_NO,
+                        PC_BUYR_CNT,
+                        MOBILE_BUYR_CNT,
+                        PC_BUY_CNT,
+                        MOBILE_BUY_CNT,
+                        PC_SALE_AMT,
+                        MOBILE_SALE_AMT
+                        FROM TT_ORD_STTCS)
+                  WHERE 1 = 1
+                  <include refid="selectOrdSttcsListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

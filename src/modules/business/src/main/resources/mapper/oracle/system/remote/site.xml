@@ -1,0 +1,822 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.site">
+<!-- 업체 등록 유무 체크 -->
+    <select id="selectCompanyNo" parameterType="String" resultType="java.lang.Long">
+        /* system.site.selectCompanyNo - 업체 등록 유무 체크 */
+        SELECT  COMPANY_NO
+        FROM    TS_COMPANY
+        WHERE   HOMEPAGE_ID = #{homepageId}
+    </select>
+
+    <!-- 신규 업체 등록 -->
+    <insert id="insertCompany" parameterType="net.danvi.dmall.biz.app.setup.siteinfo.model.CompanyPO">
+		<selectKey resultType="java.lang.Long" keyColumn="COMPANY_NO" keyProperty="companyNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'COMPANY_NO') as COMPANY_NO FROM DUAL
+		</selectKey>
+        /* system.site.insertCompany - 신규 업체 등록*/
+        INSERT INTO TS_COMPANY (
+          COMPANY_NO,
+          HOMEPAGE_ID,
+          CEO_NM,
+          COMPANY_NM,
+          ADDR_ROADNM,
+          ADDR_CMN_DTL,
+          TEL_NO,
+          FAX_NO,
+          COMM_SALE_REGIST_NO,
+          BIZ_NO,
+          PRIVACYMANAGER,
+          REGR_NO,
+          REG_DTTM
+        ) VALUES (
+          fn_getSeq(0, 'COMPANY_NO'),
+          #{homepageId},
+          #{ceoNm},
+          #{companyNm},
+          #{addrRoadnm},
+          #{addrCmnDtl},
+          #{telNo},
+          #{faxNo},
+          #{commSaleRegistNo},
+          #{bizNo},
+          #{privacymanager},
+          #{regrNo},
+          sysdate
+        )
+    </insert>
+
+    <!-- 사이트 아이디 중복 체크 -->
+    <select id="selectCountSiteBySiteId" resultType="Integer">
+        /* system.site.selectCountSiteBySiteId - 사이트 아이디 중복 체크 */
+        SELECT  COUNT(*)
+        FROM    TS_SITE
+        WHERE   SITE_ID = #{siteId}
+        AND     SITE_STATUS_CD = '01'
+    </select>
+
+    <!-- 신규 쇼핑몰(사이트) 상태 등록 -->
+    <insert id="insertSite" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.SiteCreatePO">
+		<selectKey resultType="java.lang.Long" keyColumn="SITE_NO" keyProperty="siteNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'SITE_NO') as SITE_NO FROM DUAL
+		</selectKey>
+        /* system.site.insertSite - 신규 쇼핑몰(사이트) 상태 등록 */
+        INSERT INTO TS_SITE (
+            <!--SITE_NO,-->
+            SITE_NO,
+            COMPANY_NO,
+            SITE_STATUS_CD,
+            SITE_ID,
+            DLGT_DOMAIN,
+            TEMP_DOMAIN,
+            SVC_START_DT,
+            SVC_END_DT,
+            PW_CHG_GUIDE_YN,
+            PW_CHG_GUIDE_CYCLE,
+            PW_CHG_NEXT_CHG_DCNT,
+            DORMANT_MEMBER_CANCEL_METHOD,
+            REG_DTTM,
+            REGR_NO
+        ) VALUES (
+            <!--#{siteNo},-->
+            fn_getSeq(0, 'SITE_NO'),
+            #{companyNo},
+            '02', /* 정상 */
+            #{siteId},
+            #{dlgtDomain},
+            #{tempDomain},
+            #{svcStartDt},
+            #{svcEndDt},
+            #{pwChgGuideYn},
+            #{pwChgGuideCycle},
+            #{pwChgNextChgDcnt},
+            #{dormantMemberCancelMethod},
+            sysdate,
+            #{regrNo}
+        )
+    </insert>
+
+    <!-- 쇼핑몰(사이트) 상세 등록, 사이트 타입코드 -->
+    <insert id="insertSiteDtl">
+        /* system.site.insertSiteDtl - 쇼핑몰(사이트) 상세 등록, 사이트 타입코드 */
+        INSERT INTO TS_SITE_DTL (
+            SITE_NO,
+            SITE_TYPE_CD,
+            CUST_CT_TEL_NO,
+            CUST_CT_OPER_TIME,
+            CUST_CT_LUNCH_TIME,
+            CUST_CT_CLOSED_INFO,
+            MANAGER_EMAIL,
+            GOODS_DEFAULT_IMG_WIDTH,
+            GOODS_DEFAULT_IMG_HEIGHT,
+            GOODS_LIST_IMG_WIDTH,
+            GOODS_LIST_IMG_HEIGHT,
+            GOODS_DISP_IMG_TYPE_A_WIDTH,
+            GOODS_DISP_IMG_TYPE_A_HEIGHT,
+            GOODS_DISP_IMG_TYPE_B_WIDTH,
+            GOODS_DISP_IMG_TYPE_B_HEIGHT,
+            GOODS_DISP_IMG_TYPE_C_WIDTH,
+            GOODS_DISP_IMG_TYPE_C_HEIGHT,
+            GOODS_DISP_IMG_TYPE_D_WIDTH,
+            GOODS_DISP_IMG_TYPE_D_HEIGHT,
+            GOODS_DISP_IMG_TYPE_E_WIDTH,
+            GOODS_DISP_IMG_TYPE_E_HEIGHT,
+            LOGO_PATH,
+            BOTTOM_LOGO_PATH,
+            REGR_NO,
+            REG_DTTM
+        ) VALUES (
+            #{siteNo},
+            #{siteTypeCd},
+            #{custCtTelNo},
+            #{custCtOperTime},
+            #{custCtLunchTime},
+            #{custCtClosedInfo},
+            #{email},
+            #{goodsDefaultImgWidth},
+            #{goodsDefaultImgHeight},
+            #{goodsListImgWidth},
+            #{goodsListImgHeight},
+            #{goodsDispImgTypeAWidth},
+            #{goodsDispImgTypeAHeight},
+            #{goodsDispImgTypeBWidth},
+            #{goodsDispImgTypeBHeight},
+            #{goodsDispImgTypeCWidth},
+            #{goodsDispImgTypeCHeight},
+            #{goodsDispImgTypeDWidth},
+            #{goodsDispImgTypeDHeight},
+            #{goodsDispImgTypeEWidth},
+            #{goodsDispImgTypeEHeight},
+            #{logoPath},
+            #{bottomLogoPath},
+            #{regrNo},
+            sysdate
+        )
+    </insert>
+
+    <insert id="insertSiteQuota">
+        /* system.site.insertSiteQuota - 사이트 제한 등록 */
+        INSERT INTO TA_SITE_QUOTA (
+          SITE_NO, MANAGER_ACT_CNT, NOPB_ACT_CNT, ICON_CNT, BBS_CNT, REGR_NO, REG_DTTM
+        ) VALUES (
+          #{siteNo}, #{managerActCnt}, #{nopbActCnt}, #{iconCnt}, #{bbsCnt}, #{regrNo}, sysdate
+        )
+    </insert>
+
+    <update id="updateCertKey">
+        /* system.site.updateCertKey - sms/email 인증키 정보 수정 */
+        UPDATE TS_SITE SET
+                CERT_KEY = #{certKey},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE SITE_NO = #{siteNo}
+        AND   SITE_ID = #{siteId}
+    </update>
+
+    <!-- 쇼핑몰(사이트) 상태 변경 -->
+    <update id="updateSiteStatus" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SiteStatusPO">
+        /* system.site.updateSiteStatus - 쇼핑몰(사이트) 상태 변경*/
+        UPDATE TS_SITE SET
+                SITE_STATUS_CD = #{siteStatusCd},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE SITE_NO = #{siteNo}
+        AND   SITE_ID = #{siteId}
+    </update>
+
+    <!-- 쇼핑몰(사이트) 상태 조회 -->
+    <select id="selectSiteStatus" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SiteSO"
+            resultType="net.danvi.dmall.core.remote.homepage.model.result.SiteStatusResult">
+        /* system.site.selectSiteStatus - 쇼핑몰(사이트) 상태 조회 */
+        SELECT  SITE_NO,
+                 SITE_ID,
+                 SITE_STATUS_CD
+        FROM    TS_SITE
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 임대형 쇼핑몰(사이트) 서비스 기간 변경 -->
+    <update id="updateSiteServiceTerm" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SiteServiceTermPO">
+        /* system.site.selectSiteStatus - 임대형 쇼핑몰(사이트) 서비스 기간 변경*/
+        UPDATE TS_SITE SET
+        <if test="serviceStartDt != null and serviceStartDt != ''">
+                SVC_START_DT = #{serviceStartDt},
+        </if>
+                SVC_END_DT = #{serviceEndDt},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+        AND    SITE_ID = #{siteId}
+        AND    (SELECT SITE_TYPE_CD FROM TS_SITE_DTL WHERE SITE_NO = #{siteNo}) = '2'
+    </update>
+
+    <!-- SMS 발송 인증 번호 저장 -->
+    <update id="updateCertifySendNo" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SmsSenderPO">
+        /* system.site.updateCertifySendNo - SMS 발송 인증 번호 저장*/
+        UPDATE TS_SITE SET
+                CERTIFY_SEND_NO = #{sendTelNo},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+        AND    SITE_ID = #{siteId}
+    </update>
+
+    <!-- 쇼핑몰(사이트) 도메인 연결 정보 조회 -->
+    <select id="selectSiteDomain" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SiteSO"
+            resultType="Map">
+        /* system.site.selectSiteDomain - 쇼핑몰(사이트) 도메인 연결 정보 조회 */
+        SELECT SITE_NO,
+                SITE_ID,
+                DLGT_DOMAIN,
+                TEMP_DOMAIN,
+                ADD_DOMAIN1,
+                ADD_DOMAIN2,
+                ADD_DOMAIN3,
+                ADD_DOMAIN4
+        FROM   TS_SITE
+        WHERE  SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 대표 도메인 변경(추가도메인 1~4는 현재 사용 안함) -->
+    <update id="updateDomainInfo" parameterType="Map">
+        /* system.site.updateDomainInfo - 대표 도메인 변경 */
+        UPDATE TS_SITE SET
+        <if test="dlgtDomain != null and dlgtDomain != ''">
+            DLGT_DOMAIN = #{dlgtDomain},
+        </if>
+        <if test="addDomain1 != null and addDomain1 != ''">
+            ADD_DOMAIN1 = #{addDomain1},
+        </if>
+        <if test="addDomain2 != null and addDomain2 != ''">
+            ADD_DOMAIN2 = #{addDomain2},
+        </if>
+        <if test="addDomain3 != null and addDomain3 != ''">
+            ADD_DOMAIN3 = #{addDomain3},
+        </if>
+        <if test="addDomain4 != null and addDomain4 != ''">
+            ADD_DOMAIN4 = #{addDomain4}
+        </if>
+            UPDR_NO = #{updrNo},
+            UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 관리자 -->
+    <select id="selectManagerCount" resultType="net.danvi.dmall.biz.system.model.SiteQuotaVO">
+        /* system.site.selectManagerCount - 관리자 카운트 */
+        SELECT  NVL((
+                SELECT  MANAGER_ACT_CNT
+                FROM    TA_SITE_QUOTA
+                WHERE   SITE_NO = #{siteNo}
+            ), 0) AS quotaCount,
+            (
+                SELECT  COUNT(*)
+                FROM    TA_MANAGER TM, TA_MANAGER_AUTH_GRP TMAG
+                WHERE   TM.SITE_NO = #{siteNo}
+                AND      TM.SITE_NO = TMAG.SITE_NO
+                AND      TM.AUTH_GRP_NO = TMAG.AUTH_GRP_NO
+                AND      TMAG.AUTH_GB_CD = 'M'
+            ) AS realCount,
+            (
+                SELECT  SITE_TYPE_CD
+                FROM    TS_SITE_DTL
+                WHERE   SITE_NO = #{siteNo}
+            ) AS siteTypeCd
+    </select>
+
+    <!-- 무통장 계정 -->
+    <select id="selectNopbActCount" resultType="net.danvi.dmall.biz.system.model.SiteQuotaVO">
+        /* system.site.selectNopbActCount - 무통장 계정 카운트 */
+        SELECT  NVL((
+                SELECT  NOPB_ACT_CNT
+                FROM    TA_SITE_QUOTA
+                WHERE   SITE_NO = #{siteNo}
+            ), 0) AS quotaCount,
+            (
+                SELECT  COUNT(*)
+                FROM    TS_NOPB_PAYMENT_SET
+                WHERE   SITE_NO = #{siteNo}
+            ) AS realCount,
+            (
+                SELECT  SITE_TYPE_CD
+                FROM    TS_SITE_DTL
+                WHERE   SITE_NO = #{siteNo}
+            ) AS siteTypeCd
+    </select>
+
+    <!-- 아이콘 -->
+    <select id="selectIconCount" resultType="net.danvi.dmall.biz.system.model.SiteQuotaVO">
+        /* system.site.selectIconCount - 아이콘 카운트 */
+        SELECT  NVL((
+                SELECT  ICON_CNT
+                FROM    TA_SITE_QUOTA
+                WHERE   SITE_NO = #{siteNo}
+            ), 0) AS quotaCount,
+            (
+                SELECT  COUNT(*)
+                FROM    TG_ICON
+                WHERE   SITE_NO = #{siteNo}
+                AND     ICON_TYPE_CD = '2'
+            ) AS realCount,
+            (
+                SELECT  SITE_TYPE_CD
+                FROM    TS_SITE_DTL
+                WHERE   SITE_NO = #{siteNo}
+            ) AS siteTypeCd
+    </select>
+
+    <!-- 게시판 -->
+    <select id="selectBbsCount" resultType="net.danvi.dmall.biz.system.model.SiteQuotaVO">
+        /* system.site.selectBbsCount - 게시판 카운트 */
+        SELECT  NVL((
+                SELECT  BBS_CNT
+                FROM    TA_SITE_QUOTA
+                WHERE   SITE_NO = #{siteNo}
+            ), 0) AS quotaCount,
+            (
+                SELECT  COUNT(*)
+                FROM    TB_BBS
+                WHERE   SITE_NO = #{siteNo}
+                AND     BBS_GB_CD = '1'
+            ) AS realCount,
+            (
+                SELECT  SITE_TYPE_CD
+                FROM    TS_SITE_DTL
+                WHERE   SITE_NO = #{siteNo}
+            ) AS siteTypeCd
+    </select>
+
+    <!-- 관리자 추가 -->
+    <update id="updateAdminCnt" parameterType="net.danvi.dmall.biz.system.model.SiteQuotaPO">
+        /* system.site.updateAdminCnt - 관리자 제한 추가 */
+        UPDATE TA_SITE_QUOTA SET
+                MANAGER_ACT_CNT = MANAGER_ACT_CNT + #{managerActCnt},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 무통장 계좌번호 추가 -->
+    <update id="updateNopbActCnt" parameterType="net.danvi.dmall.biz.system.model.SiteQuotaPO">
+        /* system.site.updateNopbActCnt - 무통장 계좌 번호 제한 추가 */
+        UPDATE TA_SITE_QUOTA SET
+                NOPB_ACT_CNT = NOPB_ACT_CNT + #{nopbActCnt},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 아이콘 추가 -->
+    <update id="updateIconCnt" parameterType="net.danvi.dmall.biz.system.model.SiteQuotaPO">
+        /* system.site.updateIconCnt - 아이콘 제한 추가 */
+        UPDATE TA_SITE_QUOTA SET
+                ICON_CNT = ICON_CNT + #{iconCnt},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 게시판 추가 -->
+    <update id="updateBbsCnt" parameterType="net.danvi.dmall.biz.system.model.SiteQuotaPO">
+        /* system.site.updateBbsCnt - 게시판 제한 추가 */
+        UPDATE TA_SITE_QUOTA SET
+                BBS_CNT = BBS_CNT + #{bbsCnt},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE  SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 소셜로그인 정보 조회 -->
+    <select id="selectSocialLoginInfo" parameterType="net.danvi.dmall.biz.system.model.SiteQuotaPO" resultType="Integer">
+        /* system.site.selectSocialLoginInfo - 소셜로그인 정보 조회 */
+        SELECT  COUNT(*)
+        FROM    TA_SNS_LOGIN_INFO
+        WHERE   SITE_NO = #{siteNo}
+        AND     OUTSIDE_LINK_CD = #{outsideLinkCd}
+    </select>
+
+    <!-- 소셜로그인 정보 등록 -->
+    <insert id="insertSocialLogin" parameterType="net.danvi.dmall.core.remote.homepage.model.request.PaymentInfoPO">
+        /* system.site.insertSocialLogin - 소셜로그인 정보 등록 */
+        INSERT INTO TA_SNS_LOGIN_INFO VALUES (#{siteNo}, #{outsideLinkCd}, #{regrNo}, sysdate)
+    </insert>
+
+
+    <!-- 사이트(쇼핑몰) 생성시 기본 게시판 정보 생성 -->
+    <insert id="insertInitBbs" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SitePO">
+        /* system.site.insertInitBbs - 사이트(쇼핑몰) 생성시 기본 게시판 정보 생성 */
+        INSERT INTO TB_BBS (
+                BBS_ID,
+                SITE_NO,
+                BBS_NM,
+                BBS_KIND_CD,
+                BBS_GB_CD,
+                TITLE_USE_YN,
+                BBS_ADDR,
+                READ_LIST_USE_YN,
+                READ_LETT_CONTENT_USE_YN,
+                WRITE_LETT_USE_YN,
+                WRITE_COMMENT_USE_YN,
+                WRITE_REPLY_USE_YN,
+                REGR_DISP_CD,
+                ICON_SET_USE_YN,
+                ICON_USE_YN_HOT,
+                ICON_CHECK_VALUE_HOT,
+                ICON_USE_YN_NEW,
+                ICON_CHECK_VALUE_NEW,
+                SECT_LETT_SET_YN,
+                NOTICE_LETT_SET_YN,
+                BBS_SPAM_PRVNT_YN,
+                TOP_HTML_YN,
+                BOTTOM_HTML_YN,
+                TOP_HTML_SET,
+                BOTTOM_HTML_SET,
+                REG_DTTM,
+                REGR_NO
+
+        ) VALUES
+        (
+            'notice',  #{siteNo}, '공지', '1', '2', 'N', 'customer/customer-main',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+        ),
+        (
+            'inquiry',  #{siteNo}, '1:1문의', '1', '2', 'N', 'customer/customer-main',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+        ),
+        (
+            'faq',  #{siteNo}, 'FAQ', '1', '2', 'N', 'customer/customer-main',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+        ),
+        (
+            'review',  #{siteNo}, '상품 후기', '1', '3', 'N', null,  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+        ),
+        (
+            'question',  #{siteNo}, '상품 문의', '1', '3', 'N', null,  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+        )
+        <if test='sitetypeCd neq "1"'>
+            ,(
+            'data',  #{siteNo}, '자료실', '3', '1', 'N', 'community/board-list',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+            ),
+            (
+            'freeBbs',  #{siteNo}, '자유게시판', '1', '1', 'N', 'community/board-list',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+            ),
+            (
+            'gallery',  #{siteNo}, '갤러리형게시판', '2', '1', 'N', 'community/board-list',  'Y', 'Y', 'Y', 'Y', 'Y',
+            '02', 'N', NULL, '', NULL, '', 'Y', 'Y', 'Y', 'N', 'N', '', '', sysdate, #{regrNo}
+            )
+        </if>
+    </insert>
+
+
+    <!-- 사이트(쇼핑몰) 생성시 소셜로그인 기초정보 등록 -->
+	<insert id="insertInitSnsConfig">
+		/* system.site.insertInitSnsConfig - 사이트(쇼핑몰) 생성시 소셜로그인 기초정보 등록 */
+		INSERT INTO TS_SNS_OUTSIDE_LINK (
+			SITE_NO, OUTSIDE_LINK_CD, LINK_USE_YN, LINK_OPER_YN, REGR_NO, REG_DTTM
+		) VALUES
+		<if test='sitetypeCd eq "1"'><!-- 임대형 무료 -->
+			(#{siteNo}, '01', 'N', 'Y', #{regrNo}, sysdate),
+			(#{siteNo}, '02', 'N', 'N', #{regrNo}, sysdate),
+			(#{siteNo}, '03', 'N', 'N', #{regrNo}, sysdate),
+			(#{siteNo}, '04', 'Y', 'Y', #{regrNo}, sysdate)
+		</if>
+		<if test='sitetypeCd neq "1"'><!-- 임대형 유료/독립몰 -->
+			(#{siteNo}, '01', 'N', 'Y', #{regrNo}, sysdate),
+			(#{siteNo}, '02', 'N', 'Y', #{regrNo}, sysdate),
+			(#{siteNo}, '03', 'N', 'Y', #{regrNo}, sysdate),
+			(#{siteNo}, '04', 'Y', 'Y', #{regrNo}, sysdate)
+		</if>
+	</insert>
+
+
+    <!-- 초기 쇼핑몰 세팅을 위한 금칙어 등록 -->
+    <insert id="insertBannedWords" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.SiteCreatePO">
+        /* system.site.insertBannedWords - 초기 쇼핑몰 세팅을 위한 금칙어 등록 */
+        INSERT INTO TB_BANNED_WORD (
+          SEQ, SITE_NO, BANNED_WORD, REG_DTTM, REGR_NO, DEL_YN, INIT_YN
+        ) VALUES
+        <foreach collection="bannedWordArray" item="bannedWord" separator=",">
+        (fn_getSeq(0, 'TB_BANNED_WORD'), #{siteNo}, #{bannedWord}, sysdate, #{regrNo}, 'N', 'Y')
+        </foreach>
+    </insert>
+
+    <!-- 약관 등록 -->
+    <insert id="insertBaseSiteInfo" parameterType="list">
+        /* system.site.insertBaseSiteInfo - 약관 등록 */
+        INSERT INTO TS_SITE_INFO (
+            SITE_NO, SITE_INFO_CD, CONTENT, USE_YN, REGR_NO, REG_DTTM
+        ) VALUES
+        <foreach collection="list" item="po" separator=",">
+        (
+            #{po.siteNo}, #{po.siteInfoCd}, #{po.content:CLOB}, 'Y', #{po.regrNo}, sysdate
+        )
+        </foreach>
+    </insert>
+
+    <!-- 업체별 상품 기본 아이콘 등록 -->
+    <insert id="insertGoodsIcon" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.SiteCreatePO">
+        /* system.site.insertGoodsIcon - 업체별 상품 기본 아이콘 등록 */
+        INSERT INTO TG_ICON (
+            ICON_NO, SITE_NO, ICON_TYPE_CD, ICON_DISPNM, IMG_PATH, IMG_NM, PRIORRANK, REGR_NO, REG_DTTM
+        ) VALUES
+        (fn_getSeq(0, 'ICON_NO'), #{siteNo}, 1, '신상품', '/img/product', 'icon_new.png', 1, #{regrNo}, sysdate),
+        (fn_getSeq(0, 'ICON_NO'), #{siteNo}, 1, 'HOT', '/img/product', 'icon_hot.png', 2, #{regrNo}, sysdate),
+        (fn_getSeq(0, 'ICON_NO'), #{siteNo}, 1, '최저가', '/img/product', 'icon_low.png', 3, #{regrNo}, sysdate),
+        (fn_getSeq(0, 'ICON_NO'), #{siteNo}, 1, '단독', '/img/product', 'icon_only.png', 4, #{regrNo}, sysdate),
+        (fn_getSeq(0, 'ICON_NO'), #{siteNo}, 1, '베스트', '/img/product', 'icon_best.png', 5, #{regrNo}, sysdate)
+
+    </insert>
+
+    <!-- 업체별 회원등급 등록 -->
+    <insert id="insertMemberGrade" parameterType="net.danvi.dmall.biz.app.member.level.model.MemberLevelPO">
+        /* system.site.insertMemberGrade - 업체별 회원등급 등록 */
+        INSERT INTO TC_MEMBER_GRADE (
+          MEMBER_GRADE_NO, SITE_NO, MEMBER_GRADE_NM, TOT_BUY_AMT, TOT_POINT, TOT_BUY_CNT, DC_USE_YN,
+          MEMBER_GRADE_MANAGE_CD, DEL_YN, MEMBER_GRADE_LVL, GRADE_AUTO_REARRANGE_YN, REGR_NO, REG_DTTM
+        ) VALUES (
+          #{memberGradeNo}, #{siteNo}, #{memberGradeNm}, #{totBuyAmt}, #{totPoint}, #{totBuyCnt}, 'N',
+          #{memberGradeManageCd}, #{delYn}, #{memberGradeLvl}, #{autoYn}, #{regrNo}, sysdate
+        )
+    </insert>
+
+    <!-- 업체별 회원등급 혜택 정보 등록 -->
+    <insert id="insertMemberGradeBnf" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.SiteCreatePO">
+        /* system.site.insertMemberGradeBnf - 업체별 회원등급 혜택 정보 등록 */
+        INSERT INTO TC_MEMBER_GRADE_BNF (
+            SITE_NO, MEMBER_GRADE_NO, MEMBER_GRADE_BNF_NO, DC_UNIT_CD, DC_VALUE, SVMN_UNIT_CD, SVMN_VALUE,
+            USE_YN, REGR_NO, REG_DTTM, DEL_YN
+        ) VALUES (
+            #{siteNo}, #{memberGradeNo}, #{memberGradeBnfNo}, #{dcUnitCd}, #{dcValue}, #{svmnUnitCd}, #{svmnValue},
+            #{useYn}, #{regrNo}, sysdate, 'N'
+        )
+    </insert>
+
+    <!-- 업체별 회원등급 자동 산정 정보 등록 -->
+    <insert id="insertMemberGradeAutoRearrange" parameterType="net.danvi.dmall.biz.system.remote.homepage.model.SiteCreatePO">
+        /* system.site.insertMemberGradeAutoRearrange - 업체별 회원등급 자동 산정 정보 등록 */
+        INSERT INTO TC_MEMBER_GRADE_AUTO_REARRANGE (
+          SITE_NO, GRADE_STNDRD_CYCLE, GRADE_STNDRD_DATE, GRADE_CCLT_PERIOD, LAT_REARRANGE_DTTM, REGR_NO, REG_DTTM
+        ) VALUES (
+          #{siteNo}, 1, 1, 6, NULL, NULL, NULL
+        )
+    </insert>
+
+
+    <!-- 회원등록 -->
+    <insert id="insertMember">
+		<selectKey resultType="java.lang.Long" keyColumn="MEMBER_NO" keyProperty="memberNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'MEMBER_NO') as MEMBER_NO FROM DUAL
+		</selectKey>
+        /* system.site.insertMember - 회원등록 */
+        INSERT INTO TC_MEMBER (
+        	MEMBER_NO
+        	,SITE_NO
+            ,MEMBER_NM
+            ,BIRTH
+            ,BORN_YEAR
+            ,BORN_MONTH
+            ,GENDER_GB_CD
+            ,NTN_GB_CD
+            ,JOIN_DTTM
+            ,CERTIFY_METHOD_CD
+            ,EMAIL_RECV_YN
+            ,SMS_RECV_YN
+            ,MEMBER_STATUS_CD
+            ,LOGIN_ID
+            ,PW
+            ,TEL
+            ,MOBILE
+            ,EMAIL
+            ,JOIN_PATH_CD
+            ,PW_CHG_DTTM
+            ,STRTNB_ADDR
+            ,ROAD_ADDR
+            ,DTL_ADDR
+            ,NEW_POST_NO
+            ,REALNM_CERTIFY_YN
+            ,MEMBER_GRADE_NO
+            ,MEMBER_CI
+            ,MEMBER_DI
+            ,MEMBER_GB_CD
+            ,ADULT_CERTIFY_YN
+            ,NEXT_PW_CHG_SCD_DTTM
+            ,FRG_ADDR_CITY
+            ,FRG_ADDR_STATE
+            ,FRG_ADDR_ZIP_CODE
+            ,FRG_ADDR_DTL1
+            ,FRG_ADDR_DTL2
+            ,REG_DTTM
+        ) VALUES (
+        	fn_getSeq(0, 'MEMBER_NO')
+        	,#{siteNo}
+            ,#{memberNm}
+            ,#{birth}
+            ,#{bornYear}
+            ,#{bornMonth}
+            ,#{genderGbCd}
+            ,#{ntnGbCd}
+            ,sysdate
+            ,#{certifyMethodCd}
+            ,#{emailRecvYn}
+            ,#{smsRecvYn}
+            ,#{memberStatusCd}
+            ,#{loginId}
+            ,#{pw}
+            ,#{tel}
+            ,#{mobile}
+            ,#{email}
+            ,#{joinPathCd}
+            ,sysdate
+            ,#{strtnbAddr}
+            ,#{roadAddr}
+            ,#{dtlAddr}
+            ,#{newPostNo}
+            ,#{realnmCertifyYn}
+            ,#{memberGradeNo}
+            ,#{memberCi}
+            ,#{memberDi}
+            ,#{memberGbCd}
+            ,#{adultCertifyYn}
+            ,#{nextPwChgScdDttm}
+            ,#{frgAddrCity}
+            ,#{frgAddrState}
+            ,#{frgAddrZipCode}
+            ,#{frgAddrDtl1}
+            ,#{frgAddrDtl2}
+            ,sysdate
+        )
+    </insert>
+
+    <insert id="insertSmsInfoManage">
+        /* system.site.insertSmsInfoManage - SMS 정보 관리 등록 */
+        insert into TB_SMS_INFO_MANAGE (
+          SITE_NO, REGR_NO, REG_DTTM
+        ) values (
+          #{siteNo}, #{regrNo}, sysdate
+        )
+    </insert>
+
+    <insert id="insertSmsTemplate">
+        /* system.site.insertSmsTemplate - SMS 템플릿 등록 */
+        insert into TB_SMS_AUTO_SEND_MANAGE (
+          SEND_TYPE_CD,SITE_NO,USE_YN,MEMBER_SEND_YN,MANAGER1_SEND_YN,MANAGER2_SEND_YN,MANAGER3_SEND_YN,MANAGER4_SEND_YN,MANAGER5_SEND_YN,MANAGER6_SEND_YN,MANAGER7_SEND_YN,MANAGER8_SEND_YN,MANAGER9_SEND_YN,MANAGER10_SEND_YN,MEMBER_SEND_WORDS,MANAGER_SEND_WORDS,REGR_NO,REG_DTTM
+        ) values
+        ('01',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 회원 가입을 환영합니다.','',#{regrNo}, sysdate),
+        ('02',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','회원 탈퇴가 처리되었습니다','',#{regrNo}, sysdate),
+        ('03',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[orderNm]님(#[orderNo])( #[ordBankNm] )(#[ordBankAccntNm])(#[ordBankAccntNo]) 입금 부탁드립니다.','#[siteNm] #[orderNm](#[orderNo])( #[ordBankNm] )(#[ordBankAccntNm])(#[ordBankAccntNo])(#[ordPayAmt]) 입금 부탁드립니다.',#{regrNo}, sysdate),
+        ('04',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 주문(#[orderNo])이 성공적으로 완료되었습니다.','#[siteNm] 주문(#[orderNo])이 성공적으로 완료되었습니다.',#{regrNo}, sysdate),
+        ('05',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 주문(#[orderNo])하신 상품이 배송 준비되어 출고중입니다.','#[siteNm] 주문(#[orderNo])하신 상품이 배송 준비되어 출고중입니다.',#{regrNo}, sysdate),
+        ('06',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 주문(#[orderNo])하신 상품이 발송되었습니다','#[siteNm] 주문(#[orderNo])하신 상품이 발송되었습니다',#{regrNo}, sysdate),
+        ('07',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 주문(#[orderNo])하신 상품이 부분발송되었습니다.','#[siteNm] 주문(#[orderNo])하신 상품이 부분발송되었습니다.',#{regrNo}, sysdate),
+        ('08',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 주문(#[orderNo])하신 상품이 부분배송 완료되었습니다.','#[siteNm] 주문(#[orderNo])하신 상품이 부분배송 완료되었습니다.',#{regrNo}, sysdate),
+        ('09',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 상품이 성공적으로 배송완료되었습니다.  ','#[siteNm] 상품이 성공적으로 배송완료되었습니다.',#{regrNo}, sysdate),
+        ('10',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 상품이 결제취소되었습니다.','#[siteNm] 상품이 결제취소되었습니다.',#{regrNo}, sysdate),
+        ('11',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[orderNm]님 #[reqDate]에 요청하신주문이 취소 처리되었습니다.','#[siteNm] 주문(#[orderNo])이 취소 처리되었습니다.',#{regrNo}, sysdate),
+        ('12',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[orderNm]님 #[reqDate]에 요청하신상품의 반품/교환 내용이 접수되었습니다.','#[siteNm] 주문(#[orderNo])이 반품/교환 접수되었습니다.',#{regrNo}, sysdate),
+        ('13',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[orderNm] 님 (#[orderNo]) 상품이 주문무효 처리되었습니다','#[siteNm] #[orderNm] 님 (#[orderNo])상품이 주문무효 처리되었습니다',#{regrNo}, sysdate),
+        ('14',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] 상품이 결제실패되었습니다.  ','#[siteNm] 상품이 결제실패되었습니다.  ',#{regrNo}, sysdate),
+        ('15',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[memberNm]님 문의하신 내용이 등록되었습니다.','#[siteNm]#[memberNm] 에 신규글이 등록되었습니다.',#{regrNo}, sysdate),
+        ('16',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[memberNm]님 문의하신 내용에 답변이 등록되었습니다.','',#{regrNo}, sysdate),
+        ('17',#{siteNo},'Y','N','N','N','N','N','N','N','N','N','N','N','','#[siteNm] #[ordItem]가 품절되었습니다',#{regrNo}, sysdate),
+        ('18',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[memberNm] 고객님께서 알림요청하신 상품(#[goodsNm] )이 재입고되었습니다.','',#{regrNo}, sysdate),
+        ('19',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[memberNm]님 문의하신 내용이 등록되었습니다.','#[siteNm] #[memberNm]에 신규글이 등록되었습니다.',#{regrNo}, sysdate),
+        ('20',#{siteNo},'Y','Y','N','N','N','N','N','N','N','N','N','N','#[siteNm] #[memberNm]님 문의하신 내용에 답변이 등록되었습니다.','',#{regrNo}, sysdate)
+    </insert>
+
+    <insert id="insertMailInfoManage">
+        /* system.site.insertMailInfoManage - 이메일 정보 관리 등록 */
+        insert into TB_MAIL_INFO_MANAGE (
+          SITE_NO, REGR_NO, REG_DTTM
+        ) values (
+          #{siteNo}, #{regrNo}, sysdate
+        )
+    </insert>
+
+    <insert id="insertEmailTemplate">
+        /* system.site.insertSmsTemplate - 이메일 템플릿 등록 */
+        insert into TB_MAIL_AUTO_SEND_MANAGE(
+          MAIL_TYPE_CD,SITE_NO,AUTO_SEND_YN,SEND_EMAIL,MAIL_TITLE,MAIL_CONTENT,MEMBER_SEND_YN,MANAGER_SEND_YN,OPERATOR_SEND_YN,SEND_FRM_CD,REGR_NO,REG_DTTM)
+        values
+        <foreach collection="list" item="item" separator=",">
+        (#{item.mailTypeCd},#{item.siteNo},'Y',null,#{item.mailTitle},#{item.mailContent:CLOB},#{item.memberSendYn},#{item.managerSendYn},#{item.operatorSendYn},null,#{item.regrNo},sysdate)
+        </foreach>
+    </insert>
+
+    <insert id="insertSiteSystemWork" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SitePO">
+        /* system.site.insertSiteSystemWork - 마루 연계 정보(쇼핑몰생성) 등록 */
+        INSERT INTO TA_SITE_SYS_WORK (
+            WORK_SEQ, IDX, SITE_ID, MANAGER_ID, MANAGER_PW, SITE_TYPE_CD, SVC_START_DT, SVC_END_DT,
+            HOMEPAGE_ID, DISK, TRAFFIC, IP, VIP, APPLY_CD, STATUS_CD, REG_DTTM
+        ) VALUES (
+            fn_getSeq(0, 'WORK_SEQ'), #{idx}, #{siteId}, #{adminId}, #{adminPw}, #{sitetypeCd}, #{serviceStartDt}, #{serviceEndDt},
+            #{homepageId}, #{disk}, #{traffic}, #{ip}, #{vip}, #{requestCd}, '1', sysdate
+        )
+    </insert>
+
+    <select id="selectSiteSystemWork" parameterType="net.danvi.dmall.core.remote.homepage.model.request.SitePO"
+            resultType="net.danvi.dmall.core.remote.homepage.model.request.SitePO">
+        /* system.site.insertSiteSystemWork - 마루 연계 정보(쇼핑몰생성) 조회*/
+        SELECT  SITE_ID,
+                 MANAGER_ID AS adminId,
+                 MANAGER_PW AS adminPw,
+                 SITE_TYPE_CD AS sitetypeCd,
+                 SVC_START_DT AS serviceStartDt,
+                 SVC_END_DT AS serviceEndDt,
+                 HOMEPAGE_ID,
+                 DISK,
+                 TRAFFIC,
+                 IP,
+                 VIP,
+                 APPLY_CD AS requestCd
+        FROM    TA_SITE_SYS_WORK
+        WHERE   IDX = #{idx}
+    </select>
+
+    <insert id="insertCategory">
+        /* system.site.insertCategory - 기본 카테고리 정보 등록 */
+        INSERT INTO TG_CTG (
+            CTG_NO, SITE_NO, UP_CTG_NO, CTG_LVL, CTG_NM, CTG_EXHBTION_TYPE_CD, CTG_DISP_TYPE_CD, MOBILE_SPMALL_APPLY_YN,
+            CTG_MAIN_USE_YN, NAVIG_EXPS_YN, DEL_YN, REGR_NO, REG_DTTM
+        ) VALUES
+        (fn_getSeq(#{siteNo}, 'CTG_NO'), #{siteNo}, 0, 1, '카테고리1', '1', '03', 'Y', 'N', 'Y', 'N', #{regrNo}, sysdate),
+        (fn_getSeq(#{siteNo}, 'CTG_NO'), #{siteNo}, 0, 1, '카테고리2', '1', '03', 'Y', 'N', 'Y', 'N', #{regrNo}, sysdate),
+        (fn_getSeq(#{siteNo}, 'CTG_NO'), #{siteNo}, 0, 1, '카테고리3', '1', '03', 'Y', 'N', 'Y', 'N', #{regrNo}, sysdate)
+    </insert>
+
+    <insert id="insertMainDisplay">
+        /* system.site.insertMainDisplay - 샘플 메인 전시 등록 */
+        INSERT INTO TS_SITE_DISP_SET (
+            SITE_DISP_SEQ, SITE_NO, DISP_SEQ, DISP_NM, USE_YN, DISP_TYPE_CD, DISP_IMG_PATH, DISP_IMG_NM,
+            DISP_EXHBTION_TYPE_CD, REG_DTTM, REGR_NO
+        ) VALUES
+        (fn_getSeq(#{siteNo}, 'MAIN_DISPLAY'), #{siteNo}, 1, 'New Arrival', 'Y', '01', null, null,
+        '1', sysdate, #{regrNo}),
+        (fn_getSeq(#{siteNo}, 'MAIN_DISPLAY'), #{siteNo}, 2, 'Weekly Best', 'Y', '01', null, null,
+        '1', sysdate, #{regrNo})
+    </insert>
+
+    <select id="selectPcSkinNo" resultType="Long">
+        /* system.site.selectPcSkinNo - PC 스킨 번호 조회 */
+        SELECT  SKIN_NO
+        FROM    TD_SKIN
+        WHERE   SITE_NO = #{siteNo}
+        AND     PC_GB_CD = 'C'
+        AND     APPLY_SKIN_YN = 'Y'
+    </select>
+    <select id="selectMobileSkinNo" resultType="Long">
+        /* system.site.selectMobileSkinNo - 모바일 스킨 번호 조회 */
+        SELECT  SKIN_NO
+        FROM    TD_SKIN
+        WHERE   SITE_NO = #{siteNo}
+        AND     PC_GB_CD = 'M'
+        AND     APPLY_SKIN_YN = 'Y'
+    </select>
+
+    <insert id="insertBanner">
+        /* system.site.insertBanner - 기본 배너 등록 */
+        INSERT INTO TD_BANNER (
+                BANNER_NO, SKIN_NO, SITE_NO, PC_GB_CD, BANNER_MENU_CD, BANNER_AREA_CD, BANNER_NM, BANNER_DSCRT,
+                DISP_START_DTTM, DISP_END_DTTM,
+                LINK_URL, DISP_LINK_CD, FILE_PATH, ORG_FILE_NM, FILE_NM, FILE_SIZE,
+                SORT_SEQ, DISP_YN, REG_DTTM, REGR_NO
+            ) VALUES
+            (
+                fn_getSeq(#{siteNo}, 'BANNER'), #{skinNo}, #{siteNo}, 'C', 'MN', 'MB1', '메인1', '메인배너1',
+                TO_CHAR(sysdate, 'YYYYMMDDHH24MI') || '00', TO_CHAR(ADD_MONTHS(sysdate, 12), 'YYYYMMDDHH24MI') || '00',
+                '', '', '/front/img/common/main_banner', 'main_banner_1.jpg', 'main_banner_1.jpg', 0,
+                1, 'Y', sysdate, #{regrNo}
+            ),
+            (
+                fn_getSeq(#{siteNo}, 'BANNER'), #{skinNo}, #{siteNo}, 'C', 'MN', 'MB1', '메인2', '메인배너2',
+                TO_CHAR(sysdate, 'YYYYMMDDHH24MI') || '00', TO_CHAR(ADD_MONTHS(sysdate, 12), 'YYYYMMDDHH24MI') || '00',
+                '', '', '/front/img/common/main_banner', 'main_banner_2.jpg', 'main_banner_2.jpg', 0,
+                2, 'Y', sysdate, #{regrNo}
+            ),
+            (
+                fn_getSeq(#{siteNo}, 'BANNER'), #{skinNo}, #{siteNo}, 'C', 'CM', 'LWF', '윙배너1', '레프트윙배너1',
+                TO_CHAR(sysdate, 'YYYYMMDDHH24MI') || '00', TO_CHAR(ADD_MONTHS(sysdate, 12), 'YYYYMMDDHH24MI') || '00',
+                '', '', '/front/img/common/left_banner', 'left_banner_01.jpg', 'left_banner_01.png', 0,
+                1, 'Y', sysdate, #{regrNo}
+            ),
+            (
+                fn_getSeq(#{siteNo}, 'BANNER'), #{skinNo}, #{siteNo}, 'C', 'CM', 'LWF', '윙배너2', '레프트윙배너2',
+                TO_CHAR(sysdate, 'YYYYMMDDHH24MI') || '00', TO_CHAR(ADD_MONTHS(sysdate, 12), 'YYYYMMDDHH24MI') || '00',
+                '', '', '/front/img/common/left_banner', 'left_banner_02.jpg', 'left_banner_02.png', 0,
+                2, 'Y', sysdate, #{regrNo}
+            )
+    </insert>
+
+    <insert id="insertAccount">
+        /* system.site.insertAccount - 기본 무통장계좌 등록 */
+        INSERT INTO TS_NOPB_PAYMENT_SET (
+            NOPB_PAYMENT_SEQ, SITE_NO, BANK_NM, BANK_CD, ACTNO, HOLDER, DLGT_ACT_YN, REGR_NO, REG_DTTM
+        ) VALUES (
+            fn_getSeq(0, 'NOPB_PAYMENT_SEQ'), #{siteNo}, #{bankNm}, #{bankCd}, #{actno}, #{holder}, #{dlgtActYn}, #{regrNo}, sysdate
+        )
+    </insert>
+</mapper>

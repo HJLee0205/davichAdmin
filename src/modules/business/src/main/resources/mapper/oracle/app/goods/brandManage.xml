@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.brand">
+    <select id="selectBrandList" resultType="brandVO" parameterType="brandSO">
+        /* biz.app.goods.brand.selectBrandList */
+        SELECT BRAND_NO,
+               SITE_NO,
+               BRAND_NM,
+               BRAND_EXHBTION_TYPE_CD,
+               DISP_YN,
+               BRAND_IMG_PATH,
+               BRAND_IMG_NM,
+               BRAND_LOGO_IMG_PATH,
+               BRAND_LOGO_IMG_NM,
+               MOUSEOVER_IMG_PATH,
+               MOUSEOVER_IMG_NM,
+               GOODS_TYPE_CD
+          FROM TG_BRAND
+         WHERE SITE_NO = #{siteNo}
+           <if test='dispYn != null and dispYn != ""'>
+                AND DISP_YN = #{dispYn}
+           </if>
+           <if test='mainDispYn != null and mainDispYn != ""'>
+                AND MAIN_DISP_YN = #{mainDispYn}
+           </if>
+           <if test='goodsTypeCd != null and goodsTypeCd != ""'>
+                AND GOODS_TYPE_CD = #{goodsTypeCd}
+           </if>
+         ORDER BY BRAND_NM ASC
+    </select>
+
+    <select id="selectBrandDtl" resultType="brandVO" parameterType="brandSO">
+        /* biz.app.goods.brand.selectBrandDtl */
+        SELECT TB.BRAND_NO,
+               TB.SITE_NO,
+               TB.BRAND_NM,
+               TB.BRAND_EXHBTION_TYPE_CD,
+               TB.DISP_YN,
+               TB.BRAND_IMG_PATH,
+               TB.BRAND_IMG_NM,
+               TB.MOUSEOVER_IMG_PATH,
+               TB.MOUSEOVER_IMG_NM,
+               TB.BRAND_LIST_IMG_PATH as listImgPath,
+               TB.BRAND_LIST_IMG_NM as listImgNm,
+               TB.BRAND_DTL_IMG_PATH as dtlImgPath,
+               TB.BRAND_DTL_IMG_NM as dtlImgNm,
+               TB.BRAND_LOGO_IMG_PATH as logoImgPath,
+               TB.BRAND_LOGO_IMG_NM as logoImgNm,
+               TB.MAIN_DISP_YN,
+               (SELECT COUNT(*) CNT
+                  FROM TG_GOODS TG
+                 WHERE TG.SITE_NO = TB.SITE_NO
+                   AND TG.BRAND_NO = TB.BRAND_NO) AS BRAND_GOODS_CNT,
+               (SELECT COUNT(*) CNT
+                  FROM TG_GOODS TG
+                 WHERE TG.SITE_NO = TB.SITE_NO
+                   AND TG.BRAND_NO = TB.BRAND_NO
+                   AND TG.GOODS_SALE_STATUS_CD = '1') AS BRAND_SALES_GOODS_CNT,
+                TB.BRAND_ENNM,
+            	TB.GOODS_TYPE_CD
+          FROM TG_BRAND TB
+         WHERE TB.SITE_NO  = #{siteNo}
+           AND TB.BRAND_NO = #{brandNo}
+    </select>
+
+    <update id="updateBrand">
+        /* biz.app.goods.brand.updateBrand */
+        UPDATE TG_BRAND
+           SET
+               <if test='brandNm != null and brandNm != ""'>
+                   BRAND_NM = #{brandNm},
+               </if>
+               <if test='brandExhbtionTypeCd != null and brandExhbtionTypeCd != ""'>
+                   BRAND_EXHBTION_TYPE_CD = #{brandExhbtionTypeCd},
+               </if>
+               <if test='brandImgPath != null and brandImgPath != ""'>
+                   BRAND_IMG_PATH = #{brandImgPath},
+               </if>
+               <if test='brandImgNm != null and brandImgNm != ""'>
+                   BRAND_IMG_NM = #{brandImgNm},
+               </if>
+               <if test='mouseoverImgPath != null and mouseoverImgPath != ""'>
+                   MOUSEOVER_IMG_PATH = #{mouseoverImgPath},
+               </if>
+               <if test='mouseoverImgNm != null and mouseoverImgNm != ""'>
+                   MOUSEOVER_IMG_NM = #{mouseoverImgNm},
+               </if>
+
+                <if test='listImgPath != null and listImgPath != ""'>
+                    BRAND_LIST_IMG_PATH = #{listImgPath},
+                </if>
+                <if test='listImgNm != null and listImgNm != ""'>
+                    BRAND_LIST_IMG_NM = #{listImgNm},
+                </if>
+                <if test='dtlImgPath != null and dtlImgPath != ""'>
+                    BRAND_DTL_IMG_PATH = #{dtlImgPath},
+                </if>
+                <if test='dtlImgNm != null and dtlImgNm != ""'>
+                    BRAND_DTL_IMG_NM = #{dtlImgNm},
+                </if>
+                <if test='logoImgPath != null and logoImgPath != ""'>
+                    BRAND_LOGO_IMG_PATH = #{logoImgPath},
+                </if>
+                <if test='logoImgNm != null and logoImgNm != ""'>
+                    BRAND_LOGO_IMG_NM = #{logoImgNm},
+                </if>
+
+                <if test='mainDispYn != null and mainDispYn != ""'>
+                    MAIN_DISP_YN = #{mainDispYn},
+                </if>
+                <if test='brandEnnm != null'>
+                    BRAND_ENNM = #{brandEnnm},
+                </if>
+                <if test='goodsTypeCd != null'>
+                    GOODS_TYPE_CD = #{goodsTypeCd},
+                </if>
+
+               UPDR_NO  = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO  = #{siteNo}
+           AND BRAND_NO = #{brandNo}
+    </update>
+
+    <insert id="insertBrand">
+        /* biz.app.goods.brand.insertBrand */
+        INSERT INTO TG_BRAND
+               (BRAND_NO,
+                SITE_NO,
+                BRAND_EXHBTION_TYPE_CD,
+                BRAND_NM,
+                DISP_YN,
+                REGR_NO,
+                REG_DTTM,
+                MAIN_DISP_YN
+                )
+        VALUES (#{brandNo},
+                #{siteNo},
+                #{brandExhbtionTypeCd},
+                #{brandNm},
+                'Y',
+                #{regrNo},
+                sysdate,
+                'Y'
+                )
+    </insert>
+
+    <update id="deleteBrand">
+        /* biz.app.goods.brand.deleteBrand */
+        UPDATE TG_BRAND
+           SET DISP_YN  = 'N',
+               BRAND_EXHBTION_TYPE_CD = '1',
+               BRAND_IMG_PATH = null,
+               BRAND_IMG_NM = null,
+               MOUSEOVER_IMG_PATH = null,
+               MOUSEOVER_IMG_NM = null,
+               UPDR_NO  = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO  = #{siteNo}
+           AND BRAND_NO = #{brandNo}
+    </update>
+
+</mapper>

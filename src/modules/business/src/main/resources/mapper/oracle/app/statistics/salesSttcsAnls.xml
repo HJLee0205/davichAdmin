@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   매출통계 관리 맵퍼
+-->
+<mapper namespace="statistics.salesSttcsAnls">
+    <sql id="selectSalesSttcsListWhere">
+        AND SITE_NO = #{siteNo}
+        <if test=' periodGb == "T" ' >
+        <!-- 시간별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            AND DT = #{dd}
+            <if test=' totalSum != "1" '>
+                <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR, MM, DT, HR
+                </if>
+                <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, DT, HR, EQPM_GB_CD
+                </if>
+            </if>
+            <if test=' totalSum == "1" '>
+       GROUP BY SITE_NO, YR, MM, DT, HR
+            </if>
+        </if>
+        <if test=' periodGb == "D" ' >
+        <!-- 일별 -->
+            AND YR = #{yr}
+            AND MM = #{mm}
+            <if test=' totalSum != "1" '>
+                <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR, MM, DT
+                </if>
+                <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, DT, EQPM_GB_CD
+                </if>
+            </if>
+            <if test=' totalSum == "1" '>
+       GROUP BY SITE_NO, YR, MM, DT
+            </if>
+        </if>
+        <if test=' periodGb == "M" ' >
+        <!-- 월별 -->
+            AND YR = #{yr}
+            <if test=' totalSum != "1" '>
+                <if test=' eqpmGbCd == "00" '>
+       GROUP BY SITE_NO, YR, MM
+                </if>
+                <if test=' eqpmGbCd != "00" '>
+            AND EQPM_GB_CD = #{eqpmGbCd}
+       GROUP BY SITE_NO, YR, MM, EQPM_GB_CD
+                </if>
+            </if>
+            <if test=' totalSum == "1" '>
+       GROUP BY SITE_NO, YR, MM
+            </if>
+        </if>
+        <if test="searchFrom != null and searchFrom != ''">
+            <![CDATA[
+            and to_date(DTTM, 'YYYYMMDD') >= to_date(#{searchFrom}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchFrom != null and searchFrom != ''">
+            <![CDATA[
+            and to_date(DTTM, 'YYYYMMDD') < to_date(#{searchTo}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        group by DTTM
+    </sql>
+    
+    <!-- 매출통계 전체 총 합 -->
+    <select id="selectTotSalesSttcsList" parameterType="salesSttcsSO" resultType="salesSttcsVO">
+        /* statistics.salesSttcsAnls.selectTotMemberSvmnList */
+        SELECT ROUND(NVL(SUM(A.PAYMENT_CNT),0), 0) AS TOT_BUYR_CNT
+             , ROUND(NVL(SUM(A.REAL_PAYMENT_AMT),0), 0) AS TOT_SALES_AMT
+             , ROUND(NVL(SUM(A.SALES_AMT),0), 0) AS TOT_SALE_AMT
+          FROM (
+                   SELECT SUM(PAYMENT_CNT) AS PAYMENT_CNT
+                        , SUM(PAYMENT_AMT) AS REAL_PAYMENT_AMT
+                        , SUM(SALES_AMT) AS SALES_AMT
+                     FROM (SELECT YR||MM||DT AS DTTM,
+                            PAYMENT_CNT ,
+                            PAYMENT_AMT ,
+                            SALES_AMT
+                            FROM TT_SALES_STTCS)
+                    WHERE 1 = 1
+                    <if test="searchFrom != null and searchFrom != ''">
+                        <![CDATA[
+                        and to_date(DTTM, 'YYYYMMDD') >= to_date(#{searchFrom}, 'YYYY-MM-DD')
+                        ]]>
+                    </if>
+                    <if test="searchFrom != null and searchFrom != ''">
+                        <![CDATA[
+                        and to_date(DTTM, 'YYYYMMDD') < to_date(#{searchTo}, 'YYYY-MM-DD') + 1
+                        ]]>
+                    </if>
+                ) A
+    </select>
+    
+    <!-- 매출통계 전체조회 -->
+    <select id="selectSalesSttcsList" parameterType="salesSttcsSO" resultType="salesSttcsVO">
+        /* statistics.salesSttcsAnls.selectSalesSttcsList */
+        SELECT A.*
+          FROM (
+                   SELECT rownum as PAGING_NUM
+                        , rownum as RANK
+                        , ROUND(NVL(PAYMENT_CNT, 0),0) AS PAYMENT_CNT
+                        , ROUND(NVL(PAYMENT_AMT, 0),0) AS PAYMENT_AMT
+                        , ROUND(NVL(CP_DC_AMT, 0),0) AS CP_DC_AMT
+                        , ROUND(NVL(ETC_DC_AMT, 0),0) AS ETC_DC_AMT
+                        , ROUND(NVL(REAL_PAYMENT_AMT, 0),0) AS REAL_PAYMENT_AMT
+                        , ROUND(NVL(RETURN_REFUND_AMT, 0),0) AS RETURN_REFUND_AMT
+                        , ROUND(NVL(CANCEL_REFUND_AMT, 0),0) AS CANCEL_REFUND_AMT
+                        , ROUND(NVL(REFUND_AMT, 0),0) AS REFUND_AMT
+                        , ROUND(NVL(SALES_AMT, 0),0) AS SALES_AMT
+                     FROM (
+                              SELECT sum(nvl(PAYMENT_CNT, 0)) as PAYMENT_CNT
+                                   , SUM(NVL(PAYMENT_AMT, 0)) AS PAYMENT_AMT
+                                   , SUM(NVL(CP_DC_AMT, 0)) AS CP_DC_AMT
+                                   , SUM(NVL(ETC_DC_AMT, 0)) AS ETC_DC_AMT
+                                   , SUM(NVL(REAL_PAYMENT_AMT, 0)) AS REAL_PAYMENT_AMT
+                                   , SUM(NVL(RETURN_REFUND_AMT, 0)) AS RETURN_REFUND_AMT
+                                   , SUM(NVL(CANCEL_REFUND_AMT, 0)) AS CANCEL_REFUND_AMT
+                                   , SUM(NVL(REFUND_AMT, 0)) AS REFUND_AMT
+                                   , SUM(NVL(SALES_AMT, 0)) AS SALES_AMT
+                                FROM (SELECT SITE_NO,
+                                        YR||MM||DT AS DTTM,
+                                        PAYMENT_CNT ,
+                                        PAYMENT_AMT ,
+                                        CP_DC_AMT ,
+                                        ETC_DC_AMT ,
+                                        REAL_PAYMENT_AMT ,
+                                        RETURN_REFUND_AMT,
+                                        CANCEL_REFUND_AMT ,
+                                        REFUND_AMT ,
+                                        SALES_AMT
+                                        FROM TT_SALES_STTCS)
+                               WHERE 1 = 1
+                              <include refid="selectSalesSttcsListWhere" />
+                               order by SALES_AMT desc
+                           ) A
+               ) A
+        <include refid="common.pageSql"/>
+    </select>
+    
+    <!-- 매출통계 총건수 조회 -->
+    <select id="selectSalesSttcsListTotalCount" parameterType="salesSttcsSO" resultType="Integer">
+        /* statistics.salesSttcsAnls.selectSalesSttcsListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT DTTM
+                   FROM (SELECT SITE_NO,
+                        YR||MM||DT AS DTTM,
+                        PAYMENT_AMT ,
+                        CP_DC_AMT ,
+                        ETC_DC_AMT ,
+                        REAL_PAYMENT_AMT ,
+                        RETURN_REFUND_AMT,
+                        CANCEL_REFUND_AMT ,
+                        REFUND_AMT ,
+                        SALES_AMT ,
+                        SVMN_PAYMENT_CNT ,
+                        SVMN_PAYMENT_AMT
+                        FROM TT_SALES_STTCS)
+                  WHERE 1 = 1
+                ) TCNT
+    </select>
+    <!-- 매출통계 조건적용 총건수 조회 -->
+    <select id="selectSalesSttcsListCount" parameterType="salesSttcsSO" resultType="Integer">
+        /* statistics.salesSttcsAnls.selectSalesSttcsListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT DTTM
+                   FROM (SELECT SITE_NO,
+                        YR||MM||DT AS DTTM,
+                        PAYMENT_AMT ,
+                        CP_DC_AMT ,
+                        ETC_DC_AMT ,
+                        REAL_PAYMENT_AMT ,
+                        RETURN_REFUND_AMT,
+                        CANCEL_REFUND_AMT ,
+                        REFUND_AMT ,
+                        SALES_AMT ,
+                        SVMN_PAYMENT_CNT ,
+                        SVMN_PAYMENT_AMT
+                        FROM TT_SALES_STTCS)
+                  WHERE 1 = 1
+                  <include refid="selectSalesSttcsListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

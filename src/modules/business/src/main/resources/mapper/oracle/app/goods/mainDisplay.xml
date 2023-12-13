@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="goods.mainDisplay">
+
+
+
+    <select id="selectMainDisplay" resultType="goodsVO">
+        /* goods.mainDisplay.selectMainDisplay */
+        SELECT  MAIN_AREA_GB_CD,  
+                fn_getCodeNm('MAIN_AREA_GB_CD', MAIN_AREA_GB_CD) AS MAIN_AREA_GB_NM,
+        		SITE_DISP_SEQ,
+                SITE_NO,
+                DISP_SEQ,
+                DISP_NM,
+                USE_YN,
+                DISP_TYPE_CD,
+                DISP_IMG_PATH,
+                DISP_IMG_NM,
+                DISP_EXHBTION_TYPE_CD
+        FROM    TS_SITE_DISP_SET
+        WHERE   SITE_NO = #{siteNo}
+        <if test="useYn != null and useYn != ''">
+        AND     USE_YN = #{useYn}
+        </if>
+        <if test="dispSeq != null and dispSeq != ''">
+        AND     DISP_SEQ    = #{dispSeq}
+        </if>
+        <if test="siteDispSeq != null and siteDispSeq != ''">
+        AND     SITE_DISP_SEQ    = #{siteDispSeq}
+        </if>
+        <if test="mainAreaGbCd != null and mainAreaGbCd != ''">
+        AND     MAIN_AREA_GB_CD    = #{mainAreaGbCd}
+        </if>
+        ORDER BY SITE_DISP_SEQ ASC
+    </select>
+
+    <insert id="insertMainDisplay">
+        /* goods.mainDisplay.insertMainDisplay */
+        INSERT INTO TS_SITE_DISP_SET
+            (
+            	MAIN_AREA_GB_CD,
+                SITE_DISP_SEQ,
+                SITE_NO,
+                DISP_SEQ,
+                DISP_NM,
+                USE_YN,
+                DISP_TYPE_CD,
+                DISP_IMG_PATH,
+                DISP_IMG_NM,
+                DISP_EXHBTION_TYPE_CD,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+            	#{mainAreaGbCd},
+                #{siteDispSeq},
+                #{siteNo},
+                #{dispSeq},
+                #{dispNm},
+                #{useYn},
+                #{dispTypeCd},
+                #{dispImgPath},
+                #{dispImgNm},
+                #{dispExhbtionTypeCd},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <update id="updateMainDisplay">
+        /* goods.mainDisplay.updateMainDisplay */
+        UPDATE  TS_SITE_DISP_SET
+        SET     DISP_SEQ         = #{dispSeq},
+                DISP_NM          = #{dispNm},
+                USE_YN           = #{useYn},
+                DISP_TYPE_CD     = #{dispTypeCd},
+               <if test='dispImgPath != null and dispImgPath != ""'>
+                DISP_IMG_PATH    = #{dispImgPath},
+               </if>
+               <if test='dispImgNm != null and dispImgNm != ""'>
+                DISP_IMG_NM      = #{dispImgNm},
+               </if>
+                DISP_EXHBTION_TYPE_CD = #{dispExhbtionTypeCd},
+                UPDR_NO          = #{updrNo},
+                UPD_DTTM         = sysdate
+        WHERE   SITE_NO        = #{siteNo}
+        AND     SITE_DISP_SEQ  = #{siteDispSeq}
+    </update>
+
+    <select id="selectMainDisplayGoods" resultType="goodsVO">
+        /* goods.mainDisplay.selectMainDisplayGoods */
+        SELECT  TSDG.SITE_DISP_SEQ,
+                TSDG.GOODS_NO,
+                TSDG.PRIOR_RANK,
+                GDS.GOODS_NM,
+                ITM.SALE_PRICE,
+                fn_getGoodsImgPath(GDS.GOODS_NO, '03') AS GOODS_IMG_03,
+                GDS.DISP_YN
+        FROM    TS_SITE_DISP_GOODS TSDG
+                , TG_GOODS GDS
+                , TG_ITEM ITM
+        WHERE   TSDG.GOODS_NO = GDS.GOODS_NO
+        AND     GDS.ITEM_NO = ITM.ITEM_NO
+        AND     TSDG.SITE_NO = #{siteNo}
+        ORDER BY SITE_DISP_SEQ ASC, PRIOR_RANK ASC
+    </select>
+
+    <select id="selectMainDisplayGoodsFront" resultType="displayGoodsVO">
+        /* goods.mainDisplay.selectMainDisplayGoodsFront */
+        SELECT  TSDS.SITE_DISP_SEQ,
+                GOODS.GOODS_NO,
+                TSDS.DISP_SEQ,
+                TSDS.DISP_TYPE_CD,
+                GOODS.PRIOR_RANK,
+                TSDS.DISP_TITLE,
+                TSDS.DISP_NM,
+                TSDS.DISP_IMG_PATH,
+                TSDS.DISP_IMG_NM,
+                TSDS.DISP_EXHBTION_TYPE_CD,
+                fn_getGoodsImgPath(GOODS.GOODS_NO, '02') AS GOODS_IMG_02,
+                fn_getGoodsImgPath(GOODS.GOODS_NO, '03') AS GOODS_IMG_03,
+
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'F') AS GOODS_DISP_IMG_F,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'G') AS GOODS_DISP_IMG_G,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'S') AS GOODS_DISP_IMG_S,
+
+                GOODS.BRAND_NO,
+                GOODS.BRAND_NM,
+                GOODS.GOODS_NM,
+                GOODS.GOODS_SALE_STATUS_CD,
+                GOODS.ADULT_CERTIFY_YN,
+                GOODS.PR_WORDS,
+                NVL(GOODS.CUSTOMER_PRICE,0) AS CUSTOMER_PRICE,
+                NVL(GOODS.SALE_PRICE,0) AS SALE_PRICE,
+                decode(nvl(GOODS.CUSTOMER_PRICE,0), 0, 0, 100-(GOODS.SALE_PRICE/GOODS.CUSTOMER_PRICE)*100) as SALE_RATE,
+                NVL(( SELECT MAX(PRMT_DC_VALUE) FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                AND (TPTG.GOODS_NO = GOODS.GOODS_NO OR TP.PRMT_BRAND_NO = GOODS.BRAND_NO) AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N' ),0) AS PRMT_DC_VALUE,
+                (SELECT MAX(PRMT_DC_GB_CD)
+                                    FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                                    WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                                    AND TPTG.GOODS_NO = GOODS.GOODS_NO
+                                    AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                                    AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS PRMT_DC_GB_CD,
+                fn_getGoodsIcon(GOODS.GOODS_NO, '5') AS ICON_IMGS,
+                NVL(GOODS.GOODS_SVMN_AMT,0) AS GOODS_SVMN_AMT,
+                NVL(GOODS.GOODS_SCORE,0) AS GOODS_SCORE,
+                NVL(GOODS.ACCM_GOODSLETT_CNT,0) AS ACCM_GOODSLETT_CNT
+                /*,(SELECT fn_getCuoponApplyAmt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCouponDcAmt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCouponDcRate(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponDcValue(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCouponBnfCd(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCouponBnfTxt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_TXT*/
+                /*,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'APPLYAMT','') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCAMT','') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCTRATE','') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCVALUE','') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFCD','') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFVALUE','') FROM DUAL) AS COUPON_BNF_VALUE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFTXT','') FROM DUAL) AS COUPON_BNF_TXT*/
+                ,(SELECT fn_getCuoponAvailInfo(GOODS.GOODS_NO,'CPAVL','') FROM DUAL) AS COUPON_AVL_INFO
+        FROM    TS_SITE_DISP_SET TSDS
+                LEFT OUTER JOIN
+                (SELECT TG.*, TSDG.PRIOR_RANK, TB.BRAND_NM, TI.CUSTOMER_PRICE, TI.SALE_PRICE, TSDG.SITE_DISP_SEQ
+                   FROM
+                    TS_SITE_DISP_GOODS TSDG
+                    JOIN TG_GOODS TG
+                      ON TSDG.GOODS_NO      = TG.GOODS_NO
+                     AND TG.DISP_YN = 'Y'
+                     AND TSDG.SITE_NO = #{siteNo}
+                     AND TG.GOODS_SALE_STATUS_CD IN ('1','2')
+                    <![CDATA[
+                     AND (TG.SALE_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_START_DT IS NULL)
+                     AND (TG.SALE_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_END_DT IS NULL)
+                    ]]>
+                    JOIN TG_ITEM TI
+                      ON TG.ITEM_NO        = TI.ITEM_NO
+                    LEFT OUTER JOIN TG_BRAND TB
+                      ON TB.BRAND_NO       = TG.BRAND_NO
+                ) GOODS
+                ON TSDS.SITE_DISP_SEQ = GOODS.SITE_DISP_SEQ
+        WHERE   TSDS.USE_YN        = 'Y'
+        <if test="dispSeq != null and dispSeq != ''">
+        AND     TSDS.DISP_SEQ    = #{dispSeq}
+        </if>
+        <if test="mainAreaGbCd != null and mainAreaGbCd != ''">
+        AND     TSDS.MAIN_AREA_GB_CD    = #{mainAreaGbCd}
+        </if>
+        AND     TSDS.SITE_NO       = #{siteNo}
+        AND GOODS.GOODS_NO IS NOT NULL
+        ORDER BY TSDS.SITE_DISP_SEQ ASC, GOODS.PRIOR_RANK ASC
+    </select>
+
+    <select id="selectMainDisplayGoodsMobile" resultType="goodsVO">
+        /* goods.mainDisplay.selectMainDisplayGoodsFront */
+        SELECT  TSDS.SITE_DISP_SEQ,
+                GOODS.GOODS_NO,
+                TSDS.DISP_SEQ,
+                TSDS.DISP_TYPE_CD,
+                GOODS.PRIOR_RANK,
+                TSDS.DISP_TITLE,
+                TSDS.DISP_NM,
+                TSDS.DISP_IMG_PATH,
+                TSDS.DISP_IMG_NM,
+                TSDS.DISP_EXHBTION_TYPE_CD,
+                fn_getGoodsImgPath(GOODS.GOODS_NO, '02') AS GOODS_IMG_02,
+                fn_getGoodsImgPath(GOODS.GOODS_NO, '03') AS GOODS_IMG_03,
+
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'F') AS GOODS_DISP_IMG_F,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'G') AS GOODS_DISP_IMG_G,
+                fn_getGoodsDispImgPath(GOODS.GOODS_NO, 'S') AS GOODS_DISP_IMG_S,
+
+                GOODS.BRAND_NO,
+                GOODS.BRAND_NM,
+                GOODS.GOODS_NM,
+                GOODS.GOODS_SALE_STATUS_CD,
+                GOODS.ADULT_CERTIFY_YN,
+                GOODS.PR_WORDS,
+                NVL(GOODS.CUSTOMER_PRICE,0) AS CUSTOMER_PRICE,
+                NVL(GOODS.SALE_PRICE,0) AS SALE_PRICE,
+                decode(nvl(GOODS.CUSTOMER_PRICE,0), 0, 0, 100-(GOODS.SALE_PRICE/GOODS.CUSTOMER_PRICE)*100) as SALE_RATE,
+                NVL(( SELECT MAX(PRMT_DC_VALUE) FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                AND (TPTG.GOODS_NO = GOODS.GOODS_NO OR TP.PRMT_BRAND_NO = GOODS.BRAND_NO) AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N' ),0) AS PRMT_DC_VALUE,
+                (SELECT MAX(PRMT_DC_GB_CD)
+                                    FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG
+                                    WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                                    AND TPTG.GOODS_NO = GOODS.GOODS_NO
+                                    AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                                    AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N') AS PRMT_DC_GB_CD,
+                fn_getGoodsIcon(GOODS.GOODS_NO, '5') AS ICON_IMGS,
+                NVL(GOODS.GOODS_SVMN_AMT,0) AS GOODS_SVMN_AMT,
+                NVL(GOODS.GOODS_SCORE,0) AS GOODS_SCORE,
+                NVL(GOODS.ACCM_GOODSLETT_CNT,0) AS ACCM_GOODSLETT_CNT
+                /*,(SELECT fn_getCuoponApplyAmt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCouponDcAmt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCouponDcRate(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponDcValue(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCouponBnfCd(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCouponBnfTxt(GOODS.GOODS_NO,'') FROM DUAL) AS COUPON_BNF_TXT*/
+                /*,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'APPLYAMT','') FROM DUAL) AS COUPON_APPLY_AMT
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCAMT','') FROM DUAL) AS COUPON_DC_AMT
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCTRATE','') FROM DUAL) AS COUPON_DC_RATE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'DCVALUE','') FROM DUAL) AS COUPON_DC_VALUE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFCD','') FROM DUAL) AS COUPON_BNF_CD
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFVALUE','') FROM DUAL) AS COUPON_BNF_VALUE
+                ,(SELECT fn_getCuoponAvailable(GOODS.GOODS_NO,'BNFTXT','') FROM DUAL) AS COUPON_BNF_TXT*/
+                ,(SELECT fn_getCuoponAvailInfo(GOODS.GOODS_NO,'CPAVL','') FROM DUAL) AS COUPON_AVL_INFO
+        FROM    TS_SITE_DISP_SET TSDS
+                LEFT OUTER JOIN
+                (SELECT TG.*, TSDG.PRIOR_RANK, TB.BRAND_NM, TI.CUSTOMER_PRICE, TI.SALE_PRICE, TSDG.SITE_DISP_SEQ
+                   FROM
+                    TS_SITE_DISP_GOODS TSDG
+                    JOIN TG_GOODS TG
+                      ON TSDG.GOODS_NO      = TG.GOODS_NO
+                     AND TG.DISP_YN = 'Y'
+                     AND TSDG.SITE_NO = #{siteNo}
+                     AND TG.GOODS_SALE_STATUS_CD IN ('1','2')
+                    <![CDATA[
+                     AND (TG.SALE_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_START_DT IS NULL)
+                     AND (TG.SALE_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_END_DT IS NULL)
+                    ]]>
+                    JOIN TG_ITEM TI
+                      ON TG.ITEM_NO        = TI.ITEM_NO
+                    LEFT OUTER JOIN TG_BRAND TB
+                      ON TB.BRAND_NO       = TG.BRAND_NO
+                ) GOODS
+                ON TSDS.SITE_DISP_SEQ = GOODS.SITE_DISP_SEQ
+        WHERE   TSDS.USE_YN        = 'Y'
+        <if test="dispSeq != null and dispSeq != ''">
+        AND     TSDS.DISP_SEQ    = #{dispSeq}
+        </if>
+        <if test="mainAreaGbCd != null and mainAreaGbCd != ''">
+        AND     TSDS.MAIN_AREA_GB_CD    = #{mainAreaGbCd}
+        </if>
+        AND     TSDS.SITE_NO       = #{siteNo}
+        AND GOODS.GOODS_NO IS NOT NULL
+        ORDER BY TSDS.SITE_DISP_SEQ ASC, GOODS.PRIOR_RANK ASC
+    </select>
+
+    <select id="selectMainDisplayGoodsFrontTEST" resultType="goodsVO">
+        /* goods.mainDisplay.selectMainDisplayGoodsFront */
+        SELECT  TSDS.SITE_DISP_SEQ,
+                TSDG.GOODS_NO,
+                TSDS.DISP_SEQ,
+                TSDS.DISP_TYPE_CD,
+                TSDG.PRIOR_RANK,
+                TSDS.DISP_TITLE,
+                TSDS.DISP_NM,
+                TSDS.DISP_IMG_PATH,
+                TSDS.DISP_IMG_NM,
+                TSDS.DISP_EXHBTION_TYPE_CD,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '02') AS GOODS_IMG_02,
+                fn_getGoodsImgPath(TSDG.GOODS_NO, '03') AS GOODS_IMG_03,
+
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'A') AS GOODS_DISP_IMG_A,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'B') AS GOODS_DISP_IMG_B,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'C') AS GOODS_DISP_IMG_C,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'D') AS GOODS_DISP_IMG_D,
+                fn_getGoodsDispImgPath(TSDG.GOODS_NO, 'E') AS GOODS_DISP_IMG_E,
+
+                TB.BRAND_NO,
+                TB.BRAND_NM,
+                TG.GOODS_NM,
+                TG.GOODS_SALE_STATUS_CD,
+                TG.ADULT_CERTIFY_YN,
+                TG.PR_WORDS,
+                NVL(TI.CUSTOMER_PRICE,0) AS CUSTOMER_PRICE,
+                NVL(TI.SALE_PRICE,0) AS SALE_PRICE,
+                decode(nvl(TI.CUSTOMER_PRICE,0), 0, 0, 100-(TI.SALE_PRICE/TI.CUSTOMER_PRICE)*100) as SALE_RATE,
+                NVL(( SELECT MAX(PRMT_DC_VALUE) FROM TP_PROMOTION TP, TP_PROMOTION_TARGET_GOODS TPTG WHERE TP.PRMT_NO = TPTG.PRMT_NO
+                AND TPTG.GOODS_NO = TSDG.GOODS_NO AND TO_CHAR(SYSDATE,'YYYY-MM-DD HH24:MI:SS') BETWEEN TO_CHAR(TP.APPLY_START_DTTM,'YYYY-MM-DD HH24:MI:SS') AND TO_CHAR(TP.APPLY_END_DTTM,'YYYY-MM-DD HH24:MI:SS')
+                AND TP.USE_YN = 'Y' AND TP.DEL_YN = 'N' ),0) AS PRMT_DC_VALUE,
+                fn_getGoodsIcon(TG.GOODS_NO, '5') AS ICON_IMGS,
+                NVL(TG.GOODS_SVMN_AMT,0) AS GOODS_SVMN_AMT,
+                NVL(TG.GOODS_SCORE,0) AS GOODS_SCORE,
+                NVL(TG.ACCM_GOODSLETT_CNT,0) AS ACCM_GOODSLETT_CNT
+        FROM    TS_SITE_DISP_SET TSDS
+                LEFT OUTER JOIN TS_SITE_DISP_GOODS TSDG
+                  ON TSDS.SITE_DISP_SEQ = TSDG.SITE_DISP_SEQ
+                LEFT OUTER JOIN TG_GOODS TG
+                  ON TSDG.GOODS_NO      = TG.GOODS_NO
+                 AND TG.DISP_YN = 'Y'
+                 AND TG.GOODS_SALE_STATUS_CD IN ('1','2')
+                LEFT OUTER JOIN TG_ITEM TI
+                  ON TG.ITEM_NO        = TI.ITEM_NO
+                LEFT OUTER JOIN TG_BRAND TB
+                  ON TB.BRAND_NO       = TG.BRAND_NO
+        WHERE   TSDS.USE_YN        = 'Y'
+        <if test="dispSeq != null and dispSeq != ''">
+        AND     TSDS.DISP_SEQ    = #{dispSeq}
+        </if>
+        AND     TSDS.SITE_NO       = #{siteNo}
+        <![CDATA[
+        AND     (TG.SALE_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_START_DT IS NULL)
+        AND     (TG.SALE_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD') OR TG.SALE_END_DT IS NULL)
+        ]]>
+        ORDER BY TSDS.SITE_DISP_SEQ ASC, TSDG.PRIOR_RANK ASC
+    </select>
+
+    <insert id="insertMainDisplayGoods">
+        /* goods.mainDisplay.insertMainDisplayGoods */
+        INSERT INTO TS_SITE_DISP_GOODS
+            (
+                SITE_DISP_SEQ,
+                SITE_NO,
+                GOODS_NO,
+                PRIOR_RANK,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+                #{siteDispSeq},
+                #{siteNo},
+                #{goodsNo},
+                #{priorRank},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo}
+            )
+    </insert>
+
+    <insert id="updateMainDisplayGoods">
+        /* goods.mainDisplay.updateMainDisplayGoods */
+        UPDATE  TS_SITE_DISP_GOODS
+        SET     UPDR_NO          = #{updrNo},
+                UPD_DTTM         = sysdate
+        WHERE   SITE_DISP_SEQ    = #{siteDispSeq}
+        AND     SITE_NO          = #{siteNo}
+        AND     GOODS_NO         = #{goodsNo}
+    </insert>
+    
+    <delete id="deleteMainDisplay">
+        /* goods.mainDisplay.deleteMainDisplay */
+        DELETE FROM TS_SITE_DISP_SET
+        WHERE  SITE_DISP_SEQ = #{siteDispSeq}
+        AND    SITE_NO       = #{siteNo}
+    </delete>
+
+    <delete id="deleteMainDisplayGoods">
+        /* goods.mainDisplay.deleteMainDisplayGoods */
+        DELETE FROM TS_SITE_DISP_GOODS
+        WHERE  SITE_DISP_SEQ = #{siteDispSeq}
+        AND    SITE_NO       = #{siteNo}
+    </delete>
+    
+    <select id="getMaxSiteDispSeq" resultType="Integer">
+         /* goods.mainDisplay.getNextSiteDispSeq */
+        SELECT MAX(SITE_DISP_SEQ) AS MAX_SITE_DISP_SEQ FROM TS_SITE_DISP_SET WHERE SITE_NO = #{siteNo}
+    </select>
+    
+
+</mapper>

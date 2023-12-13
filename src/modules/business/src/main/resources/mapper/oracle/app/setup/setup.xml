@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.siteInfo">
+    <!-- 사이트 정보 초회 -->
+	<select id="selectSiteInfo" parameterType="net.danvi.dmall.biz.app.setup.siteinfo.model.SiteSO" resultType="net.danvi.dmall.biz.app.setup.siteinfo.model.SiteVO">
+		/* setup.siteInfo.selectSiteInfo - 사이트 정보 초회 */
+		SELECT
+		        CPY.COMPANY_NO,
+		        CPY.CEO_NM,
+		        CPY.COMPANY_NM,
+		        SID.MANAGER_EMAIL AS EMAIL,
+		        SID.DEFAULT_SRCH_WORD,
+		        CPY.BSNS_CDTS,
+		        CPY.ITEM,
+		        CPY.POST_NO,
+		        CPY.ADDR_NUM,
+		        CPY.ADDR_ROADNM,
+		        CPY.ADDR_CMN_DTL,
+		        SIT.CERTIFY_SEND_NO AS TEL_NO,
+		        CPY.FAX_NO,
+		        CPY.COMM_SALE_REGIST_NO,
+		        CPY.BIZ_NO,
+		        CPY.PRIVACYMANAGER,
+		        SID.SITE_NM,
+		        SID.CUST_CT_TEL_NO,
+		        SID.CUST_CT_FAX_NO,
+		        SID.CUST_CT_EMAIL,
+		        SID.CUST_CT_OPER_TIME,
+		        SID.CUST_CT_LUNCH_TIME,
+		        SID.CUST_CT_CLOSED_INFO,
+		        SID.TITLE,
+		        SID.FVC_PATH,
+		        SID.LOGO_PATH,
+		        SID.BOTTOM_LOGO_PATH,
+		        SID.AUTO_LOGOUT_TIME,
+		        SID.DSCRT,
+		        SIT.DLGT_DOMAIN,
+		        SIT.TEMP_DOMAIN,
+		        SIT.CERTIFY_SEND_NO,
+		        CPY.SBN_ID,
+                CPY.SBN_CERT_KEY,
+                TO_CHAR(to_date(CPY.SBN_START_DT, 'YYYYMMDD'), 'YYYY-MM-DD') AS SBN_START_DT,
+                TO_CHAR(to_date(CPY.SBN_END_DT, 'YYYYMMDD'), 'YYYY-MM-DD') AS SBN_END_DT,
+		        FN_SUBSTRING_INDEX(SID.MANAGER_EMAIL, '@', + 1) AS MAIL_ACCOUNT,
+                FN_SUBSTRING_INDEX(SID.MANAGER_EMAIL, '@', - 1) AS MAIL_DOMAIN,
+                FN_SUBSTRING_INDEX(SID.CUST_CT_EMAIL, '@', + 1) AS CUST_CT_ACCOUNT,
+                FN_SUBSTRING_INDEX(SID.CUST_CT_EMAIL, '@', - 1) AS CUST_CT_DOMAIN,
+                SIT.COURI_USE_YN,
+                SIT.DIRECT_VISIT_RECPT_YN,
+                SIT.DEFAULT_DLVRC_TYPE_CD,
+                SIT.DEFAULT_DLVRC,
+                SIT.DEFAULT_DLVR_MIN_AMT,
+                SIT.DEFAULT_DLVR_MIN_DLVRC,
+                SIT.CONTS_USE_YN,
+
+                SIT.DLVR_PAYMENT_KIND_CD,
+                SIT.SVMN_PVD_YN,
+                SIT.SVMN_PVD_STNDRD_CD,
+                SIT.SVMN_PVD_RATE,
+                SIT.SVMN_TRUNC_STNDRD_CD,
+                SIT.SVMN_USE_PSB_POSS_AMT,
+                SIT.SVMN_MIN_USE_AMT,
+                SIT.SVMN_MAX_USE_AMT,
+                SIT.SVMN_MAX_USE_GB_CD,
+                SIT.SVMN_USE_UNIT_CD,
+                SIT.SVMN_AUTO_EXTINCTION_YN,
+                SIT.SVMN_USE_LIMITDAY,
+                SIT.SVMN_CP_DUPLT_APPLY_YN,
+                SIT.NOPBPAYMENT_USE_YN,
+
+                SIT.POINT_PVD_YN,
+                SIT.POINT_TRUNC_STNDRD_CD,
+                SIT.BUY_EPLG_WRITE_POINT,
+                SIT.BUY_EPLG_WRITE_PM_POINT,
+                SIT.POINT_ACCU_VALID_PERIOD,
+
+                SIT.CERTIFY_SEND_NO,
+                SIT.ADD_DOMAIN1,
+                SIT.ADD_DOMAIN2,
+                SIT.ADD_DOMAIN3,
+                SIT.ADD_DOMAIN4,
+
+				SIT.BASKET_PAGE_MOV_YN,
+				SIT.GOODS_AUTO_DEL_USE_YN,
+				SIT.GOODS_KEEP_DCNT,
+				SIT.GOODS_KEEP_QTT,
+				SIT.GOODS_KEEP_QTT_LIMIT_YN,
+
+                SIT.RETADRSS_POST,
+                SIT.RETADRSS_ADDR_NUM,
+                SIT.RETADRSS_ADDR_ROADNM,
+                SIT.RETADRSS_ADDR_DTL,
+                (SELECT EVENT_NO FROM  TP_EVENT WHERE SIT.SITE_NO = SITE_NO AND APPLY_START_DTTM &lt;= sysdate AND APPLY_END_DTTM &gt;= sysdate AND EVENT_METHOD_CD = '02' AND DEL_YN='N' AND ROWNUM = 1) AS EVENT_NO,
+                (SELECT COUNT(1) FROM TB_BBS WHERE SITE_NO = SIT.SITE_NO AND BBS_GB_CD = '1') AS BBS_CNT,
+                TSS.CMN_USE_YN,
+                DECODE(CMN_USE_YN, 'Y', TSS.CMN_TITLE, NULL) AS CMN_TITLE,
+                DECODE(CMN_USE_YN, 'Y', TSS.CMN_MANAGER, NULL) AS CMN_MANAGER,
+                DECODE(CMN_USE_YN, 'Y', TSS.CMN_DSCRT, NULL) AS CMN_DSCRT,
+                DECODE(CMN_USE_YN, 'Y', TSS.CMN_KEYWORD, NULL) AS CMN_KEYWORD,
+                GOODS_USE_YN,
+                DECODE(GOODS_USE_YN, 'Y', TSS.GOODS_TITLE, NULL) AS GOODS_TITLE,
+                DECODE(GOODS_USE_YN, 'Y', TSS.GOODS_MANAGER, NULL) AS GOODS_MANAGER,
+                SIT.APP_VERSION_IOS,
+                SIT.APP_VERSION_ANDROID,
+                SIT.FORCE_UPDATE_YN_IOS,
+                SIT.FORCE_UPDATE_YN_ANDROID
+		FROM TS_COMPANY CPY,
+			 TS_SITE SIT LEFT OUTER JOIN TS_SEO_SET TSS
+                 ON SIT.SITE_NO = TSS.SITE_NO,
+             TS_SITE_DTL SID
+		WHERE   1 = 1
+		AND CPY.COMPANY_NO = SIT.COMPANY_NO
+		AND SIT.SITE_NO = SID.SITE_NO
+		AND SIT.SITE_NO = #{siteNo}
+	</select>
+	<!-- 사이트 정보(에디터 정보) 초회 -->
+	<select id="selectSiteInfoHtml" parameterType="net.danvi.dmall.biz.app.setup.siteinfo.model.SiteVO" resultType="net.danvi.dmall.biz.app.setup.siteinfo.model.SiteVO">
+        /* setup.siteInfo.selectSiteInfoHtml - 사이트 정보(에디터 정보) 초회 */
+        SELECT
+                SITE_NO
+                , SITE_INFO_CD
+                , CONTENT
+        FROM    TS_SITE_INFO
+        WHERE   SITE_NO = #{siteNo}
+          AND   SITE_INFO_CD  = #{siteInfoCd}
+    </select>
+	<!-- 사이트 상세 정보 수정 -->
+    <update id="updateSiteDtl">
+        /* setup.siteInfo.updateSiteDtl - 사이트 상세 정보 수정 */
+        UPDATE  TS_SITE_DTL
+        SET     SITE_NM = #{siteNm},
+                MANAGER_EMAIL = #{email},
+                DEFAULT_SRCH_WORD = #{defaultSrchWord},
+                CUST_CT_TEL_NO = #{custCtTelNo},
+                CUST_CT_FAX_NO = #{custCtFaxNo},
+                CUST_CT_EMAIL = #{custCtEmail},
+                CUST_CT_OPER_TIME = #{custCtOperTime},
+                CUST_CT_LUNCH_TIME = #{custCtLunchTime},
+                CUST_CT_CLOSED_INFO = #{custCtClosedInfo},
+                TITLE = #{title},
+                <if test="fvcPath != null and fvcPath != ''">
+                FVC_PATH = #{fvcPath},
+                </if>
+                <if test="logoPath != null and logoPath != ''">
+                LOGO_PATH = #{logoPath},
+                </if>
+                <if test="bottomLogoPath != null and bottomLogoPath != ''">
+                BOTTOM_LOGO_PATH = #{bottomLogoPath},
+                </if>
+                AUTO_LOGOUT_TIME = #{autoLogoutTime},
+                DSCRT = #{dscrt},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE   SITE_NO = #{siteNo}
+    </update>
+    <!-- 사이트 정보 수정 -->
+    <update id="updateSite">
+        /* setup.siteInfo.updateSite - 사이트 정보 수정 */
+        UPDATE  TS_SITE
+        SET
+                RETADRSS_POST = #{retadrssPost},
+                RETADRSS_ADDR_NUM = #{retadrssAddrNum},
+                RETADRSS_ADDR_ROADNM = #{retadrssAddrRoadnm},
+                RETADRSS_ADDR_DTL = #{retadrssAddrDtl},
+                CERTIFY_SEND_NO = #{certifySendNo},
+                APP_VERSION_IOS = #{appVersionIos},
+                FORCE_UPDATE_YN_IOS = #{forceUpdateYnIos},
+                APP_VERSION_ANDROID = #{appVersionAndroid},
+                FORCE_UPDATE_YN_ANDROID = #{forceUpdateYnAndroid},
+                UPD_DTTM = sysdate,
+                UPDR_NO = #{updrNo}
+        WHERE   SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 업체 정보 수정 -->
+    <update id="updateCompany">
+        /* setup.siteInfo.updateCompany - 업체 정보 수정 */
+        UPDATE  TS_COMPANY
+        SET       EMAIL = #{email}
+                , COMPANY_NM = #{companyNm}
+                , BSNS_CDTS = #{bsnsCdts}
+                , ITEM = #{item}
+                , POST_NO = #{postNo}
+                , ADDR_NUM = #{addrNum}
+                , ADDR_ROADNM = #{addrRoadnm}
+                , ADDR_CMN_DTL = #{addrCmnDtl}
+                , BIZ_NO = #{bizNo}
+                , COMM_SALE_REGIST_NO = #{commSaleRegistNo}
+                , CEO_NM = #{ceoNm}
+                , PRIVACYMANAGER = #{privacymanager}
+                , FAX_NO = #{faxNo}
+                , SBN_ID = #{sbnID}
+                , SBN_CERT_KEY = #{sbnCertKey}
+                , SBN_START_DT = #{sbnStartDt}
+                , SBN_END_DT = #{sbnEndDt}
+                , UPD_DTTM = sysdate
+                , UPDR_NO = #{updrNo}
+        WHERE   COMPANY_NO = (SELECT COMPANY_NO FROM TS_SITE WHERE SITE_NO = #{siteNo} )
+    </update>
+
+	<!-- 사이트 정보(에디터 편집) 등록 전 체크 -->
+	<select id="checkTsSiteInfoCnt" resultType="Integer">
+		select count(*)
+		from TS_SITE_INFO
+		where SITE_NO = #{siteNo}
+		and SITE_INFO_CD = #{siteInfoCd}
+	</select>
+
+	<!-- 사이트 정보(에디터 편집) 등록 -->
+	<insert id="insertTsSiteInfo">
+		insert into TS_SITE_INFO(
+			SITE_NO
+			, SITE_INFO_CD
+			, CONTENT
+			, REGR_NO
+			, REG_DTTM
+		) VALUES (
+			#{siteNo}
+			, #{siteInfoCd}
+			, #{content:CLOB}
+			, #{regrNo}
+			, sysdate
+		)
+	</insert>
+
+	<!-- 사이트 정보(에디터 편집) 수정 -->
+	<update id="updateTsSiteInfo">
+		update TS_SITE_INFO
+		set
+			CONTENT = #{content:CLOB}
+			, UPDR_NO = #{updrNo}
+			, UPD_DTTM = sysdate
+		where SITE_NO = #{siteNo}
+		and SITE_INFO_CD = #{siteInfoCd}
+	</update>
+
+    <!-- 사이트 정보(에디터 편집) 수정 -->
+    <!--
+    <update id="updateSiteHtml">
+    	/* setup.siteInfo.updateSiteHtml - 사이트 정보(에디터 편집) 수정 */
+    	MERGE INTO TS_SITE_INFO
+		USING DUAL
+		ON (SITE_NO = #{siteNo} AND SITE_INFO_CD = #{siteInfoCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          CONTENT = #{content}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		          SITE_NO
+		        , SITE_INFO_CD
+		        , CONTENT
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		          #{siteNo}
+		        , #{siteInfoCd}
+		        , #{content}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+    -->
+
+
+
+
+    <!-- 아이콘 관련 설정정보 조회 -->
+    <select id="selectIconList" parameterType="long" resultType="net.danvi.dmall.biz.app.goods.model.GoodsIconVO">
+        /* setup.siteInfo.selectIconList - 아이콘 관련 설정정보 조회 */
+        <![CDATA[
+        SELECT
+              ti.ICON_NO
+            , ti.ICON_TYPE_CD
+            , ti.ICON_DISPNM
+            , ti.IMG_PATH
+            , ti.IMG_NM
+            , ti.PRIORRANK
+            , '<img src="' || CASE WHEN ti.ICON_TYPE_CD = '1' THEN '/skin'
+                                        WHEN ti.ICON_TYPE_CD = '2' THEN '/resource'
+                                        END || ti.IMG_PATH || '/' || ti.IMG_NM || '">' AS ICON_PATH_NM
+            FROM TG_ICON ti
+            WHERE ti.SITE_NO = #{siteNo}
+            ORDER BY PRIORRANK
+         ]]>
+    </select>
+
+    <!-- 아이콘 추가 등록 -->
+    <insert id="insertIcon">
+		<selectKey resultType="java.lang.Long" keyColumn="ICON_NO" keyProperty="iconNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'ICON_NO') as ICON_NO FROM DUAL
+		</selectKey>
+	    /* setup.siteInfo.insertIcon - 아이콘 추가 등록 */
+	    INSERT INTO TG_ICON (
+	    	  ICON_NO
+	        , SITE_NO
+	        , ICON_TYPE_CD
+	        , ICON_DISPNM
+	        , IMG_PATH
+	        , IMG_NM
+	        , PRIORRANK
+	        , REGR_NO
+	        , REG_DTTM
+	    )
+	    SELECT
+	    	  fn_getSeq(0, 'ICON_NO')
+	        , #{siteNo}
+	        , #{iconTypeCd}
+	        , #{iconDispnm}
+	        , #{imgPath}
+	        , #{imgNm}
+	        , MAX(PRIORRANK) + 1
+	        , #{regrNo}
+	        , sysdate
+	    FROM TG_ICON
+	    WHERE SITE_NO = #{siteNo}
+    </insert>
+
+     <!-- 아이콘 정보 변경 -->
+    <update id="updateIcon">
+        /* setup.siteInfo.updateIcon - 아이콘 정보 변경 */
+        UPDATE TG_ICON
+        SET
+              IMG_NM = #{imgNm}
+            , UPDR_NO = #{updrNo}
+            , UPD_DTTM = sysdate
+        WHERE ICON_NO = #{iconNo}
+    </update>
+
+    <!-- 아이콘 삭제  -->
+    <delete id="deleteIcon">
+        { CALL
+            DECLARE
+            BEGIN
+                DELETE FROM TG_GOODS_ICON WHERE ICON_NO = #{iconNo};
+                DELETE FROM TG_ICON WHERE ICON_NO = #{iconNo};
+            END
+        }
+    </delete>
+
+     <!-- 이미지관련 설정정보 취득  -->
+    <select id="selectImageConfig" parameterType="long" resultType="net.danvi.dmall.biz.app.goods.model.GoodsImageSizeVO">
+        /* setup.siteInfo.selectImageConfig - 이미지관련 설정정보 취득 */
+        SELECT
+              NVL(GOODS_DEFAULT_IMG_WIDTH, 0) AS GOODS_DEFAULT_IMG_WIDTH
+            , NVL(GOODS_DEFAULT_IMG_HEIGHT, 0) AS GOODS_DEFAULT_IMG_HEIGHT
+            , NVL(GOODS_LIST_IMG_WIDTH, 0) AS GOODS_LIST_IMG_WIDTH
+            , NVL(GOODS_LIST_IMG_HEIGHT, 0) AS GOODS_LIST_IMG_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_A_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_A_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_A_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_A_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_B_WIDTH, 0)  AS GOODS_DISP_IMG_TYPE_B_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_B_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_B_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_C_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_C_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_C_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_C_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_D_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_D_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_D_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_D_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_E_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_E_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_E_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_E_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_F_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_F_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_F_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_F_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_G_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_G_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_G_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_G_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_S_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_S_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_S_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_S_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_M_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_M_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_M_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_M_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_O_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_O_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_O_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_O_HEIGHT
+            , NVL(GOODS_DISP_IMG_TYPE_P_WIDTH, 0) AS GOODS_DISP_IMG_TYPE_P_WIDTH
+            , NVL(GOODS_DISP_IMG_TYPE_P_HEIGHT, 0) AS GOODS_DISP_IMG_TYPE_P_HEIGHT
+            , NVL(GOODS_WEAR_IMG_WIDTH, 0) AS GOODS_WEAR_IMG_WIDTH
+            , NVL(GOODS_WEAR_IMG_HEIGHT, 0) AS GOODS_WEAR_IMG_HEIGHT
+            , NVL(GOODS_LENS_IMG_WIDTH, 0) AS GOODS_LENS_IMG_WIDTH
+            , NVL(GOODS_LENS_IMG_HEIGHT, 0) AS GOODS_LENS_IMG_HEIGHT
+          FROM TS_SITE_DTL
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 이미지관련 설정정보 수정 -->
+    <update id="updateGoodsImageInfo">
+    /* setup.siteInfo.updateGoodsImageInfo - 이미지관련 설정정보 수정 */
+    UPDATE TS_SITE_DTL SET
+          GOODS_DEFAULT_IMG_WIDTH = #{goodsDefaultImgWidth}
+        , GOODS_DEFAULT_IMG_HEIGHT = #{goodsDefaultImgHeight}
+        , GOODS_LIST_IMG_WIDTH = #{goodsListImgWidth}
+        , GOODS_LIST_IMG_HEIGHT = #{goodsListImgHeight}
+        , GOODS_DISP_IMG_TYPE_A_WIDTH = #{goodsDispImgTypeAWidth}
+        , GOODS_DISP_IMG_TYPE_A_HEIGHT = #{goodsDispImgTypeAHeight}
+        , GOODS_DISP_IMG_TYPE_B_WIDTH = #{goodsDispImgTypeBWidth}
+        , GOODS_DISP_IMG_TYPE_B_HEIGHT = #{goodsDispImgTypeBHeight}
+        , GOODS_DISP_IMG_TYPE_C_WIDTH = #{goodsDispImgTypeCWidth}
+        , GOODS_DISP_IMG_TYPE_C_HEIGHT = #{goodsDispImgTypeCHeight}
+        , GOODS_DISP_IMG_TYPE_D_WIDTH = #{goodsDispImgTypeDWidth}
+        , GOODS_DISP_IMG_TYPE_D_HEIGHT = #{goodsDispImgTypeDHeight}
+        , GOODS_DISP_IMG_TYPE_E_WIDTH = #{goodsDispImgTypeEWidth}
+        , GOODS_DISP_IMG_TYPE_E_HEIGHT = #{goodsDispImgTypeEHeight}
+        , GOODS_DISP_IMG_TYPE_F_WIDTH = #{goodsDispImgTypeFWidth}
+        , GOODS_DISP_IMG_TYPE_F_HEIGHT = #{goodsDispImgTypeFHeight}
+        , GOODS_DISP_IMG_TYPE_G_WIDTH = #{goodsDispImgTypeGWidth}
+        , GOODS_DISP_IMG_TYPE_G_HEIGHT = #{goodsDispImgTypeGHeight}
+        , GOODS_DISP_IMG_TYPE_S_WIDTH = #{goodsDispImgTypeSWidth}
+        , GOODS_DISP_IMG_TYPE_S_HEIGHT = #{goodsDispImgTypeSHeight}
+        , UPDR_NO = #{updrNo}
+        , UPD_DTTM = sysdate
+    WHERE  SITE_NO = #{siteNo}
+    </update>
+</mapper>

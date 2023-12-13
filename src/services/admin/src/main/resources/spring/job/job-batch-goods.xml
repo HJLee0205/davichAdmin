@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+          
+    <!-- 1. 상품 판매 여부 변경 Job -->
+    <bean id="goodsSaleStatusTasklet" class="net.danvi.dmall.biz.batch.goods.salestatus.job.GoodsSaleStatusTasklet" />
+    <batch:job id="goodsSaleStatusJob">
+        <batch:step id="goodsSaleStatusStep1">
+            <batch:tasklet ref="goodsSaleStatusTasklet" />
+        </batch:step>
+    </batch:job>     
+          
+    <!-- 2. 상품 판매 정보 변경 Job -->
+    <bean id="goodsSaleInfoTasklet" class="net.danvi.dmall.biz.batch.goods.salestatus.job.GoodsSaleInfoTasklet" />
+    <batch:job id="goodsSaleInfoJob">
+        <batch:step id="goodsSaleInfoStep1">
+            <batch:tasklet ref="goodsSaleInfoTasklet" />
+        </batch:step>
+    </batch:job>          
+</beans>

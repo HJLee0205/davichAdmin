@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.memberinfo">
+    <!-- 회원정보 설정정보 조회 -->
+    <select id="selectPasswordChgConfig" parameterType="long" resultType="PasswordChgConfigVO">
+        /* setup.memberinfo.selectPasswordChgConfig */
+        SELECT
+            ts.PW_CHG_GUIDE_YN
+            , ts.PW_CHG_GUIDE_CYCLE
+            , ts.PW_CHG_NEXT_CHG_DCNT
+            , ts.DORMANT_MEMBER_CANCEL_METHOD
+        FROM    TS_SITE ts
+        WHERE   ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 회원정보 설정정보 수정 -->
+    <update id="updatePasswordChgConfig">
+    	/* setup.memberinfo.updatePasswordChgConfig */
+    	MERGE INTO TS_SITE
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          PW_CHG_GUIDE_YN = #{pwChgGuideYn}
+		        , PW_CHG_GUIDE_CYCLE = #{pwChgGuideCycle}
+		        , PW_CHG_NEXT_CHG_DCNT = #{pwChgNextChgDcnt}
+		        , DORMANT_MEMBER_CANCEL_METHOD = #{dormantMemberCancelMethod}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		        SITE_NO
+		        , PW_CHG_GUIDE_YN
+		        , PW_CHG_GUIDE_CYCLE
+		        , PW_CHG_NEXT_CHG_DCNT
+		        , DORMANT_MEMBER_CANCEL_METHOD
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		        #{siteNo}
+		        , #{pwChgGuideYn}
+		        , #{pwChgGuideCycle}
+		        , #{pwChgNextChgDcnt}
+		        , #{dormantMemberCancelMethod}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+</mapper>

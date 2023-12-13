@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+   신규 회원 분석 관리 맵퍼
+-->
+<mapper namespace="statistics.nwMemberAnls">
+    <sql id="selectNwMemberListWhere">
+        AND SITE_NO = #{siteNo}
+        <if test='periodGb eq "T"'>
+        AND YR = #{yr}
+        AND MM = #{mm}
+        AND DT = #{dt}
+        group by HR
+        order by HR asc
+        </if>
+        <if test='periodGb eq "D"'>
+        AND YR = #{yr}
+        AND MM = #{mm}
+        group by DT
+        order by DT asc
+        </if>
+        <if test='periodGb eq "M"'>
+        AND YR = #{yr}
+        group by MM
+        order by MM asc
+        </if>
+    </sql>
+    
+    <!-- 신규 회원 분석 조회 -->
+    <select id="selectNwMemberList" parameterType="nwMemberSO" resultType="nwMemberVO">
+        /* statistics.nwMemberAnls.selectNwMemberList */
+        SELECT
+            <if test="periodGb eq 'T'.toString()">
+            HR as LABEL
+            </if>
+            <if test="periodGb eq 'D'.toString()">
+            DT as LABEL
+            </if>
+            <if test="periodGb eq 'M'.toString()">
+            MM as LABEL
+            </if>
+            , ROUND(SUM(NW_JONR_CNT),0) AS NW_JONR_CNT
+            , ROUND(SUM(PC_JONR_CNT),0) AS PC_JONR_CNT
+            , ROUND(SUM(MOBILE_JONR_CNT),0) AS MOBILE_JONR_CNT
+          FROM TT_NW_MEMBER_ANLS
+         WHERE 1 = 1
+         <include refid="selectNwMemberListWhere" />
+    </select>
+    
+    <!-- 신규 회원 분석 총건수 조회 -->
+    <select id="selectNwMemberListTotalCount" parameterType="nwMemberSO" resultType="Integer">
+        /* statistics.nwMemberAnls.selectNwMemberListTotalCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+                      , SUM(NW_JONR_CNT) AS NW_JONR_CNT
+                      , SUM(PC_JONR_CNT) AS PC_JONR_CNT
+                      , SUM(MOBILE_JONR_CNT) AS MOBILE_JONR_CNT
+                   FROM TT_NW_MEMBER_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectNwMemberListWhere" />
+                ) TCNT
+    </select>
+    
+    <!-- 신규 회원 분석 조건적용 총건수 조회 -->
+    <select id="selectNwMemberListCount" parameterType="nwMemberSO" resultType="Integer">
+        /* statistics.nwMemberAnls.selectNwMemberListCount */
+        SELECT COUNT(*)
+          FROM (
+                 SELECT SITE_NO
+                      , SUM(NW_JONR_CNT) AS NW_JONR_CNT
+                      , SUM(PC_JONR_CNT) AS PC_JONR_CNT
+                      , SUM(MOBILE_JONR_CNT) AS MOBILE_JONR_CNT
+                   FROM TT_NW_MEMBER_ANLS
+                  WHERE 1 = 1
+                  <include refid="selectNwMemberListWhere" />
+                ) PGCNT
+    </select>
+</mapper>

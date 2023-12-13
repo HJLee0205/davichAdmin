@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="setup.opersupport">
+    <!-- SEO 설정정보 조회 -->
+    <select id="selectSeoConfig" parameterType="long" resultType="OperSupportConfigVO">
+        /* setup.opersupport.config.selectSeoConfig */
+        SELECT
+            CMN_USE_YN
+            , CMN_TITLE
+            , CMN_MANAGER
+            , CMN_DSCRT
+            , CMN_KEYWORD
+            , GOODS_USE_YN
+            , GOODS_TITLE
+            , GOODS_MANAGER
+            , SRCH_FILE_PATH
+            , REGR_NO
+            , REG_DTTM
+            , UPDR_NO
+            , UPD_DTTM
+        FROM    TS_SEO_SET
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- GA 설정정보 조회 -->
+    <select id="selectGaConfig" parameterType="long" resultType="OperSupportConfigVO">
+        /* setup.opersupport.config.selectGaConfig */
+        SELECT
+            USE_YN
+            , ANLS_ID
+            , REGR_NO
+            , REG_DTTM
+            , UPDR_NO
+            , UPD_DTTM
+        FROM    TS_GA_SET
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 080 수신거부 서비스 설정정보 조회 -->
+    <select id="select080Config" parameterType="long" resultType="OperSupportConfigVO">
+        /* setup.opersupport.config.select080Config */
+        SELECT
+            RECV_RJT_NO
+            , SVC_USE_START_PERIOD
+            , SVC_USE_END_PERIOD
+            , REGR_NO
+            , REG_DTTM
+            , UPDR_NO
+            , UPD_DTTM
+        FROM    TS_080_RECVRJT_SET
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 이미지호스팅 설정정보 조회 -->
+    <select id="selectImageConfig" parameterType="long" resultType="OperSupportConfigVO">
+        /* setup.opersupport.config.selectImageConfig */
+        SELECT
+            IMG_SERV_URL
+            , SVC_START_DTTM AS SVC_USE_START_PERIOD
+            , SVC_END_DTTM AS SVC_USE_END_PERIOD
+            , ID
+            , DISK
+            , TRAFFIC
+            , REGR_NO
+            , REG_DTTM
+            , UPDR_NO
+            , UPD_DTTM
+        FROM    TS_IMG_SERV_SET
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <!-- SEO 설정정보 수정 -->
+    <update id="updateSeoConfig">
+    	/* setup.opersupport.config.updateSeoConfig */
+    	MERGE INTO TS_SEO_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+		          CMN_USE_YN = #{cmnUseYn}
+		        , CMN_TITLE = #{cmnTitle}
+		        , CMN_MANAGER = #{cmnManager}
+		        , CMN_DSCRT = #{cmnDscrt}
+		        , CMN_KEYWORD = #{cmnKeyword}
+		        , GOODS_USE_YN = #{goodsUseYn}
+		        , GOODS_TITLE = #{goodsTitle}
+		        , GOODS_MANAGER = #{goodsManager}
+		        , SRCH_FILE_PATH = #{srchFilePath}
+		        , UPDR_NO = #{updrNo}
+		        , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+		        SITE_NO
+		        , CMN_USE_YN
+		        , CMN_TITLE
+		        , CMN_MANAGER
+		        , CMN_DSCRT
+		        , CMN_KEYWORD
+		        , GOODS_USE_YN
+		        , GOODS_TITLE
+		        , GOODS_MANAGER
+		        , SRCH_FILE_PATH
+		        , REGR_NO
+		        , REG_DTTM
+		    ) VALUES (
+		        #{siteNo}
+		        , #{cmnUseYn}
+		        , #{cmnTitle}
+		        , #{cmnManager}
+		        , #{cmnDscrt}
+		        , #{cmnKeyword}
+		        , #{goodsUseYn}
+		        , #{goodsTitle}
+		        , #{goodsManager}
+		        , #{srchFilePath}
+		        , #{regrNo}
+		        , sysdate
+		    )
+    </update>
+
+    <!-- GA 설정정보 수정 -->
+    <update id="updateGaConfig">
+    	/* setup.opersupport.config.updateGaConfig */
+    	MERGE INTO TS_GA_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+	              USE_YN = #{useYn}
+	            , ANLS_ID = #{anlsId}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+	            , USE_YN
+	            , ANLS_ID
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+	            , #{useYn}
+	            , #{anlsId}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+
+    <!-- 080 수신거부 서비스 설정정보 수정 -->
+    <update id="update080Config">
+    	/* setup.opersupport.config.update080Config */
+    	MERGE INTO TS_080_RECVRJT_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+	              RECV_RJT_NO = #{recvRjtNo}
+	            , SVC_USE_START_PERIOD = DECODE(SIGN(sysdate - #{svcUseEndPeriod}), 1, #{svcUseStartPeriod}, SVC_USE_START_PERIOD)
+	            , SVC_USE_END_PERIOD = #{svcUseEndPeriod}
+	            , UPDR_NO = #{updrNo}
+	            , UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO
+	            , RECV_RJT_NO
+	            , SVC_USE_START_PERIOD
+	            , SVC_USE_END_PERIOD
+	            , REGR_NO
+	            , REG_DTTM
+	        ) VALUES (
+	            #{siteNo}
+	            , #{recvRjtNo}
+	            , #{svcUseStartPeriod}
+	            , #{svcUseEndPeriod}
+	            , #{regrNo}
+	            , sysdate
+		    )
+    </update>
+
+    <!-- 이미지 호스팅 서비스 설정정보 수정 -->
+    <update id="updateImgServSet">
+        /* setup.opersupport.config.updateImgServSet - 이미지 호스팅 서비스 설정정보 수정 */
+    	MERGE INTO TS_IMG_SERV_SET
+		USING DUAL
+		ON (SITE_NO = #{siteNo})
+		WHEN MATCHED THEN
+			UPDATE SET
+	            SVC_START_DTTM = DECODE(SIGN(sysdate - #{hostingStartDt}), 1, #{hostingStartDt}, SVC_START_DTTM),
+	            SVC_END_DTTM = #{hostingEndDt},
+	            TRAFFIC = #{traffic},
+	            DISK = #{disk},
+	            UPDR_NO = #{updrNo},
+	            UPD_DTTM = sysdate
+		WHEN NOT MATCHED THEN
+		    INSERT (
+	            SITE_NO,
+	            SVC_START_DTTM,
+	            SVC_END_DTTM,
+	            IMG_SERV_URL,
+	            ID,
+	            TRAFFIC,
+	            DISK,
+	            REGR_NO,
+	            REG_DTTM
+	        ) VALUES (
+	            #{siteNo},
+	            #{hostingStartDt},
+	            #{hostingEndDt},
+	            #{imgHostingServer},
+	            #{id},
+	            #{traffic},
+	            #{disk},
+	            #{regrNo},
+	            sysdate
+		    )
+    </update>
+</mapper>

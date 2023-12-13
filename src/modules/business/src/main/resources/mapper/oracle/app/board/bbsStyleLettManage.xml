@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="board.bbsStyleLettManage">
+    <!-- 게시글 조회 조건 -->
+    <sql id="selectLettInfoWhere">
+        AND lett.BBS_ID = #{bbsId}
+        AND lett.SITE_NO = #{siteNo}
+        AND lett.DEL_YN = 'N'
+        <if test="fromRegDt != null and fromRegDt != ''">
+            <![CDATA[
+            AND lett.REG_DTTM >= TO_DATE(#{fromRegDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="toRegDt != null and toRegDt != ''">
+            <![CDATA[
+            AND lett.REG_DTTM <= TO_DATE(#{toRegDt}, 'YYYY-MM-DD') + 0.99999
+            ]]>
+        </if>
+        <if test="goodsTypeCds != null and goodsTypeCds != ''">
+            AND lett.GOODS_TYPE_CD IN <foreach collection="goodsTypeCds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+        <if test="voteStatusCds != null and voteStatusCds != '' and voteStatusCds.length != 2">
+            <foreach collection="voteStatusCds" item="item">
+                <choose>
+                    <when test="item eq '01'">
+                        <![CDATA[
+                    and lett.END_DTTM >= TO_DATE(TO_CHAR(sysdate, 'YYYY-MM-DD'), 'YYYY-MM-DD')
+                    ]]>
+                    </when>
+                    <otherwise>
+                        <![CDATA[
+                    and lett.END_DTTM < TO_DATE(TO_CHAR(sysdate, 'YYYY-MM-DD'), 'YYYY-MM-DD')
+                    ]]>
+                    </otherwise>
+                </choose>
+            </foreach>
+        </if>
+    </sql>
+
+    <!-- 댓글 조회 조건 -->
+    <sql id="selectCmntInfoWhere">
+        and cmnt.LETT_NO = #{lettNo}
+        and cmnt.BBS_ID = #{bbsId}
+        and cmnt.DEL_YN = 'N'
+        order by cmnt.REG_DTTM desc
+    </sql>
+
+    <!-- 게시글 쿼리 -->
+    <select id="selectBbsLettPaging" resultType="bbsLettManageVO">
+        /* board.bbsStyleLettManage.selectBbsLettPaging */
+        select *
+        from
+        (
+        select ROWNUM AS PAGING_NUM, TOT_CNT - ROWNUM + 1 as ROW_NUM, AA.*
+        from
+        (
+        select A.*, count(*) over() as TOT_CNT
+        from
+        (
+        select lett.LETT_NO,
+        lett.BBS_ID,
+        lett.SITE_NO,
+        fn_getCodeNm('GOODS_TYPE_CD', lett.GOODS_TYPE_CD) as GOODS_TYPE_CD_NM,
+        fn_getCodeNm('DISP_GB_CD', lett.DISP_GB_CD) as DISP_GB_CD_NM,
+        lett.CONTENT,
+        (select count(*) from TB_STYLE_BBS_CMNT cmnt where 1=1 and cmnt.LETT_NO = lett.LETT_NO and cmnt.BBS_ID = #{bbsId}) as CMNT_CNT,
+        fn_getAdminName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NM,
+        fn_getAdminNickName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NN,
+        lett.REG_DTTM,
+        lett.END_DTTM,
+        NVL(lett.INQ_CNT, 0) as INQ_CNT,
+        lett.TITLE
+        from TB_STYLE_BBS_LETT lett
+        where 1=1
+        <include refid="selectLettInfoWhere"/>
+        <include refid="common.sortSql" />
+        ) A
+        <if test="searchVal != null and searchVal != ''">
+            <where>
+                <if test="bbsId eq 'vote'.toString()">
+                    and (A.CONTENT like '%'||#{searchVal}||'%' or A.MEMBER_NM = #{searchValEncrypt})
+                </if>
+                <if test="bbsId eq 'pick'.toString()">
+                    and (A.CONTENT like '%'||#{searchVal}||'%' or A.MEMBER_NN like '%'||#{searchVal}||'%')
+                </if>
+                <if test="bbsId eq 'collection'.toString()">
+                    and A.TITLE like '%'||#{searchVal}||'%'
+                </if>
+            </where>
+        </if>
+        ) AA
+        )
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectBbsLettPagingCount" resultType="Integer">
+        /* board.bbsStyleLettManage.selectBbsLettPagingCount */
+        select count(1)
+        from
+        (
+        select A.*
+        from
+        (
+        select lett.LETT_NO,
+        lett.BBS_ID,
+        lett.SITE_NO,
+        fn_getCodeNm('GOODS_TYPE_CD', lett.GOODS_TYPE_CD) as GOODS_TYPE_CD_NM,
+        fn_getCodeNm('DISP_GB_CD', lett.DISP_GB_CD) as DISP_GB_CD_NM,
+        lett.CONTENT,
+        (select count(*) from TB_STYLE_BBS_CMNT cmnt where 1=1 and cmnt.LETT_NO = lett.LETT_NO and cmnt.BBS_ID = #{bbsId}) as CMNT_CNT,
+        fn_getAdminName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NM,
+        fn_getAdminNickName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NN,
+        lett.REG_DTTM,
+        lett.END_DTTM,
+        NVL(lett.INQ_CNT, 0) as INQ_CNT,
+        lett.TITLE
+        from TB_STYLE_BBS_LETT lett
+        where 1=1
+        <include refid="selectLettInfoWhere"/>
+        ) A
+        <if test="searchVal != null and searchVal != ''">
+            <where>
+                <if test="bbsId eq 'vote'.toString()">
+                    and (A.CONTENT like '%'||#{searchVal}||'%' or A.MEMBER_NM = #{searchValEncrypt})
+                </if>
+                <if test="bbsId eq 'pick'.toString()">
+                    and (A.CONTENT like '%'||#{searchVal}||'%' or A.MEMBER_NN like '%'||#{searchVal}||'%')
+                </if>
+                <if test="bbsId eq 'collection'.toString()">
+                    and A.TITLE like '%'||#{searchVal}||'%'
+                </if>
+            </where>
+        </if>
+        ) AA
+    </select>
+
+    <select id="selectBbsLettPagingTotalCount" resultType="Integer">
+        /* board.bbsStyleLettManage.selectBbsLettPagingTotalCount */
+        select count(1)
+        from
+            (
+                select A.*
+                from
+                    (
+                        select lett.LETT_NO,
+                               lett.BBS_ID,
+                               lett.SITE_NO,
+                               fn_getCodeNm('GOODS_TYPE_CD', lett.GOODS_TYPE_CD) as GOODS_TYPE_CD_NM,
+                               fn_getCodeNm('DISP_GB_CD', lett.DISP_GB_CD) as DISP_GB_CD_NM,
+                               lett.CONTENT,
+                               (select count(*) from TB_STYLE_BBS_CMNT cmnt where 1=1 and cmnt.LETT_NO = lett.LETT_NO and cmnt.BBS_ID = #{bbsId}) as CMNT_CNT,
+                               fn_getAdminName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NM,
+                               fn_getAdminNickName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NN,
+                               lett.REG_DTTM,
+                               lett.END_DTTM,
+                               NVL(lett.INQ_CNT, 0) as INQ_CNT,
+                               lett.TITLE
+                        from TB_STYLE_BBS_LETT lett
+                        where 1=1
+                    ) A
+            ) AA
+    </select>
+
+    <select id="selectBbsLettDtl" resultType="bbsLettManageVO">
+        /* board.bbsStyleLettManage.selectBbsLettDtl */
+
+        SELECT  lett.LETT_NO,
+        lett.BBS_ID,
+        lett.SITE_NO,
+        lett.CONTENT,
+        fn_getCodeNm('GOODS_TYPE_CD', lett.GOODS_TYPE_CD) AS GOODS_TYPE_CD_NM,
+        lett.GOODS_TYPE_CD,
+        fn_getCodeNm('DISP_GB_CD', lett.DISP_GB_CD) AS DISP_GB_CD_NM,
+        lett.DISP_GB_CD,
+        fn_getCodeNm('CMNT_GB_CD', lett.CMNT_GB_CD) AS CMNT_GB_NM,
+        lett.IMG_RATIO_GB_CD,
+        lett.CMNT_DISP_GB_CD,
+        lett.REG_DTTM,
+        lett.END_DTTM,
+        lett.REGR_NO,
+        fn_getAdminName(#{siteNo}, lett.MEMBER_NO) AS MEMBER_NM,
+        fn_getAdminNickName(#{siteNo}, lett.MEMBER_NO) as MEMBER_NN,
+        mmb.LOGIN_ID,
+        (
+        select MEMBER_GRADE_NM
+        from TC_MEMBER_GRADE
+        where SITE_NO = #{siteNo}
+        and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO
+        ) AS MEMBER_GRADE_NM,
+        lett.MEMBER_NO,
+        lett.TITLE,
+        lett.SEO_SEARCH_WORD
+        FROM    TB_STYLE_BBS_LETT lett
+        LEFT OUTER JOIN TC_MEMBER mmb ON (lett.MEMBER_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+        WHERE lett.LETT_NO = #{lettNo}
+        <include refid="selectLettInfoWhere" />
+    </select>
+
+    <insert id="insertBbsLett">
+        /* board.bbsStyleLettManage.insertBbsLett */
+        insert into TB_STYLE_BBS_LETT (
+            LETT_NO, BBS_ID, SITE_NO, CONTENT, GOODS_TYPE_CD, DISP_GB_CD, IMG_RATIO_GB_CD, CMNT_DISP_GB_CD, REG_DTTM, REGR_NO, MEMBER_NO, TITLE, SEO_SEARCH_WORD
+        )
+        values (
+            #{lettNo}, #{bbsId}, #{siteNo}, #{content}, #{goodsTypeCd}, #{dispGbCd}, #{imgRatioGbCd}, #{cmntDispGbCd}, sysdate, #{regrNo}, #{memberNo}, #{title}, #{seoSearchWord}
+        )
+    </insert>
+
+    <update id="updateBbsLett">
+        update TB_STYLE_BBS_LETT
+        set    CONTENT = #{content},
+               GOODS_TYPE_CD = #{goodsTypeCd},
+               DISP_GB_CD = #{dispGbCd},
+               IMG_RATIO_GB_CD = #{imgRatioGbCd},
+               CMNT_DISP_GB_CD = #{cmntDispGbCd},
+               UPD_DTTM = sysdate,
+               UPDR_NO = #{updrNo},
+               MEMBER_NO = #{memberNo},
+               TITLE = #{title},
+               SEO_SEARCH_WORD = #{seoSearchWord}
+        where  LETT_NO = #{lettNo}
+          and    BBS_ID = #{bbsId}
+    </update>
+
+    <update id="deleteBbsLett">
+        /* board.bbsStyleLettManage.deleteBbsLett */
+        UPDATE  TB_STYLE_BBS_LETT
+        SET     DEL_YN = 'Y',
+                DEL_DTTM = sysdate,
+                DELR_NO = #{delrNo}
+        WHERE   LETT_NO = #{lettNo}
+          AND   BBS_ID = #{bbsId}
+          AND   SITE_NO = #{siteNo}
+    </update>
+
+    <!-- 상품 쿼리 -->
+    <select id="selectBbsGoods" resultType="bbsLettManageVO">
+        SELECT rownum as ROW_NUM,
+               A.LETT_NO,
+               A.GOODS_NO,
+               A.VOTE_CNT,
+               A.FILE_PATH,
+               A.FILE_SIZE,
+               A.FILE_NM,
+               A.ORG_FILE_NM,
+               fn_getGoodsImgPath(A.GOODS_NO, '02') as GOODS_IMG,
+               tb.BRAND_NM,
+               tg.GOODS_NM,
+               ti.SUPPLY_PRICE,
+               ts.SELLER_NM,
+               ti.SALE_PRICE,
+               ti.STOCK_QTT,
+               fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+               tepm.ERP_ITM_CODE
+        FROM (SELECT tsbl.LETT_NO,
+                     CASE WHEN tsbl.BBS_ID = 'vote' THEN bvaf.GOODS_NO ELSE tsbg.GOODS_NO END GOODS_NO,
+                     bvaf.VOTE_CNT,
+                     bvaf.FILE_PATH,
+                     bvaf.FILE_SIZE,
+                     bvaf.FILE_NM,
+                     bvaf.ORG_FILE_NM
+              FROM TB_STYLE_BBS_LETT tsbl
+                       LEFT OUTER JOIN TB_STYLE_BBS_GOODS tsbg ON tsbl.LETT_NO = tsbg.LETT_NO
+                       LEFT OUTER JOIN (SELECT tsbv.LETT_NO,
+                                               tsbv.BBS_ID,
+                                               tsbv.VOTE_CNT,
+                                               tsaf.GOODS_NO,
+                                               tsaf.FILE_PATH,
+                                               tsaf.FILE_SIZE,
+                                               tsaf.FILE_NM,
+                                               tsaf.ORG_FILE_NM
+                                        FROM TB_STYLE_BBS_VOTE tsbv
+                                                 INNER JOIN TB_STYLE_ATCH_FILE tsaf ON tsbv.FILE_NO = tsaf.FILE_NO) bvaf
+                                       ON tsbl.LETT_NO = bvaf.LETT_NO
+              WHERE tsbl.DEL_YN = 'N'
+              order by tsbg.GOODS_SEQ) A
+                 INNER JOIN TG_GOODS tg ON A.GOODS_NO = tg.GOODS_NO
+                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                 LEFT OUTER JOIN TG_BRAND tb ON tg.BRAND_NO = tb.BRAND_NO
+                 INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                 LEFT OUTER JOIN TI_ERP_PRD_MAPPING tepm ON tg.GOODS_NO = tepm.MALL_GOODS_NO and tg.ITEM_NO = tepm.MALL_ITM_CODE
+        where A.LETT_NO = #{lettNo}
+    </select>
+
+    <update id="updateBbsGoods">
+        update TB_STYLE_BBS_GOODS
+        set DEL_DTTM = sysdate,
+            DELR_NO = #{delrNo},
+            DEL_YN = 'Y'
+        where LETT_NO = #{lettNo}
+    </update>
+
+    <delete id="deleteBbsGoods">
+        delete TB_STYLE_BBS_GOODS
+        where LETT_NO = #{lettNo}
+    </delete>
+
+    <insert id="insertBbsGoods">
+        insert into TB_STYLE_BBS_GOODS (
+            GOODS_SEQ, LETT_NO, GOODS_NO, REG_DTTM, REGR_NO
+        )
+        values (
+                   fn_getSeq(0, 'STYLE_BBS_GOODS'), #{lettNo}, #{goodsNo}, sysdate, #{regrNo}
+               )
+    </insert>
+
+    <!-- 댓글 쿼리 -->
+    <select id="selectBbsCmntList" resultType="bbsCmntManageVO">
+        select * from
+        (select ROWNUM as PAGING_NUM, TOT_CNT - ROWNUM + 1 as ROW_NUM, AA.* from
+        (select A.*, count(*) over() as TOT_CNT from
+        (select cmnt.*,
+        fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) as MEMBER_NN,
+        mmb.LOGIN_ID,
+        (select MEMBER_GRADE_NM
+        from TC_MEMBER_GRADE
+        where SITE_NO = #{siteNo}
+        and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO)
+        from TB_STYLE_BBS_CMNT cmnt
+        left outer join TC_MEMBER mmb on (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+        where 1=1
+        <include refid="selectCmntInfoWhere"/>) A
+        <if test="searchWord != null and searchWord != ''">
+            where A.CONTENT like '%'||#{searchWord}||'%' or A.MEMBER_NN like '%'||#{searchWord}||'%'
+        </if>) AA)
+        <include refid="common.pageSql"/>
+    </select>
+
+    <select id="selectBbsCmntListCount" resultType="Integer">
+        select count(1) from
+        (select ROWNUM as PAGING_NUM, TOT_CNT - ROWNUM + 1 as ROW_NUM, AA.* from
+        (select A.*, count(*) over() as TOT_CNT from
+        (select cmnt.*,
+        fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) as MEMBER_NN,
+        mmb.LOGIN_ID,
+        (select MEMBER_GRADE_NM
+        from TC_MEMBER_GRADE
+        where SITE_NO = #{siteNo}
+        and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO)
+        from TB_STYLE_BBS_CMNT cmnt
+        left outer join TC_MEMBER mmb on (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+        where 1=1
+        <include refid="selectCmntInfoWhere"/>) A
+        <if test="searchWord != null and searchWord != ''">
+            where A.CONTENT like '%'||#{searchWord}||'%' or A.MEMBER_NN like '%'||#{searchWord}||'%'
+        </if>) AA)
+        <include refid="common.pageSql"/>
+    </select>
+
+    <select id="selectBbsCmntListTotalCount" resultType="Integer">
+        select count(1) from
+        (select ROWNUM as PAGING_NUM, TOT_CNT - ROWNUM + 1 as ROW_NUM, AA.* from
+        (select A.*, count(*) over() as TOT_CNT from
+        (select cmnt.*,
+        fn_getAdminNickName(#{siteNo}, cmnt.REGR_NO) as MEMBER_NN,
+        mmb.LOGIN_ID,
+        (select MEMBER_GRADE_NM
+        from TC_MEMBER_GRADE
+        where SITE_NO = #{siteNo}
+        and MEMBER_GRADE_NO = mmb.MEMBER_GRADE_NO)
+        from TB_STYLE_BBS_CMNT cmnt
+        left outer join TC_MEMBER mmb on (cmnt.REGR_NO = mmb.MEMBER_NO and mmb.MEMBER_STATUS_CD = '01')
+        where 1=1
+        <include refid="selectCmntInfoWhere"/>) A) AA)
+        <include refid="common.pageSql"/>
+    </select>
+
+    <delete id="deleteBbsComment">
+        delete TB_STYLE_BBS_CMNT
+        where 1=1
+        <if test="cmntSeq != null and cmntSeq != ''">
+            and CMNT_SEQ = #{cmntSeq}
+        </if>
+        <if test="lettNo != null and lettNo != ''">
+            and LETT_NO = #{lettNo}
+        </if>
+        <if test="bbsId != null and bbsId != ''">
+            and BBS_ID = #{bbsId}
+        </if>
+    </delete>
+
+    <!-- 신규등록 게시글번호 생성 -->
+    <select id="selectNewLettNo"  resultType="String">
+        /* board.bbsManage.selectNewLettNo */
+        SELECT fn_getSeq(0, 'STYLE_BBS_LET') FROM DUAL
+    </select>
+</mapper>

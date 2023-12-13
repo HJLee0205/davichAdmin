@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="system.menu">
+
+    <cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <sql id="selectMenuTreeWhere">
+
+    </sql>
+
+    <select id="selectScreen" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.selectScreen */
+        SELECT 	MENU_ID,
+                MENU_NM,
+                UP_MENU_ID,
+                (case when instr(URL,'?') = 0 then URL else substr(URL,0,instr(URL,'?') - 1) end) as URL,
+                MENU_LVL,
+                SITE_TYPE_CD,
+                SCREEN_YN
+        FROM 	TA_MENU
+        WHERE	USE_YN = 'Y'
+        AND     SCREEN_YN = 'Y'
+        ORDER BY MENU_LVL, SORT_SEQ
+    </select>
+
+    <select id="selectLevelOneMenu" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.selectLevelOneMenu */
+        SELECT  MENU_ID,
+                (case when MENU_ID like '2'||'%' then MENU_NM||'(S)' else MENU_NM end) as MENU_NM,
+                UP_MENU_ID,
+                URL,
+                MENU_LVL
+        FROM 	TA_MENU
+        WHERE	USE_YN = 'Y'
+        AND		MENU_LVL = 1
+        ORDER BY MENU_LVL, SORT_SEQ
+    </select>
+
+    <select id="selectMenuTree" parameterType="net.danvi.dmall.biz.system.model.MenuVO" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.selectMenuTree */
+		SELECT
+			MENU_ID,
+			UP_MENU_ID,
+			MENU_NM,
+			MENU_LVL,
+			URL,
+			SITE_TYPE_CD,
+			SCREEN_YN
+		FROM TA_MENU
+		<![CDATA[
+        WHERE SITE_TYPE_CD <= TO_NUMBER(#{siteTypeCd})
+        AND USE_YN='Y'
+		]]>
+		<choose>
+            <when test="isSeller == true">
+                <choose>
+                    <when test="sellerStatusCd eq '03'.toString() or sellerStatusCd eq '01'.toString()">
+                        and MENU_ID LIKE '21'||'%'
+                    </when>
+                    <otherwise>
+                        AND MENU_ID LIKE '2'||'%'
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                AND MENU_ID NOT LIKE '2'||'%'
+            </otherwise>
+        </choose>
+		START WITH UP_MENU_ID IS NULL
+		<if test="memberNo != 0">
+            and MENU_ID in (select TMAM.MENU_ID from TA_MANAGER tm inner join TA_MANAGER_AUTH_MENU TMAM on tm.AUTH_GRP_NO = TMAM.AUTH_GRP_NO where tm.MEMBER_NO = #{memberNo})
+        </if>
+		CONNECT BY PRIOR MENU_ID = UP_MENU_ID
+		ORDER SIBLINGS BY SORT_SEQ ASC
+    </select>
+
+    <!-- 대메뉴 URL로 해당 대메뉴 및 서브 메뉴 조회 -->
+    <select id="selectSideMenuTree" parameterType="net.danvi.dmall.biz.system.model.MenuVO" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.selectSubMenuTree */
+		SELECT
+			MENU_ID,
+			UP_MENU_ID,
+			MENU_NM,
+			MENU_LVL,
+			URL,
+			SITE_TYPE_CD,
+			SCREEN_YN
+		FROM TA_MENU
+        <![CDATA[
+        WHERE SITE_TYPE_CD <= TO_NUMBER(#{siteTypeCd})
+          AND USE_YN='Y'
+        ]]>
+		START WITH URL = #{url}
+		CONNECT BY PRIOR MENU_ID = UP_MENU_ID
+		ORDER SIBLINGS BY SORT_SEQ ASC
+    </select>
+
+    <select id="selectFirstScreen" parameterType="net.danvi.dmall.biz.system.model.MenuVO" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.selectFirstScreen */
+        <![CDATA[
+        SELECT URL
+        FROM
+        (
+	        SELECT  URL, SCREEN_YN
+	        FROM    TA_MENU
+	        WHERE   USE_YN = 'Y'
+	        AND     MENU_ID LIKE CONCAT(#{menuId}, '%')
+	        AND     SITE_TYPE_CD <= TO_NUMBER(#{siteTypeCd})
+	        CONNECT BY PRIOR MENU_ID = UP_MENU_ID
+	        ORDER SIBLINGS BY SORT_SEQ ASC
+        )
+        WHERE SCREEN_YN='Y'
+        AND ROWNUM = 1
+        ]]>
+    </select>
+
+    <select id="getAuthMenuList" resultType="java.lang.String">
+        /* system.menu.getAuthMenuList */
+        SELECT URL
+        FROM TA_MANAGER TM, TA_MANAGER_AUTH_GRP TMAG, TA_MANAGER_AUTH_MENU TMAM, TA_MENU MENU
+        WHERE TM.AUTH_GRP_NO = TMAG.AUTH_GRP_NO
+        AND TMAG.AUTH_GRP_NO = TMAM.AUTH_GRP_NO
+        AND TM.MEMBER_NO = #{memberNo}
+        AND TM.SITE_NO = #{siteNo}
+        AND TMAM.MENU_ID = MENU.MENU_ID
+    </select>
+
+    <select id="getAuthLv1MenuList" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.getAuthLv1MenuList */
+        SELECT  TMAM.MENU_ID,
+                SITE_TYPE_CD
+        FROM    TA_MANAGER TM, TA_MANAGER_AUTH_GRP TMAG, TA_MANAGER_AUTH_MENU TMAM, TA_MENU MENU
+        WHERE   TM.AUTH_GRP_NO = TMAG.AUTH_GRP_NO
+        AND     TMAG.AUTH_GRP_NO = TMAM.AUTH_GRP_NO
+        AND     TM.SITE_NO = #{siteNo}
+        AND     MEMBER_NO = #{memberNo}
+        AND     TMAM.MENU_ID = MENU.MENU_ID
+    </select>
+
+    <select id="getAuthSubMenuList" parameterType="net.danvi.dmall.biz.system.model.MenuVO" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        /* system.menu.getAuthSubMenuList */
+        SELECT  MENU_ID,
+            UP_MENU_ID,
+            MENU_NM,
+            MENU_LVL,
+            URL,
+            SITE_TYPE_CD,
+            SCREEN_YN
+        FROM TA_MENU
+        <![CDATA[
+        WHERE SITE_TYPE_CD <= TO_NUMBER(#{siteTypeCd})
+        AND USE_YN='Y'
+        ]]>
+        ORDER BY MENU_ID
+    </select>
+    
+    <select id="selectMenuAutoComplition" resultType="net.danvi.dmall.biz.system.model.MenuVO">
+        <![CDATA[
+        SELECT  *
+        FROM    TA_MENU
+        WHERE   SCREEN_YN = 'Y'
+        AND     SITE_TYPE_CD <= TO_NUMBER(#{siteTypeCd})
+        AND     MENU_NM LIKE '%' || #{menuNm} || '%'
+        ]]>
+    </select>
+</mapper>

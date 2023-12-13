@@ -1,0 +1,1001 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="promotion.event">
+
+    <sql id="selectEventInfoWhere">
+        <if test="goodsTypeCdSelectAll != null and goodsTypeCdSelectAll != 'Y'.toString()">
+            <if test="goodsTypeCd != null and goodsTypeCd.length > 0">
+            AND te.GOODS_TYPE_CD IN (
+                <foreach collection="goodsTypeCd" item="a" separator=",">#{a}</foreach>
+                )
+            </if>
+        </if>
+        <if test="eventKindCd != null and eventKindCd != ''">
+        AND te.EVENT_KIND_CD = #{eventKindCd}
+        </if>
+        <if test="eventMethodCd != null and eventMethodCd != ''">
+        AND te.EVENT_METHOD_CD = #{eventMethodCd}
+        </if>
+        <if test="eventUseYn != null and eventUseYn.length > 0">
+            AND te.EVENT_USE_YN IN (
+            <foreach collection="eventUseYn" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        <if test="searchStartDate != null and searchStartDate != ''">
+            <![CDATA[
+                AND te.APPLY_START_DTTM >= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchEndDate != null and searchEndDate != ''">
+            <![CDATA[
+                AND te.APPLY_END_DTTM < TO_DATE(#{searchEndDate}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+
+		<!-- front 조건 -->
+    	<if test="periodAllYn != null and periodAllYn != ''">
+			<if test="periodAllYn == 'Y'.toString()">
+	            <if test="searchStartDate != null and searchStartDate != ''">
+	                <![CDATA[
+	                    AND te.APPLY_START_DTTM <= TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')
+	                ]]>
+	            </if>
+	            <if test="searchEndDate != null and searchEndDate != ''">
+	                <![CDATA[
+	                    AND te.APPLY_END_DTTM >= TO_DATE(#{searchEndDate}, 'YYYY-MM-DD')
+	                ]]>
+	            </if>
+	        </if>
+	        <if test="periodAllYn == 'N'.toString()">
+	            <if test="searchEndDate != null and searchEndDate != ''">
+	                <![CDATA[
+	                    AND te.APPLY_END_DTTM <= TO_DATE(#{searchEndDate}, 'YYYY-MM-DD')
+	                ]]>
+	            </if>
+	        </if>
+        </if>
+		<if test="eventStatusCds != null">
+              <choose>
+                    <when test = "eventStatusCds.length> 0">
+                          AND
+                          <foreach collection="eventStatusCds" item="status" index="index" open="(" close=")" separator=" OR ">
+                            <if test="status == '01'"><!-- 준비중이벤트 -->
+                            <![CDATA[APPLY_START_DTTM > sysdate]]>
+                            </if>
+                            <if test="status == '02'"><!-- 진행중이벤트 -->
+                            <![CDATA[(APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM )]]>
+                            </if>
+                            <if test="status == '03'"><!-- 지난이벤트 -->
+                            <![CDATA[APPLY_END_DTTM <= sysdate]]>
+                            </if>
+                            <if test="status == '04'"><!-- 당첨자발표 -->
+                            <![CDATA[EVENT_WNG_DTTM <= sysdate]]>
+                            </if>
+                          </foreach>
+                    </when>
+              </choose>
+        </if>
+
+		<if test="eventMethodCds != null">
+              <choose>
+                    <when test = "eventMethodCds.length> 0">
+                          AND
+                          <foreach collection="eventMethodCds" item="status" index="index" open="(" close=")" separator=" OR ">
+                            <if test="status == '01'">
+                            te.EVENT_METHOD_CD = '01'
+                            </if>
+                            <if test="status == '02'">
+                            te.EVENT_METHOD_CD = '02'
+                            </if>
+                          </foreach>
+                    </when>
+              </choose>
+        </if>
+        <if test="searchWords != null and searchWords != ''">
+            AND te.EVENT_NM LIKE '%'||#{searchWords}||'%'
+        </if>
+    </sql>
+
+    <sql id="selectEventOrder">
+        <if test="periodSelOption != null">
+            <choose>
+                <when test="periodSelOption == 'applyStartDttm'">
+                ORDER  BY APPLY_START_DTTM ASC
+                </when>
+                <when test="periodSelOption == 'applyEndDttm'">
+                ORDER  BY APPLY_END_DTTM ASC
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <sql id="selectEventInfoSortSql">
+        ORDER BY event.REG_DTTM DESC
+    </sql>
+
+    <select id="selectEventList" resultType="eventVO">
+        /* biz.app.promotion.event.selectEventList - 이벤트 목록 조회 */
+        SELECT A.*, ROWNUM
+        FROM
+        (
+	        SELECT
+	                event.EVENT_NO,                   <!-- 이벤트번호 -->
+	                event.EVENT_NM,                   <!-- 이벤트명 -->
+	                event.EVENT_DSCRT,                <!-- 이벤트 설명 -->
+	                event.APPLY_START_DTTM,           <!-- 이벤트 기간 (시작일) -->
+	                event.APPLY_END_DTTM,             <!-- 이벤트 기간 (종료일) -->
+	                event.EVENT_WNG_DTTM,             <!-- 이벤트 당첨 일시  -->
+	                event.EVENT_CONTENT_HTML,         <!-- 이벤트 내용 -->
+	                event.EVENT_WEB_BANNER_IMG_PATH,      <!-- 웹전용 이벤트배너 -->
+	                event.EVENT_WEB_BANNER_IMG,      <!-- 웹전용 이벤트배너 -->
+	                event.EVENT_MOBILE_BANNER_IMG_PATH,    <!-- 모바일전용 이벤트배너 -->
+	                event.EVENT_MOBILE_BANNER_IMG,    <!-- 모바일전용 이벤트배너 -->
+	                event.EVENT_CMNT_USE_YN,                <!-- 댓글 사용여부 -->
+	                event.EVENT_METHOD_CD,
+	                event.EVENT_KIND_CD,
+	                CASE
+	                  WHEN <![CDATA[APPLY_START_DTTM > sysdate]]> THEN '진행전'
+	                  WHEN <![CDATA[(APPLY_START_DTTM <= sysdate AND sysdate < APPLY_END_DTTM) ]]>  THEN '진행중'
+	                  WHEN <![CDATA[APPLY_END_DTTM <= sysdate]]> THEN '종료'
+	                END  AS EVENT_STATUS_NM,
+	                event.EVENT_USE_YN                      <!-- 사용여부 -->
+	        FROM TP_EVENT event
+	        WHERE event.SITE_NO = #{siteNo}
+	        AND event.DEL_YN = 'N'
+	        <include refid="selectEventInfoWhere" />
+	        <include refid="selectEventInfoSortSql" />
+		) A
+    </select>
+
+    <select id="selectEventListPaging" resultType="eventVO">
+        /* promotion.event.selectEventListPaging - 이벤트 목록 조회 페이징*/
+        SELECT *
+        FROM
+        (
+            SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+            FROM
+            (
+                SELECT A.*, count(*) over() AS tot_cnt
+                FROM
+                (
+                    SELECT te.EVENT_NO ,
+                           te.EVENT_NM ,
+                           te.EVENT_DSCRT ,
+                           te.APPLY_START_DTTM ,
+                           te.APPLY_END_DTTM ,
+                           tewc.WNG_CONTENT_NO ,
+                           tewc.WNG_NM ,
+                           tewc.WNG_CONTENT_HTML ,
+                           CASE
+                               <![CDATA[
+                               WHEN te.APPLY_START_DTTM > sysdate THEN '진행전'
+                               WHEN (te.APPLY_START_DTTM <= sysdate AND sysdate < te.APPLY_END_DTTM) THEN '진행중'
+                               WHEN te.APPLY_END_DTTM <= sysdate THEN '종료'
+                               ]]>
+                           END AS EVENT_STATUS_NM,
+                           te.EVENT_USE_YN ,
+                           te.EVENT_CMNT_USE_YN ,
+                           te.REG_DTTM
+                    FROM TP_EVENT te
+                        LEFT OUTER JOIN TP_EVENT_WNG_CONTENT tewc ON te.EVENT_NO = tewc.EVENT_NO
+                    WHERE te.SITE_NO = #{siteNo}
+                    AND te.DEL_YN = 'N'
+                    <include refid="selectEventInfoWhere"/>
+                    ORDER BY te.REG_DTTM DESC
+                ) A
+            ) AA
+        ) tb
+		<include refid="common.pageSql" />
+    </select>
+
+    <select id="selectEventListPagingCount" resultType="Integer">
+        /* app.promotion.event.selectEventListPagingCount - 이벤트 목록 조회 페이징 검색결과 개수*/
+        SELECT COUNT(*)
+        FROM TP_EVENT te
+            LEFT OUTER JOIN TP_EVENT_WNG_CONTENT tewc ON te.EVENT_NO = tewc.EVENT_NO
+        WHERE 1=1
+        AND te.SITE_NO = #{siteNo}
+		AND te.DEL_YN = 'N'
+        <include refid="selectEventInfoWhere" />
+    </select>
+
+    <select id="selectEventListPagingTotalCount" resultType="Integer">
+        /* app.promotion.event.selectEventListPagingTotalCount - 이벤트 목록 조회 페이징 총 개수*/
+        SELECT COUNT(*)
+        FROM TP_EVENT te
+            LEFT OUTER JOIN TP_EVENT_WNG_CONTENT tewc ON te.EVENT_NO = tewc.EVENT_NO
+        WHERE 1=1
+        AND te.SITE_NO = #{siteNo}
+		AND te.DEL_YN = 'N'
+    </select>
+
+    <select id="selectWngContentList" resultType="eventVO">
+        /* app.promotion.event.selectWngContentList - 이벤트 당첨내용 전체 조회 : 이벤트목록화면에서 '당청내용등록' '당첨내용수정' 버튼을 결정*/
+	     SELECT TEWC.EVENT_NO,
+	            TEWC.WNG_CONTENT_NO,
+	            TEWC.WNG_NM,
+                TEWC.WNG_CONTENT_HTML
+	       FROM TP_EVENT_WNG_CONTENT TEWC INNER JOIN TP_EVENT TE ON TEWC.EVENT_NO = TE.EVENT_NO
+	      WHERE TEWC.USE_YN = 'Y'
+            AND TE.DEL_YN = 'N'
+    </select>
+
+    <select id="selectEventInfo" resultType="eventVO">
+        /* app.promotion.event.selectEventInfo - 이벤트 조회 (단건)*/
+        SELECT
+                event.EVENT_NO,
+                event.EVENT_NM,
+                event.EVENT_DSCRT,
+                TO_CHAR(event.APPLY_START_DTTM,'YYYYMMDDHH24MI') AS APPLY_START_DTTM,    <!-- 시작일시 -->
+                TO_CHAR(event.APPLY_END_DTTM,'YYYYMMDDHH24MI') AS APPLY_END_DTTM,        <!-- 종료일시 -->
+                TO_CHAR(event.EVENT_WNG_DTTM,'YYYYMMDDHH24MI') AS EVENT_WNG_DTTM,        <!-- 이벤트 당첨일 -->
+                CASE WHEN TO_CHAR(sysdate,'YYYYMMDDHH24MI') <![CDATA[>=]]> TO_CHAR(event.APPLY_START_DTTM,'YYYYMMDDHH24MI')  and
+                TO_CHAR(sysdate,'YYYYMMDDHH24MI') <![CDATA[<=]]> TO_CHAR(event.APPLY_END_DTTM,'YYYYMMDDHH24MI') then 'ing'
+                ELSE 'end'
+                END AS ING_YN,                      <!-- 진행중 여부 -->
+                event.EVENT_CONTENT_HTML,          <!-- 이벤트 내용 -->
+                replace(event.EVENT_WEB_BANNER_IMG_PATH,'\','/') AS EVENT_WEB_BANNER_IMG_PATH,   <!-- 웹전용 이벤트배너 -->
+                event.EVENT_WEB_BANNER_IMG,        <!-- 웹전용 이벤트배너 -->
+                event.EVENT_MOBILE_BANNER_IMG_PATH,<!-- 모바일전용 이벤트배너 -->
+                event.EVENT_MOBILE_BANNER_IMG,     <!-- 모바일전용 이벤트배너 -->
+                event.EVENT_CMNT_USE_YN,           <!-- 댓글 사용여부 -->
+                event.REG_DTTM,                    <!-- 등록일 -->
+                event.EVENT_METHOD_CD,             <!-- 출석체크이벤트 참여 방법(로그인형,스탬프형)-->
+                fn_getCodeNm('EVENT_METHOD_CD', EVENT_METHOD_CD) AS EVENT_METHOD_CD_NM,
+                event.EVENT_PERIOD_EXPT_CD,        <!-- 출석체크기간 예외코드 -->
+                fn_getCodeNm('EVENT_PERIOD_EXPT_CD', EVENT_PERIOD_EXPT_CD) AS EVENT_PERIOD_EXPT_CD_NM,
+                event.EVENT_PVD_POINT,             <!-- 포인트 지급 -->
+                event.EVENT_POINT_APPLY_CD,        <!-- 포인트 유효기간 설정 코드 -->
+                TO_CHAR(POINT_APPLY_START_DTTM,'YYYYMMDDHH24MI') AS POINT_APPLY_START_DTTM,  <!-- 포인트 유효기간 (시작일) -->
+                TO_CHAR(POINT_APPLY_END_DTTM,'YYYYMMDDHH24MI') AS POINT_APPLY_END_DTTM,    <!-- 포인트 유효기간 (종료일) -->
+                event.EVENT_APPLY_ISSUE_AF_PERIOD,       <!-- 포인트 적용 발급 후 기간 -->
+                event.EVENT_CNDT_CD,                     <!-- 이벤트 조건코드 -->
+                event.EVENT_TOT_PARTDT_CNDT,             <!-- 이벤트 총 참여 횟수-->
+                event.EVENT_ADD_PVD_POINT,        <!-- 이벤트 추가 지급 포인트-->
+                event.EVENT_KIND_CD,                <!-- 이벤트종류코드(01:이벤트,02:출석체크이벤트) -->
+                event.EVENT_CMNT_AUTH,      			<!-- 댓글권한 -->
+                (SELECT LISTAGG((SELECT CD_NM  FROM TA_CMN_CD_DTL  WHERE CD = EVENT_CMNT_AUTH AND GRP_CD = 'INTEGRATION_MEMBER_GB_CD'), ',') WITHIN GROUP (ORDER BY EVENT_CMNT_AUTH)
+					FROM (
+						<![CDATA[ SELECT REGEXP_SUBSTR(EVENT_CMNT_AUTH,'[^,]+', 1, rownum) AS EVENT_CMNT_AUTH ]]>
+						FROM (
+							SELECT EVENT_CMNT_AUTH
+        					FROM TP_EVENT
+		        			WHERE   SITE_NO = #{siteNo}
+							AND     EVENT_NO = #{eventNo}
+							AND     DEL_YN = #{delYn}
+						)
+		    			<![CDATA[ CONNECT BY rownum <= length(REGEXP_REPLACE(EVENT_CMNT_AUTH,'[^,]+')) + 1 ]]>
+		    		)
+				) AS EVENT_CMNT_AUTH_NM,
+                event.EVENT_USE_YN,
+                event.GOODS_TYPE_CD,
+                event.SEO_SEARCH_WORD,
+                event.DLGT_IMG_PATH,
+                event.DLGT_IMG_NM,
+                event.DLGT_IMG_ORG_NM
+        FROM    TP_EVENT event
+        WHERE   event.SITE_NO = #{siteNo}
+        AND     event.EVENT_NO = #{eventNo}
+        AND     event.DEL_YN = #{delYn}
+    </select>
+
+    <insert id="insertEventInfo">
+        /* app.promotion.event.insertEventInfo - 이벤트 등록*/
+        <selectKey keyProperty="eventNo" order="BEFORE" resultType="java.lang.Integer">
+        SELECT NVL(MAX(EVENT_NO), 0) + 1 AS eventNo
+        FROM   TP_EVENT
+        </selectKey>
+        INSERT INTO TP_EVENT
+            (
+                EVENT_NO,
+                SITE_NO,
+                EVENT_KIND_CD,
+                EVENT_NM,
+                EVENT_DSCRT,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                EVENT_WNG_DTTM,
+                EVENT_CONTENT_HTML,
+                EVENT_WEB_BANNER_IMG_PATH,
+                EVENT_WEB_BANNER_IMG,
+                EVENT_MOBILE_BANNER_IMG_PATH,
+                EVENT_MOBILE_BANNER_IMG,
+                EVENT_CMNT_USE_YN,
+                EVENT_PVD_POINT,
+                EVENT_TOT_PARTDT_CNDT,
+                EVENT_ADD_PVD_POINT,
+                EVENT_APPLY_ISSUE_AF_PERIOD,
+                EVENT_WNG_CONFIRM_YN,
+                EVENT_USE_YN,
+                DEL_YN,
+                EVENT_CMNT_AUTH,
+                GOODS_TYPE_CD,
+                SEO_SEARCH_WORD,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO,
+                DLGT_IMG_PATH,
+                DLGT_IMG_NM,
+                DLGT_IMG_ORG_NM
+            )
+            VALUES
+            (
+                #{eventNo},
+                #{siteNo},
+                '01',
+                #{eventNm},
+                #{eventDscrt},
+                to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                to_date(#{eventWngDttm}, 'yyyy-mm-dd hh24:mi'),
+                #{eventContentHtml:CLOB},
+                #{eventWebBannerImgPath},
+                #{eventWebBannerImg},
+                #{eventMobileBannerImgPath},
+                #{eventMobileBannerImg},
+                #{eventCmntUseYn},
+                0,  <!-- 출석체크이벤트 컬럼이라 무조건 0을 준다. -->
+                0,  <!-- 출석체크이벤트 컬럼이라 무조건 0을 준다. -->
+                0,  <!-- 출석체크이벤트 컬럼이라 무조건 0을 준다. -->
+                0,  <!-- 출석체크이벤트 컬럼이라 무조건 0을 준다. -->
+                'N',
+                #{eventUseYn},
+                'N',
+                #{eventCmntAuth},
+                #{goodsTypeCd},
+                #{seoSearchWord},
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                #{dlgtImgPath},
+                #{dlgtImgNm},
+                #{dlgtImgOrgNm}
+            )
+    </insert>
+
+    <update id="updateEventInfo">
+        /* app.promotion.event.updateEventInfo - 이벤트 수정*/
+        UPDATE  TP_EVENT
+        SET
+                EVENT_NM                    = #{eventNm},
+                EVENT_DSCRT                 = #{eventDscrt},
+                APPLY_START_DTTM            = to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                APPLY_END_DTTM              = to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                EVENT_WNG_DTTM              = to_date(#{eventWngDttm}, 'yyyy-mm-dd hh24:mi'),
+                EVENT_CONTENT_HTML          = #{eventContentHtml:CLOB},
+                EVENT_WEB_BANNER_IMG_PATH        = #{eventWebBannerImgPath},
+                EVENT_WEB_BANNER_IMG        = #{eventWebBannerImg},
+                EVENT_MOBILE_BANNER_IMG_PATH     = #{eventMobileBannerImgPath},
+                EVENT_MOBILE_BANNER_IMG     = #{eventMobileBannerImg},
+                EVENT_CMNT_USE_YN 			= #{eventCmntUseYn},
+                EVENT_CMNT_AUTH 			= #{eventCmntAuth},
+                UPD_DTTM                    = sysdate,
+                UPDR_NO                     = #{regrNo},
+                EVENT_USE_YN                = #{eventUseYn},
+                GOODS_TYPE_CD               = #{goodsTypeCd},
+                SEO_SEARCH_WORD             = #{seoSearchWord}
+                <if test="dlgtImgPath != null and dlgtImgPath != ''">
+                    ,DLGT_IMG_PATH          = #{dlgtImgPath}
+                </if>
+                <if test="dlgtImgNm != null and dlgtImgNm != ''">
+                    ,DLGT_IMG_NM            = #{dlgtImgNm}
+                </if>
+                <if test="dlgtImgOrgNm != null and dlgtImgOrgNm != ''">
+                    ,DLGT_IMG_ORG_NM        = #{dlgtImgOrgNm}
+                </if>
+        WHERE
+                EVENT_NO = #{eventNo}
+    </update>
+
+    <select id="selectOtherEventDttm" resultType="eventVO">
+        /* promotion.event.selectOtherEventDttm - 다른 출석체크이벤트 시작종료일시 조회 : 이벤트기간 중복방지*/
+        SELECT TO_CHAR(E.APPLY_START_DTTM, 'YYYYMMDDHH24MI') AS OTHER_APPLY_START_DTTM,
+               TO_CHAR(E.APPLY_END_DTTM, 'YYYYMMDDHH24MI') AS OTHER_APPLY_END_DTTM,
+		       EVENT_NM AS OTHER_EVENT_NM,
+		       EVENT_NO AS OTHER_EVENT_NO
+		FROM   TP_EVENT E
+		WHERE  E.EVENT_KIND_CD = #{eventKindCd}  /* 01. 이벤트 02. 출석체크이벤트 */
+		AND    E.SITE_NO = #{siteNo}
+		AND    E.DEL_YN = 'N'
+		AND    E.APPLY_END_DTTM > sysdate
+    </select>
+
+    <insert id="insertAttendanceCheck">
+        /* app.promotion.event.insertAttendanceCheck - 출석체크 이벤트 등록*/
+        <selectKey keyProperty="eventNo" order="BEFORE" resultType="java.lang.Integer">
+        SELECT NVL(MAX(EVENT_NO), 0) + 1 AS eventNo
+        FROM   TP_EVENT
+        </selectKey>
+        INSERT INTO TP_EVENT
+            (
+                EVENT_NO,
+                SITE_NO,
+                EVENT_KIND_CD,
+                EVENT_NM,
+                APPLY_START_DTTM,
+                APPLY_END_DTTM,
+                EVENT_PERIOD_EXPT_CD, <!-- 이벤트기간예외코드 : 토/일/없음-->
+                EVENT_PVD_POINT, <!-- 이벤트 지급 포인트 -->
+                EVENT_POINT_APPLY_CD, <!-- 포인트 유효 기간 코드 : 지정기간/적립일로부터 몇달 -->
+                <if test="pointApplyStartDttm != null and pointApplyStartDttm != ''">
+                POINT_APPLY_START_DTTM,
+                </if>
+                POINT_APPLY_END_DTTM,
+                EVENT_APPLY_ISSUE_AF_PERIOD,
+                EVENT_METHOD_CD, <!-- 방법코드 : 로그인/스탬프 -->
+                EVENT_CNDT_CD, <!-- 조건코드 : 조건완성/추가지급 -->
+                EVENT_TOT_PARTDT_CNDT, <!-- 총 참여횟수 -->
+                EVENT_ADD_PVD_POINT, <!-- 추가지급포인트 -->
+                EVENT_WNG_CONFIRM_YN,
+                EVENT_USE_YN,
+                DEL_YN,
+                REG_DTTM,
+                REGR_NO,
+                UPD_DTTM,
+                UPDR_NO
+            )
+            VALUES
+            (
+                #{eventNo},
+                #{siteNo},
+                #{eventKindCd},
+                #{eventNm},
+                to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                #{eventPeriodExptCd},
+                #{eventPvdPoint},
+                #{eventPointApplyCd},
+                <if test="pointApplyStartDttm != null and pointApplyStartDttm != ''">
+                to_date(#{pointApplyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                </if>
+                to_date(#{pointApplyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                #{eventApplyIssueAfPeriod},
+                #{eventMethodCd},
+                #{eventCndtCd},
+                #{eventTotPartdtCndt},
+                #{eventAddPvdPoint},
+                'N',
+                'Y',
+                'N',
+                sysdate,
+                #{regrNo},
+                sysdate,
+                #{regrNo}
+            )
+    </insert>
+
+    <update id="updateAttendanceCheckInfo">
+        /* app.promotion.event.updateAttendanceCheckInfo - 출석체크 이벤트 수정*/
+        UPDATE  TP_EVENT
+        SET
+                EVENT_NM                        = #{eventNm},
+                APPLY_START_DTTM                = to_date(#{applyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                APPLY_END_DTTM                  = to_date(#{applyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                EVENT_PERIOD_EXPT_CD            = #{eventPeriodExptCd},   <!-- 이벤트기간예외코드 : 토/일/없음-->
+                EVENT_PVD_POINT                 = #{eventPvdPoint},     <!-- 이벤트 지급 포인트 -->
+                EVENT_POINT_APPLY_CD            = #{eventPointApplyCd}, <!-- 포인트 유효 기간 코드 : 지정기간/적립일로부터 몇달 -->
+                <if test="pointApplyStartDttm != null and pointApplyStartDttm != ''">
+                POINT_APPLY_START_DTTM          = to_date(#{pointApplyStartDttm}, 'yyyy-mm-dd hh24:mi'),
+                </if>
+                POINT_APPLY_END_DTTM            = to_date(#{pointApplyEndDttm}, 'yyyy-mm-dd hh24:mi'),
+                EVENT_APPLY_ISSUE_AF_PERIOD     = #{eventApplyIssueAfPeriod},
+                EVENT_METHOD_CD                 = #{eventMethodCd}, <!-- 방법코드 : 로그인/스탬프 -->
+                EVENT_CNDT_CD                   = #{eventCndtCd}, <!-- 조건코드 : 조건완성/추가지급 -->
+                EVENT_TOT_PARTDT_CNDT           = #{eventTotPartdtCndt}, <!-- 총 참여횟수 -->
+                EVENT_ADD_PVD_POINT             = #{eventAddPvdPoint}, <!-- 추가지급포인트 -->
+                UPD_DTTM                        = sysdate,
+                UPDR_NO                         = #{regrNo}
+        WHERE
+                EVENT_NO = #{eventNo}
+    </update>
+
+    <update id="deleteEventInfo">
+        /* app.promotion.event.deleteAttendanceCheckInfo - 이벤트 삭제*/
+        UPDATE  TP_EVENT
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{updrNo},
+                DEL_DTTM = sysdate,
+                DLGT_IMG_PATH = null,
+                DLGT_IMG_NM = null,
+                DLGT_IMG_ORG_NM = null
+        WHERE   EVENT_NO IN <foreach collection="list" item="item" open="(" close=")" separator=",">#{item.eventNo}</foreach>
+    </update>
+
+    <sql id="selectEventLettInfoWhere">
+        AND lett.EVENT_NO = #{eventNo}
+        AND lett.USE_YN='N'
+        <if test="wngYn != null and wngYn != ''">
+            AND lett.WNG_YN=#{wngYn}
+        </if>
+    </sql>
+
+    <select id="selectEventLettList" resultType="eventLettVO">
+        /* biz.app.promotion.eventLett.selectEventLettList - 이벤트 댓글 조회 */
+        SELECT
+        		event.EVENT_NO,                  <!-- 이벤트번호 -->
+                event.EVENT_NM,                 <!-- 이벤트 명 -->
+                event.EVENT_DSCRT,              <!-- 이벤트 설명 -->
+                event.APPLY_START_DTTM,         <!-- 이벤트 시작일자 -->
+                event.APPLY_END_DTTM,           <!-- 이벤트 종료일자 -->
+                lett.LETT_NO,                   <!-- 글번호 -->
+                lett.MEMBER_NO,                 <!-- 회원번호 -->
+                lett.CONTENT,                   <!-- 내용 -->
+                lett.WNG_YN,                    <!-- 당첨 여부 -->
+                lett.BLIND_PRC_YN,              <!-- 블라인드 처리 여부 -->
+                lett.REG_DTTM,                  <!-- 등록 일자 -->
+                member.LOGIN_ID,                <!-- 고객 아이디 -->
+                member.MEMBER_NM,               <!-- 고객 이름 -->
+                member.MOBILE,                  <!-- 고객 휴대폰 번호 -->
+                (SELECT WNG_NM FROM TP_EVENT_WNG_CONTENT WHERE EVENT_NO = event.EVENT_NO AND USE_YN='Y') AS wngNm,
+                (SELECT WNG_CONTENT_HTML FROM TP_EVENT_WNG_CONTENT WHERE EVENT_NO = event.EVENT_NO AND USE_YN='Y') AS wngContentHtml
+        FROM
+        		TP_EVENT event
+		LEFT JOIN 
+				TP_EVENT_LETT lett ON event.EVENT_NO = lett.EVENT_NO
+        LEFT JOIN 
+        		TC_MEMBER member ON lett.MEMBER_NO = member.MEMBER_NO
+        WHERE 1=1
+        	AND event.SITE_NO = #{siteNo}
+        	AND event.EVENT_NO = #{eventNo}
+        <if test="wngYn == 'Y'.toString()">
+	        AND member.MEMBER_STATUS_CD = '01'
+	        AND member.SITE_NO = #{siteNo}
+	        AND lett.USE_YN='N'
+            AND lett.WNG_YN = #{wngYn}
+        </if>
+        ORDER BY REG_DTTM DESC
+    </select>
+
+    <select id="selectEventLettListPaging" resultType="eventLettVO">
+        /* biz.app.promotion.eventLett.selectEventLettListPaging - 이벤트댓글목록 조회  페이징*/
+        SELECT *
+        FROM
+        (
+            SELECT rownum AS PAGING_NUM, tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+            FROM
+            (
+                SELECT A.*, count(*) over() AS tot_cnt
+                FROM
+                (
+                    SELECT tel.LETT_NO ,
+                           tel.CONTENT ,
+                           tel.BLIND_PRC_YN ,
+                           tel.WNG_YN ,
+                           to_char(tel.REG_DTTM, 'YYYY-MM-DD HH24:MI') as REG_DT ,
+                           tm.MEMBER_NO ,
+                           tm.MEMBER_NM ,
+                           tm.MEMBER_NN ,
+                           tm.LOGIN_ID ,
+                           (select EVENT_WNG_DTTM from TP_EVENT where EVENT_NO = tel.EVENT_NO) as EVENT_WNG_DT
+                    FROM TP_EVENT_LETT tel
+                        INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+                    WHERE tm.SITE_NO = #{siteNo}
+                    AND tel.EVENT_NO = #{eventNo}
+                    ORDER BY tel.REG_DTTM DESC
+                ) A
+            ) AA
+        ) tb
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectEventLettListPagingCount" resultType="Integer">
+        /* biz.app.promotion.eventLett.selectEventLettListPagingCount - 이벤트댓글목록 조회 페이징 검색결과 개수*/
+        SELECT COUNT(*)
+        FROM TP_EVENT_LETT tel
+            INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+        WHERE 1=1
+        AND   tm.SITE_NO = #{siteNo}
+        AND   tel.EVENT_NO = #{eventNo}
+    </select>
+
+    <select id="selectEventLettListPagingTotalCount" resultType="Integer">
+        /* biz.app.promotion.eventLett.selectEventLettListPagingTotalCount - 이벤트댓글목록 조회 페이징 총 개수*/
+        SELECT COUNT(*)
+        FROM TP_EVENT_LETT tel
+            INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+        WHERE 1=1
+        AND   tm.SITE_NO = #{siteNo}
+        AND   tel.EVENT_NO = #{eventNo}
+    </select>
+
+    <select id="selectAttendanceEventLettCnt" resultType="Integer">
+        /* biz.app.promotion.eventLett.selectAttendanceEventLettCnt - 출석체크 이벤트 중복 체크*/
+        SELECT
+          COUNT(1) AS CNT
+        FROM TP_EVENT A, TP_EVENT_LETT B
+        WHERE A.EVENT_NO = B.EVENT_NO
+        AND A.EVENT_NO = #{eventNo}
+        AND B.MEMBER_NO = #{memberNo}
+        AND A.SITE_NO = #{siteNo}
+        AND B.REG_DT = #{regDt}
+        AND A.DEL_YN = 'N'
+    </select>
+
+	<select id="selectEventLett" resultType="eventLettVO">
+		/* biz.app.promotion.eventLett.selectEventLett - 이벤트 당첨 내용*/
+		SELECT 
+			* 
+		FROM 
+			TP_EVENT event 
+		LEFT JOIN 
+			TP_EVENT_WNG_CONTENT cont
+		ON event.EVENT_NO = cont.EVENT_NO
+		WHERE 1=1
+        	AND event.EVENT_NO = #{eventNo}
+			AND cont.USE_YN='Y'
+        
+	</select>
+	
+	
+    <insert id="insertEventLett">
+        /* biz.app.promotion.eventLett.insertEventLett - 이벤트 댓글 등록*/
+        <selectKey keyProperty="lettNo" order="BEFORE" resultType="long">
+        SELECT NVL(MAX(LETT_NO), 0) + 1 AS lettNo FROM TP_EVENT_LETT
+        </selectKey>
+        INSERT INTO TP_EVENT_LETT
+            (
+                LETT_NO,
+                EVENT_NO,
+                MEMBER_NO,
+                CONTENT,
+                WNG_YN,
+                USE_YN,
+                BLIND_PRC_YN,
+                REG_DT,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{lettNo},
+                #{eventNo},
+                #{memberNo},
+                #{content:CLOB},
+                'N',
+                'N',
+                'N',
+                #{regDt},
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate
+            )
+    </insert>
+
+    <delete id="deleteEventLett">
+        /* promotion.event.deleteEventLett - 이벤트 댓글 삭제*/
+        DELETE FROM TP_EVENT_LETT
+        WHERE EVENT_NO = #{eventNo}
+    </delete>
+
+    <delete id="deleteEventLettHist">
+        /* promotion.event.deleteEventLettHist - 이벤트 댓글이력 삭제*/
+        DELETE FROM TP_EVENT_LETT_HIST
+        WHERE EVENT_NO = #{eventNo}
+    </delete>
+
+    <update id="updateEventCmntBlind">
+        /* promotion.event.updateEventCmnt -이벤트 댓글 블라인드 수정 */
+        UPDATE  TP_EVENT_LETT
+        SET     BLIND_PRC_YN = #{blindPrcYn},
+                UPDR_NO  = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   LETT_NO  = #{lettNo}
+    </update>
+
+    <insert id="insertEventCmntBlindHist">
+        /* promotion.event.insertEventCmntHist - 이벤트 댓글 블라인드 이력 등록*/
+        INSERT INTO TP_EVENT_LETT_HIST
+            (
+                LETT_NO,
+                EVENT_NO,
+                HIST_START_DTTM,
+                MEMBER_NO,
+                CONTENT,
+                BLIND_PRC_YN,
+                USE_YN,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{lettNo},
+                #{eventNo},
+                sysdate,
+                #{memberNo},
+                #{content:CLOB},
+                #{blindPrcYn},
+                'Y',
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate
+            )
+    </insert>
+
+    <select id="selectEventCmntProcHistList" resultType="eventLettVO">
+        /* promotion.event.selectEventCmntProcHistList - 이벤트 댓글 처리이력 조회*/
+        SELECT to_char(telh.HIST_START_DTTM, 'YYYY-MM-DD HH24:MI:SS') AS HIST_START_DTTM ,
+               tm.MEMBER_NM ,
+               tm.MEMBER_NN ,
+               tm2.MEMBER_NM as PRCR_NM
+        <if test='searchType != null and searchType != ""'>
+            <if test='searchType eq "blindPrcYn"'>
+                , telh.BLIND_PRC_YN
+            </if>
+            <if test='searchType eq "wngYn"'>
+                , telh.WNG_YN
+            </if>
+        </if>
+        FROM TP_EVENT_LETT_HIST telh
+            INNER JOIN TC_MEMBER tm ON telh.MEMBER_NO = tm.MEMBER_NO
+            INNER JOIN TC_MEMBER tm2 ON telh.REGR_NO = tm2.MEMBER_NO
+        WHERE tm.SITE_NO = #{siteNo}
+          AND tm2.SITE_NO = #{siteNo}
+          AND telh.EVENT_NO = #{eventNo}
+        <if test='searchType != null and searchType != ""'>
+            <if test='searchType eq "blindPrcYn"'>
+                AND telh.BLIND_PRC_YN IS NOT NULL
+            </if>
+            <if test='searchType eq "wngYn"'>
+                AND telh.WNG_YN IS NOT NULL
+            </if>
+        </if>
+        ORDER BY telh.HIST_START_DTTM DESC
+    </select>
+
+    <insert id="insertWngContent">
+        <selectKey keyProperty="wngContentNo" order="BEFORE" resultType="long">
+        SELECT NVL(MAX(WNG_CONTENT_NO), 0) + 1 AS wngContentNo FROM TP_EVENT_WNG_CONTENT
+        </selectKey>
+        /* promotion.event.insertWngContent - 이벤트당첨내용 등록 */
+        INSERT INTO TP_EVENT_WNG_CONTENT
+          (
+            WNG_CONTENT_NO,
+            EVENT_NO,
+            WNG_NM,
+            WNG_CONTENT_HTML,
+            USE_YN,
+            REGR_NO,
+            REG_DTTM,
+            UPDR_NO,
+            UPD_DTTM
+          )
+          VALUES
+          (
+            #{wngContentNo},
+            #{eventNo},
+            #{wngNm},
+            #{wngContentHtml:CLOB},
+            'Y',
+            #{regrNo},
+            sysdate,
+            #{updrNo},
+            sysdate
+          )
+    </insert>
+
+    <update id="updateWngContent">
+        /* promotion.event.updateWngContent - 이벤트당첨내용 수정*/
+        UPDATE TP_EVENT_WNG_CONTENT
+        SET    WNG_NM = #{wngNm},
+               WNG_CONTENT_HTML = #{wngContentHtml:CLOB},
+               UPD_DTTM = sysdate,
+               UPDR_NO = #{updrNo}
+        WHERE  WNG_CONTENT_NO = #{wngContentNo}
+        AND    EVENT_NO = #{eventNo}
+    </update>
+
+    <delete id="deleteWngContent">
+        /* promotion.event.deleteWngContent - 이벤트당첨내용 삭제*/
+	    DELETE FROM TP_EVENT_WNG_CONTENT
+	    WHERE EVENT_NO = #{eventNo}
+    </delete>
+
+    <update id="updateEventWng">
+        /* promotion.event.updateEventWng - 당첨여부 업데이트*/
+		UPDATE TP_EVENT_LETT
+		SET    WNG_YN   = #{wngYn},
+		       UPDR_NO  = #{updrNo},
+		       UPD_DTTM = sysdate
+		WHERE  LETT_NO  = #{lettNo}
+    </update>
+
+    <insert id="insertEventWngHist">
+        /* promotion.event.insertEventWngHist - 당첨여부이력 등록*/
+        INSERT INTO TP_EVENT_LETT_HIST
+            (
+                LETT_NO,
+                EVENT_NO,
+                HIST_START_DTTM,
+                MEMBER_NO,
+                CONTENT,
+                WNG_YN,
+                USE_YN,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{lettNo},
+                #{eventNo},
+                sysdate,
+                #{memberNo},
+                #{content:CLOB},
+                #{wngYn},
+                'Y',
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate
+            )
+    </insert>
+
+    <select id="selectEventWngListPaging" resultType="eventLettVO">
+        SELECT *
+        FROM
+        (
+            SELECT rownum AS PAGING_NUM, tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+            FROM
+            (
+                SELECT A.*, count(*) over() AS tot_cnt
+                FROM
+                (
+                    SELECT tel.LETT_NO ,
+                           tel.CONTENT ,
+                           tel.BLIND_PRC_YN ,
+                           tel.WNG_YN ,
+                           to_char(tel.REG_DTTM, 'YYYY-MM-DD HH24:MI') as REG_DT ,
+                           tm.MEMBER_NO ,
+                           tm.MEMBER_NM ,
+                           tm.MEMBER_NN ,
+                           tm.LOGIN_ID ,
+                           (select EVENT_WNG_DTTM from TP_EVENT where EVENT_NO = tel.EVENT_NO) as EVENT_WNG_DT
+                    FROM TP_EVENT_LETT tel
+                        INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+                    WHERE tm.SITE_NO = #{siteNo}
+                    AND tel.EVENT_NO = #{eventNo}
+                    AND tel.WNG_YN = 'Y'
+                    ORDER BY tel.REG_DTTM DESC
+                ) A
+            ) AA
+        ) tb
+        <include refid="common.pageSql" />
+    </select>
+
+    <select id="selectEventWngListPagingCount" resultType="Integer">
+        /* promotion.event.selectEventWngListPagingCount - 당첨자 목록 조회결과 개수*/
+        SELECT  count(*)
+        FROM TP_EVENT_LETT tel
+            INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+        WHERE tm.SITE_NO = #{siteNo}
+        AND tel.EVENT_NO = #{eventNo}
+        AND tel.WNG_YN = 'Y'
+    </select>
+
+    <select id="selectEventWngListPagingTotalCount" resultType="Integer">
+        /* promotion.event.selectEventWngListPagingTotalCount - 당첨자 목록 총 개수*/
+        SELECT  count(*)
+        FROM TP_EVENT_LETT tel
+            INNER JOIN TC_MEMBER tm ON tel.MEMBER_NO = tm.MEMBER_NO
+        WHERE tm.SITE_NO = #{siteNo}
+          AND tel.EVENT_NO = #{eventNo}
+    </select>
+
+    <select id="selectEventWngProcHistList" resultType="eventLettVO">
+        /* promotion.event.selectEventWngProcHistList - 이벤트 당첨자 처리이력 조회*/
+        SELECT
+              member.LOGIN_ID,
+              member.MEMBER_NM,
+              lett.WNG_YN,
+              TO_CHAR(lett.HIST_START_DTTM, 'YYYY-MM-DD HH24:MI:SS') AS HIST_START_DTTM
+        FROM
+              TP_EVENT_LETT_HIST lett LEFT OUTER JOIN
+              TC_MEMBER member ON lett.MEMBER_NO = member.MEMBER_NO
+        WHERE EVENT_NO = #{eventNo}
+        AND   member.MEMBER_STATUS_CD = '01'
+        AND   member.SITE_NO = #{siteNo}
+        AND   WNG_YN IS NOT NULL
+        ORDER BY HIST_START_DTTM DESC
+    </select>
+
+    <select id="selectAttendanceUserInfo" parameterType="eventLettSO" resultType="eventLettVO">
+        /* promotion.event.selectAttendanceUserInfo - 출석이벤트 출석 정보 조회*/
+        SELECT
+                LETT_NO,
+                EVENT_NO,
+                MEMBER_NO,
+                TO_CHAR(to_date(REG_DT, 'yyyymmdd'), 'YYYY-MM-DD') AS ATTENDANCE_DAY
+        FROM    TP_EVENT_LETT
+        WHERE   EVENT_NO = #{eventNo}
+        AND     MEMBER_NO = #{memberNo}
+        <if test="stRegDttm != null and stRegDttm != ''">
+        <![CDATA[
+        AND     to_date(REG_DT, 'yyyymmdd') >= to_date(#{stRegDttm}, 'yyyymmdd')
+        ]]>
+        </if>
+        <if test="endRegDttm != null and endRegDttm != ''">
+        <![CDATA[
+        AND     to_date(REG_DT, 'yyyymmdd') <= to_date(#{endRegDttm}, 'yyyymmdd')
+        ]]>
+        </if>
+    </select>
+
+    <select id="selectAttendanceUseCount" resultType="Integer">
+        /* promotion.event.selectAttendanceUseCount - 출석이벤트 사용중 이벤트 확인*/
+        SELECT COUNT(*)
+        FROM TP_EVENT event
+        WHERE EVENT_NO = #{eventNo} AND USE_YN = 'Y'
+        AND   event.SITE_NO = #{siteNo}
+    </select>
+    
+    <insert id="insertImoticonInfo">
+    	/* app.promotion.event.insertImoticonInfo - 이모티콘 이벤트 참여정보 등록*/
+    	INSERT INTO TMP_IMOTICON
+    	(
+    		MOBILE
+    		<if test="memberNo != null and memberNo != ''">
+    		,MEMBER_NO
+    		</if>
+    	)
+    	VALUES
+    	(
+    		#{mobile}
+    		<if test="memberNo != null and memberNo != ''">
+    		,#{memberNo}
+    		</if>
+    	)
+    </insert>
+
+    <insert id="insertSnsShare">
+        /* biz.app.promotion.eventLett.insertSnsShare - SNS 공유 정보 등록*/
+        INSERT INTO TP_EVENT_SNS_SHARE
+            (
+                EVENT_NO,
+                MEMBER_NO,
+                SHARE_TYPE,
+                REGR_NO,
+                REG_DTTM,
+                UPDR_NO,
+                UPD_DTTM
+            )
+            VALUES
+            (
+                #{eventNo},
+                #{memberNo},
+                #{shareType},
+                #{regrNo},
+                sysdate,
+                #{updrNo},
+                sysdate
+            )
+    </insert>
+
+
+     <select id="selectSnsSharedInfo" resultType="eventLettVO">
+        /* promotion.event.selectSnsSharedInfo - SNS 공유 정보 확인*/
+        SELECT COUNT(*) as SHARE_CNT
+        FROM TP_EVENT_SNS_SHARE
+        WHERE EVENT_NO = #{eventNo}
+        AND   MEMBER_NO= #{memberNo}
+    </select>
+
+    <select id="selectWngContent" resultType="eventVO">
+        SELECT tewc.EVENT_NO,
+               tewc.WNG_CONTENT_NO,
+               tewc.WNG_NM,
+               tewc.WNG_CONTENT_HTML,
+               te.EVENT_NM
+        FROM TP_EVENT_WNG_CONTENT tewc INNER JOIN TP_EVENT te ON tewc.EVENT_NO = te.EVENT_NO
+        WHERE tewc.EVENT_NO = #{eventNo}
+    </select>
+</mapper>

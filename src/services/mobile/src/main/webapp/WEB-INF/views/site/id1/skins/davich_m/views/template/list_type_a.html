@@ -1,0 +1,29 @@
+<li>
+    <div class="img_area">
+        <a href="#"><img src="#[_IMAGE_DOMAIN]#[goodsDispImgA]" alt="#[goodsNm]"  title="#[goodsNm]" onerror="this.src='/m/front/img/product/product_180_180.gif'"></a>
+    </div>
+    <div class="text_area">
+        <p class="brand">#[brandNm]</p>
+        <a href="#"><p class="name">#[goodsNm]</p></a>
+        #[customerPrice]
+        #[saleRate]<br>
+        <p class="price"> #[salePrice]</p>
+        #[goodsSvmnAmt]
+        #[goodseachDlvrc]
+        <!--<span class="view_point">1,325P 적립</span>
+        <span class="view_point">무료배송</span>-->
+        <div class="label_area">
+            #[iconImg]
+        </div>
+    </div>
+    <div class="info_area">
+        <div class="text">
+            #[prWords]
+        </div>
+        <div class="btn_info_area">
+            <button type="button" class="btn_go_checkout" onclick="javascript:goods_detail('#[goodsNo]');"><i></i>바로구매</button>
+            <button type="button" class="btn_go_favorite" onclick="javascript:ListBtnUtil.insertInterest('#[goodsNo]');"><i></i>관심상품</button>
+            <button type="button" class="btn_go_cart" onclick="javascript:ListBtnUtil.insertBasket('#[goodsNo]');"><i></i>장바구니</button>
+        </div>
+    </div>
+</li>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:batch="http://www.springframework.org/schema/batch"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd">
+    
+    <!-- 임시 폴더 삭제  -->
+    <bean id="tempFileTasklet" class="net.danvi.dmall.biz.batch.common.job.TempFileTasklet" />
+    <batch:job id="tempFileDelJob">
+        <batch:step id="tempFileDelJobStep">
+            <batch:tasklet ref="tempFileTasklet" />
+        </batch:step>
+    </batch:job>
+</beans>

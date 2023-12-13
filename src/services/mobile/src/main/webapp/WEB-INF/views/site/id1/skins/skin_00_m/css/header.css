@@ -1,0 +1,109 @@
+@charset "utf-8";
+
+#header {
+	min-width:320px;	
+}
+
+/* === logo === */
+.logo_area {
+	height:46px;
+	position:relative
+}
+.head_left_btn {
+	position:absolute;
+	left:0;
+	top:0
+}
+.head_right_btn {
+	position:absolute;
+	right:0;
+	top:0
+}
+#logo {	
+	text-align:center;
+}
+#logo h1 img {	
+	height:46px;
+}
+.btn_allmenu,
+.btn_search_view,
+.btn_cart, 
+.btn_login {
+	width:42px;
+	height:46px
+}
+.btn_cart {
+	position:relative
+}
+.btn_cart .cart_no {
+	position: absolute;
+    right: 0px;
+    top: 3px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+	letter-spacing:-1px;
+    text-align: center;
+    font-size: 11px;
+    color: #fff;
+    background: #7e8083;
+    border-radius: 20px;
+}
+.icon_menu {
+	display:block;
+	width:42px;
+	height:20px;
+	background:url(../img/main/icon_menu.png) no-repeat center top;
+	background-size:26px
+}
+.icon_search {
+	display:block;
+	width:42px;
+	height:26px;
+	background:url(../img/main/icon_search.png) no-repeat center top;
+	background-size:26px
+}
+.icon_cart {
+	display:block;
+	width:42px;
+	height:26px;
+	background:url(../img/main/icon_cart.png) no-repeat center top;
+	background-size:25px
+}
+.icon_login {
+	display:block;
+	width:42px;
+	height:30px;
+	background:url(../img/main/icon_login.png) no-repeat center top;
+	background-size:29px
+}
+.icon_logout {
+	display:block;
+	width:42px;
+	height:30px;
+	background:url(../img/main/icon_logout.png) no-repeat center top;
+	background-size:29px
+}
+
+#search_area {
+	padding:0 5px;
+	height:46px;
+	line-height:45px;
+	background:#7e8083
+}
+#search_area input[type="text"] {
+	border:none;
+	width:calc(100% - 50px);
+	background:#fff
+}
+#search_area .btn_search {
+	width:35px;
+	background:#7e8083
+}
+#search_area .btn_search span.icon_search02 {
+	display:block;
+	width:40px;
+	height:26px;
+	background:url(../img/main/icon_search02.png) no-repeat center top;
+	background-size:24px
+}

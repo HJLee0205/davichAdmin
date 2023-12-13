@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Daum에디터 - 이미지 첨부</title> 
+<script src="../../../js/lib/jquery/jquery-1.12.2.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="../../../js/lib/jquery/jquery.form.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="../../../js/lib/jquery/jquery.blockUI.js" type="text/javascript" charset="utf-8"></script>
+<script src="../../../js/file.js" type="text/javascript" charset="utf-8"></script>
+<script src="../../js/popup.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" href="../../css/popup.css" type="text/css"  charset="utf-8"/>
+<style type="text/css">
+	.filebtn {
+		display: inline-block;
+		padding: 0px 6px;
+		height: 22px;
+		line-height: 20px;
+		color: #fff;
+		font-family: 'NanumGothicBold';
+		background-color: #aaa;
+		cursor: pointer;
+		border-radius: 2px;
+	}
+	.filebox {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0,0,0,0);
+		border: 1px;
+	}
+</style>
+<script type="text/javascript">
+// <![CDATA[
+	var data = {};
+	function done() {
+		if (typeof(execAttach) == 'undefined') { //Virtual Function
+			return;
+		}
+
+		execAttach(data);
+		closeWindow();
+	}
+
+	function initUploader(){
+		var _opener = PopupUtil.getOpener();
+		if (!_opener) {
+			alert('잘못된 경로로 접근하셨습니다.');
+			return;
+		}
+
+		var _attacher = getAttacher('image', _opener);
+		registerAction(_attacher);
+	}
+
+	jQuery(document).ready(function(){
+		$('#a_id_done').hide();
+
+		$("#file_id_commonUpload").on('change', function() {
+					$('#file_route1').val(this.value);
+					$('#form_id_fileUploadForm').ajaxSubmit({
+						url : '/front/common/editor-image-upload',
+						dataType : 'json',
+						contentType: "application/json",
+						success : function(result) {
+							$.unblockUI();
+							doneUpload(result);
+						}
+
+						// 파일 업로드 중 에러 발생의 경우 처리 추가(2016.09.26, dong)
+						, error : function(result) {
+							$.unblockUI();
+							if(result && result.message ){
+								alert(result.message);
+							} else {
+								alert('파일 업로드 중 에러가 발생했습니다.');
+							}
+						}
+					});
+				});
+
+		$(document).ajaxSend(function(e, xhr, options) {
+			$.blockUI({message : '<img src="/front/img/ajax-loader-white.gif" alt="Loading..." />'});
+		});
+
+		$(document).ajaxSuccess(function() {
+			$('#a_id_done').show();
+			$('.alert dd').html("파일을 업로드 하였습니다.<br>에디터에 등록하시려면 등록버튼을 클릭하여 주십시요.");
+		});
+		$(document).ajaxComplete(function(e, xhr, options) {
+			$.unblockUI();
+
+			return xhr.responseJSON;
+		});
+
+		resize();
+	});
+
+	function doneUpload(result) {
+		if (result && result.files && result.files.length > 0) {
+			var file = result.files[0];
+			data = {
+				'imageurl': file.imageUrl,
+				'thumburl': file.thumbUrl,
+				'filename': file.fileName,
+				'tempfilename': file.tempFileName,
+				'filesize': file.fileSize,
+				'imagealign': 'C',
+				'temp': file.temp
+			}
+		} else {
+			// 업로드된 파일이 정상이 아닐 경우 업로드 대기 상태 해제
+			$.unblockUI();
+			// closeWindow();
+		}
+	}
+
+	function resize() {
+		var strWidth;
+		var strHeight;
+
+		//innerWidth / innerHeight / outerWidth / outerHeight 지원 브라우저
+		if ( window.innerWidth && window.innerHeight && window.outerWidth && window.outerHeight ) {
+			strWidth = $('body').outerWidth() + (window.outerWidth - window.innerWidth);
+			strHeight = $('body').outerHeight() + (window.outerHeight - window.innerHeight);
+		}
+		else {
+			var strDocumentWidth = $(document).outerWidth();
+			var strDocumentHeight = $(document).outerHeight();
+
+			window.resizeTo ( strDocumentWidth, strDocumentHeight );
+
+			var strMenuWidth = strDocumentWidth - $(window).width();
+			var strMenuHeight = strDocumentHeight - $(window).height();
+			strWidth = $('.wrapper').outerWidth() + strMenuWidth;
+			strHeight = $('.wrapper').outerHeight() + strMenuHeight;
+		}
+		//resize
+		window.resizeTo( 500, strHeight );
+	}
+// ]]>
+</script>
+</head>
+<body onload="initUploader();">
+<div class="wrapper">
+	<div class="header">
+		<h1>사진 첨부</h1>
+	</div>
+	<div class="body">
+		<dl class="alert">
+			<dt>사진 첨부 (최대 6MB)</dt>
+			<dd id="id_dd">
+				<form name="fileUploadForm" id="form_id_fileUploadForm" method="post" onsubmit="return false;">
+					<input id="file_route1" class="upload-name" type="text" value="이미지선택" disabled="disabled"></span>
+					<label class="filebtn" for="file_id_commonUpload">파일찾기</label>
+					<input class="filebox" type="file" name="uploadFile" id="file_id_commonUpload" accept="image/*" />
+				</form>
+			</dd>
+		</dl>
+	</div>
+	<div class="footer">
+		<p><a href="#" onclick="closeWindow();" title="닫기" class="close">닫기</a></p>
+		<ul>
+			<li class="submit"><a href="#" onclick="done();" id="a_id_done" title="등록" class="btnlink">등록</a> </li>
+			<li class="cancel"><a href="#" onclick="closeWindow();" title="취소" class="btnlink">취소</a></li>
+		</ul>
+	</div>
+</div>
+</body>
+</html>

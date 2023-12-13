@@ -1,0 +1,336 @@
+@charset "utf-8";
+
+/* reset */
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,textarea,p,blockquote,th,td,input,select,textarea,button { 
+	margin:0;
+	padding:0
+}
+fieldset,img { border:0 none }
+dl,ul,ol,menu,li {list-style:none }
+blockquote, q {quotes: none }
+blockquote:before, blockquote:after,q:before, q:after {content:'';content:none }
+input,select,textarea,button {vertical-align:middle;outline:none }
+input::-ms-clear {display:none }
+button {border:0 none;background-color:transparent;cursor:pointer }
+body {background:#fff;-webkit-text-size-adjust:none}
+
+a {color:#333;text-decoration:none}
+a:active, a:hover {/*text-decoration:underline*/}
+a:active {background-color:transparent}
+
+address,caption,cite,code,dfn,em,var {font-style:normal;font-weight:normal}
+input:checked[type='checkbox']{background-color:#666; -webkit-appearance:checkbox}
+input[type='text'],input[type='password'],input[type='submit'],input[type='search'],input[type='tel'],input[type='email'],html input[type='button'],input[type='reset'],textarea{-webkit-appearance:none;border-radius:0}
+input[type='search']::-webkit-search-cancel-button{-webkit-appearance:none}
+input, textarea,button {font-family: "Noto Sans KR","맑은 고딕","dotum","돋움",sans-serif; }
+
+address, article, aside, blockquote, body, center, dd, dir, div, dl, dt, figure, figcaption, footer, form, h1, h2, h3, h4, h5, h6, header,
+hgroup, hr, html, legend, listing, menu, nav, ol, p, plaintext, pre, section, summary, ul, xmp { 
+    display: block; 
+}
+button {
+	letter-spacing:-1px
+}
+button:active {
+	opacity:0.6
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+body { font-size:14px;line-height: 1.267em;letter-spacing:-0.5px;color:#000;font-family: 'Nanum Gothic', '나눔 고딕', Dotum, '돋움', Arial, Helvetica, sans-serif; }
+
+/* layout */
+body {
+	height:100%
+}
+#wrap {
+	width:100%;	
+	min-height:100%
+}
+#middle_area {	
+	width:100%;	
+	min-height:300px
+}
+
+/* common style */
+.textL { text-align:left }
+.textC { text-align:center }
+.textR { text-align:right }
+
+.f100 { font-weight:100 }
+.fBold { font-weight:700 }
+
+.f11 { font-size:11px }
+.f12 { font-size:12px }
+.f13 { font-size:13px }
+
+.floatL { float: left; }
+.floatR { float: right; }
+.floatC:after {
+    content: "";
+    display: block;
+    clear: both;
+}
+.floatC { *zoom: 1; }
+
+.dBlock { display: block; }
+.imgM { vertical-align: middle; }
+.cursorP { cursor: pointer; }
+
+.ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+	color: #000;
+}
+.ellipsis a { color: #000; }
+.ellipsis a:hover { color: #000; }
+
+.blind {
+    position: absolute;
+    left: -9999em;
+}
+
+/* === select box === */
+select::-ms-expand {
+    display: none;
+}
+
+select {
+    width: 100%;
+	font-size:14px;
+	letter-spacing:-1px;
+	height:37px;
+	line-height:37px;
+	text-indent:5px;
+	color:#363636;
+    background:#fff url('../img/common/select_arrow.png') no-repeat right 50%; 
+	background-size:18px;
+    border: 1px solid #d8d9da;
+    border-radius: 0px;
+    -webkit-appearance: none; 
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* === 탭메뉴 === */
+ul.tabs {
+    float:left;
+    height: 42px;
+    border-left: 1px solid #ddd;
+    width: 100%;
+	margin-bottom:27px;
+	z-index:0
+}
+ul.tabs li {
+    float: left;
+    text-align:center;
+    cursor: pointer;
+    width:49.5%;   
+    height: 42px;
+	color:#383838;
+	font-size:14px;
+    line-height: 42px;
+    border: 1px solid #e5e5e5;
+	border-bottom:1px solid #383838;
+    border-left: none;
+    font-weight: 700;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+}
+ul.tabs li.active {
+    background: #fff;
+	color:#383838;
+	border-top:1px solid #383838;
+	border-left:1px solid #383838;
+	border-right:1px solid #383838;
+	border-bottom:1px solid #fff
+}
+ul.tabs li span {
+	color:#ff0000;
+	margin-left:5px
+}
+.tab_content {
+    display: none;
+}
+
+/* === file upload === */
+.file_up {
+	position:relative;
+	width:397px;
+	height:28px
+}
+.file_up button {
+	position:absolute;
+	right:2px;
+	top:0px
+}
+.file_up input {
+	opacity:0;
+	position:absolute;
+	left:0;
+	top:0px
+}
+
+/* === sub header === */
+.content_header {
+	padding:20px ;
+	text-align:center;
+	position:relative
+}
+h2.cont_sub_tit {
+	font-size:15px;
+	font-weight:700
+}
+.header_btn_left {
+	position:absolute;
+	left:15px;
+	top:13px
+}
+.header_btn_right {
+	position:absolute;
+	right:15px;
+	top:13px
+}
+
+
+
+/* ===== form ===== */
+textarea {
+	border:1px solid #d8d9da;
+	padding:10px 6px;
+	font-size:13px;
+	line-height:20px;
+	letter-spacing:-1px;
+	color:#797979
+}
+.checkbox {
+	height:20px;
+	line-height:20px;
+}
+.checkbox label {
+	height:20px;
+}
+.checkbox label input {
+    display: none;
+}
+.checkbox label span {
+    width: 20px;
+    height: 20px;
+	margin-right:3px;
+	margin-bottom:-6px;
+    display: inline-block;
+    background: url("../img/common/input_checkbox20.gif");
+}
+.checkbox label input[type=checkbox]:checked + span {
+    background: url("../img/common/input_checkbox_checked20.gif");
+}
+input[type="radio"] {
+    display:none;
+}
+input[type="radio"] + label {
+}
+input[type="radio"] + label span {
+    display:inline-block;
+    width:15px;
+    height:15px;
+	margin-right:2px;
+	margin-bottom:2px;
+    vertical-align:middle;
+    background:url("../img/common/input_radio.gif");
+	background-size:15px;
+    cursor:pointer;
+}
+input[type="radio"]:checked + label span {
+    background:url("../img/common/input_radio_checked.gif");
+	background-size:15px;
+}
+
+/* === alert === */
+.alert_body {
+    position:relative;
+    width:80%;
+    height:autopx;
+    border:8px solid #6e6e6e;
+    background:#fff
+}
+
+.btn_alert_close {
+    position:absolute;
+    right:11px;
+    top:12px
+}
+.alert_content {
+    padding:27px
+}
+.alert_text {
+    padding:34px 0 33px;
+    text-align:center;
+    color:#0e0e0e;
+    font-size:14px;
+    line-height:20px
+}
+.alert_text input[type="password"] {
+    border:1px solid #e5e5e5 ;
+    width:155px;
+    height:26px;
+    line-height:26px;
+    padding:0 5px;
+    font-size:12px;
+    letter-spacing:-1px;
+}
+.alert_btn_area {
+    text-align:center;
+}
+.btn_alert_ok {
+    color:#fff;
+    font-size:13px;
+    height:32px;
+    line-height:32px;
+    width:100px;
+    background:#373737;
+}
+.btn_alert_ok:active {
+    background:#000
+}
+.btn_alert_cancel {
+    color:#fff;
+    font-size:13px;
+    height:32px;
+    line-height:32px;
+    width:100px;
+    background:#898989;
+}
+.btn_alert_cancel:active {
+    background:#373737
+}
+
+/* === popup 기본스타일 === */
+.popup_header {
+    position:relative;
+    width:100%;
+    height:74px;
+    background:#999999
+}
+h1.popup_tit {
+    color:#fff;
+    font-weight:700;
+    font-size:20px;
+    line-height:74px;
+    margin-left:30px
+}
+.btn_close_popup {
+    position:absolute;
+    top:25px;
+    right:20px
+}
+.btn_close_popup:active {
+    opacity:0.5;
+    filter: alpha(opacity=50);
+}
+.popup_content {
+    padding:27px
+}

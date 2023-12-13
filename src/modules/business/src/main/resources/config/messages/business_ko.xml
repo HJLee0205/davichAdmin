@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+
+    <comment>business message</comment>
+
+    <!--
+    업무별 메시지
+    -->
+    <!-- 공통 : COM-->
+    <entry key="biz.common.insert">등록되었습니다.</entry>
+    <entry key="biz.common.update">수정되었습니다.</entry>
+    <entry key="biz.common.delete">삭제되었습니다.</entry>
+    <entry key="biz.common.save">저장되었습니다.</entry>
+    <entry key="biz.common.init">초기화 되었습니다.</entry>
+    <entry key="biz.common.confirmInsert">등록하시겠습니까</entry>
+    <entry key="biz.common.confirmDelete">정말로 삭제하시겠습니까?</entry>
+
+    <entry key="biz.exception.common.error">오류가 발생하였습니다. 관리자에게 문의하시기 바랍니다.</entry>
+    <entry key="biz.exception.common.not.support.service">지원하지 않는 서비스입니다.</entry>
+    <entry key="biz.exception.common.nodata">데이타가 없습니다.</entry>
+    <entry key="biz.exception.common.nowinning">당첨 진행중입니다.</entry>
+    <entry key="biz.exception.common.noresult">결과가 없습니다.</entry>
+    <entry key="biz.exception.common.exist">이미 등록되어있는 {0}입니다.</entry>
+
+    <entry key="biz.exception.system.noDefinedMethod">정의되지 않은 암호화 벙법으로 암호화 하여 암호화를 할 수 없습니다.</entry>
+
+    <entry key="biz.exception.file.not.support.extension">업로드 할 수 없는 파일입니다.</entry>
+    <entry key="biz.exception.file.big.size">제한된 용량을 초과하였습니다.</entry>
+    <entry key="biz.exception.folder.exist">추가하신 폴더가 존재합니다.</entry>
+
+    <!-- 로그인 : LGN-->
+    <entry key="biz.exception.lng.loginRequired"><![CDATA[로그인이 필요한 서비스입니다.<br/>로그인 후 이용해 주세요.]]></entry>
+    <entry key="biz.exception.lng.sessionEnd">세션이 종료 되었습니다.</entry>
+    <entry key="biz.exception.lng.wrongLoginInfo">입력하신 정보로 가입된 내역이 없습니다.</entry>
+    <entry key="biz.exception.lng.notExistsId">가입된 아이디가 없습니다.</entry>
+    <entry key="biz.exception.lng.wrongPassword">비밀번호가 틀렸습니다.</entry>
+    <entry key="biz.exception.lng.notConfirmId"><![CDATA[승인되지 않은 사업자회원입니다. <br/>사업자회원 가입신청 후 최대 1-2일내 승인처리됩니다.]]></entry>
+
+
+    <!-- 기본관리 : SYS-->
+    <entry key="biz.exception.sys.existCodeGrp">이미 등록되어 있는 코드 그룹입니다.</entry>
+    <entry key="biz.exception.sys.existCode">이미 등록되어 있는 코드입니다.</entry>
+
+    <!-- 설정 : SETUP -->
+    <entry key="biz.exception.setup.existSuperAdminGrp"><![CDATA[슈퍼관리자(전체) 권한을 가진 그룹이 이미 있습니다.<br/>다른 권한을 선택해주세요.]]></entry>
+    <entry key="biz.exception.setup.existSuperAdmin"><![CDATA[슈퍼관리자(전체) 권한을 가진 그룹에는 한명의 운영자만 등록 가능합니다.<br/>선택한 그룹을 확인해주세요.]]></entry>
+    <entry key="biz.exception.setup.delivery.check.apply"><![CDATA[개인정보 제공동의 안내 약관에 동의해주세요.<br/>동의하지 않으시면 서비스 신청이 불가합니다.]]></entry>
+    <entry key="biz.exception.setup.loadTerm">표준약관 정보 취득 중 에러가 발생했습니다.</entry>
+    <entry key="biz.exception.setup.delivery.code.check">해당 택배사는 사용할 수 없습니다.</entry>
+    <!-- 사용자 : USR-->
+
+
+    <!-- 회원 : MBR-->
+    <entry key="biz.memberManage.deleteMem">탈퇴되었습니다.</entry>
+    <entry key="biz.memberManage.updateMemInfo">저장되었습니다.</entry>
+    <entry key="biz.memberManage.confirmMemInfo">승인 처리되었습니다.</entry>
+    <entry key="biz.memberDormant.updateMemInfo">휴면 회원이 해제 되었습니다.</entry>
+    <entry key="biz.memberWithdrawal.updateMemInfo">회원탈퇴 신청이 취소 되었습니다.</entry>
+    <entry key="biz.memberManage.existOrder">진행중인 주문 정보가 존재 합니다. 완료 후 탈퇴하시기 바랍니다.</entry>
+
+    <!-- 운영 : OPERATION -->
+    <entry key="biz.exception.operation.bannedChk">검색한 금칙어가 없습니다.</entry>
+    <entry key="biz.exception.operation.existWord">이미 등록되어 있는 금칙어입니다.</entry>
+    <entry key="biz.exception.operation.delBbsLettNoChk">답변 글이 있어서 삭제가 불가능 합니다.</entry>
+    <entry key="biz.exception.operation.cmnt.insert">댓글이 등록되었습니다.</entry>
+    <entry key="biz.exception.operation.cmnt.delete">댓글이 삭제되었습니다.</entry>
+    <entry key="biz.exception.operation.managerEmailNull">관리자 이메일이 등록되어 있지 않습니다.</entry>
+    <entry key="biz.exception.operation.certifySendNoNull">인증된 발신 번호가 등록되어 있지 않습니다.</entry>
+    <entry key="biz.exception.operation.rcvTelNoNull">수신 번호가 없습니다.</entry>
+    <entry key="biz.opeeration.savedMnPoint.insertSavedMn">마켓포인트가 적용되었습니다.</entry>
+    <entry key="biz.opeeration.savedMnPoint.insertPoint">포인트가 적용되었습니다.</entry>
+    <entry key="biz.opeeration.sendEmail">이메일이 발송되었습니다.</entry>
+    <entry key="biz.opeeration.sendEmailFail">이메일 발송이 실패하였습니다.</entry>
+    <entry key="biz.opeeration.sendEmailNoneTarget">이메일 발송 대상이 존재하지 않습니다.</entry>
+    <entry key="biz.opeeration.sendSms">문자가 발송되었습니다.</entry>
+    <entry key="biz.opeeration.sendSmsFail">문자 발송이 실패하였습니다.</entry>
+
+    <!-- 전시 : DSP-->
+    <entry key="biz.exception.html.noresult">해당소스가 존재하지 않습니다.</entry>
+    <entry key="biz.exception.html.nullData"><![CDATA[스킨관리의 작업중인 스킨을 선택하지 않았습니다.<br/>스킨관리에서 작업스킨을 선택하세요.]]></entry>
+
+    <!-- 마케팅 : PRO-->
+
+
+    <!-- 상품 : GDS-->
+    <entry key="biz.exception.gds.goodsinsert">상품 정보 등록 중 에러가 발생 했습니다.</entry>
+    <entry key="biz.exception.gds.goodsupdate">상품 정보 수정 중 에러가 발생 했습니다.</entry>
+    <entry key="biz.exception.gds.goodsdelete">상품 정보 삭제 중 에러가 발생 했습니다.</entry>
+    <entry key="biz.exception.gds.goodscopy">상품 정보 복사 처리 중 에러가 발생 했습니다.</entry>
+    <entry key="biz.exception.gds.send.restock">재입고 알림 SMS를 전송하였습니다.</entry>
+    <entry key="biz.exception.gds.addicon.success">아이콘이 추가되었습니다.</entry>
+    <entry key="biz.exception.gds.addicon.notable">아이콘 추가 구매가 필요합니다.</entry>
+
+
+    <!-- 주문 : ORD-->
+    <entry key="biz.exception.ord.chooseOneOrder">한 건의 주문을 선택하세요.</entry>
+    <entry key="biz.exception.ord.noOrderNo">선택된 주문이 없습니다.</entry>
+    <entry key="biz.confirm.ord.deliveryInfo">배송 정보를 등록하시겠습니까?</entry>
+    <entry key="biz.exception.ord.deliveryInfo">배송 방법을 입력하세요.</entry>
+    <entry key="biz.exception.ord.failUpdateOrdStatus">주문번호[{0}]의 상태를 변경할 수 없습니다.</entry>
+    <entry key="biz.exception.ord.invalidOrdStatus">주문번호[{0}]의 주문상태를 다시 확인하세요.</entry>
+    <entry key="biz.confirm.ord.updateOrdStatus">주문 상태를 변경 하시겠습니까?</entry>
+    <entry key="biz.confirm.ord.updateOrdStatusArgs">주문 상태를 [{0}]로 변경 하시겠습니까?</entry>
+    <entry key="biz.result.ord.updateOrdStatus">[{0}]건의 주문 상태가 변경되었습니다.</entry>
+    <entry key="biz.exception.ord.noInvoice">운송장 번호를 입력하세요.</entry>
+    <entry key="biz.exception.ord.notValidInvoiceNo">운송장 번호가 유효하지 않습니다.</entry>
+    <entry key="biz.exception.ord.notValidCourierCd">택배사 코드가 유효하지 않습니다.</entry>
+    <entry key="biz.exception.ord.notValidInvoiceNoPartly">운송장 번호가 유효하지 않은 건을 제외한 {0}건을 등록했습니다.</entry>
+    <entry key="biz.exception.ord.noCourierCd">배송 업체를 선택하세요.</entry>
+    <entry key="biz.exception.ord.deliveryAddrInfo">배송주소를 모두 입력하세요.</entry>
+    <entry key="biz.exception.exchange.noReasonCd">반품사유를 선택하세요.</entry>
+    <entry key="biz.exception.exchange.notValidStatusCd">교환완료는 반품완료인 경우만 변경 가능합니다.</entry>
+    <entry key="biz.exception.ord.cancelMsg">처리에 실패하였습니다. {0} </entry>
+
+    <!-- 정산 : ADJ-->
+
+    <!-- 통계 : STA-->
+
+
+    <entry key="biz.exception.visit.interface">방문예약 연계도중 오류가 발생했습니다..</entry>
+    <entry key="biz.exception.exhibition.interface">사전예약 연계도중 오류가 발생했습니다..</entry>
+
+    <entry key="biz.exception.error.interface">ERP 연계 데이터 처리중 오류가 발생했습니다. {0}</entry>
+
+	<!-- 방문 예약 -->
+	<entry key="biz.exception.visit.noGoods">해당 상품의 재고가 품절 되었습니다.</entry>
+
+
+</properties>

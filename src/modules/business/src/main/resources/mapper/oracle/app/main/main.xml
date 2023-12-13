@@ -1,0 +1,1070 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="admin.main">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<select id="selectAdminInfo" resultType="net.danvi.dmall.biz.app.main.model.AdminInfoVO">
+		/* admin.main.selectAdminInfo*/
+		SELECT
+			REG_DTTM AS REG_DTTM,
+			TO_DATE(SVC_START_DT, 'YYYYMMDD') AS SVC_START_DT,
+			TO_DATE(SVC_END_DT, 'YYYYMMDD') AS SVC_END_DT,
+			TO_DATE(SVC_END_DT, 'YYYYMMDD') - sysdate AS REST_DATE,
+			DLGT_DOMAIN AS DOMAIN
+		FROM TS_SITE
+		WHERE SITE_NO = #{siteNo}
+	</select>
+
+
+	<select id="selectTodayShoppingmall" resultType="net.danvi.dmall.biz.app.main.model.TodayShoppingmallVO">
+		/* admin.main.selectTodayShoppingmall*/
+		SELECT
+			/* 결제 완료 */
+			(
+				SELECT count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+			 		INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+			 		INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				WHERE to2.SITE_NO = #{siteNo}
+				AND tod.ORD_DTL_STATUS_CD ='20'
+<![CDATA[
+				AND to2.PAYMENT_CMPLT_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				AND to2.PAYMENT_CMPLT_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_PAYMENT_CMPLT_CNT,
+		    /* 주문 확정 */
+		    (
+				select count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where to2.SITE_NO = #{siteNo}
+				and tod.ORD_DTL_STATUS_CD = '30'
+<![CDATA[
+			    and to2.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				and to2.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_ORD_CMPLT_CNT,
+		    /* 오늘 출발 */
+		    (
+				select count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+				    inner join TO_DLVR td on tod.ORD_NO = td.ORD_NO and tod.ORD_DTL_SEQ = td.ORD_DTL_SEQ
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where td.SITE_NO = #{siteNo}
+<![CDATA[
+				and td.RLS_INVOICE_REG_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				and td.RLS_INVOICE_REG_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_DLVR_START_CNT,
+			<if test="sellerNo == null or sellerNo == ''">
+				/* 매장 픽업 */
+				(
+				select count(*)
+				FROM TO_VISIT_RSV tvr
+					INNER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO
+				where tvrd.RSV_GB = '01'
+				  and tvrd.ORD_NO is not null
+<![CDATA[
+				and tvr.RSV_DATE >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				and tvr.RSV_DATE < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				) AS TODAY_STORE_PIC_CNT,
+				/* 예약 구매 */
+				(
+				select count(*)
+				FROM TO_VISIT_RSV tvr
+					INNER JOIN TO_VISIT_RSV_DTL tvrd ON tvr.RSV_NO = tvrd.RSV_NO
+				where tvrd.RSV_GB = '02'
+<![CDATA[
+				and tvr.RSV_DATE >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				and tvr.RSV_DATE < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				) AS TODAY_RSV_CNT,
+			</if>
+			/* 배송 준비 */
+			(
+				select count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where to2.SITE_NO = #{siteNo}
+				  and tod.ORD_DTL_STATUS_CD = '30'
+<![CDATA[
+				  and tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  and tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_DLVR_READY_CNT,
+			/* 배송 중 */
+			(
+				SELECT count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				WHERE to2.SITE_NO = #{siteNo}
+				  AND tod.ORD_DTL_STATUS_CD ='40'
+					/* 20(결제완료), 30(배송준비중), 39(부분배송중), 40(배송중), 49(부분배송완료), 50(배송완료), 90(구매확정) */
+<![CDATA[
+				  AND tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  AND tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_DLVR_PROG_CNT,
+			/* 배송 완료 */
+			(
+				SELECT count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				WHERE to2.SITE_NO = #{siteNo}
+				  AND tod.ORD_DTL_STATUS_CD = '50'
+				  /* 20(결제완료), 30(배송준비중), 39(부분배송중), 40(배송중), 49(부분배송완료), 50(배송완료), 90(구매확정) */
+<![CDATA[
+				  AND tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  AND tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_DLVR_CMPLT_CNT,
+			/* 결제 취소 요청 */
+			(
+				select count(*)
+				FROM TO_CLAIM tc
+					INNER JOIN TO_ORD_DTL tod ON tc.ORD_NO = tod.ORD_NO AND tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where tc.CLAIM_CD = '31'
+<![CDATA[
+				and tc.CLAIM_ACCEPT_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				and tc.CLAIM_ACCEPT_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_PAYMENT_CANCEL_CLAIM_CNT,
+			/* 반품 요청 */
+			(
+				select count(*)
+				FROM TO_CLAIM tc
+					INNER JOIN TO_ORD_DTL tod ON tc.ORD_NO = tod.ORD_NO AND tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where tc.CLAIM_CD = '11'
+<![CDATA[
+				  and tc.CLAIM_ACCEPT_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  and tc.CLAIM_ACCEPT_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_RETURN_CLAIM_CNT,
+			/* 교환 신청 */
+			(
+				select count(*)
+				FROM TO_CLAIM tc
+					INNER JOIN TO_ORD_DTL tod ON tc.ORD_NO = tod.ORD_NO AND tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where tc.CLAIM_CD = '21'
+<![CDATA[
+				  and tc.CLAIM_ACCEPT_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  and tc.CLAIM_ACCEPT_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_EXCHANGE_CLAIM_CNT,
+			/* 구매 확정 */
+			(
+				SELECT count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				WHERE to2.SITE_NO = #{siteNo}
+				  AND tod.ORD_DTL_STATUS_CD ='90'
+					/* 20(결제완료), 30(배송준비중), 39(부분배송중), 40(배송중), 49(부분배송완료), 50(배송완료), 90(구매확정) */
+<![CDATA[
+				  AND tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  AND tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_BUY_CMPLT_CNT,
+			/* 부분 반품 요청 */
+			(
+				select count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where tod.ORD_DTL_STATUS_CD='72'
+<![CDATA[
+				  and tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  and tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_PART_RETURN_CNT,
+			/* 부분 교환 요청 */
+			(
+				select count(*)
+				FROM TO_ORD to2
+					INNER JOIN TO_ORD_DTL tod ON to2.ORD_NO = tod.ORD_NO
+					INNER JOIN TG_GOODS tg ON tod.GOODS_NO = tg.GOODS_NO
+					INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+				where tod.ORD_DTL_STATUS_CD='62'
+<![CDATA[
+				  and tod.UPD_DTTM >= TO_DATE(#{endDate}, 'YYYY-MM-DD') - 1
+				  and tod.UPD_DTTM < TO_DATE(#{endDate}, 'YYYY-MM-DD')
+]]>
+				<if test="sellerNo != null and sellerNo != ''">
+					and ts.SELLER_NO = #{sellerNo}
+				</if>
+			) AS TODAY_PART_EXCHANGE_CNT
+		from dual
+	</select>
+	
+	<select id="selectMonthVisitCnt" resultType="int">
+           SELECT COUNT(*) CNT FROM (
+               SELECT JSESSIONID
+               FROM TA_ACCESS_LOG
+               WHERE SITE_NO = 1
+			<![CDATA[
+               AND ACCESS_DTTM >= TO_DATE(#{stDate}, 'YYYYMMDD')
+               AND ACCESS_DTTM < TO_DATE(#{endDate}, 'YYYYMMDD')
+			]]>
+               GROUP BY JSESSIONID
+           )
+	</select>
+
+	<select id="selectMallOperStatus" resultType="net.danvi.dmall.biz.app.main.model.MallOperStatusVO">
+		select tba.GOODS_TYPE_NM,
+		       nvl(tbb.SALES_AMT, 0) as SALES_AMT,
+			   nvl(tbb.PAYMENT_CMPLT, 0) as PAYMENT_CMPLT,
+			   nvl(tbb.DLVR_READY, 0) as DLVR_READY,
+			   nvl(tbb.DLVR_START, 0) as DLVR_START,
+			   nvl(tbb.DLVR_CMPLT, 0) as DLVR_CMPLT,
+			   nvl(tbb.BUY_CMPLT, 0) as BUY_CMPLT,
+			   nvl(tbb.ORD_CANCEL, 0) as ORD_CANCEL,
+			   nvl(tbb.ORD_EXCHANGE, 0) as ORD_EXCHANGE,
+			   nvl(tbb.ORD_REFUND, 0) as ORD_REFUND,
+			   nvl(tbb.GOODS_REVIEW, 0) as GOODS_REVIEW,
+			   nvl(tbb.GOODS_RSV, 0) as GOODS_RSV,
+			   nvl(tbb.VISIT_RSV, 0) as VISIT_RSV
+		from (
+		    select '안경테' as GOODS_TYPE_NM from dual
+			union all
+			select '선글라스' as GOODS_TYPE_NM from dual
+			union all
+			<if test="sellerNo == null or sellerNo == ''">
+			select '콘택트렌즈' as GOODS_TYPE_NM from dual
+			union all
+			select '안경렌즈' as GOODS_TYPE_NM from dual
+			union all
+			select '소모품' as GOODS_TYPE_NM from dual
+			union all
+			</if>
+			select '합계' as GOODS_TYPE_NM from dual
+		) tba
+		left outer join (
+			SELECT decode(GROUPING(GOODS_TYPE_CD), 1, '합계', fn_getCodeNm('GOODS_TYPE_CD', GOODS_TYPE_CD)) AS GOODS_TYPE_NM,
+					sum(SALES_AMT) AS SALES_AMT,
+					sum(PAYMENT_CMPLT) AS PAYMENT_CMPLT,
+					sum(DLVR_READY) as DLVR_READY,
+					sum(DLVR_START) as DLVR_START,
+					sum(DLVR_CMPLT) as DLVR_CMPLT,
+					sum(BUY_CMPLT) as BUY_CMPLT,
+					sum(ORD_CANCEL) as ORD_CANCEL,
+					sum(ORD_EXCHANGE) as ORD_EXCHANGE,
+					sum(ORD_REFUND) as ORD_REFUND,
+					sum(GOODS_REVIEW) as GOODS_REVIEW,
+					sum(GOODS_RSV) as GOODS_RSV,
+					sum(VISIT_RSV) as VISIT_RSV
+			FROM
+			(
+				/* 안경테, 선글라스, 소모품 매출액 조회 */
+				SELECT DISTINCT GOODS_TYPE_CD,
+								sum(SALES_AMT) over(partition by GOODS_TYPE_CD) as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				(
+					select DISTINCT tg.GOODS_TYPE_CD,
+									nvl((select sum(tp.PAYMENT_AMT) from TO_PAYMENT tp where tp.ORD_NO = tod.ORD_NO), 0) as SALES_AMT
+					from
+					    TO_ORD too,
+					    TO_ORD_DTL tod,
+					    TG_GOODS tg
+					where too.ORD_NO = tod.ORD_NO
+					and tod.GOODS_NO = tg.GOODS_NO
+					and too.SITE_NO = 1
+					and tg.GOODS_TYPE_CD in ('01','02','05')
+					and tod.ORD_DTL_STATUS_CD in ('20','30','40','50','60','62','66','67','90')
+					<if test="stDate != null and stDate != ''">
+		<![CDATA[
+					  and tod.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+		]]>
+					</if>
+					<if test="endDate != null and endDate != ''">
+		<![CDATA[
+					  and tod.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+		]]>
+					</if>
+					<if test="sellerNo != null and sellerNo != ''">
+						and tg.SELLER_NO = #{sellerNo}
+					</if>
+				)
+				union all
+				/* 안경렌즈, 콘택트렌즈 매출액 조회 */
+				SELECT DISTINCT GOODS_TYPE_CD,
+								sum(SALES_AMT) over(PARTITION BY GOODS_TYPE_CD) AS SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				FROM
+				(
+					SELECT DISTINCT tvrd.RSV_NO,
+					                tg.GOODS_TYPE_CD,
+					                sum(to_number(tvrd.ORD_QTT) * to_number(tvrd.SALE_AMT)) over(PARTITION BY tvrd.RSV_NO) AS SALES_AMT
+					FROM
+					    TO_VISIT_RSV tvr ,
+					    TO_VISIT_RSV_DTL tvrd ,
+					    TG_GOODS tg
+					WHERE tvr.RSV_NO = tvrd.RSV_NO
+					AND tvrd.GOODS_NO = tg.GOODS_NO
+					AND tvr.CANCEL_YN = 'N'
+					and tvr.BUY_YN = 'Y'
+					and tvrd.RSV_GB = '02'
+					AND tg.GOODS_TYPE_CD IN ('03','04')
+					<if test="stDate != null and stDate != ''">
+<![CDATA[
+					  AND tvr.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+					</if>
+					<if test="endDate != null and endDate != ''">
+<![CDATA[
+					  AND tvr.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+					</if>
+					<if test="sellerNo != null and sellerNo != ''">
+						and tg.SELLER_NO = #{sellerNo}
+					</if>
+				)
+				union ALL
+				/* 결제완료 조회 */
+				SELECT DISTINCT tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								count(*) over(PARTITION BY tg.GOODS_TYPE_CD) as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_ORD too,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where too.ORD_NO = tod.ORD_NO
+				and tod.GOODS_NO = tg.GOODS_NO
+				and too.SITE_NO = #{siteNo}
+				and tg.GOODS_TYPE_CD in ('01','02','04','03','05')
+				and tod.ORD_DTL_STATUS_CD = '20'
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and too.PAYMENT_CMPLT_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and too.PAYMENT_CMPLT_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 배송준비중 조회*/
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_ORD too,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where too.ORD_NO = tod.ORD_NO
+				and tod.GOODS_NO = tg.GOODS_NO
+				and too.SITE_NO = #{siteNo}
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tod.ORD_DTL_STATUS_CD = '30'
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 배송중 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_ORD too,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where too.ORD_NO = tod.ORD_NO
+				and tod.GOODS_NO = tg.GOODS_NO
+				and too.SITE_NO = #{siteNo}
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tod.ORD_DTL_STATUS_CD = '40'
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 배송완료 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_ORD too,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where too.ORD_NO = tod.ORD_NO
+				and tod.GOODS_NO = tg.GOODS_NO
+				and too.SITE_NO = #{siteNo}
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tod.ORD_DTL_STATUS_CD = '50'
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 구매확정 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_ORD too,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where too.ORD_NO = tod.ORD_NO
+				and tod.GOODS_NO = tg.GOODS_NO
+				and too.SITE_NO = #{siteNo}
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tod.ORD_DTL_STATUS_CD = '90'
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tod.UPD_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 취소 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_CLAIM tc,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where tc.ORD_NO = tod.ORD_NO
+				and tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+				and tod.GOODS_NO = tg.GOODS_NO
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tc.CLAIM_CD in ('31','32')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 교환 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_CLAIM tc,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where tc.ORD_NO = tod.ORD_NO
+				and tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+				and tod.GOODS_NO = tg.GOODS_NO
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tc.CLAIM_CD in ('21','22')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 환불 조회 */
+				select distinct tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								count(*) over(partition by tg.GOODS_TYPE_CD) as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TO_CLAIM tc,
+				    TO_ORD_DTL tod,
+				    TG_GOODS tg
+				where tc.ORD_NO = tod.ORD_NO
+				and tc.ORD_DTL_SEQ = tod.ORD_DTL_SEQ
+				and tod.GOODS_NO = tg.GOODS_NO
+				and tg.GOODS_TYPE_CD in ('01','02','05')
+				and tc.CLAIM_CD in ('11','12')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  and tc.REG_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 상품후기 조회 */
+				SELECT DISTINCT tg.GOODS_TYPE_CD ,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								count(*) over(PARTITION BY tg.GOODS_TYPE_CD) as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								0 as VISIT_RSV
+				from
+				    TB_GOODS_BBS_LETT tgbl,
+				    TG_GOODS tg
+				where tgbl.GOODS_NO = tg.GOODS_NO
+				and tgbl.SITE_NO = #{siteNo}
+				and tgbl.BBS_ID = 'review'
+				and tgbl.DEL_YN = 'N'
+				AND tg.GOODS_TYPE_CD in ('01','02','04','03','05')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  AND tgbl.REG_DTTM >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  AND tgbl.REG_DTTM < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 상품예약 조회 */
+				SELECT DISTINCT tg.GOODS_TYPE_CD ,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								count(*) over(PARTITION BY tg.GOODS_TYPE_CD) as GOODS_RSV,
+								0 as VISIT_RSV
+				FROM
+				    TO_VISIT_RSV tvr ,
+				    TO_VISIT_RSV_DTL tvrd ,
+				    TG_GOODS tg
+				WHERE tvr.RSV_NO = tvrd.RSV_NO
+				AND tvrd.GOODS_NO = tg.GOODS_NO
+				AND tvr.CANCEL_YN = 'N'
+				AND tg.GOODS_TYPE_CD IN ('03','04')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  AND tvr.RSV_DATE >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  AND tvr.RSV_DATE < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+				union all
+				/* 방문예약 조회 */
+				SELECT DISTINCT tg.GOODS_TYPE_CD,
+								0 as SALES_AMT,
+								0 as PAYMENT_CMPLT,
+								0 as DLVR_READY,
+								0 as DLVR_START,
+								0 as DLVR_CMPLT,
+								0 as BUY_CMPLT,
+								0 as ORD_CANCEL,
+								0 as ORD_EXCHANGE,
+								0 as ORD_REFUND,
+								0 as GOODS_REVIEW,
+								0 as GOODS_RSV,
+								count(*) over(PARTITION BY tg.GOODS_TYPE_CD) AS VISIT_RSV
+				FROM
+					TO_VISIT_RSV tvr ,
+					TO_VISIT_RSV_DTL tvrd ,
+					TG_GOODS tg
+				WHERE tvr.RSV_NO = tvrd.RSV_NO
+				AND tvrd.GOODS_NO = tg.GOODS_NO
+				AND tvr.CANCEL_YN = 'N'
+				AND tg.GOODS_TYPE_CD IN ('01','02','05')
+				<if test="stDate != null and stDate != ''">
+<![CDATA[
+				  AND tvr.RSV_DATE >= to_date(#{stDate}, 'YYYYMMDD')
+]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+<![CDATA[
+				  AND tvr.RSV_DATE < to_date(#{endDate}, 'YYYYMMDD') + 1
+]]>
+				</if>
+				<if test="sellerNo != null and sellerNo != ''">
+					and tg.SELLER_NO = #{sellerNo}
+				</if>
+			)
+			group by rollup (GOODS_TYPE_CD)
+		) tbb
+		on tba.GOODS_TYPE_NM = tbb.GOODS_TYPE_NM
+		order by (case when GOODS_TYPE_NM = '안경테' then 1
+					   when GOODS_TYPE_NM = '선글라스' then 2
+					   when GOODS_TYPE_NM = '콘택트렌즈' then 3
+					   when GOODS_TYPE_NM = '안경렌즈' then 4
+		    		   when GOODS_TYPE_NM = '소모품' then 5
+					   when GOODS_TYPE_NM = '합계' then 6 end)
+	</select>
+
+
+	<!-- '/admin/setup/siteinfo/site-info#sabangnet' AS url -->
+	<!--
+
+		/*
+		UNION
+		SELECT '네이버페이' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/config/payment/payment-config?typeCd=npay' AS url
+		FROM TS_SITE WHERE SITE_NO = #{siteNo} AND SIMPLEPAY_USE_YN = 'Y' AND SITE_SIMP_PAYMENT_WAY_CD = '02'
+		*/
+
+		/*
+		UNION
+		SELECT 'CJ대한통운 택배연동' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/deliveryInteface/delivery-interface-config' AS url
+		FROM TS_SITE TSS, TS_COURIER TSC WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSC.SITE_NO AND COURI_USE_YN = 'Y' AND COURIER_CD = '02'
+		*/
+	 -->
+	<select id="selectAdditionalServiceList" resultType="Map">
+		<![CDATA[
+		SELECT '전자결제(PG)' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/config/payment/payment-config'||CHR(63)||'typeCd=payment' AS url
+		FROM TS_SITE TSS, TS_PG_SET TSPS WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSPS.SITE_NO AND CRED_PAYMENT_YN = 'Y'
+		UNION
+		SELECT '페이코' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/config/payment/payment-config'||CHR(63)||'typeCd=simplePay' AS url
+		FROM TS_SITE WHERE SITE_NO = #{siteNo} AND SIMPLEPAY_USE_YN = 'Y' AND SITE_SIMP_PAYMENT_WAY_CD = '01'
+		UNION
+		SELECT '우체국 택배연동' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/deliveryInteface/delivery-interface-config' AS url
+		FROM TS_SITE TSS, TS_COURIER TSC WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSC.SITE_NO AND COURI_USE_YN = 'Y' AND COURIER_CD = '01'
+		UNION
+		SELECT 'SMS' AS name, 0 AS useYn, '' AS url from dual /* sms 포인트로 사용여부 처리 */
+		UNION
+		SELECT '대량e-mail' AS name, 0 AS useYn, '' AS url from dual /* 이메일 포인트로 사용여부 처리 */
+		UNION
+		SELECT '휴대폰인증' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/personcertify/certify-config' AS url
+		FROM TS_SITE TSS, TS_PRSN_CHECK_CERTIFY TSPCC WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSPCC.SITE_NO AND CERTIFY_TYPE_CD = '02'
+		UNION
+		SELECT '아이핀인증' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/personcertify/certify-config' AS url
+		FROM TS_SITE TSS, TS_PRSN_CHECK_CERTIFY TSPCC WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSPCC.SITE_NO AND CERTIFY_TYPE_CD = '01'
+		UNION
+		SELECT '구글애널리틱스' AS name, decode(USE_YN, 'Y', 1, 0) AS useYn, '/admin/setup/config/opersupport/operation-support-settings'||CHR(63)||'typeCd=ga' AS url
+		FROM TS_GA_SET WHERE SITE_NO = #{siteNo}
+		UNION
+		SELECT 'SEO' AS name, decode(CMN_USE_YN, 'Y', 1, decode(GOODS_USE_YN, 'Y', 1, 0)) AS useYn, '/admin/setup/config/opersupport/operation-support-settings'||CHR(63)||'typeCd=seo' AS url
+		FROM TS_SEO_SET WHERE SITE_NO = #{siteNo}
+		UNION
+		SELECT '오픈마켓연동' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/siteinfo/site-info' AS url
+		FROM TS_SITE TSS, TS_COMPANY TSC WHERE TSS.SITE_NO = #{siteNo} AND TSS.COMPANY_NO = TSC.COMPANY_NO AND SBN_CERT_KEY IS NOT NULL AND SBN_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') AND SBN_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD')
+		UNION
+		SELECT '보안서버(SSL)' AS name, sign(COUNT(*)) AS useYn, '/admin/setup/securitymanage/SecurityManage/security-config' AS url
+		FROM TS_SITE TSS, TS_SECURITY_SERV_SET TSSSS WHERE TSS.SITE_NO = #{siteNo} AND TSS.SITE_NO = TSSSS.SITE_NO AND SECURITY_SERV_USE_TYPE_CD = '2' AND APPLY_START_DT <= TO_CHAR(sysdate, 'YYYYMMDD') AND APPLY_END_DT >= TO_CHAR(sysdate, 'YYYYMMDD')
+		]]>
+	</select>
+
+	<select id="selectVisitPath" resultType="visitPathVO">
+		<![CDATA[
+		SELECT VISIT_PATH_NM, round((RATIO_TO_REPORT(VSTR_CNT) over()) * 100, 2) AS RTO
+		FROM (
+				 SELECT DISTINCT case when REFERER='G' then '구글'
+				     				  when REFERER='B' then '네이버블로그'
+									  when REFERER='N' then '네이버'
+									  when REFERER='D' then '다음'
+									  when REFERER='T' then '네이트'
+									  when REFERER='Z' then '줌'
+									  when REFERER='O' then '사이트주소'
+									  when REFERER='E' then '기타'
+									  when REFERER='H' then '다비치보청기'
+									  when REFERER='S' then '다비치안경'
+									  when REFERER='L' then '다비치렌즈'
+									  when REFERER='C' then '광고매체'
+									  when REFERER='F' then '페이스북'
+									  when REFERER='Y' then '유튜브'
+									  when REFERER='I' then '인스타그램'
+									  when REFERER='P' then '핀터레스'
+									  when REFERER='K' then '카카오'
+									  else '기타' end as VISIT_PATH_NM,
+				                 count(*) OVER(PARTITION BY REFERER) AS VSTR_CNT
+				 FROM (
+						  SELECT ROW_NUMBER() OVER(PARTITION BY JSESSIONID ORDER BY ACCESS_DTTM) AS RN, REFERER
+						  FROM TA_ACCESS_LOG tal
+						  where ACCESS_DTTM >= to_date(to_char(to_date(#{endDate}, 'YYYYMMDD') - 2, 'YYYYMMDD')||'09', 'YYYYMMDDHH24')
+							and ACCESS_DTTM < to_date(to_char(to_date(#{endDate}, 'YYYYMMDD') - 1, 'YYYYMMDD')||'09', 'YYYYMMDDHH24')
+					  )
+				 WHERE RN = 1
+				 ORDER BY VSTR_CNT desc
+			 )
+		WHERE rownum <= 4
+		]]>
+	</select>
+
+	<select id="selectWeekStatus" resultType="net.danvi.dmall.biz.app.main.model.MallWeekStatusVO">
+		select to_char(to_date(DAY_OF_WEEK, 'YYYYMMDD'), 'MM/DD') as DAY_OF_WEEK,
+			   sum(SALES_AMT)                                     as SALES_AMT,
+			   sum(ORD_CNT)                                       as ORD_CNT,
+			   sum(RSV_CNT)                                       as RSV_CNT,
+			   sum(VISIT_CNT)                                     as VISIT_CNT
+		from (select to_char(D, 'YYYYMMDD') as DAY_OF_WEEK
+			  from (select to_date(#{firstDayOfWeek}, 'YYYYMMDD') + A as D
+					from (SELECT 0 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 1 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 2 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 3 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 4 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 5 as A
+						  FROM dual
+						  UNION ALL
+						  SELECT 6 as A
+						  FROM dual))) DT
+				 left outer join (select ORD_NO,
+										 DT,
+										 sum(SALES_AMT) as SALES_AMT,
+										 0              as ORD_CNT,
+										 0              as RSV_CNT,
+										 0              as VISIT_CNT
+								  from (SELECT TOO.ORD_NO,
+											   TO_CHAR(TOO.PAYMENT_CMPLT_DTTM, 'YYYYMMDD')                         AS DT,
+											   (SELECT SUM(PAYMENT_AMT) FROM TO_PAYMENT WHERE ORD_NO = TOD.ORD_NO) AS SALES_AMT
+										FROM TO_ORD TOO,
+											 TO_ORD_DTL TOD,
+											 TG_GOODS tg
+										WHERE TOO.SITE_NO = #{siteNo}
+										  AND TOO.ORD_NO = TOD.ORD_NO
+										  and tod.GOODS_NO = tg.GOODS_NO
+										  AND TOD.ORD_DTL_STATUS_CD IN ('20', '30', '40', '50', '90')
+										  <![CDATA[
+										  AND TOO.PAYMENT_CMPLT_DTTM >= TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD')
+										  AND TOO.PAYMENT_CMPLT_DTTM < TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD') + 7
+										  ]]>
+										  <if test="sellerNo != null and sellerNo != ''">
+											  and tg.SELLER_NO = #{sellerNo}
+										  </if>)
+								  group by ORD_NO, DT
+								  -- 주간 매출
+								  union all
+								  select ORD_NO,
+								         DT,
+								         0 as SALES_AMT,
+								         count(*) as ORD_CNT,
+								         0 as RSV_CNT,
+								         0 as VISIT_CNT
+								  from (select to2.ORD_NO,
+											   to_char(to2.REG_DTTM, 'YYYYMMDD') as DT
+										from TO_ORD to2,
+										     TO_ORD_DTL tod,
+										     TG_GOODS tg
+										where to2.SITE_NO = #{siteNo}
+										  and to2.ORD_NO = tod.ORD_NO
+										  and tod.GOODS_NO = tg.GOODS_NO
+										  <![CDATA[
+										  and to2.REG_DTTM >= TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD')
+										  and to2.REG_DTTM < TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD') + 7
+										  ]]>
+										  <if test="sellerNo != null and sellerNo != ''">
+											  and tg.SELLER_NO = #{sellerNo}
+										  </if>)
+								  group by ORD_NO, DT
+								  -- 주간 주문
+								  union all
+								  select 0        as ORD_NO,
+										 DT,
+										 0        as SALES_AMT,
+										 0        as ORD_CNT,
+										 count(*) as RSV_CNT,
+										 0        as VISIT_CNT
+								  from (select to_char(RSV_DATE, 'YYYYMMDD') as DT
+										from TO_VISIT_RSV
+										<![CDATA[
+										where RSV_DATE >= TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD')
+										  and RSV_DATE < TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD') + 7
+										]]>
+										  and CANCEL_YN = 'N'
+										  and STORE_NM is not null)
+								  group by DT
+								  -- 주간 예약
+								  union all
+								  select DISTINCT 0 as     ORD_NO,
+												  DT,
+												  0 as     SALES_AMT,
+												  0 as     ORD_CNT,
+												  0 as     RSV_CNT,
+												  count(*) over(PARTITION BY DT) as VISIT_CNT
+								  from (select distinct to_char(ACCESS_DTTM, 'YYYYMMDD') as DT,
+														JSESSIONID
+										from TA_ACCESS_LOG
+										<![CDATA[
+										where ACCESS_DTTM >= TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD')
+										  and ACCESS_DTTM < TO_DATE(#{firstDayOfWeek}, 'YYYYMMDD') + 7)) STAT
+				     					]]>
+								  -- 주간 방문자
+								 on DT.DAY_OF_WEEK = STAT.DT
+		GROUP BY DAY_OF_WEEK
+		order by DT.DAY_OF_WEEK
+	</select>
+
+	<select id="selectWeekGoodsReview" resultType="net.danvi.dmall.biz.app.main.model.MainReviewVO">
+		select tba.GOODS_TYPE_CD,
+		       nvl(tbb.RECENT, 0) as RECENT,
+		       nvl(tbb.LOW, 0) as LOW,
+		       nvl(tbb.HIGH, 0) as HIGH
+		from
+		    (
+				select '안경테' as GOODS_TYPE_CD from dual
+				union all
+				select '선글라스' as GOODS_TYPE_CD from dual
+				union all
+				<if test="sellerNo == null or sellerNo == ''">
+				select '콘택트렌즈' as GOODS_TYPE_CD from dual
+				union all
+				select '안경렌즈' as GOODS_TYPE_CD from dual
+				union all
+				select '소모품' as GOODS_TYPE_CD from dual
+				union all
+				</if>
+				select '합계' as GOODS_TYPE_CD from dual
+			) tba
+			left outer join
+		        (
+					SELECT
+						decode(grouping(tg.GOODS_TYPE_CD), '1', '합계', fn_getCodeNm('GOODS_TYPE_CD', tg.GOODS_TYPE_CD)) as GOODS_TYPE_CD,
+						count(*) AS RECENT,
+						<![CDATA[
+						count(CASE WHEN tgbl.SCORE < 3 THEN 'L' end) AS LOW,
+						]]>
+						count(CASE WHEN tgbl.SCORE >= 3 THEN 'H' end) AS HIGH
+					FROM TB_GOODS_BBS_LETT tgbl , TG_GOODS tg
+					WHERE tgbl.GOODS_NO = tg.GOODS_NO
+					  AND tgbl.SITE_NO = #{siteNo}
+					  AND tg.SITE_NO = #{siteNo}
+					  AND tg.GOODS_TYPE_CD IS NOT NULL
+					  AND tgbl.BBS_ID = 'review'
+					  AND tgbl.SCORE IS NOT NULL
+					  AND tgbl.DEL_YN = 'N'
+					<![CDATA[
+					  AND tgbl.REG_DTTM >= to_date(#{endDate}, 'YYYYMMDD') - 7
+					  AND tgbl.REG_DTTM < to_date(#{endDate}, 'YYYYMMDD')
+					]]>
+					<if test="sellerNo != null and sellerNo != ''">
+						and tg.SELLER_NO = #{sellerNo}
+					</if>
+					group by rollup (tg.GOODS_TYPE_CD)
+					ORDER BY tg.GOODS_TYPE_CD
+				) tbb
+					on tba.GOODS_TYPE_CD = tbb.GOODS_TYPE_CD
+		order by (case when GOODS_TYPE_CD = '안경테' then 1
+					   when GOODS_TYPE_CD = '선글라스' then 2
+		    		   when GOODS_TYPE_CD = '콘택트렌즈' then 3
+		    		   when GOODS_TYPE_CD = '안경렌즈' then 4
+					   when GOODS_TYPE_CD = '소모품' then 5
+		    		   when GOODS_TYPE_CD = '합계' then 6 end)
+	</select>
+</mapper>

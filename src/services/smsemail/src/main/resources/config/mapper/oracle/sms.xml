@@ -1,0 +1,902 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="sms">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+	<sql id="selectSmsInfoWhere">
+        <if test="startDt != null and startDt != ''">
+            <![CDATA[
+            AND SEND_DTTM >= TO_DATE(#{startDt}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="endDt != null and endDt != ''">
+            <![CDATA[
+            AND SEND_DTTM < TO_DATE(#{endDt}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="receiverId != null and receiverId != ''">
+            AND receiver_Id = #{receiverId}
+        </if>
+        <if test="recvTelno != null and recvTelno != ''">
+            AND recv_Telno  = #{recvTelno}
+        </if>
+        <if test="searchRecvTelno != null and searchRecvTelno != ''">
+            AND recv_Telno  = #{searchRecvTelno}
+        </if>
+        <if test='searchResult != null and searchResult != ""'>
+            <if test='searchResult eq "01"'>
+                AND frsltstat IN ('0')
+            </if>
+            <if test="searchResult eq '02'">
+                AND frsltstat NOT IN ('0')
+            </if>
+        </if>
+        
+        <if test="sendFrmCd != null and sendFrmCd != ''">
+            AND SEND_FRM_CD = #{sendFrmCd}
+        </if>
+        
+        <if test="searchWords != null and searchWords != ''">
+            <choose>
+                <when test='searchType eq "sendTelNo"'>
+                    AND SEND_TELNO = #{searchWords}
+                </when>
+                <when test='searchType eq "recvTelNo"'>
+                    AND RECV_TELNO = #{searchWords}
+                </when>
+            </choose>
+        </if>
+        <if test="status != null and status != ''">
+			and STATUS = #{status}
+		</if>
+		<if test="sendTelno != null and sendTelno != ''">
+			and SEND_TELNO = #{sendTelno}
+		</if>
+    </sql>
+
+    <sql id="selectMemberListWhere">
+		<where>
+		      AND A.MEMBER_STATUS_CD = #{memberStatusCd}
+              <![CDATA[
+              AND A.MEMBER_NO >= 1000
+              ]]>
+            <if test="joinStDttm != null and joinStDttm != ''">
+                AND A.SITE_NO = #{siteNo}
+            </if>
+            <if test="joinStDttm != null and joinStDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM >= TO_DATE(#{joinStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="joinEndDttm != null and joinEndDttm != ''">
+                <![CDATA[
+                AND A.JOIN_DTTM < TO_DATE(#{joinEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+            <if test="loginStDttm != null and loginStDttm != ''">
+                <![CDATA[
+                AND B.LOGIN_DTTM >= TO_DATE(#{loginStDttm}, 'YYYY-MM-DD')
+                ]]>
+            </if>
+            <if test="loginEndDttm != null and loginEndDttm != ''">
+                <![CDATA[
+                AND B.LOGIN_DTTM < TO_DATE(#{loginEndDttm}, 'YYYY-MM-DD') + 1
+                ]]>
+            </if>
+            <if test="bornMonth != null and bornMonth != ''">
+                AND A.BORN_MONTH = #{bornMonth}
+            </if>
+            <if test="smsRecvYn != null and smsRecvYn != ''">
+                AND nvl(A.SMS_RECV_YN, 'N') = #{smsRecvYn}
+            </if>
+            <if test="emailRecvYn != null and emailRecvYn != ''">
+                AND nvl(A.EMAIL_RECV_YN, 'N') = #{emailRecvYn}
+            </if>
+            <if test="memberGradeNo != null and memberGradeNo != ''">
+                AND A.MEMBER_GRADE_NO = #{memberGradeNo}
+            </if>
+
+            <if test="genderGbCd != null and genderGbCd != ''">
+                AND A.GENDER_GB_CD = #{genderGbCd}
+            </if>
+            <if test="joinPathCd != null and joinPathCd.length > 0">
+                AND A.JOIN_PATH_CD IN
+                <foreach collection="joinPathCd" item="item" index="index" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="integrationMemberGbCd != null and integrationMemberGbCd != ''">
+               <![CDATA[
+                AND A.INTEGRATION_MEMBER_GB_CD = #{integrationMemberGbCd}
+                ]]>
+            </if>
+            <if test="searchWords != null and searchWords != ''">
+                <choose>
+                    <when test = "searchType eq 'name'.toString()">
+                        AND A.MEMBER_NM = #{searchName}
+                    </when>
+                    <when test = "searchType eq 'id'.toString()">
+                        AND A.LOGIN_ID LIKE '%'||#{searchLoginId}||'%'
+                    </when>
+                    <when test = "searchType eq 'email'.toString()">
+                        AND A.EMAIL LIKE '%'||#{searchWords}||'%'
+                    </when>
+                    <when test = "searchType eq 'tel'.toString()">
+                        AND A.TEL = #{searchTel}
+                    </when>
+                    <when test = "searchType eq 'mobile'.toString()">
+                        AND A.MOBILE = #{searchMobile}
+                    </when>
+                    <when test = "searchType eq 'memberNo'.toString()">
+                        AND A.MEMBER_NO = #{searchMemberNo}
+                    </when>
+                    <when test="searchType eq 'nickname'.toString()">
+						and A.MEMBER_NN = #{searchNn}
+					</when>
+                    <when test = "searchType eq 'all'.toString()">
+                        AND (
+                             A.MOBILE = #{searchMobile} OR
+                             A.TEL = #{searchTel} OR
+                             A.EMAIL LIKE '%'||#{searchWords}||'%' OR
+                             A.LOGIN_ID LIKE '%'||#{searchLoginId}||'%' OR
+                             A.MEMBER_NM = #{searchName} OR
+                             TO_CHAR(A.MEMBER_NO) = #{searchMemberNo} OR
+                             A.MEMBER_NN = #{searchNn}
+                             )
+                    </when>
+                </choose>
+            </if>
+            <if test="memberTypeCd != null and memberTypeCd != ''">
+                AND A.MEMBER_TYPE_CD = #{memberTypeCd}
+            </if>
+
+            <if test="stAge != null and stAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR >= #{stAge}
+                ]]>
+            </if>
+            <if test="endAge != null and endAge != ''">
+                <![CDATA[
+                AND A.BORN_YEAR <= #{endAge}
+                ]]>
+            </if>
+            <if test="appToken != null and appToken != ''">
+                AND A.APP_TOKEN IS NOT NULL
+                <if test="searchAlarmGb == null or searchAlarmGb == ''">
+                AND (NOTI_GB = '1' OR EVENT_GB = '1' OR NEWS_GB = '1')
+                </if>
+            </if>
+
+            <if test="searchAlarmGb != null and searchAlarmGb != ''">
+                <choose>
+                    <when test = "searchAlarmGb eq '01'">
+                        AND A.NOTI_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '02'">
+                        AND A.EVENT_GB = '1'
+                    </when>
+                    <when test = "searchAlarmGb eq '03'">
+                        AND A.NEWS_GB = '1'
+                    </when>
+                </choose>
+            </if>
+            <if test="stPrcAmt != null and stPrcAmt != ''">
+                <![CDATA[
+                AND B.PRC_AMT >= #{stPrcAmt}
+                ]]>
+            </if>
+			<if test="endPrcAmt != null and endPrcAmt != ''">
+                <![CDATA[
+                AND B.PRC_AMT <= #{endPrcAmt}
+                ]]>
+            </if>
+            <if test="stSaleAmt != null and stSaleAmt != ''">
+                <![CDATA[
+                AND G.SALE_AMT >= #{stSaleAmt}
+                ]]>
+            </if>
+            <if test="endSaleAmt != null and endSaleAmt != ''">
+                <![CDATA[
+                AND G.SALE_AMT <= #{endSaleAmt}
+                ]]>
+            </if>
+            <if test="stOrdCnt != null and stOrdCnt != ''">
+                <![CDATA[
+                AND H.ORD_CNT >= #{stOrdCnt}
+                ]]>
+            </if>
+            <if test="endOrdCnt != null and endOrdCnt != ''">
+                <![CDATA[
+                AND H.ORD_CNT <= #{endOrdCnt}
+                ]]>
+            </if>
+            <if test="stPrcPoint != null and stPrcPoint != ''">
+                <![CDATA[
+                AND E.PRC_POINT >= #{stPrcPoint}
+                ]]>
+            </if>
+            <if test="endPrcPoint != null and endPrcPoint != ''">
+                <![CDATA[
+                AND E.PRC_POINT <= #{endPrcPoint}
+                ]]>
+            </if>
+            <if test="stLoginCnt != null and stLoginCnt != ''">
+                <![CDATA[
+                AND C.LOGIN_CNT >= ${stLoginCnt}
+                ]]>
+            </if>
+            <if test="endLoginCnt != null and endLoginCnt != ''">
+                <![CDATA[
+                AND C.LOGIN_CNT <= ${endLoginCnt}
+                ]]>
+            </if>
+            <if test="stCommentCnt != null and stCommentCnt != ''">
+                <![CDATA[
+                AND F.COMMENT_CNT >= #{stCommentCnt}
+                ]]>
+            </if>
+            <if test="endCommentCnt != null and endCommentCnt != ''">
+                <![CDATA[
+                AND F.COMMENT_CNT <= #{endCommentCnt}
+                ]]>
+            </if>
+		</where>
+	</sql>
+	<!-- 포인트 관련 시작 -->
+	<select id="getPoint" resultType="Integer">
+		/* sms.getPoint - SMS 포인트 조회 */
+		SELECT IFNULL((SELECT	POINT
+                FROM	smsemail.SMS_POINT
+                WHERE	SITE_NO = #{siteNo}), 0) AS POINT
+	</select>
+	
+	<update id="updatePoint" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointPO">
+		/* sms.updatePoint - SMS 포인트 변경 */
+		INSERT INTO smsemail.SMS_POINT
+		(SITE_NO, POINT, REG_DTTM)
+		VALUES (#{siteNo}, #{point}, sysdate)
+		ON DUPLICATE KEY UPDATE
+			POINT = POINT + #{point},
+			UPD_DTTM = sysdate
+	</update>
+	
+	<insert id="insertPointHist" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointHistPO">
+		/* sms.insertPointHist - SMS 포인트 이력 등록 */
+		INSERT INTO smsemail.SMS_POINT_HIST
+		(SITE_NO, REG_DTTM, GB_CD, POINT)
+		VALUES (#{siteNo}, now(6), #{gbCd}, #{point})
+	</insert>
+	<!-- 포인트 관련 끝 -->
+
+
+	<!-- 카카오 메세지 (LMS) 정보 저장 관련 시작 -->
+	<insert id="insertKkoSmsMsg" parameterType="List">
+		/* sms.insertKkoSmsMsg - 카카오 메세지 전송 등록 */
+		INSERT ALL
+		<foreach collection="list" item="po" separator="">
+			INTO KKO_MSG (
+			MSGKEY
+			, ID
+			, SERIALNUM
+			, REQDATE
+			, STATUS
+			, PHONE
+			, CALLBACK
+			, PROFILE_KEY
+			, MSG
+			, template_code
+			, failed_type
+			, failed_subject
+			, failed_msg
+			, BUTTON_JSON
+			)VALUES (
+			fn_kkoMsgSeq()
+			, '0000'
+			, #{po.fetc1}
+			, sysdate
+			, '1'
+			, #{po.fdestine}
+			, #{po.fcallback}
+			,'e5c3dbe6d3c53faaca768f2ff7a14faa79ddef47'
+			, #{po.ftext}
+			,#{po.templateCode}
+			, <![CDATA[ (case when length(#{po.ftext}) < 90 then 'SMS' else 'LMS' end) ]]>
+			,#{po.failedSubject}
+			,#{po.failedMsg}
+			,'{"attachment" : {"button" : [ { "name" : "채널 추가" , "type" : "AC" } ] }}'
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+	<!-- 카카오 메세지 (LMS) 정보 저장 관련 시작 -->
+	<insert id="insertKkoLmsMsg" parameterType="List">
+		/* sms.insertKkoLmsMsg - 카카오 메세지 전송 등록 */
+		INSERT ALL
+		<foreach collection="list" item="po" separator="">
+			INTO KKO_MSG (
+			MSGKEY
+			, ID
+			,SERIALNUM
+			, REQDATE
+			, STATUS
+			, PHONE
+			, CALLBACK
+			, PROFILE_KEY
+			, MSG
+			,template_code
+			,failed_type
+			,failed_subject
+			,failed_msg
+			,BUTTON_JSON
+			)VALUES (
+			fn_kkoMsgSeq()
+			, '0000'
+			, #{po.etc1}
+			, sysdate
+			, '1'
+			, #{po.phone}
+			, #{po.callback}
+			,'e5c3dbe6d3c53faaca768f2ff7a14faa79ddef47'
+			, #{po.msg}
+			,#{po.templateCode}
+			, <![CDATA[ (case when length(#{po.msg}) < 90 then 'SMS' else 'LMS' end) ]]>
+			,'다비치마켓'
+			,#{po.failedMsg}
+			,'{"attachment" : {"button" : [ { "name" : "채널 추가" , "type" : "AC" } ] }}'
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+	<!-- 전송 정보 저장 관련 시작 -->
+	<insert id="insertSMS" parameterType="List">
+		/* sms.insertSMS - SMS 전송 등록 */
+		INSERT ALL
+		<foreach collection="list" item="po" separator="">
+		INTO KKO_SMS_MSG (
+		  MSGKEY
+		,SERIALNUM
+		, REQDATE
+		, STATUS
+		, PHONE
+		, CALLBACK
+		, MSG
+
+		)VALUES (
+		  kko_msg_seq.nextval
+		, #{po.fetc1}
+		, sysdate
+		, '1'
+		, #{po.fdestine}
+		, #{po.fcallback}
+		, #{po.ftext}
+
+		)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+	<insert id="insertLMS" parameterType="List">
+		/* sms.insertLMS - LMS 전송 등록 */
+		INSERT ALL
+		<foreach collection="list" item="po" separator="">
+			INTO KKO_MMS_MSG (
+			  MSGKEY
+			, SERIALNUM
+			, REQDATE
+			, STATUS
+			, PHONE
+			, CALLBACK
+			, SUBJECT
+			, MSG
+			)VALUES (
+			  kko_msg_seq.nextval
+			, #{po.etc1}
+			, sysdate
+			, '1'
+			, #{po.phone}
+			, #{po.callback}
+			, '다비치마켓'
+			, #{po.msg}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+
+	</insert>
+
+	<insert id="insertSmsSendHist" parameterType="net.danvi.dmall.smsemail.model.sms.SmsSendHistPO">
+		<selectKey resultType="java.lang.Long" keyColumn="SMS_SEND_NO" keyProperty="smsSendNo" order="AFTER">
+			SELECT fn_getSeqCurr(0, 'SMS_SEND_NO') as SMS_SEND_NO FROM DUAL
+		</selectKey>
+		/* sms.insertLMS - SMS/LMS 전송 이력 등록 */
+		INSERT INTO SMS_SEND_HIST (
+				SMS_SEND_NO,
+                SITE_NO,
+                <if test="sendTypeCd != null and sendTypeCd != ''">
+                    SEND_TYPE_CD,
+                </if>
+                SEND_TARGET_CD,
+                SEND_FRM_CD,
+                SEND_TELNO,
+                SEND_WORDS,
+                SENDER_NO,
+                SENDER_ID,
+                SENDER_NM,
+                SEND_DTTM,
+                RECV_TELNO,
+                RECEIVER_NO,
+                RECEIVER_ID,
+                RECEIVER_NM,
+                RECV_DTTM,
+                AUTO_SEND_YN,
+                ORD_NO,
+                REG_DTTM
+        ) VALUES (
+				fn_getSeq(0, 'SMS_SEND_NO'),
+                #{siteNo},
+                <if test="sendTypeCd != null and sendTypeCd != ''">
+                    #{sendTypeCd},
+                </if>
+			    #{sendTargetCd},
+			    #{sendFrmCd},
+			    #{sendTelno},
+			    #{sendWords},
+			    #{senderNo},
+			    #{senderId},
+			    #{senderNm},
+			    sysdate,
+			    #{recvTelno},
+			    #{receiverNo},
+			    #{receiverId},
+			    #{receiverNm},
+			    sysdate,
+			    #{autoSendYn},
+			    #{ordNo},
+			    sysdate
+            )
+	</insert>
+	<!-- 전송 정보 저장 관련 끝 -->
+
+	<!-- 전송 정보 조회 관련 시작 -->
+	<select id="selectSendHistoryList" parameterType="net.danvi.dmall.smsemail.model.sms.InnerSmsSendHistSO" resultType="net.danvi.dmall.smsemail.model.sms.SmsSendHistVO" useCache="false">
+		/* sms.selectSendHistoryList - SMS 전송 이력 조회 */
+		SELECT *
+		FROM
+			(
+				SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+				FROM
+					(
+						SELECT A.*, count(*) over() AS tot_cnt
+						FROM
+							(
+								SELECT ssh.SENDER_ID ,
+									   ssh.RECEIVER_ID ,
+									   ssh.RECEIVER_NM ,
+									   ssh.RECV_TELNO ,
+									   ssh.SEND_TELNO ,
+									   ssh.SEND_DTTM ,
+									   decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+									   ssh.SEND_WORDS ,
+									   decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS ,
+									   (case when kml.STATUS = '4' then
+									       (case when kml.FAILED_TYPE = 'SMS' then ksml.REQDATE
+									           	 when kml.FAILED_TYPE = 'LMS' then kmml.REQDATE end)
+									       else kml.REQDATE end) as FRSLTDATE ,
+									   ssh.SEND_FRM_CD ,
+									   decode(ssh.SEND_FRM_CD, '01', 'SMS', '02', 'LMS') as SEND_FRM_NM
+								FROM SMS_SEND_HIST ssh
+										 INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+										 LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+										 LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+								WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+								and ssh.SITE_NO = #{siteNo}
+								ORDER BY ssh.SEND_DTTM DESC
+							) A
+						where 1=1
+						<include refid="selectSmsInfoWhere"/>
+					) AA
+			)
+		<include refid="common.pageSql"/>
+	</select>
+	<!-- 전송 정보 조회 관련 끝 -->
+	
+	<select id="selectSendHistoryListCount" resultType="Integer">
+        /* sms.selectSendHistoryListCount - SMS 전송 이력 페이징 카운트*/
+		SELECT count(*)
+		FROM
+			(
+				SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+				FROM
+					(
+						SELECT A.*, count(*) over() AS tot_cnt
+						FROM
+							(
+								SELECT ssh.SENDER_ID ,
+										ssh.RECEIVER_ID ,
+										ssh.RECEIVER_NM ,
+										ssh.RECV_TELNO ,
+										ssh.SEND_TELNO ,
+										ssh.SEND_DTTM ,
+										decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+										ssh.SEND_WORDS ,
+										decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS ,
+										(case when kml.STATUS = '4' then
+										(case when kml.FAILED_TYPE = 'SMS' then ksml.REQDATE
+										when kml.FAILED_TYPE = 'LMS' then kmml.REQDATE end)
+										else kml.REQDATE end) as FRSLTDATE ,
+										ssh.SEND_FRM_CD ,
+										decode(ssh.SEND_FRM_CD, '01', 'SMS', '02', 'LMS') as SEND_FRM_NM
+								FROM SMS_SEND_HIST ssh
+										 INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+										 LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+										 LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+								WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+								and ssh.SITE_NO = #{siteNo}
+								ORDER BY ssh.SEND_DTTM DESC
+							) A
+						where 1=1
+						<include refid="selectSmsInfoWhere"/>
+					) AA
+			)
+	</select>
+	
+	   
+    <select id="selectSendHistoryListTotalCount" resultType="Integer">
+        /* sms.selectSendHistoryListTotalCount - sms 전송이력 페이징 전체 카운트 */
+		SELECT count(*)
+		FROM
+			(
+				SELECT rownum AS PAGING_NUM, AA.tot_cnt - rownum + 1 AS SORT_NUM, AA.*
+				FROM
+					(
+						SELECT A.*, count(*) over() AS tot_cnt
+						FROM
+							(
+								SELECT ssh.SENDER_ID ,
+									   ssh.RECEIVER_ID ,
+									   ssh.RECEIVER_NM ,
+									   ssh.RECV_TELNO ,
+									   ssh.SEND_DTTM ,
+									   decode(kml.STATUS, '1', '대기', '3', '성공', decode(kml.FAILED_TYPE, 'SMS', decode(ksml.STATUS, '3', '성공', '실패'), 'LMS', decode(kmml.STATUS, '3', '성공', '실패'))) AS RSLT,
+									   ssh.SEND_WORDS ,
+									   decode(kml.STATUS, '4', decode(kml.FAILED_TYPE, 'SMS', ksml.STATUS, 'LMS', kmml.STATUS), kml.STATUS) as STATUS
+								FROM SMS_SEND_HIST ssh
+										 INNER JOIN KKO_MSG_LOG kml ON ssh.SMS_SEND_NO = kml.SERIALNUM
+										 LEFT OUTER JOIN KKO_SMS_MSG_LOG ksml ON kml.MSGKEY = ksml.MSGKEY
+										 LEFT OUTER JOIN KKO_MMS_MSG_LOG kmml ON kml.MSGKEY = kmml.MSGKEY
+								WHERE ssh.AUTO_SEND_YN = #{autoSendYn}
+								and ssh.SITE_NO = #{siteNo}
+								ORDER BY ssh.SEND_DTTM DESC
+							) A
+					) AA
+			)
+    </select>
+    
+    <select id="selectSmsFailListCount" resultType="net.danvi.dmall.smsemail.model.sms.SmsSendHistVO" useCache="false">
+        /* sms.selectSmsFailListCount - SMS 실패 카운트 조회 */
+        SELECT LOG.fuserid as SITE_NO, count(LOG.fuserid)as SMS_FAIL_POINT
+		FROM kftel.TMSGLOG LOG
+        WHERE (LOG.frsltstat != '0' and LOG.frsltstat != '06')
+        AND   ifnull(fetc2,'') != 'Y'
+        group by LOG.fuserid
+    </select>
+    
+    <select id="selectLmsFailListCount" resultType="net.danvi.dmall.smsemail.model.sms.SmsSendHistVO" useCache="false">
+        /* sms.selectLmsFailList - LMS 실패 카운트 조회 */
+        SELECT hist.SITE_NO, count(hist.SITE_NO)*3 as SMS_FAIL_POINT
+        FROM kftel.MMS_MSGLOG LOG left outer join SMS_SEND_HIST hist on (LOG.ETC1 = hist.SMS_SEND_NO)
+        WHERE LOG.RSLT != 1000
+        AND   ifnull(etc2,'') != 'Y'
+        group by hist.SITE_NO
+    </select>
+    
+    <update id="updateSmsFailPointAdd" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointPO">
+        /* sms.updateSmsFailPointAdd - SMS 실패 포인트 복원 */
+        UPDATE  SMS_POINT
+        SET     POINT = POINT + #{smsFailPoint},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+    </update>
+    
+    <update id="updateSmsFailStatus" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointPO">
+        /* sms.updateSmsFailStatus - SMS 실패 상태 변경*/
+        UPDATE  kftel.TMSGLOG LOG
+        SET     fetc2 = 'Y'
+        WHERE   LOG.fsequence IN 
+        (   
+            select * from 
+	        (    
+			    SELECT fsequence
+			    FROM kftel.TMSGLOG 
+			    WHERE (frsltstat != '0' and frsltstat != '06')
+			    AND   ifnull(fetc2,'') != 'Y'
+	        )A
+		)
+    </update>
+    
+    <update id="updateLmsFailStatus" parameterType="net.danvi.dmall.smsemail.model.SmsEmailPointPO">
+        /* sms.updateSmsFailStatus - LMS 씰패 상태 변경 */
+        UPDATE  kftel.MMS_MSGLOG LOG
+        SET     etc2 = 'Y'
+        WHERE   LOG.msgkey IN
+        (
+            select * from 
+            (
+	            SELECT LOG.msgkey
+		        FROM kftel.MMS_MSGLOG LOG
+		        WHERE LOG.RSLT != 1000
+		        AND   etc2 != 'Y'
+	        )A
+        )
+    </update>
+
+    <!-- Sms 대상 전체 회원 목록 조회 -->
+    <select id="selectTotalSmsListPaging" parameterType="memberManageSO" resultType="memberManageVO">
+        /* sms.selectTotalSmsListPaging */
+        SELECT *
+		FROM
+		(
+			SELECT T.*, ROW_NUMBER() OVER(ORDER BY  T.MEMBER_NO ASC) PAGING_NUM
+			FROM
+			(
+
+                SELECT
+                   A.MEMBER_NO,
+                   A.SITE_NO,
+                   A.MEMBER_NM,
+                   A.MEMBER_TYPE_CD,
+                   A.BIRTH,
+                   A.GENDER_GB_CD,
+                   A.NTN_GB_CD,
+                   A.JOIN_DTTM,
+                   A.EMAIL_RECV_YN,
+                   A.SMS_RECV_YN,
+                   A.MEMBER_STATUS_CD,
+                   A.LOGIN_ID,
+                   A.TEL,
+                   A.MOBILE,
+                   A.EMAIL,
+                   A.JOIN_PATH_CD,
+                   A.MEMBER_GRADE_NO,
+                   A.BORN_MONTH,
+                   A.BORN_YEAR,
+                   A.APP_TOKEN,
+                   A.OS_TYPE,
+                   A.NOTI_GB,
+                   A.EVENT_GB,
+                   A.NEWS_GB,
+                   A.REG_DTTM,
+                   A.RECV_RJT_YN,
+                   A.INTEGRATION_MEMBER_GB_CD,
+                  (SELECT cd_nm from TA_CMN_CD_DTL where grp_cd ='MEMBER_TYPE_CD' AND CD = A.MEMBER_TYPE_CD) MEMBER_TYPE_NM,
+                  (SELECT cd_nm from TA_CMN_CD_DTL where grp_cd ='JOIN_PATH_CD' AND CD = A.JOIN_PATH_CD) JOIN_PATH_NM,
+                  (SELECT cd_nm from TA_CMN_CD_DTL where grp_cd ='INTEGRATION_MEMBER_GB_CD' AND CD = A.INTEGRATION_MEMBER_GB_CD) INTEGRATION_MEMBER_GB_NM
+                 ,NVL(B1.PRC_AMT,0) PRC_AMT
+                 ,TO_CHAR(B.LOGIN_DTTM, 'YYYY-MM-DD') LAST_LOGIN_DTTM
+                 ,NVL(C.LOGIN_CNT, 0) LOGIN_CNT
+                 ,D.MEMBER_GRADE_NM
+                 ,G.SALE_AMT
+                 ,H.ORD_CNT
+               <if test="(stPrcPoint != null and stPrcPoint != '') or (endPrcPoint != null and endPrcPoint != '')">
+                   ,E.PRC_POINT
+               </if>
+               <if test="(stCommentCnt != null and stCommentCnt != '') or (endCommentCnt != null and endCommentCnt != '')">
+                   ,F.COMMENT_CNT
+               </if>
+                  FROM TC_MEMBER A
+                       LEFT JOIN(
+                                 SELECT PVD.MEMBER_NO, NVL(PRC_AMT,0)-NVL(PRC_AMT_USE,0) PRC_AMT
+                                   FROM (
+                                         SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */ MEMBER_NO, SUM(PRC_AMT) PRC_AMT
+                                           FROM TC_MEMBER_SVMN_PVD
+                                          WHERE SVMN_USE_PSB_YN = 'Y' AND (VALID_PERIOD IS NULL OR VALID_PERIOD = '' OR TO_DATE(VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                                          GROUP BY MEMBER_NO
+                                         ) PVD
+                                         LEFT JOIN(
+                                                   SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */ MEMBER_NO, SUM(PRC_AMT) PRC_AMT_USE
+                                                     FROM TC_MEMBER_SVMN_USE
+                                                    GROUP BY MEMBER_NO
+                                                   ) SVMN_USE ON PVD.MEMBER_NO = SVMN_USE.MEMBER_NO
+                        ) B1 ON A.MEMBER_NO = B1.MEMBER_NO
+                        LEFT JOIN(
+                            SELECT /*+ INDEX(HIST IDX_TC_MEMBER_LOGIN_HIST_PK) */  *
+                                FROM
+                                (
+                                    SELECT HIST.*, rank() over(partition by HIST.MEMBER_NO order by HIST.LOGIN_NO desc) as rank
+                                    FROM TC_MEMBER_LOGIN_HIST HIST
+                                    ORDER BY HIST.LOGIN_NO DESC
+                                ) HIST
+                                where rank = 1
+                       ) B ON A.MEMBER_NO = B.MEMBER_NO
+                        LEFT JOIN(
+                                  SELECT COUNT(*) LOGIN_CNT, MEMBER_NO AAA FROM TC_MEMBER_LOGIN_HIST GROUP BY MEMBER_NO
+                                  ) C ON A.MEMBER_NO = C.AAA
+                        LEFT JOIN(
+                                  SELECT  MEMBER_GRADE_NM, MEMBER_GRADE_NO FROM TC_MEMBER_GRADE WHERE SITE_NO = #{siteNo}
+                                  ) D ON A.MEMBER_GRADE_NO = D.MEMBER_GRADE_NO
+                        <if test="(stPrcPoint != null and stPrcPoint != '') or (endPrcPoint != null and endPrcPoint != '')">
+                        LEFT JOIN(
+                                  SELECT SUM(PRC_POINT) PRC_POINT, MEMBER_NO FROM TC_MEMBER_POINT GROUP BY MEMBER_NO
+                                  ) E ON A.MEMBER_NO = E.MEMBER_NO
+                        </if>
+                        <if test="(stCommentCnt != null and stCommentCnt != '') or (endCommentCnt != null and endCommentCnt != '')">
+                        LEFT JOIN(
+                                  SELECT COUNT(*) COMMENT_CNT, REGR_NO FROM TB_BBS_CMNT WHERE DEL_YN = 'N'
+                                  ) F ON A.MEMBER_NO = F.REGR_NO
+                        </if>
+                        LEFT JOIN(
+                                  SELECT A.MEMBER_NO, SUM(A.PC_SALES_AMT) SALE_AMT
+                                    FROM(
+                                        SELECT /*+ INDEX(H IDX_TO_ORD_DTL_001) INDEX(I IDX_TO_ORD_PK)*/ I.MEMBER_NO,
+                                               CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                                         THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      PC_SALES_AMT
+                                          FROM TO_ORD_DTL H
+                                               ,TO_ORD I
+                                         WHERE H.ORD_NO = I.ORD_NO
+                                        ) A
+                                        GROUP BY MEMBER_NO
+                                  ) G ON A.MEMBER_NO = G.MEMBER_NO
+                        LEFT JOIN(
+                                  SELECT A.MEMBER_NO, SUM(cnt) ORD_CNT
+                                    FROM(
+                                        SELECT /*+ INDEX(H IDX_TO_ORD_DTL_001) INDEX(I IDX_TO_ORD_PK)*/ I.MEMBER_NO, I.ORD_NO, CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END cnt
+                                          FROM TO_ORD_DTL H
+                                               ,TO_ORD I
+                                         WHERE H.ORD_NO = I.ORD_NO
+                                         /*AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')*/
+                                         GROUP BY MEMBER_NO, I.ORD_NO
+                                         ) A
+                                    GROUP BY MEMBER_NO
+                                  ) H ON A.MEMBER_NO = H.MEMBER_NO
+                          <include refid="selectMemberListWhere" />
+            ) T
+		)
+		<include refid="common.pageSql" />
+
+    </select>
+
+    <!-- sms 대상 전체 회원 조건적용 총건수 조회 -->
+    <select id="selectTotalSmsListPagingCount" resultType="Integer">
+        /* sms.selectTotalSmsListPagingCount */
+			SELECT  COUNT(*)
+              FROM TC_MEMBER A
+                   LEFT JOIN(
+                             SELECT PVD.MEMBER_NO, PRC_AMT-NVL(PRC_AMT_USE,0) PRC_AMT
+                               FROM (
+                                     SELECT /*+ INDEX(TC_MEMBER_SVMN_PVD IDX_TC_MEMBER_SVMN_PVD_002) */ MEMBER_NO, SUM(PRC_AMT) PRC_AMT
+                                       FROM TC_MEMBER_SVMN_PVD
+                                      WHERE SVMN_USE_PSB_YN = 'Y' AND (VALID_PERIOD IS NULL OR VALID_PERIOD = '' OR TO_DATE(VALID_PERIOD, 'YYYYMMDD') > TRUNC(SYSDATE))
+                                      GROUP BY MEMBER_NO
+                                     ) PVD
+                                     LEFT JOIN(
+                                               SELECT /*+ INDEX(TC_MEMBER_SVMN_USE IDX_TC_MEMBER_SVMN_USE_001) */ MEMBER_NO, SUM(PRC_AMT) PRC_AMT_USE
+                                                 FROM TC_MEMBER_SVMN_USE
+                                                GROUP BY MEMBER_NO
+                                               ) SVMN_USE ON PVD.MEMBER_NO = SVMN_USE.MEMBER_NO
+                             ) B1 ON A.MEMBER_NO = B1.MEMBER_NO
+                       LEFT JOIN(
+                            SELECT /*+ INDEX(HIST IDX_TC_MEMBER_LOGIN_HIST_PK) */  *
+                            FROM
+                            (
+                                SELECT HIST.*, rank() over(partition by HIST.MEMBER_NO order by HIST.LOGIN_NO desc) as rank
+                                FROM TC_MEMBER_LOGIN_HIST HIST
+                                ORDER BY HIST.LOGIN_NO DESC
+                            ) HIST
+                            where rank = 1
+                        ) B ON A.MEMBER_NO = B.MEMBER_NO
+                    LEFT JOIN(
+                                SELECT COUNT(*) LOGIN_CNT, MEMBER_NO AAA FROM TC_MEMBER_LOGIN_HIST GROUP BY MEMBER_NO
+                        ) C ON A.MEMBER_NO = C.AAA
+                    LEFT JOIN(
+                              SELECT  MEMBER_GRADE_NM, MEMBER_GRADE_NO FROM TC_MEMBER_GRADE WHERE SITE_NO = #{siteNo}
+                        ) D ON A.MEMBER_GRADE_NO = D.MEMBER_GRADE_NO
+                    <if test="(stPrcPoint != null and stPrcPoint != '') or (endPrcPoint != null and endPrcPoint != '')">
+                    LEFT JOIN(
+                              SELECT SUM(PRC_POINT) PRC_POINT, MEMBER_NO FROM TC_MEMBER_POINT GROUP BY MEMBER_NO
+                        ) E ON A.MEMBER_NO = E.MEMBER_NO
+                    </if>
+                    <if test="(stCommentCnt != null and stCommentCnt != '') or (endCommentCnt != null and endCommentCnt != '')">
+                    LEFT JOIN(
+                              SELECT COUNT(*) COMMENT_CNT, REGR_NO FROM TB_BBS_CMNT WHERE DEL_YN = 'N'
+                        ) F ON A.MEMBER_NO = F.REGR_NO
+                    </if>
+                    LEFT JOIN(
+                              SELECT A.MEMBER_NO, SUM(A.PC_SALES_AMT) SALE_AMT
+                                FROM(
+                                    SELECT /*+ INDEX(H IDX_TO_ORD_DTL_001) INDEX(I IDX_TO_ORD_PK)*/ I.MEMBER_NO,
+                                           CASE WHEN H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')
+                                                     THEN (H.SALE_AMT*NVL(H.ORD_QTT,0))-NVL(H.DC_AMT,0) ELSE 0 END      PC_SALES_AMT
+                                      FROM TO_ORD_DTL H
+                                           ,TO_ORD I
+                                     WHERE H.ORD_NO = I.ORD_NO
+                                    ) A
+                                    GROUP BY MEMBER_NO
+                        ) G ON A.MEMBER_NO = G.MEMBER_NO
+                    LEFT JOIN(
+                              SELECT A.MEMBER_NO, SUM(cnt) ORD_CNT
+                                FROM(
+                                    SELECT /*+ INDEX(H IDX_TO_ORD_DTL_001) INDEX(I IDX_TO_ORD_PK)*/  I.MEMBER_NO, I.ORD_NO, CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END cnt
+                                      FROM TO_ORD_DTL H
+                                           ,TO_ORD I
+                                     WHERE H.ORD_NO = I.ORD_NO
+                                     /*AND H.ORD_DTL_STATUS_CD IN ('20','30','40','50','90')*/
+                                     GROUP BY MEMBER_NO, I.ORD_NO
+                                     ) A
+                                GROUP BY MEMBER_NO
+                        ) H ON A.MEMBER_NO = H.MEMBER_NO
+                      <include refid="selectMemberListWhere" />
+    </select>
+
+	<insert id="insertSMSMSG" parameterType="List">
+		/* operation.smsManage.insertSMSMSG */
+		INSERT ALL
+		<foreach collection="list" item="smsSendPO" separator="">
+			INTO SMS_MSG (
+			MSGKEY
+			, REQDATE
+			, STATUS
+			, PHONE
+			, CALLBACK
+			, TYPE
+			, MSG
+			, ID
+			, ETC1
+			, ETC2
+			, ETC5
+			, ETC6
+			)VALUES (
+			fn_getSeq(0, 'SMS_MSG')
+			, sysdate
+			, '1'
+			, #{smsSendPO.fdestine}
+			, #{smsSendPO.fcallback}
+			,'0'
+			,#{smsSendPO.failedMsg}
+			,'0000'
+			,'0000'
+			,'000000'
+			,'0'
+			,''
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+	<insert id="insertMMSMSG" parameterType="List">
+		/* operation.smsManage.insertMMSMSG */
+		INSERT ALL
+		<foreach collection="list" item="smsSendPO" separator="">
+			INTO MMS_MSG (
+			MSGKEY
+			, REQDATE
+			, STATUS
+			, PHONE
+			, CALLBACK
+			, TYPE
+			, MSG
+			, ID
+			, ETC1
+			, ETC2
+			, ETC5
+			, ETC6
+			)VALUES (
+			fn_getSeq(0, 'SMS_MSG')
+			, sysdate
+			, '1'
+			, #{smsSendPO.phone}
+			, #{smsSendPO.callback}
+			,'0'
+			,#{smsSendPO.msg}
+			,'0000'
+			,'0000'
+			,'000000'
+			,'0'
+			,''
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+</mapper>

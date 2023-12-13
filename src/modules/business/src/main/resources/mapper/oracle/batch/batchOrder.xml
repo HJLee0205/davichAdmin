@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="batch.order">
+
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true"/>
+
+    <!-- BA-O-001_Reader : 입금누락 주문무효처리 -->
+	<select id="selectNoneDepositOrdList" resultType="Map">
+		/* batch.order.selectNoneDepositOrdList - BA-O-001_Reader 무통장 5일 후 미입금 내역 */
+		SELECT ord.SITE_NO, ord.ORD_NO, ord.ORDR_NM, ord.MEMBER_NO, ord.LOGIN_ID, ord.ORD_STATUS_CD, ord.ORD_CMPLT_DTTM
+		     , ord.ORDR_MOBILE, ord.ORDR_MOBILE as FDESTINE, ord.ORDR_EMAIL
+		     , pay.PAYMENT_NO, pay.PAYMENT_STATUS_CD, pay.PAYMENT_WAY_CD
+		     , case when mem.SMS_RECV_YN = 'Y' or ord.SMS_RECV_YN = 'Y' then 'Y' else 'N' end as SMS_RECV_YN
+		     , case when mem.EMAIL_RECV_YN = 'Y' or ord.EMAIL_RECV_YN = 'Y' then 'Y' else 'N' end as EMAIL_RECV_YN
+		     <if test="jobId == 'BA-O-001_Job'">
+		     , svmn.SVMN_SEQ, svmn.PRC_AMT
+		     </if>
+		     <if test="jobId == 'BA-O-004_Job' or jobId == 'BA-O-006_Job' ">
+		     , 0 as SVMN_SEQ, 0 as PRC_AMT
+		     </if>
+		     , sdtl.SITE_NM, site.CERTIFY_SEND_NO as CERTIFY_SEND_NO,  site.CERTIFY_SEND_NO as FCALLBACK, sdtl.CUST_CT_EMAIL
+		     <if test="sendDate !=null and sendDate != ''">
+		     , TO_DATE(#{sendDate}, 'YYYY-MM-DD HH24:MI:SS') as SEND_DTTM
+		     </if>
+             , smsmsg.MEMBER_SEND_WORDS, mailmsg.MAIL_TITLE
+             , REPLACE(REPLACE(REPLACE(smsmsg.MEMBER_SEND_WORDS,'#[siteNm]', sdtl.SITE_NM), '#[orderNm]', ord.ORDR_NM), '#[ordNo]', ord.ORD_NO) as SEND_WORDS
+             , REPLACE(mailmsg.MAIL_TITLE,'#[siteNm]', sdtl.SITE_NM) as SEND_TITLE
+             , '' as SEND_CONTENT /* 참고 fn_getEmailContentConverter13(ord.ORD_NO) */
+		  FROM TO_ORD ord
+		       INNER JOIN TO_PAYMENT pay ON (ord.ORD_NO = pay.ORD_NO)
+		       LEFT OUTER JOIN TC_MEMBER mem ON (ord.MEMBER_NO = mem.MEMBER_NO)
+		       <if test="jobId == 'BA-O-001_Job'">
+		       LEFT OUTER JOIN TC_MEMBER_SVMN_USE svmn ON (ord.ORD_NO = svmn.ORD_NO and svmn.DEDUCT_GB_CD = '01' and svmn.SVMN_REASON_CD = '03')
+		       </if>
+		       LEFT OUTER JOIN TS_SITE_DTL sdtl ON (ord.SITE_NO = sdtl.SITE_NO)
+		       LEFT OUTER JOIN TS_SITE site ON (ord.SITE_NO = site.SITE_NO)
+		       LEFT OUTER JOIN TB_SMS_AUTO_SEND_MANAGE smsmsg ON (ord.SITE_NO = smsmsg.SITE_NO and smsmsg.SEND_TYPE_CD='13')
+		       LEFT OUTER JOIN TB_MAIL_AUTO_SEND_MANAGE mailmsg ON (ord.SITE_NO = mailmsg.SITE_NO and mailmsg.MAIL_TYPE_CD='13')
+		 WHERE 1=1
+		   <if test="jobId == 'BA-O-001_Job'">
+           AND ord.ORD_STATUS_CD = '10'  /* 10.주문완료(상태코드:입금확인중) */
+           AND pay.PAYMENT_WAY_CD = '11' /* 22.무통장입금(가상계좌) */
+           AND pay.PAYMENT_STATUS_CD = '01' /* 01.접수 */
+		   </if>
+           <if test="jobId == 'BA-O-004_Job' or jobId == 'BA-O-006_Job' ">
+           AND ord.ORD_STATUS_CD = '11'  /* 11.주문취소 */
+           AND pay.PAYMENT_WAY_CD = '11' /* 22.무통장입금(가상계좌) */
+           AND pay.PAYMENT_STATUS_CD = '03' /* 03.취소 */
+           AND ord.UPDR_NO = 170 /* 자동배치로 수정한 건 */
+           AND ord.UPD_DTTM <![CDATA[>]]> TO_DATE(TO_CHAR(sysdate, 'YYYY-MM-DD')||' 00:00:01', 'YYYY-MM-DD HH24:MI:SS') /* 오늘날짜로 배치처리한 건 */
+           </if>
+		   AND ord.ORD_ACCEPT_DTTM <![CDATA[<]]> TO_DATE(#{stdDate}, 'YYYY-MM-DD HH24:MI:SS') - #{intCnt}
+	       <if test="jobId == 'BA-O-004_Job'">
+	       AND 'Y' = (case when mem.SMS_RECV_YN = 'Y' or ord.SMS_RECV_YN = 'Y' then 'Y' else 'N' end)
+	       </if>
+	       <if test="jobId == 'BA-O-006_Job'">
+	       AND 'Y' = (case when mem.EMAIL_RECV_YN = 'Y' or ord.EMAIL_RECV_YN = 'Y' then 'Y' else 'N' end)
+	       </if>
+	       <if test="ordNo !=null and ordNo != ''">
+	       AND ord.ORD_NO = #{ordNo}
+	       </if>
+	</select>
+
+    <!-- BA-O-001_Writer : 입금누락 주문무효처리 (주문,주문상세,결제,마켓포인트,회원등급 등이 되돌려져야 함)-->
+    <update id="updateOrdStatusByNoneDeposit" parameterType="Map">
+    { CALL
+    		DECLARE
+    		BEGIN
+		/* batch.order.updateOrdStatusByNoneDeposit - BA-O-001_Writer 무통장 5일 후 미입금 주문상태변경 */
+		/* 주문 - 주문상태 - 11.주문취소로 변경  */
+		UPDATE TO_ORD
+		   SET ORD_STATUS_CD = '11'
+		     , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+		     , UPD_DTTM = sysdate
+		 WHERE ORD_NO = #{ORD_NO};
+
+		/* 주문상세 - 주문상세상태 - 11.주문취소로 변경  */
+		UPDATE TO_ORD_DTL
+		   SET ORD_DTL_STATUS_CD = '11'
+		     , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+             , UPD_DTTM = sysdate
+		 WHERE ORD_NO = #{ORD_NO};
+
+		/* 결제 - 결제상태 - 03.취소로 변경 */
+		UPDATE TO_PAYMENT
+		   SET PAYMENT_STATUS_CD = '03'
+             , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+             , UPD_DTTM = sysdate
+		 WHERE ORD_NO = #{ORD_NO};
+
+        <if test="SVMN_SEQ !=null and SVMN_SEQ gt 0 and PRC_AMT !=null and PRC_AMT gt 0 ">
+		/* 회원 마켓포인트 사용 주문시 사용된 마켓포인트 (-)금액으로 사용이력 추가 */
+		INSERT INTO TC_MEMBER_SVMN_USE
+		       (MEMBER_NO, USE_NO, SVMN_SEQ, SVMN_TYPE_CD, SVMN_REASON_CD, ETC_REASON
+		      , PRC_AMT, ORD_NO, DEDUCT_GB_CD, REGR_NO, REG_DTTM, UPDR_NO, UPD_DTTM)
+		SELECT MEMBER_NO, fn_getSeq(0, 'TC_MEMBER_SVMN_USE') AS USE_NO, SVMN_SEQ, SVMN_TYPE_CD, '06' AS SVMN_REASON_CD, '미입금 배치 자동취소' AS ETC_REASON
+		     , PRC_AMT*-1 AS PRC_AMT, ORD_NO, '02' AS DEDUCT_GB_CD, 170 AS REGR_NO, sysdate AS REG_DTTM, NULL, NULL
+		  FROM TC_MEMBER_SVMN_USE
+		 WHERE MEMBER_NO = #{MEMBER_NO}
+		   AND ORD_NO = #{ORD_NO}
+		   AND DEDUCT_GB_CD = '02' /* 01.사용, 02.취소 */
+		   AND SVMN_REASON_CD = '06'; /* 03.상품 구매 사용 차감, 06.주문취소 */
+
+        /* 회원 마켓포인트 지급 - 현재 보유중인 마켓포인트에 복원된 차감 마켓포인트 (+)해 update */
+        UPDATE TC_MEMBER_SVMN_PVD
+           SET USE_PSB_AMT = USE_PSB_AMT + #{PRC_AMT}
+             , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+             , UPD_DTTM = sysdate
+         WHERE MEMBER_NO = #{MEMBER_NO}
+           AND SVMN_SEQ = #{SVMN_SEQ};
+        </if>
+       
+       END
+    }    
+    </update>
+
+    <!-- BA-O-002_Reader : 배송완료누락 배송완료처리 -->
+    <select id="selectNoneDeliveryFinishList" resultType="Map">
+        /* batch.order.selectNoneDeliveryFinishList - BA-O-002_Reader 배송중 15일 지난 주문내역 */
+        SELECT odt.ORD_NO, odt.ORD_DTL_SEQ, odt.ORD_DTL_STATUS_CD, odt.GOODS_NO, odt.ITEM_NO, odt.RLS_CMPLT_DTTM, odt.DLVR_CMPLT_DTTM
+          FROM TO_ORD_DTL odt INNER JOIN TO_ORD ord ON (odt.ORD_NO = ord.ORD_NO)
+                              INNER JOIN TO_DLVR d ON (odt.ORD_NO = d.ORD_NO and odt.ORD_DTL_SEQ = d.ORD_DTL_SEQ)
+         WHERE odt.ORD_DTL_STATUS_CD = '40'  /* 40.배송중 */
+           AND d.RLS_CMPLT_REG_DTTM <![CDATA[<]]> TO_DATE(#{stdDate}, 'YYYY-MM-DD HH24:MI:SS') - #{intCnt} /* 출고완료일시 -> 배송중으로 바뀐 일시  4일 지난시점 조회 */
+           AND ord.ORD_STATUS_CD BETWEEN '39' AND '49' /* 주문상태 39.부분배송중, 40.배송중, 49.부분배송완료 , 50.배송완료 */
+           <if test="ordNo !=null and ordNo != ''">
+           AND ord.ORD_NO = #{ordNo}
+           </if>
+    </select>
+
+    <!-- BA-O-002_Writer : 배송완료누락 배송완료처리 (주문,주문상세가 변경 되어야 함)-->
+    <update id="updateOrdStatusByNoneDeliveryFinish" parameterType="Map">
+                /* batch.order.updateOrdStatusByNoneDeliveryFinish - BA-O-002_Reader 배송중 4일 지난 주문내역 배송완료로 주문상태변경 */
+                /* 주문상세 - 주문상세상태 - 50.배송완료로 변경  */
+                UPDATE TO_ORD_DTL
+                   SET ORD_DTL_STATUS_CD = '50'
+                     , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+                     , UPD_DTTM = sysdate
+                     , DLVR_CMPLT_DTTM = sysdate
+                 WHERE ORD_NO = #{ORD_NO}
+                   AND GOODS_NO = #{GOODS_NO}
+                   AND ITEM_NO = #{ITEM_NO}      
+    </update>
+    
+    <!-- BA-O-002_Writer : 배송완료누락 배송완료처리 (주문,주문상세가 변경 되어야 함)-->
+    <update id="updateOrdStatusByNoneDeliveryFinish2" parameterType="Map">
+		        /* 주문 - 주문상태 - 39.부분배송중, 40.배송중, 49.부분배송와뇰, 50.배송완료로 주문상세에 따라 처리해야 함  */
+				MERGE INTO TO_ORD A
+				USING( SELECT ord.ORD_NO
+				            , SUM(1 - CASE WHEN dtl.ORD_DTL_STATUS_CD IN('50', '66', '74') THEN 1 ELSE 0 END) AS DLVCOMPLET /* 50.배송완료, 66.교환완료, 74.반품완료 */
+				         FROM TO_ORD_DTL dtl INNER JOIN TO_ORD ord ON (dtl.ORD_NO = ord.ORD_NO)
+				        WHERE ord.ORD_STATUS_CD BETWEEN '39' AND '50' /* 주문상태 39.부분배송중, 40.배송중, 49.부분배송완료 , 50.배송완료 */
+				          AND dtl.ADD_OPT_YN='N' /* 추가옵션을 제외한 메인상품만 - 배송과 연관됨 */
+				        GROUP BY ord.ORD_NO ) B
+				ON( A.ORD_NO=B.ORD_NO) 
+				WHEN MATCHED THEN 
+				   UPDATE 
+				   SET A.ORD_STATUS_CD = CASE WHEN B.DLVCOMPLET = 0 THEN '50' ELSE '49' END
+				     , A.UPDR_NO   = CASE WHEN A.ORD_STATUS_CD = CASE WHEN B.DLVCOMPLET = 0 THEN '50' ELSE '49' END /* 상태가 같으면 기존값을 사용 */
+				                               THEN A.UPDR_NO
+				                          ELSE 170 /* 수정자 번호 - 배치번호-주문  */
+				                     END
+				     , A.UPD_DTTM  = CASE WHEN A.ORD_STATUS_CD = CASE WHEN B.DLVCOMPLET = 0 THEN '50' ELSE '49' END /* 상태가 같으면 기존값을 사용 */
+				                               THEN A.UPD_DTTM
+				                          ELSE sysdate
+				                     END
+					WHERE A.ORD_NO = #{ORD_NO}      
+    </update>
+    
+
+    <!-- BA-O-004_Writer : 입금누락 주문무효 안내 SMS발송-->
+    <update id="insertSmsSendByNoneDeposit" parameterType="Map" >
+        /* batch.order.insertSmsSendByNoneDeposit - BA-O-004_Writer BA-O-004 입금누락 주문무효 안내 SMS발송 */
+        /* 입금누락 주문무효 처리 SMS발송 */
+        INSERT INTO TB_SMS_SEND_HIST
+              ( ORD_NO
+              , SEND_TYPE_CD
+              , SEND_TARGET_CD
+              , SEND_FRM_CD
+              , RESULT_CD
+
+              , SEND_TELNO
+              , SEND_WORDS
+              , SENDER_NO
+              , SENDER_ID
+              , SENDER_NM
+
+              , SEND_DTTM
+              , REAL_SEND_DTTM
+              , RECV_TELNO
+              , RECEIVER_NO
+              , RECEIVER_ID
+
+              , RECEIVER_NM
+              , RECV_DTTM
+              , SITE_NO
+              , AUTO_SEND_YN
+              , REG_DTTM
+
+              , REGR_NO
+              , UPD_DTTM
+              , UPDR_NO
+              , DEL_DTTM
+              , DELR_NO
+
+              , DEL_YN)
+        VALUES (#{ORD_NO}          /* 주문번호 */
+              , '13'               /* 발송유형코드 - 13.주문무효 시 */
+              , '01'               /* 발송대상코드 - 01.회원 */
+              , '01'               /* 발송형태코드 - 01.SMS, 02.LMS */
+              , '01'               /* 결과코드 - 01.성공 */
+
+              , #{CERTIFY_SEND_NO} /* 발송 전화번호 */
+              , #{SEND_WORDS}      /* 발송 문구 */
+              , 0                  /* 발신자 번호 - 배치번호 */
+              , 'batch'            /* 발신자 ID - 배지용 batch로 고정  */
+              , #{SITE_NM}         /* 발신자 명 */
+
+              , #{SEND_DTTM}       /* 발송 일시 */
+              , NULL               /* 실 발송 일시 */
+              , #{ORDR_MOBILE}     /* 수신 전화번호 */
+              , #{MEMBER_NO}       /* 수신자 번호 */
+              , #{LOGIN_ID}        /* 수신자 ID */
+
+              , #{ORDR_NM}         /* 수신자 명 */
+              , sysdate              /* 수신 일시 */
+              , #{SITE_NO}         /* 사이트번호 */
+              , 'Y'                /* 자동 발송 여부 */
+              , sysdate              /* 등록 일시 */
+
+              , 170                /* 등록자 번호 - 배치번호-주문  */
+              , NULL               /* 수정 일시  */
+              , NULL               /* 수정자 번호 */
+              , NULL               /* 삭제 일시 */
+              , NULL               /* 삭제자 번호 */
+
+              , 'N'                /* 삭제여부 */
+              )
+
+        /* SMS 발송 솔루션 정보 등록 */
+        INSERT INTO TBLMESSAGE
+               (fsequence, fuserid, fsenddate, fdestine, fcallback, ftext, fetc1 )
+        VALUES (fn_getSeq(0, 'FSEQUENCE'), #{SITE_NO}, #{SEND_DTTM}, #{FDESTINE} , #{FCALLBACK}, #{SEND_WORDS}, LAST_INSERT_ID() )
+
+        /* SMS정보 관리 - 보유건수 update */
+        UPDATE TB_SMS_INFO_MANAGE
+           SET POSS_CNT = POSS_CNT-1
+             , UPD_DTTM = sysdate
+             , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+         WHERE SITE_NO = #{SITE_NO}
+    </update>
+
+    <!-- BA-O-006_Writer : 입금누락 주문무효 안내 이메일발송-->
+    <update id="insertEmailSendByNoneDeposit" parameterType="Map">
+        /* batch.order.insertEmailSendByNoneDeposit - BA-O-006_Writer BA-O-006 입금누락 주문무효 안내 이메일발송 */
+        /* 입금누락 주문무효 처리 이메일발송 */
+        INSERT INTO TB_MAIL_SEND_HIST
+               (MAIL_SEND_NO
+              , ORD_NO
+              , SEND_TARGET_CD
+              , MAIL_TYPE_CD
+              , RESULT_CD
+              , SEND_EMAIL
+
+              , SEND_TITLE
+              , SEND_CONTENT
+              , SENDER_NO
+              , SENDER_NM
+              , SEND_DTTM
+
+              , SEND_STNDRD
+              , RECEIVER_EMAIL
+              , RECEIVER_NO
+              , RECEIVER_NM
+              , SITE_NO
+
+              , AUTO_SEND_YN
+              , REG_DTTM
+              , REGR_NO
+              , UPD_DTTM
+              , UPDR_NO
+
+              , DEL_DTTM
+              , DELR_NO
+              , DEL_YN
+              )
+        VALUES (fn_getSeq(0, 'MAIL_SEND_NO')
+        	  , #{ORD_NO}        /* 주문번호 */
+              , '01'             /* 발송대상코드 - 01.회원 */
+              , '13'             /* 발송유형코드 - 13.주문무효 시 */
+              , '01'             /* 결과코드 - 01.성공 */
+              , #{CUST_CT_EMAIL} /* 발송 이메일 */
+
+              , #{SEND_TITLE}    /* 발송 제목 */
+              , #{SEND_CONTENT:CLOB}  /* 발송 내용 */
+              , 0                /* 발신자 번호 - 배치번호 */
+              , #{SITE_NM}       /* 발신자 명 */
+              , #{SEND_DTTM}     /* 발송 일시 */
+
+              , ''               /* 발송 기준 */
+              , #{ORDR_EMAIL}    /* 수신자 이메일 */
+              , #{MEMBER_NO}     /* 수신자 번호 */
+              , #{ORDR_NM}       /* 수신자 명 */
+              , #{SITE_NO}       /* 사이트번호 */
+
+              , 'Y'              /* 자동 발송 여부 */
+              , sysdate            /* 등록 일시 */
+              , 170              /* 등록자 번호 - 배치번호-주문  */
+              , NULL             /* 수정 일시  */
+              , NULL             /* 수정자 번호 */
+
+              , NULL             /* 삭제 일시 */
+              , NULL             /* 삭제자 번호 */
+              , 'N'              /* 삭제여부 */
+              )
+
+        /* Email정보 관리 - 보유건수 차감 update */
+        UPDATE TB_MAIL_INFO_MANAGE
+           SET MAIL_POSS_CNT = MAIL_POSS_CNT -1
+             , UPD_DTTM = sysdate
+             , UPDR_NO = 170 /* 수정자 번호 - 배치번호-주문  */
+         WHERE SITE_NO = #{SITE_NO}
+    </update>
+
+    <select id="selectTest" resultType="Map">
+        SELECT GRP_CD, CD AS DTL_CD, CD_NM AS DTL_NM
+        FROM TA_CMN_CD_DTL
+        WHERE GRP_CD = 'ADDED_AMOUNT_GB_CD'
+        ORDER BY GRP_CD, CD ASC
+    </select>
+
+<!--     <select id="selectTestVo" resultType="BizCodeVO"> -->
+<!--         SELECT GRP_CD, CD AS DTL_CD, CD_NM AS DTL_NM -->
+<!--         FROM TA_CMN_CD_DTL -->
+<!--         WHERE GRP_CD = 'ADDED_AMOUNT_GB_CD' -->
+<!--         ORDER BY GRP_CD, CD ASC -->
+<!--     </select>     -->
+
+	<select id="selectTestPaging" resultType="Map">
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT GRP_CD, CD, CD_NM
+				FROM TA_CMN_CD_DTL
+				ORDER BY GRP_CD, CD ASC
+			) T
+		)
+		WHERE PAGING_NUM BETWEEN #{_skiprows} AND #{_pagesize}
+	</select>
+	<select id="selectTestPagingToBean" resultType="net.danvi.dmall.biz.common.model.BizCodeVO">
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, ROWNUM, T.*
+			FROM
+			(
+				SELECT GRP_CD, CD AS DTL_CD, CD_NM AS DTL_NM
+				FROM TA_CMN_CD_DTL
+				ORDER BY GRP_CD, CD ASC
+			) T
+		)
+		WHERE PAGING_NUM BETWEEN #{_skiprows} AND #{_pagesize}
+	</select>
+
+	<insert id="insertTest" parameterType="Map">
+		INSERT INTO T_CMN_CD_DTL(GRP_CD, CD, CD_NM) VALUES(#{GRP_CD}, #{DTL_CD}, #{DTL_NM})
+	</insert>
+
+<!-- 	<insert id="insertTestVo" parameterType="BizCodeVO"> -->
+<!--         INSERT INTO T_CMN_CD_DTL(GRP_CD, CD, CD_NM) VALUES(#{GRP_CD}, #{CD}, #{CD_NM}) -->
+<!--     </insert> -->
+
+</mapper>

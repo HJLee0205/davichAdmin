@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+    <entry key="mail.id"></entry><!-- 메일 솔루션 로그인 ID -->
+
+    <entry key="mail.retryYn">O</entry><!-- 재시도 필요 여부 -->
+    <entry key="mail.retryCnt">3</entry><!-- 재시도 필요시, 재시도 횟수 -->
+    <entry key="mail.linkYn">Y</entry><!-- 링크분석 여부 -->
+</properties>

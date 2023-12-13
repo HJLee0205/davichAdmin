@@ -1,0 +1,73 @@
+@charset "utf-8";
+html,body	{
+	height:100%;
+}
+
+header	{
+	width:100%;
+	height:70px;
+	border-bottom:2px solid #0055a4;
+}
+header h1	{
+	width:40%;
+	float:left;
+	text-indent:-9999px;
+	height:100%;
+	background:url(../img/logo.png) no-repeat 30% 15px;
+	background-size:130px;
+}
+header h2	{
+	float:right;
+	margin-right:5%;
+	font-size:1.4rem;
+	font-weight:400;
+	margin-top:23px;
+}
+article	{
+	width:100%;
+	text-align:center;
+	padding:40px 0;
+}
+article.app1	{
+	background:#f4f6f9;
+}
+article.app2	{
+	background:#eaf1f1;
+}
+article h3	{
+	font-size:1.2rem;
+	margin-bottom:25px;
+}
+.app_footer	{
+	padding:50px;
+}
+
+.app_footer a	{
+	color:#0055a4
+}
+.app_footer .footer_list {
+	list-style: none; 
+	padding-bottom:20px;
+}
+.app_footer .footer_list li	{
+	font-size: 17px;
+	line-height:120%;
+	margin-bottom:10px;
+}
+.app_wrap	{
+	overflow:hidden;
+}
+.app_wrap li	{
+	display:inline-block;
+	width:40%;
+}
+.app_wrap li a	{
+	display:block;
+}
+.app_wrap li p	{
+	font-size:1rem;
+	margin-top:15px; 
+}
+.app_wrap li img {
+	width:90px;
+}

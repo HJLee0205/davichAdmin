@@ -1,0 +1,26 @@
+@charset "utf-8";
+
+
+/* === select box === */
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: url('../img/common/select_arrow.png') no-repeat 95% 50%;
+}
+select::-ms-expand {
+    display: none;
+}
+
+select {
+    width: 200px;
+    padding:5px;
+    font-size:12px;
+    height:28px;
+    background: url('../img/common/select_arrow.png') no-repeat right 50%;
+    border: 1px solid #e5e5e5;
+    border-radius: 0px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}

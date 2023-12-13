@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+        "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+
+<tiles-definitions>
+
+	<definition name="mainLayout" template="/WEB-INF/tiles/mainLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/include/jsVar.jsp" />
+		<put-attribute name="header" value="/WEB-INF/include/header.jsp" />
+	</definition>
+
+	<definition name="defaultLayout" template="/WEB-INF/tiles/defaultLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/include/jsVar.jsp" />
+		<put-attribute name="header" value="/WEB-INF/include/header.jsp" />
+		<put-attribute name="aside" value="/WEB-INF/include/aside.jsp" />
+	</definition>
+	
+	<definition name="sellerMainLayout" template="/WEB-INF/tiles/mainLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/include/jsVar.jsp" />
+		<put-attribute name="header" value="/WEB-INF/include/selheader.jsp" />
+	</definition>
+	
+	<definition name="sellerDefaultLayout" template="/WEB-INF/tiles/defaultLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/include/jsVar.jsp" />
+		<put-attribute name="header" value="/WEB-INF/include/selheader.jsp" />
+		<put-attribute name="aside" value="/WEB-INF/include/aside.jsp" />
+	</definition>
+	
+	
+
+	<!-- 레이아웃 추가시 jsVar 도 반드시 추가할것. 공통 자바스크립트 변수가 정의되어 있음 -->
+	<definition name="popupLayout" template="/WEB-INF/tiles/popupLayout.jsp" >
+		<put-attribute name="common" value="/WEB-INF/include/common.jsp" />
+		<put-attribute name="jsVar" value="/WEB-INF/include/jsVar.jsp" />
+	</definition>
+
+</tiles-definitions>

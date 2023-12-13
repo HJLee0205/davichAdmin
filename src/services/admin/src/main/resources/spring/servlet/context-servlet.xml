@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc		http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+						http://www.springframework.org/schema/beans		http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+						http://www.springframework.org/schema/aop		http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+						http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-4.2.xsd
+						http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd
+						http://www.springframework.org/schema/task		http://www.springframework.org/schema/task/spring-task-4.2.xsd ">
+
+	<mvc:resources mapping="/admin/css/**" location="/css/" />
+	<mvc:resources mapping="/admin/daumeditor/**" location="/daumeditor/" />
+	<mvc:resources mapping="/admin/font/**" location="/font/" />
+	<mvc:resources mapping="/admin/img/**" location="/img/" />
+	<mvc:resources mapping="/admin/js/**" location="/js/" />
+	<mvc:resources mapping="/admin/doc/**" location="/doc/" />
+	<mvc:resources mapping="/admin/excel/**" location="/excel/" />
+
+	<mvc:view-controller path="/admin" view-name="redirect:/admin/main/main-view" />
+	<mvc:view-controller path="/admin/" view-name="redirect:/admin/main/main-view" />
+
+	<!--
+		@Component, @Controller, @Service, @Repository
+		BeanPostProcessor를 함께 등록
+		자동 설정
+	-->
+	<context:component-scan base-package="net.danvi.dmall.admin">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+	<!--
+		RequiredAnnotationBeanPostProcessor : @Required
+		AutowiredAnnotationBeandPostProcessor : @Autowird
+		CommonAnnotationBeanPostProcessor : @Resource, @PostConstruct @PreDestroy
+		ConfigurationClassPostProcessor : @Configuration
+		자동설정
+	-->
+	<!--
+		<context:annotation-config />
+	-->
+
+	<!--
+		@Aspect Bean객체를 Aspect로 등록
+		실제 Class에는 @Component를 설정하여 Bean으로 등록 또느 XML파일에 Bean으로 등록한다
+		proxy-target-class="true" 이 설정을 추가하면 CGLib를 사용하고, 삭제하면 JDK 프록시를 사용하는 것을 의미한다.
+		CGLib사용 시 해당 라이브러리 추가 필수
+		예) <aop:aspectj-autoproxy proxy-target-class="true" />
+	-->
+	<aop:aspectj-autoproxy proxy-target-class="true"/>
+
+	<!-- MVC 3.1 DispatcherServlet 전략 자동 등록 -->
+	<mvc:annotation-driven validator="validator">
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+				<!--<property name="supportedMediaTypes" value="application/json;charset=UTF-8" />-->
+				<property name="supportedMediaTypes" value="text/plain;charset=UTF-8"/><!-- IE8 ajax -->
+			</bean>
+		</mvc:message-converters>
+
+		<mvc:argument-resolvers>
+<!-- 			<bean class="net.danvi.dmall.admin.web.common.resolver.SessionArgumentResolver" /> -->
+			<!--<bean class="net.danvi.dmall.admin.web.common.resolver.MemberNoArgumentResolver" />-->
+		</mvc:argument-resolvers>
+
+	</mvc:annotation-driven>
+
+	<!-- Interceptor -->
+	<mvc:interceptors>
+		<!-- Locale Change Interceptor -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*" />
+			<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor" />
+		</mvc:interceptor>
+
+		<mvc:interceptor>
+          <mvc:mapping path="/**/*"/>
+          <!-- On pre-handle, manage the user's site preference (declare after DeviceResolverHandlerInterceptor) -->
+          <bean class="org.springframework.mobile.device.site.SitePreferenceHandlerInterceptor" />
+        </mvc:interceptor>
+
+		<!-- 세션에 사이트 정보를 저장  -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*" />
+			<mvc:exclude-mapping path="/admin/css/**/*" />
+			<mvc:exclude-mapping path="/admin/daumeditor/**/*" />
+			<mvc:exclude-mapping path="/admin/font/**/*" />
+			<mvc:exclude-mapping path="/admin/img/**/*" />
+			<mvc:exclude-mapping path="/admin/js/**/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/example/*" />
+			<mvc:exclude-mapping path="/admin/service/*" />
+			<bean class="net.danvi.dmall.biz.system.interceptor.CommonSiteInterceptor" />
+		</mvc:interceptor>
+
+		<!-- 로그인 쿠키 정보 처리 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*" />
+			<mvc:exclude-mapping path="/image/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/css/**/*" />
+			<mvc:exclude-mapping path="/admin/daumeditor/**/*" />
+			<mvc:exclude-mapping path="/admin/font/**/*" />
+			<mvc:exclude-mapping path="/admin/img/**/*" />
+			<mvc:exclude-mapping path="/admin/js/**/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/example/*" />
+			<mvc:exclude-mapping path="/admin/service/*" />
+			<bean class="net.danvi.dmall.biz.system.interceptor.SiteCookieInterceptor" />
+		</mvc:interceptor>
+
+		<!-- Ajax 요청이 아닌 경우, 모델에 사이트 정보를 세팅하는 인터셉터 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*" />
+			<mvc:exclude-mapping path="/image/**/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/css/**/*" />
+			<mvc:exclude-mapping path="/admin/daumeditor/**/*" />
+			<mvc:exclude-mapping path="/admin/font/**/*" />
+			<mvc:exclude-mapping path="/admin/img/**/*" />
+			<mvc:exclude-mapping path="/admin/js/**/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/example/*" />
+			<mvc:exclude-mapping path="/admin/service/*" />
+			<bean class="net.danvi.dmall.admin.web.common.interceptor.AdminSiteInfoInterceptor" />
+		</mvc:interceptor>
+
+		<!-- 사이트 유형에 따른 메뉴에 대한 권한 체크, 쿠키 만료시간 연장, 메뉴정보 세팅 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/admin/**/*" />
+			<mvc:exclude-mapping path="/admin/login/*" />
+			<mvc:exclude-mapping path="/admin/common/*" />
+			<mvc:exclude-mapping path="/image/**/*" />
+			<mvc:exclude-mapping path="/admin/remote/**/*" />
+			<mvc:exclude-mapping path="/admin/css/**/*" />
+			<mvc:exclude-mapping path="/admin/daumeditor/**/*" />
+			<mvc:exclude-mapping path="/admin/font/**/*" />
+			<mvc:exclude-mapping path="/admin/img/**/*" />
+			<mvc:exclude-mapping path="/admin/js/**/*" />
+			<mvc:exclude-mapping path="/admin/interfaces/payment/**" />
+			<mvc:exclude-mapping path="/admin/**/npay-item-info" />
+			<mvc:exclude-mapping path="/admin/order/refund/refund-check-popup" />
+			<mvc:exclude-mapping path="/admin/order/refund/refund-check-update" />
+			<mvc:exclude-mapping path="/admin/example/*" />
+			<mvc:exclude-mapping path="/admin/service/*" />
+			<bean class="net.danvi.dmall.admin.web.common.interceptor.AdminAuthInterceptor" />
+		</mvc:interceptor>
+
+	</mvc:interceptors>
+
+	<!-- Tiles3 Setting -->
+	<bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles3.TilesConfigurer">
+		<property name="definitions">
+			<list>
+				<value>classpath:config/tiles/tiles-common.xml</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- View Resolver -->
+	<bean id="downloadViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<property name="order" value="0" />
+	</bean>
+
+	<bean id="tilesViewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.tiles3.TilesView"/>
+		<property name="order" value="1" />
+	</bean>
+
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/views/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="2" />
+	</bean>
+
+	<!-- Exception Resolver -->
+	<bean class="net.danvi.dmall.admin.web.common.resolver.AdminWebExceptionResolver" />
+
+	<!-- BeanNameView -->
+	<bean id="jsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView">
+		<property name="contentType" value="text/plain;charset=UTF-8" />
+	</bean>
+	<bean id="fileView" class="dmall.framework.common.view.FileView" />
+	<bean id="imageView" class="dmall.framework.common.view.ImageView" />
+	<bean id="excelView" class="net.danvi.dmall.admin.web.common.view.ExcelView" />
+	<bean id="voidView" class="dmall.framework.common.view.VoidView" />
+
+	<!-- file upload 관련 설정 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSizePerFile" value="#{system['system.upload.file.size']}"/>
+	</bean>
+
+	<bean name="/admin/remote/site-remote-service" class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
+		<!--<property name="service" ref="testMockSiteRemoteService"/>-->
+		<property name="service" ref="siteRemoteService"/>
+		<property name="serviceInterface" value="net.danvi.dmall.core.remote.homepage.service.SiteRemoteService"/>
+	</bean>
+</beans>
+

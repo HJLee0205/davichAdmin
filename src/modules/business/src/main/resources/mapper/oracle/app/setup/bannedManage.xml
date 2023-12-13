@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    예제 매퍼
+-->
+<mapper namespace="operation.bannedManage">
+    <select id="selectBannedList" resultType="bannedManageVO">
+        /* operation.bannedManage.selectBannedList */
+        SELECT  *
+        FROM    TB_BANNED_WORD
+        WHERE   1=1
+        AND     SITE_NO = #{siteNo}
+        AND     DEL_YN = 'N'
+        <if test="bannedWord != null and bannedWord != ''">
+        AND     BANNED_WORD = #{bannedWord}
+        </if>
+    </select>
+
+    <select id="selectBannedWordChk" resultType="integer">
+        /* operation.bannedManage.selectBannedWordChk */
+        SELECT  count(*)
+        FROM    TB_BANNED_WORD
+        WHERE   1=1
+        AND     SITE_NO = #{siteNo}
+        AND     BANNED_WORD = #{bannedWord}
+        AND     DEL_YN = 'N'
+    </select>
+
+    <insert id="insertBanned">
+        /* operation.bannedManage.insertBanned */
+        INSERT INTO TB_BANNED_WORD
+            (
+                SEQ,
+                SITE_NO,
+                BANNED_WORD,
+                REG_DTTM,
+                REGR_NO,
+                DEL_YN
+            )
+            VALUES
+            (
+                #{seq},
+                #{siteNo},
+                #{bannedWord},
+                sysdate,
+                #{regrNo},
+                'N'
+            )
+    </insert>
+
+    <update id="deleteBanned">
+        /* operation.bannedManage.deleteBanned */
+        UPDATE  TB_BANNED_WORD
+        SET     DEL_YN = 'Y',
+                DELR_NO = #{delrNo},
+                DEL_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        AND     BANNED_WORD = #{bannedWord}
+    </update>
+
+    <update id="updateBannedInitY">
+        /* operation.bannedManage.updateBannedInitY */
+        UPDATE  TB_BANNED_WORD
+        SET     DEL_YN = 'N',
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        AND     INIT_YN = 'Y'
+    </update>
+
+    <update id="updateBannedInitN">
+        /* operation.bannedManage.updateBannedInitN */
+        UPDATE  TB_BANNED_WORD
+        SET     DEL_YN = 'Y',
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        AND     NVL(INIT_YN,'N') = 'N'
+    </update>
+
+    <!-- 금칙어 설정 정보 조회 -->
+    <select id="selectBannedConfig" parameterType="long" resultType="bannedConfigVO">
+        /* operation.bannedManage.selectBannedConfig */
+        SELECT ts.BANNED_WORD_YN
+        FROM TS_SITE ts
+        WHERE ts.SITE_NO = #{siteNo}
+    </select>
+
+    <!-- 금칙어 설정 정보 수정 -->
+    <update id="updateBannedConfig">
+        MERGE INTO TS_SITE
+        USING DUAL
+        ON (SITE_NO = #{siteNo})
+        WHEN MATCHED THEN
+        UPDATE SET
+        BANNED_WORD_YN = #{bannedWordYn}
+        WHEN NOT MATCHED THEN
+        INSERT (
+        SITE_NO
+        , BANNED_WORD_YN
+        , REGR_NO
+        , REG_DTTM
+        ) VALUES (
+        #{siteNo}
+        , #{bannedWordYn}
+        , #{regrNo}
+        , sysdate
+        )
+    </update>
+</mapper>

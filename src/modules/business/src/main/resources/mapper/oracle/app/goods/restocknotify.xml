@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.restocknotify">
+
+    <sql id="selectRestockNotifyListWhere">
+        and tg.SITE_NO = #{siteNo}
+        and tg.DEL_YN = 'N'
+        <if test="searchCtg1 != null and searchCtg1 != ''">
+            AND EXISTS (SELECT 1
+                        FROM (SELECT CTG_NO
+                              FROM (SELECT DISTINCT CTG_NO
+                                    FROM TG_CTG
+                                    <choose>
+                                        <when test="searchCtg4 != null and searchCtg4 != ''">
+                                            START WITH CTG_NO = to_number(#{searchCtg4})
+                                        </when>
+                                        <when test="searchCtg3 != null and searchCtg3 != ''">
+                                            START WITH CTG_NO = to_number(#{searchCtg3})
+                                        </when>
+                                        <when test="searchCtg2 != null and searchCtg2 != ''">
+                                            START WITH CTG_NO = to_number(#{searchCtg2})
+                                        </when>
+                                        <when test="searchCtg1 != null and searchCtg1 != ''">
+                                            START WITH CTG_NO = to_number(#{searchCtg1})
+                                        </when>
+                                    </choose>
+                                    AND SITE_NO = #{siteNo}
+                                    CONNECT BY PRIOR CTG_NO = UP_CTG_NO AND SITE_NO = #{siteNo}
+                                    ORDER SIBLINGS BY CTG_NO ASC)
+                              UNION ALL
+                              <choose>
+                                  <when test="searchCtg4 != null and searchCtg4 != ''">
+                                      SELECT to_number(#{searchCtg4}) AS CTG_NO FROM DUAL
+                                  </when>
+                                  <when test="searchCtg3 != null and searchCtg3 != ''">
+                                      SELECT to_number(#{searchCtg3}) AS CTG_NO FROM DUAL
+                                  </when>
+                                  <when test="searchCtg2 != null and searchCtg2 != ''">
+                                      SELECT to_number(#{searchCtg2}) AS CTG_NO FROM DUAL
+                                  </when>
+                                  <when test="searchCtg1 != null and searchCtg1 != ''">
+                                      SELECT to_number(#{searchCtg1}) AS CTG_NO FROM DUAL
+                                  </when>
+                              </choose>
+                              ) DC2,
+                        TG_GOODS_CTG tgc
+                        WHERE tgc.CTG_NO = dc2.CTG_NO
+                        AND tgc.GOODS_NO = tg.GOODS_NO)
+        </if>
+        <if test="searchDateFrom != null and searchDateFrom != ''">
+            <![CDATA[
+            AND tgra.REG_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+            ]]>
+        </if>
+        <if test="searchDateTo != null and searchDateTo != ''">
+            <![CDATA[
+            AND tgra.REG_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD') + 1
+            ]]>
+        </if>
+        <if test="goodsStatus != null and goodsStatus.length > 0">
+            AND tg.GOODS_SALE_STATUS_CD IN (
+            <foreach collection="goodsStatus" item="a" separator=",">#{a}</foreach>
+            )
+        </if>
+        <if test="searchCode != null and searchCode != ''">
+            AND tg.GOODS_NO LIKE '%'||#{searchCode}||'%'
+        </if>
+        <if test="searchWord != null and searchWord != ''">
+            AND tg.GOODS_NM LIKE '%'||#{searchWord}||'%'
+        </if>
+    </sql>
+
+    <!-- 재입고 알림 목록 정보 조회 -->
+    <select id="selectRestockNotifyListPaging" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        /* goods.restocknotify.selectRestockNotifyListPaging */
+        SELECT *
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, C.*
+                FROM
+                    (
+                        SELECT B.tot_cnt - rownum + 1 AS ROW_NUM, B.*
+                        FROM
+                            (
+                                SELECT A.*, count(*) over() AS tot_cnt
+                                FROM
+                                    (
+                                        SELECT DISTINCT fn_getGoodsImgPath(tg.GOODS_NO,'02') AS GOODS_IMG,
+                                                        tg.GOODS_NO,
+                                                        tg.GOODS_NM,
+                                                        nvl(ti.SALE_PRICE,0) AS SALE_PRICE ,
+                                                        nvl(ti.STOCK_QTT,0) AS STOCK_QTT,
+                                                        fn_getCodeNm('GOODS_SALE_STATUS_CD',tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                                                        count(tg.GOODS_NO) over(PARTITION BY tgra.GOODS_NO) AS DUPLE_CNT,
+                                                        max(tgra.REG_DTTM) over(PARTITION BY tgra.GOODS_NO) AS REG_DTTM
+                                        FROM TG_GOODS_REINWARE_ALARM tgra
+                                                 INNER JOIN TG_GOODS tg ON tgra.GOODS_NO = tg.GOODS_NO
+                                                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                                 inner join TC_MEMBER tc on tgra.MEMBER_NO = tc.MEMBER_NO and tc.MEMBER_STATUS_CD = '01'
+                                        where 1=1
+                                        <include refid="selectRestockNotifyListWhere"/>
+                                    ) A
+                                ORDER BY A.REG_DTTM DESC
+                            ) B
+                    ) C
+            )
+        <include refid="common.pageSql"/>
+    </select>
+
+    <select id="selectRestockNotifyListPagingTotalCount" resultType="Integer">
+        /* goods.restocknotify.selectRestockNotifyListPagingTotalCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, C.*
+                FROM
+                    (
+                        SELECT B.tot_cnt - rownum + 1 AS SORT_NUM, B.*
+                        FROM
+                            (
+                                SELECT A.*, count(*) over() AS tot_cnt
+                                FROM
+                                    (
+                                        SELECT DISTINCT fn_getGoodsImgPath(tg.GOODS_NO,'02') AS GOODS_IMG,
+                                                        tg.GOODS_NO,
+                                                        tg.GOODS_NM,
+                                                        nvl(ti.SALE_PRICE,0) AS SALE_PRICE ,
+                                                        nvl(ti.STOCK_QTT,0) AS STOCK_QTT,
+                                                        fn_getCodeNm('GOODS_SALE_STATUS_CD',tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                                                        (SELECT count(*) FROM TG_GOODS_REINWARE_ALARM WHERE GOODS_NO = tg.GOODS_NO AND ALARM_STATUS_CD = '1') AS DUPLE_CNT,
+                                                        max(tgra.REG_DTTM) over(PARTITION BY tgra.GOODS_NO) AS REG_DTTM
+                                        FROM TG_GOODS_REINWARE_ALARM tgra
+                                                 INNER JOIN TG_GOODS tg ON tgra.GOODS_NO = tg.GOODS_NO
+                                                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                                 inner join TC_MEMBER tc on tgra.MEMBER_NO = tc.MEMBER_NO and tc.MEMBER_STATUS_CD = '01'
+                                    ) A
+                                ORDER BY A.REG_DTTM DESC
+                            ) B
+                    ) C
+            )
+    </select>
+
+    <select id="selectRestockNotifyListPagingCount" resultType="Integer">
+        /* goods.restocknotify.selectRestockNotifyListPagingCount */
+        SELECT count(*)
+        FROM
+            (
+                SELECT rownum AS PAGING_NUM, C.*
+                FROM
+                    (
+                        SELECT B.tot_cnt - rownum + 1 AS SORT_NUM, B.*
+                        FROM
+                            (
+                                SELECT A.*, count(*) over() AS tot_cnt
+                                FROM
+                                    (
+                                        SELECT DISTINCT fn_getGoodsImgPath(tg.GOODS_NO,'02') AS GOODS_IMG,
+                                                        tg.GOODS_NO,
+                                                        tg.GOODS_NM,
+                                                        nvl(ti.SALE_PRICE,0) AS SALE_PRICE ,
+                                                        nvl(ti.STOCK_QTT,0) AS STOCK_QTT,
+                                                        fn_getCodeNm('GOODS_SALE_STATUS_CD',tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                                                        (SELECT count(*) FROM TG_GOODS_REINWARE_ALARM WHERE GOODS_NO = tg.GOODS_NO AND ALARM_STATUS_CD = '1') AS DUPLE_CNT,
+                                                        max(tgra.REG_DTTM) over(PARTITION BY tgra.GOODS_NO) AS REG_DTTM
+                                        FROM TG_GOODS_REINWARE_ALARM tgra
+                                                 INNER JOIN TG_GOODS tg ON tgra.GOODS_NO = tg.GOODS_NO
+                                                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                                                 inner join TC_MEMBER tc on tgra.MEMBER_NO = tc.MEMBER_NO and tc.MEMBER_STATUS_CD = '01'
+                                        where 1=1
+                                        <include refid="selectRestockNotifyListWhere"/>
+                                    ) A
+                                ORDER BY A.REG_DTTM DESC
+                            ) B
+                    ) C
+            )
+    </select>
+
+    <!-- 재입고 알림 정보 상세조회 -->
+    <select id="selectRestockNotify" parameterType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        /* goods.restocknotify.selectRestockNotify */
+        SELECT A.*, tgram.MANAGER_MEMO
+        FROM (SELECT DISTINCT tg.GOODS_NM,
+                              tg.GOODS_NO,
+                              fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+                              ti.SALE_PRICE
+              FROM TG_GOODS_REINWARE_ALARM tgra
+                       INNER JOIN TG_GOODS tg ON tgra.GOODS_NO = tg.GOODS_NO
+                       INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+              WHERE tg.SITE_NO = 1
+                AND tg.DEL_YN = 'N'
+                AND tgra.GOODS_NO = #{goodsNo}) A
+            LEFT OUTER JOIN TG_GOODS_REINWARE_ALARM_MEMO tgram ON A.GOODS_NO = tgram.GOODS_NO
+    </select>
+
+    <!-- 재입고 등록여부 조회 -->
+    <select id="selectDuplicateAlarm" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        /* goods.restocknotify.selectDuplicateAlarm */
+        SELECT
+            REINWARE_ALARM_NO,
+            COUNT(REINWARE_ALARM_NO) AS DUPLE_CNT
+        FROM TG_GOODS_REINWARE_ALARM
+        WHERE MEMBER_NO = #{memberNo}
+          AND GOODS_NO = #{goodsNo}
+          GROUP BY REINWARE_ALARM_NO
+    </select>
+
+    <!-- 재입고 알림 정보 등록 -->
+    <insert id="insertRestockNotify">
+    /* goods.restocknotify.insertRestockNotify */
+    INSERT INTO TG_GOODS_REINWARE_ALARM (
+    	  REINWARE_ALARM_NO
+        , GOODS_NO
+        , MEMBER_NO
+        , MOBILE
+        , ALARM_STATUS_CD
+        , REGR_NO
+        , REG_DTTM
+    ) VALUES (
+    	  fn_getSeq(0, 'REINWARE_ALARM_NO')
+        , #{goodsNo}
+        , #{memberNo}
+        , #{mobile}
+        , #{alarmStatusCd}
+        , #{regrNo}
+        , sysdate
+    )
+    </insert>
+
+    <!-- 재입고 알림 정보 수정 -->
+    <update id="updateRestockNotify">
+    /* goods.restocknotify.updateRestockNotify */
+    UPDATE TG_GOODS_REINWARE_ALARM
+    SET
+          ALARM_STATUS_CD = #{alarmStatusCd}
+	      <choose>
+	          <when test = "reInsertYn == 'Y'.toString()">
+	          , MOBILE = #{mobile}
+	          , ALARM_DTTM = NULL
+	          , REGR_NO = #{regrNo}
+	          , REG_DTTM = sysdate
+	          </when>
+	          <when test = "reInsertYn != 'Y'.toString()">
+	          , ALARM_DTTM = sysdate
+	          , UPDR_NO = #{updrNo}
+              , UPD_DTTM = sysdate
+	          </when>
+	      </choose>
+    WHERE GOODS_NO = #{goodsNo}
+    and MEMBER_NO = #{memberNo}
+    </update>
+
+    <!-- 재입고 알림 관리자 메모 업데이트 -->
+    <update id="updateRestockNotifyMemo">
+        merge into TG_GOODS_REINWARE_ALARM_MEMO
+        using dual
+        on (GOODS_NO = #{goodsNo})
+        when matched then
+            update set MANAGER_MEMO = #{managerMemo},
+                       UPDR_NO = #{updrNo},
+                       UPD_DTTM = sysdate
+        when not matched then
+            insert (GOODS_NO, MANAGER_MEMO, REGR_NO, REG_DTTM)
+            values (#{goodsNo}, #{managerMemo}, #{regrNo}, sysdate)
+    </update>
+
+    <!-- 재입고 알림 정보 삭제 -->
+    <delete id="deleteRestockNotify">
+        DELETE FROM TG_GOODS_REINWARE_ALARM
+        WHERE GOODS_NO = #{goodsNo}
+    </delete>
+
+    <!-- 재입고 알림 관리자 메모 삭제 -->
+    <delete id="deleteRestockNotifyMemo">
+        DELETE FROM TG_GOODS_REINWARE_ALARM_MEMO
+        WHERE GOODS_NO = #{goodsNo}
+    </delete>
+
+    <!-- 재입고 알림 상품 대표이미지 조회 -->
+    <select id="selectRestockGoodsImgList" resultType="String">
+        <![CDATA[
+        SELECT '/image/image-view?type=GOODSDTL&id1='||tgid.IMG_PATH||'_'||tgid.IMG_NM AS GOODS_IMG
+        FROM TG_GOODS_IMG_SET tgis
+                 INNER JOIN TG_GOODS_IMG_DTL tgid ON tgis.GOODS_IMGSET_NO = tgid.GOODS_IMGSET_NO
+        WHERE tgis.GOODS_NO = #{goodsNo}
+          AND tgid.GOODS_IMG_TYPE = '02'
+        ORDER BY tgis.GOODS_IMGSET_NO
+        ]]>
+    </select>
+
+    <!-- 재입고 알림 요청자 목록 조회 -->
+    <select id="selectRestockMemberList" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        SELECT tm.MEMBER_NO,
+               tm.MEMBER_NM ,
+               tm.MOBILE ,
+               tmg.MEMBER_GRADE_NM
+        FROM TG_GOODS_REINWARE_ALARM tgra
+                 INNER JOIN TC_MEMBER tm ON tgra.MEMBER_NO = tm.MEMBER_NO and tm.MEMBER_STATUS_CD = '01'
+                 INNER JOIN TC_MEMBER_GRADE tmg ON tm.MEMBER_GRADE_NO = tmg.MEMBER_GRADE_NO
+        WHERE tgra.GOODS_NO = #{goodsNo}
+          AND tgra.ALARM_STATUS_CD = '1'
+    </select>
+
+    <!-- 재입고 알림 발송 목록 조회 -->
+    <select id="selectRestockNotifySendListPaging" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        select *
+        from
+            (select rownum AS PAGING_NUM, tot_cnt - rownum + 1 AS ROW_NUM, AA.*
+            from
+                (select A.*, count(*) over() as tot_cnt
+                 from (SELECT tm.MEMBER_NO ,
+                              tm.MEMBER_NM ,
+                              tm.MOBILE ,
+                              tmg.MEMBER_GRADE_NM ,
+                              tgra.ALARM_DTTM
+                       FROM TG_GOODS_REINWARE_ALARM tgra
+                           INNER JOIN TC_MEMBER tm ON tgra.MEMBER_NO = tm.MEMBER_NO and tm.MEMBER_STATUS_CD = '01'
+                           INNER JOIN TC_MEMBER_GRADE tmg ON tm.MEMBER_GRADE_NO = tmg.MEMBER_GRADE_NO
+                       WHERE tgra.GOODS_NO = #{searchCode}
+                         AND tgra.ALARM_STATUS_CD = '2'
+                         <if test="searchDateFrom != null and searchDateFrom != ''">
+                             <![CDATA[
+                         AND tgra.ALARM_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+                         ]]>
+                         </if>
+                         <if test="searchDateTo != null and searchDateTo != ''">
+                             <![CDATA[
+                         AND tgra.ALARM_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD') + 1
+                         ]]>
+                         </if>
+                         <if test="searchWordEncrypt != null and searchWordEncrypt != ''">
+                         AND (tm.MEMBER_NM = #{searchWordEncrypt} or tm.MOBILE = #{searchWordEncrypt})
+                         </if>
+                       <include refid="common.sortSql"/>
+                       ) A
+                 ) AA
+            )
+        <include refid="common.pageSql" />
+    </select>
+    <select id="selectRestockNotifySendListPagingTotalCount" resultType="Integer">
+        SELECT count(*)
+        FROM TG_GOODS_REINWARE_ALARM tgra
+            INNER JOIN TC_MEMBER tm ON tgra.MEMBER_NO = tm.MEMBER_NO and tm.MEMBER_STATUS_CD = '01'
+            INNER JOIN TC_MEMBER_GRADE tmg ON tm.MEMBER_GRADE_NO = tmg.MEMBER_GRADE_NO
+        WHERE tgra.GOODS_NO = #{searchCode}
+          AND tgra.ALARM_STATUS_CD = '2'
+    </select>
+    <select id="selectRestockNotifySendListPagingCount" resultType="Integer">
+        SELECT count(*)
+        FROM TG_GOODS_REINWARE_ALARM tgra
+            INNER JOIN TC_MEMBER tm ON tgra.MEMBER_NO = tm.MEMBER_NO and tm.MEMBER_STATUS_CD = '01'
+            INNER JOIN TC_MEMBER_GRADE tmg ON tm.MEMBER_GRADE_NO = tmg.MEMBER_GRADE_NO
+        WHERE tgra.GOODS_NO = #{searchCode}
+          AND tgra.ALARM_STATUS_CD = '2'
+        <if test="searchDateFrom != null and searchDateFrom != ''">
+            <![CDATA[
+          AND tgra.ALARM_DTTM >= TO_DATE(#{searchDateFrom}, 'YYYY-MM-DD')
+          ]]>
+        </if>
+        <if test="searchDateTo != null and searchDateTo != ''">
+            <![CDATA[
+          AND tgra.ALARM_DTTM < TO_DATE(#{searchDateTo}, 'YYYY-MM-DD') + 1
+          ]]>
+        </if>
+        <if test="searchWordEncrypt != null and searchWordEncrypt != ''">
+          AND (tm.MEMBER_NM = #{searchWordEncrypt} or tm.MOBILE = #{searchWordEncrypt})
+        </if>
+    </select>
+
+    <!-- 재입고 알림 발송 로그 조회 -->
+    <select id="selectNotifySendLog" resultType="net.danvi.dmall.biz.app.goods.model.RestockNotifyVO">
+        SELECT tgrah.SEND_DTTM , tgrah.SEND_CNT
+        FROM TG_GOODS_REINWARE_ALARM_HIST tgrah
+        WHERE tgrah.GOODS_NO = #{goodsNo}
+        ORDER BY tgrah.SEND_DTTM DESC
+    </select>
+
+    <!-- 재입고 알림 발송 로그 저장 -->
+    <insert id="insertRestockNotifySendLog">
+        insert into TG_GOODS_REINWARE_ALARM_HIST
+        (
+         SEND_DTTM,
+         GOODS_NO,
+         SEND_CNT,
+         REGR_NO,
+         REG_DTTM
+        )
+        values
+        (
+         sysdate,
+         #{goodsNo},
+         #{sendCnt},
+         #{regrNo},
+         sysdate
+        )
+    </insert>
+</mapper>

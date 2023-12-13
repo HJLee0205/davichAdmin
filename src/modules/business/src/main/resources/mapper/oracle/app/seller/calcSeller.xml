@@ -1,0 +1,873 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="calcSeller">
+
+    <sql id="selectSellerWhere">
+        <where>
+            a.SITE_NO = #{siteNo}
+			  <if test="calculateStartdt != null and calculateStartdt != ''">
+			  <![CDATA[
+				and a.calculate_startdt >= TO_DATE(#{calculateStartdt}, 'YYYY-MM-DD')
+			  ]]>
+			  </if>
+			  <if test="calculateEnddt != null and calculateEnddt != ''">
+			  <![CDATA[
+			  	and a.calculate_enddt < TO_DATE(#{calculateEnddt}, 'YYYY-MM-DD') + 1
+			  ]]>
+			  </if>
+			  
+			  <if test="calculateDttm != null and calculateDttm != ''">
+			  	and a.calculate_dttm = TO_DATE(#{calculateDttm}, 'YYYY-MM-DD')
+			  </if>
+
+			 <if test="sellerNo != null and sellerNo != ''">
+				and a.seller_no = #{sellerNo}
+			 </if>
+
+			 <if test="statusCd != null and statusCd != ''">
+			  <![CDATA[
+				and a.calculate_status_cd is not null
+				]]>
+			 </if>
+			 
+			  <if test="calcStart != null and calcStart != ''">
+			  <![CDATA[
+				and a.calculate_dttm >= TO_DATE(#{calcStart}, 'YYYY-MM-DD')
+			  ]]>
+			  </if>
+			  <if test="calcEnd != null and calcEnd != ''">
+			  <![CDATA[
+			  	and a.calculate_dttm < TO_DATE(#{calcEnd}, 'YYYY-MM-DD') + 1
+			  ]]>
+			  </if>
+        </where>
+    </sql>
+
+
+
+    <sql id="selectCalcDtlWhere">
+        <where>
+            1 = 1
+			  <if test="calculateStartdt != null and calculateStartdt != ''">
+			  <![CDATA[
+				and B.CALCULATE_STNDRD_DT >= TO_DATE(#{calculateStartdt}, 'YYYY-MM-DD')
+			  ]]>
+			  </if>
+			  <if test="calculateEnddt != null and calculateEnddt != ''">
+			  <![CDATA[
+			  	and B.CALCULATE_STNDRD_DT < TO_DATE(#{calculateEnddt}, 'YYYY-MM-DD') + 1
+			  ]]>
+			  </if>
+			  
+			  <if test="calculateDttm != null and calculateDttm != ''">
+			  	and A.CALCULATE_DTTM = TO_DATE(#{calculateDttm}, 'YYYY-MM-DD')
+			  </if>
+
+			 <if test="sellerNo != null and sellerNo != ''">
+				and B.SELLER_NO = #{sellerNo}
+			 </if>
+
+			 <if test="statusCd != null and statusCd != ''">
+			  <![CDATA[
+				and a.calculate_status_cd is not null
+				]]>
+			 </if>
+			  
+	        <if test="searchDate != null and searchDate != ''">
+	            <choose>
+	                <when test="searchDate == '01'">
+						  <if test="calcStart != null and calcStart != ''">
+						  <![CDATA[
+							and a.calculate_dttm >= TO_DATE(#{calcStart}, 'YYYY-MM-DD')
+						  ]]>
+						  </if>
+						  <if test="calcEnd != null and calcEnd != ''">
+						  <![CDATA[
+						  	and a.calculate_dttm < TO_DATE(#{calcEnd}, 'YYYY-MM-DD') + 1
+						  ]]>
+						  </if>		                
+	                </when>
+	                <when test="searchDate == '02'">
+						  <if test="calcStart != null and calcStart != ''">
+						  <![CDATA[
+							and B.CALCULATE_STNDRD_DT >= TO_DATE(#{calcStart}, 'YYYY-MM-DD')
+						  ]]>
+						  </if>
+						  <if test="calcEnd != null and calcEnd != ''">
+						  <![CDATA[
+						  	and B.CALCULATE_STNDRD_DT < TO_DATE(#{calcEnd}, 'YYYY-MM-DD') + 1
+						  ]]>
+						  </if>		                
+	                </when>
+	            </choose>
+	        </if>		
+	        
+	        <if test="searchGb != null and searchGb != ''">
+				and b.calculate_gb = #{searchGb}
+	        </if>	
+			  
+	        <if test="searchOrdNo != null and searchOrdNo != ''">
+				and b.ord_no like '%' || #{searchOrdNo} || '%'
+	        </if>	
+
+	        <if test="searchGoodsNm != null and searchGoodsNm != ''">
+				and b.goods_nm like '%' || #{searchGoodsNm} || '%'
+	        </if>	
+	        
+	        <if test="calculateNo != null and calculateNo != ''">
+				and B.CALCULATE_NO = #{calculateNo}
+	        </if>
+        </where>
+    </sql>
+
+
+
+    <select id="targetSellerList" resultType="SellerVO">
+		select  d.seller_no
+		  from to_ord a left join to_ord_dtl b on a.ord_no = b.ord_no
+		  					 left join to_dlvr c on b.ord_no = c.ord_no	and b.ord_dtl_seq = c.ord_dtl_seq
+		  					 left join tg_goods d on a.site_no = d.site_no	and b.goods_no = d.goods_no
+		 where a.ord_status_cd = '90'
+		   and d.seller_no is not null
+		  <![CDATA[
+		   and a.upd_dttm >= TO_DATE(#{calculateStartdt}, 'YY-MM-DD')
+		   and a.upd_dttm < TO_DATE(#{calculateEnddt}, 'YY-MM-DD') + 1
+		  ]]>
+
+		  <if test="sellerNo != null and sellerNo != ''">
+			and d.seller_no = #{sellerNo}
+		  </if>
+		   and d.SITE_NO     = #{siteNo}
+
+		 group by d.seller_no
+	</select>
+	
+	
+    <select id="getCalculateNumber"  resultType="java.lang.String">
+			SELECT TO_CHAR(sysdate, 'YYYYMMDD') || LPAD(NVL(MAX(TO_NUMBER(substr(CALCULATE_NO,9,5))), 0) + 1, 5, '0') AS CALCULATE_NO
+			from ty_calculate_ledger_dtl
+    </select>
+
+
+    <insert id="calculateSellerDtl" >
+	    /* 정산원장 상세 생성 */
+		INSERT INTO TY_CALCULATE_LEDGER_DTL (
+		   CALCULATE_NO, 
+		   CALCULATE_DTL_NO, 
+		   CALCULATE_STNDRD_DT, 
+		   ORDR_NO, 
+		   ORDR_NM, 
+		   ORD_DTTM, 
+		   ORD_NO, 
+		   ORD_DTL_SEQ, 
+		   ORD_GOODS_NO, 
+		   GOODS_NM, 
+		   DLVR_AMT, 
+		   PAYMENT_AMT, 
+		   SELLER_NO,
+		   SELLER_CMS_RATE, 
+		   INTEGRATION_POINT_USE_AMT, 
+		   D_MONEY_USE_AMT, 
+		   D_MONEY_ACCU_AMT, 
+		   D_MONEY_RECOM_ACCU_AMT, 
+		   CP_DC_AMT, 
+		   MEMBER_GRADE_DC_GB_CD, 
+		   MEMBER_GRADE_DC_VALUE, 
+		   MEMBER_GRADE_DC_AMT, 
+		   PRMT_DC_GB_CD, 
+		   PRMT_DC_VALUE, 
+		   PRMT_DC_AMT, 
+		   DC_AMT,
+		   LT_PVD_AMT, 
+		   COURIER_NM, 
+		   INVOICE_NO, 
+		   CALCULATE_GB, 
+		   PURCHASE_AMT, 
+		   SALE_CHANNEL, 
+		   ORD_QTT, 
+		   REGR_NO, 
+		   REG_DTTM,
+		   STORE_NO,
+		   STORE_NM,
+		   PAYMENT_CMPLT_DTTM,
+		   PAYMENT_WAY_CD, 
+		   PAYMENT_WAY_NM, 
+		   PAYMENT_PG_CD, 
+		   PAYMENT_PG_NM,
+		   CP_APPLY_AMT,		/* 쿠폰 적용가 */
+		   SALE_AMT,		/* 판매가 */
+		   SUPPLY_AMT,		/* 공급가 */
+		   COMM_INCOME_AMT	/* 수수료 수익 */
+		    ) 
+			SELECT #{calculateNo}
+			       ,ROWNUM
+			       ,UPD_DTTM     /* 정산기준일자 (구매확정일자) */
+			       ,MEMBER_NO    /* 주문자번호  */
+			       ,ORDR_NM      /* 주문자명   */ 
+			       ,ORD_ACCEPT_DTTM  /* 주문일시 */
+			       ,ORD_NO           /* 주문번호 */
+			       ,ORD_DTL_SEQ      /* 주문상세번호 */ 
+			       ,GOODS_NO         /* 상품번호 */ 
+			       ,GOODS_NM         /* 상품명 */ 
+			       ,DLVR_AMT   /* 배송금액 */
+                   ,(SALE_AMT*ORD_QTT)-DC_AMT /*결제금액 */
+			      /* , ((PAYMENT_AMT * ORD_QTT )-(TRUNC(NVL(CP_USE_AMT,0) * (100 - NVL(CP_LOADRATE,0)) / 100,0))-
+                            TRUNC(NVL(PRMT_DC_AMT,0) * (100 - NVL(PRMT_LOADRATE,0)) / 100,0)-TOT_POINT_AMT+DLVR_AMT)  (판매가*수량)-쿠폰할인금액-기획전 할인금액 -포인트사용금액 +배송비 결제금액 */
+			       ,SELLER_NO          /* 판매자번호 */  
+			       ,SELLER_CMS_RATE                   /* 판매자 수수료율 */
+			       ,TOT_POINT_AMT                                    /* 통합포인트 사용금액 */
+			       ,PRC_AMT                           /* 마켓포인트사용금액  */
+			       ,PVD_SVMN                         /* 마켓포인트 적립금액 */
+			       ,RECOM_PVD_SVMN                   /* 마켓포인트 추친 적립금액  */
+	               /*,TRUNC(NVL(CP_USE_AMT,0) * (100 - NVL(CP_LOADRATE,0)) / 100,0) CP_USE_AMT  쿠폰할인금액 */
+	               ,NVL(CP_USE_AMT,0) CP_USE_AMT /* 쿠폰할인금액 */
+			       ,MEMBER_GRADE_DC_GB_CD     /* 회원등급할인구분코드 */
+			       ,MEMBER_GRADE_DC_VALUE  /* 회원등급할인값 */
+			       ,MEMBER_GRADE_DC_AMT          /* 회원등급할인금액 */
+			       ,PRMT_DC_GB_CD             /* 기획전할인구분코드 */
+			       ,PRMT_DC_VALUE          /* 기획전할인값 */
+	               ,TRUNC(NVL(PRMT_DC_AMT,0) * (100 - NVL(PRMT_LOADRATE,0)) / 100,0) PRMT_DC_AMT /* 기획전할인금액 */
+                   ,((PAYMENT_AMT - SUPPLY_AMT) + PRMT_DC_AMT + MEMBER_GRADE_DC_AMT) * ORD_QTT + (PRC_AMT + PVD_SVMN + RECOM_PVD_SVMN + TRUNC(NVL(CP_USE_AMT,0) * (100 - NVL(CP_LOADRATE,0)) / 100,0))   /* 할인금액 */
+                   ,(SUPPLY_AMT* ORD_QTT)+DLVR_AMT /*  최종지급금액 */
+                   /*,DLVR_AMT + PAYMENT_AMT * ORD_QTT - (((PAYMENT_AMT - SUPPLY_AMT) + TRUNC(NVL(PRMT_DC_AMT,0) * (100 - NVL(PRMT_LOADRATE,0)) / 100,0) + MEMBER_GRADE_DC_AMT) * ORD_QTT
+                    + (TRUNC(NVL(PRC_AMT,0) * (100 - NVL(SVMN_LOADRATE,0)) / 100,0) + TRUNC(NVL(CP_USE_AMT,0) * (100 - NVL(CP_LOADRATE,0)) / 100,0)))*/
+                    /* 배송비 + 결제금액*수량 - ((입점수수료 + 기획전할인금액*부담율 + 회원등급할인금액)*수량 + D머니 사용금액 *본사부담율 + 쿠폰사용금액* 부담율)) = 최종지급금액 */
+			       ,COURIER_NM    /* 택배사명 */
+			       ,RLS_INVOICE_NO     /* 송장번호  */
+			       ,'01'                 /* 정산구분 (01:정산) */
+			       ,SUPPLY_AMT       /* 매입금액  */
+			       ,SALE_CHANNEL_CD  /* 판매채널 */
+			       ,ORD_QTT          /* 주문수량 */
+			       ,#{regrNo}
+			       ,sysdate       
+			       ,STORE_NO
+			       ,STORE_NM
+			       ,PAYMENT_CMPLT_DTTM
+			       ,PAYMENT_WAY_CD   /*결제수단코드 */
+	               ,PAYMENT_WAY_NM   /*결제수단명 */
+	               ,PAYMENT_PG_CD    /*PG 코드 */
+	               ,PAYMENT_PG_NM    /*PG 명 */
+	               ,fn_getCuoponApplyAmt(GOODS_NO,'') /* 쿠폰 적용가 */
+	               ,PAYMENT_AMT * ORD_QTT	 /* 판매가 */
+       			   ,SUPPLY_AMT* ORD_QTT		/*공급가*/
+                  /* ,(((PAYMENT_AMT * ORD_QTT)-(TRUNC(NVL(CP_USE_AMT,0) * (100 - NVL(CP_LOADRATE,0)) / 100,0)))*(SELLER_CMS_RATE/100))*/ /* (판매가-쿠폰할인금액) * 입점수수료 = 수수료 수익 */
+                  , (((SALE_AMT*ORD_QTT)-DC_AMT)-((SUPPLY_AMT* ORD_QTT)+DLVR_AMT)) /* 결제금액 -최종지급금액  = 수수료 수익 */
+
+			  FROM (       
+			        SELECT DTL.UPD_DTTM     /* 정산기준일자 (구매확정일자) */
+			               ,MST.MEMBER_NO    /* 주문자번호  */
+			               ,MST.ORDR_NM      /* 주문자명   */ 
+			               ,MST.ORD_ACCEPT_DTTM  /* 주문일시 */
+			               ,DTL.ORD_NO           /* 주문번호 */
+			               ,DTL.ORD_DTL_SEQ      /* 주문상세번호 */ 
+			               ,DTL.GOODS_NO         /* 상품번호 */ 
+			               ,DTL.GOODS_NM         /* 상품명 */ 
+			               ,(NVL(D.REAL_DLVR_AMT,0) + NVL(D.AREA_ADD_DLVRC,0)) DLVR_AMT   /* 배송금액 */
+			               ,DTL.SALE_AMT AS SALE_AMT /* 판매가 */
+			               ,DTL.DC_AMT AS DC_AMT /* 할인가 */
+			               ,NVL(DTL.SALE_AMT,0) PAYMENT_AMT        /* 결제금액 */
+			               ,TS.SELLER_NO
+			               ,TS.SVMN_LOADRATE    /* 적립금 본사부담율 */
+			             /*  ,NVL(TS.SELLER_CMS_RATE,0) SELLER_CMS_RATE                   판매자 수수료율 (1 - 7500 / 8000) * 10 */
+			               ,(1 - NVL(DTL.SUPPLY_AMT,0) / decode(DTL.SALE_AMT,0,null,DTL.SALE_AMT)) * 100 SELLER_CMS_RATE
+			               ,0 TOT_POINT_AMT                                   /* 통합포인트 사용금액 */
+			               ,NVL(TC.PRC_AMT,0) PRC_AMT                         /* 마켓포인트사용금액  */
+			               ,NVL(DTL.PVD_SVMN,0) PVD_SVMN                        /* 마켓포인트 적립금액 */
+			               ,NVL(DTL.RECOM_PVD_SVMN,0) RECOM_PVD_SVMN             /* 마켓포인트 추친 적립금액  */
+			               ,NVL(CP.CP_USE_AMT,0) CP_USE_AMT /* 쿠폰할인금액  */
+			               ,(CASE WHEN AD.ADDED_AMOUNT_GB_CD = '01' THEN AD.ADDED_AMOUNT_BNF_CD ELSE NULL END) MEMBER_GRADE_DC_GB_CD     /* 회원등급할인구분코드 */
+			               ,(CASE WHEN AD.ADDED_AMOUNT_GB_CD = '01' THEN AD.ADDED_AMOUNT_BNF_VALUE ELSE NULL END) MEMBER_GRADE_DC_VALUE  /* 회원등급할인값 */
+			               ,NVL((CASE WHEN AD.ADDED_AMOUNT_GB_CD = '01' THEN AD.ADDED_AMOUNT_AMT ELSE NULL END),0) MEMBER_GRADE_DC_AMT          /* 회원등급할인금액 */
+			               ,(CASE WHEN AD.ADDED_AMOUNT_GB_CD = '02' THEN AD.ADDED_AMOUNT_BNF_CD ELSE NULL END) PRMT_DC_GB_CD             /* 기획전할인구분코드 */
+			               ,(CASE WHEN AD.ADDED_AMOUNT_GB_CD = '02' THEN AD.ADDED_AMOUNT_BNF_VALUE ELSE NULL END) PRMT_DC_VALUE          /* 기획전할인값 */
+			               ,NVL((CASE WHEN AD.ADDED_AMOUNT_GB_CD = '02' THEN AD.ADDED_AMOUNT_AMT ELSE NULL END),0) PRMT_DC_AMT                  /* 기획전할인금액 */
+			               ,fn_getCodeNm('RLS_COURIER_CD', D.RLS_COURIER_CD) COURIER_NM    /* 택배사명 */
+			               ,D.RLS_INVOICE_NO     /* 송장번호  */
+			               ,'01'                 /* 정산구분 (01:정산) */
+			               ,NVL(DTL.SUPPLY_AMT,0) SUPPLY_AMT       /* 매입금액  */
+			               ,MST.SALE_CHANNEL_CD  /* 판매채널 */
+			               ,DTL.ORD_QTT          /* 주문수량 */
+			               ,(SELECT PRMT_LOADRATE FROM TP_PROMOTION P WHERE P.PRMT_NO = AD.PRMT_NO) PRMT_LOADRATE
+			               ,(SELECT
+                            	(SELECT CP_LOADRATE FROM TP_COUPON C WHERE C.COUPON_NO = TMC.COUPON_NO)
+                               FROM TC_MEMBER_CP TMC
+                              WHERE MEMBER_CP_NO=CP.MEMBER_CP_NO) CP_LOADRATE
+			               ,V.STORE_NO
+			               ,V.STORE_NM
+			               ,MST.PAYMENT_CMPLT_DTTM 
+			               ,PAY.PAYMENT_WAY_CD
+			               ,PAY.PAYMENT_WAY_NM
+			               ,PAY.PAYMENT_PG_CD
+			               ,PAY.PAYMENT_PG_NM
+			          FROM TO_ORD_DTL DTL JOIN TO_ORD MST ON DTL.ORD_NO = MST.ORD_NO
+			                              LEFT JOIN (SELECT * FROM TO_DLVR WHERE RLS_INVOICE_REG_DTTM IS NOT NULL) D 
+			                               			ON DTL.ORD_NO = D.ORD_NO AND DTL.ORD_DTL_SEQ = D.ORD_DTL_SEQ
+			                              JOIN TG_GOODS G ON DTL.GOODS_NO = G.GOODS_NO
+			                              JOIN TS_SELLER TS ON TS.SELLER_NO = G.SELLER_NO
+			                              JOIN TS_SITE S ON S.SITE_NO = MST.SITE_NO
+			                              LEFT JOIN TO_COUPON_USE CP ON DTL.ORD_NO = CP.ORD_NO AND DTL.ORD_DTL_SEQ = CP.ORD_DTL_SEQ 
+			                              LEFT JOIN TO_ADDED_AMOUNT AD ON DTL.ORD_NO = AD.ORD_NO AND DTL.ORD_DTL_SEQ = AD.ORD_DTL_SEQ 
+			                              LEFT JOIN (SELECT ORD_NO, ORD_DTL_SEQ, SUM(PRC_AMT) PRC_AMT 
+													  FROM TC_MEMBER_SVMN_USE_DTL
+													GROUP BY ORD_NO, ORD_DTL_SEQ ) TC ON TC.ORD_NO = DTL.ORD_NO AND TC.ORD_DTL_SEQ = DTL.ORD_DTL_SEQ
+										  LEFT JOIN (SELECT VA.STORE_NO, 
+       														VA.STORE_NM,
+       														VB.ORD_NO,
+       														VB.ORD_DTL_SEQ
+ 														FROM TO_VISIT_RSV VA JOIN TO_VISIT_RSV_DTL VB ON VA.RSV_NO = VB.RSV_NO
+										             ) V ON DTL.ORD_NO = V.ORD_NO AND DTL.ORD_DTL_SEQ = V.ORD_DTL_SEQ
+										  LEFT JOIN (  SELECT ORD_NO,
+														       TO_CHAR(LISTAGG(PAYMENT_PG_CD,',') WITHIN GROUP(ORDER BY PAYMENT_PG_CD)) as PAYMENT_PG_CD,
+														       TO_CHAR(LISTAGG(PAYMENT_PG_NM,',') WITHIN GROUP(ORDER BY PAYMENT_PG_NM)) as PAYMENT_PG_NM,
+														       TO_CHAR(LISTAGG(PAYMENT_WAY_CD,',') WITHIN GROUP(ORDER BY PAYMENT_WAY_CD)) as PAYMENT_WAY_CD,
+														       TO_CHAR(LISTAGG(PAYMENT_WAY_NM,',') WITHIN GROUP(ORDER BY PAYMENT_WAY_NM)) as PAYMENT_WAY_NM
+														  FROM (
+														        SELECT DISTINCT P.ORD_NO,
+														               P.PAYMENT_WAY_CD,
+														               (SELECT CD_NM FROM TA_CMN_CD_DTL 
+														                 WHERE CD = P.PAYMENT_WAY_CD 
+														                   AND GRP_CD = 'PAYMENT_WAY_CD') PAYMENT_WAY_NM, 
+														               P.PAYMENT_PG_CD,
+														               (SELECT CD_NM FROM TA_CMN_CD_DTL 
+														                 WHERE CD = P.PAYMENT_PG_CD 
+														                   AND GRP_CD = 'PAYMENT_PG_CD') PAYMENT_PG_NM
+														          FROM TO_PAYMENT P  
+														       ) 
+														 GROUP BY ORD_NO        
+		   										     ) PAY ON DTL.ORD_NO = PAY.ORD_NO           			
+			        WHERE DTL.ORD_DTL_STATUS_CD = '90'
+                	<![CDATA[
+					   and DTL.upd_dttm >= TO_DATE(#{calculateStartdt}, 'YY-MM-DD')
+					   and DTL.upd_dttm < TO_DATE(#{calculateEnddt}, 'YY-MM-DD') + 1
+					]]>
+				  <if test="sellerNo != null and sellerNo != ''">
+					and TS.seller_no = #{sellerNo}
+				  </if>
+				   and S.SITE_NO     = #{siteNo}
+			)         
+    </insert>
+
+    <insert id="refundCalculate" >
+	  		/* 정산원장 상세 생성 (환불처리) */
+	        INSERT INTO TY_CALCULATE_LEDGER_DTL (
+	           CALCULATE_NO, 
+	           CALCULATE_DTL_NO, 
+	           CALCULATE_STNDRD_DT, 
+	           ORDR_NO, 
+	           ORDR_NM, 
+	           ORD_DTTM, 
+	           ORD_NO, 
+	           ORD_DTL_SEQ, 
+	           ORD_GOODS_NO, 
+	           GOODS_NM, 
+	           DLVR_AMT, 
+	           PAYMENT_AMT, 
+	           SELLER_NO,
+	           SELLER_CMS_RATE, 
+	           INTEGRATION_POINT_USE_AMT, 
+	           D_MONEY_USE_AMT, 
+	           D_MONEY_ACCU_AMT, 
+	           D_MONEY_RECOM_ACCU_AMT, 
+	           CP_DC_AMT, 
+	           MEMBER_GRADE_DC_GB_CD, 
+	           MEMBER_GRADE_DC_VALUE, 
+	           MEMBER_GRADE_DC_AMT, 
+	           PRMT_DC_GB_CD, 
+	           PRMT_DC_VALUE, 
+	           PRMT_DC_AMT, 
+	           DC_AMT,
+	           LT_PVD_AMT, 
+	           COURIER_NM, 
+	           INVOICE_NO, 
+	           CALCULATE_GB, 
+	           PURCHASE_AMT, 
+	           SALE_CHANNEL, 
+	           ORD_QTT, 
+	           PAYMENT_WAY_CD, 
+	           REGR_NO, 
+	           REG_DTTM,
+	           CLAIM_NO,
+		   	   STORE_NO,
+		   	   STORE_NM ) 
+	    SELECT #{calculateNo}, 
+	           (SELECT MAX(C.CALCULATE_DTL_NO) FROM TY_CALCULATE_LEDGER_DTL C WHERE C.CALCULATE_NO = #{calculateNo}) + ROWNUM,
+	           B.CALCULATE_STNDRD_DT, 
+	           B.ORDR_NO, 
+	           B.ORDR_NM, 
+	           B.ORD_DTTM, 
+	           B.ORD_NO, 
+	           B.ORD_DTL_SEQ, 
+	           B.ORD_GOODS_NO, 
+	           B.GOODS_NM, 
+	           B.DLVR_AMT * (-1), 
+	           PAY.REFUND_AMT * (-1), 
+	           B.SELLER_NO,
+	           B.SELLER_CMS_RATE, 
+	           B.INTEGRATION_POINT_USE_AMT, 
+	           B.D_MONEY_USE_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.D_MONEY_ACCU_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.D_MONEY_RECOM_ACCU_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.CP_DC_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.MEMBER_GRADE_DC_GB_CD, 
+	           B.MEMBER_GRADE_DC_VALUE, 
+	           B.MEMBER_GRADE_DC_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.PRMT_DC_GB_CD, 
+	           B.PRMT_DC_VALUE, 
+	           B.PRMT_DC_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1), 
+	           B.DC_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1),
+	           PAY.REFUND_AMT * (-1) - (B.DC_AMT * (A.CLAIM_QTT / B.ORD_QTT) * (-1)), 
+	           B.COURIER_NM, 
+	           B.INVOICE_NO, 
+	           '02', 
+	           B.PURCHASE_AMT, 
+	           B.SALE_CHANNEL, 
+	           B.ORD_QTT, 
+	           B.PAYMENT_WAY_CD, 
+	           B.REGR_NO, 
+	           B.REG_DTTM,
+	           A.CLAIM_NO,
+		   	   B.STORE_NO,
+		   	   B.STORE_NM
+	      FROM TO_CLAIM  A JOIN TY_CALCULATE_LEDGER_DTL B ON A.ORD_NO = B.ORD_NO AND A.ORD_DTL_SEQ = B.ORD_DTL_SEQ
+	                     LEFT JOIN (SELECT CLAIM_NO, SUM(REFUND_AMT) REFUND_AMT
+	                              FROM TO_PAYMENT
+	                            GROUP BY CLAIM_NO  
+	                            ) PAY ON A.CLAIM_NO = B.CLAIM_NO
+	    WHERE A.CLAIM_CD = '12'
+		  <if test="sellerNo != null and sellerNo != ''">
+			and B.seller_no = #{sellerNo}
+		  </if>
+	      AND  NOT EXISTS (SELECT 1 FROM TY_CALCULATE_LEDGER_DTL D
+	                       WHERE A.CLAIM_NO = D.CLAIM_NO
+	                         AND D.CALCULATE_GB = '02')        
+
+    </insert>
+
+    <insert id="calculateSellerMst" >
+
+	    /* 정산원장  생성 */
+		INSERT INTO TY_CALCULATE_LEDGER (
+		   CALCULATE_NO, 
+		   CALCULATE_DTTM, 
+		   CALCULATE_STARTDT, 
+		   CALCULATE_ENDDT, 
+		   SELLER_NO, 
+		   SITE_NO, 
+		   PAYMENT_AMT, 
+		   CMS_TOTAL, 
+		   CALCULATE_AMT, 
+		   CALCULATE_STATUS_CD, 
+		   REGR_NO, 
+		   REG_DTTM)
+		SELECT #{calculateNo}
+		       ,TO_DATE(#{calculateDttm},'YYYY-MM-DD')
+		       ,TO_DATE(#{calculateStartdt},'YYYY-MM-DD')
+		       ,TO_DATE(#{calculateEnddt},'YYYY-MM-DD')
+		       ,SELLER_NO
+		       ,#{siteNo}
+		       ,SUM(PAYMENT_AMT)
+		       ,SUM(DC_AMT)
+		       ,SUM(LT_PVD_AMT)
+		       ,'01'
+	           ,#{regrNo}
+	           ,sysdate
+		 FROM TY_CALCULATE_LEDGER_DTL DTL
+		WHERE DTL.CALCULATE_NO = #{calculateNo}
+		 <if test="sellerNo != null and sellerNo != ''">
+			AND DTL.SELLER_NO = #{sellerNo}
+		 </if>
+		GROUP BY DTL.SELLER_NO
+    </insert>
+
+
+
+    <select id="selectCalcListPaging" resultType="CalcVO">
+        /* seller.selectSellerPaging */
+		SELECT *
+		FROM
+		(
+			select ROWNUM AS PAGING_NUM, AA.tot_cnt - AA.SORT_NUM + 1 as ROW_NUM, AA.*
+			from
+			(
+			    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+			    from
+			    (
+					SELECT A.*
+					  FROM (
+                            select  c.calculate_no,
+                                    to_char(c.calculate_dttm, 'YYYY-MM-DD') calculate_dttm,
+                                    to_char(c.calculate_startdt, 'YYYY-MM-DD') calculate_startdt,
+                                    to_char(c.calculate_enddt, 'YYYY-MM-DD') calculate_enddt,
+                                    c.seller_no,
+                                    c.seller_nm,
+                                    c.payment_amt,
+                                    c.cms_total,
+                                    c.calculate_amt,
+                                      c.deduct_amt,
+                                      c.calculate_status_cd,
+                                      c.calculate_status_nm
+							    from (
+									select
+                                              a.calculate_no
+                                              ,a.calculate_startdt
+                                              ,a.calculate_enddt
+                                              ,a.calculate_dttm
+                                              ,a.seller_no
+                                              ,b.seller_nm
+                                              ,NVL(a.payment_amt,0) as payment_amt
+                                              ,NVL(a.cms_total,0) as cms_total
+                                              ,NVL(a.calculate_amt,0) as calculate_amt
+                                              ,NVL(ded.deduct_amt,0) as deduct_amt
+                                              ,a.calculate_status_cd
+                                              ,fn_getCodeNm('CALCULATE_STATUS_CD',a.calculate_status_cd) calculate_status_nm
+										 from ty_calculate_ledger a left join ts_seller b on a.seller_no = b.seller_no
+										                             left outer join
+                                                                            (select calculate_no,
+                                                                                    sum(case when deduct_gb_cd = '1' then deduct_amt else deduct_amt * (-1) end) deduct_amt
+                                                                                      from ty_calculate_deduct
+                                                                                     group by calculate_no ) ded on a.calculate_no = ded.calculate_no
+								        <include refid="selectSellerWhere" />
+										) c
+				        ) A
+					    order by A.CALCULATE_NO DESC
+				) A
+			) AA
+		)
+		<include refid="common.pageSql" />
+	</select>
+
+    <select id="selectCalcListPagingTotalCount" resultType="Integer">
+        /* seller.selectSellerPagingTotalCount */
+        SELECT  count(*)
+        FROM    ty_calculate_ledger
+        WHERE   SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectCalcListPagingCount" resultType="Integer">
+        /* seller.selectCalcListPagingCount */
+        SELECT  count(*)
+        FROM    ty_calculate_ledger a
+        <include refid="selectSellerWhere" />
+    </select>
+
+
+    <select id="selectChkCalculate" resultType="Integer">
+	    select count(*)
+  		  from ty_calculate_ledger
+          where site_no = #{siteNo}
+
+		 <if test="sellerNo != null and sellerNo != ''">
+			and seller_no = #{sellerNo}
+		 </if>
+
+          <![CDATA[
+			 and (calculate_startdt between TO_DATE(#{calculateStartdt}, 'YY-MM-DD') and TO_DATE(#{calculateEnddt}, 'YYYY-MM-DD')
+			or calculate_enddt between TO_DATE(#{calculateStartdt}, 'YY-MM-DD') and TO_DATE(#{calculateEnddt}, 'YYYY-MM-DD'))
+          ]]>
+
+    </select>
+
+
+    <select id="selectLedgerDtlListPaging" resultType="CalcDtlVO">
+    	SELECT *
+    	FROM
+    	(
+        	select ROWNUM AS PAGING_NUM, T.tot_cnt - T.SORT_NUM + 1 as ROW_NUM, T.*
+        	FROM
+        	(
+				select AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+	                       SELECT  B.CALCULATE_NO, 
+	                               B.CALCULATE_DTL_NO, 
+	                               to_char(B.CALCULATE_STNDRD_DT, 'YYYY-MM-DD') CALCULATE_STNDRD_DT, 
+	                               B.ORDR_NO, 
+	                               B.ORDR_NM, 
+	                               B.ORD_DTTM, 
+	                               B.ORD_NO, 
+	                               B.ORD_DTL_SEQ, 
+	                               B.ORD_GOODS_NO, 
+	                               B.GOODS_NM, 
+	                               B.DLVR_AMT, 
+	                               B.PAYMENT_AMT, 
+	                               B.SELLER_CMS_RATE, 
+	                               B.INTEGRATION_POINT_USE_AMT, 
+	                               NVL(B.D_MONEY_USE_AMT,0) MONEY_USE_AMT, 
+	                               NVL(B.D_MONEY_ACCU_AMT,0) MONEY_ACCU_AMT, 
+	                               NVL(B.D_MONEY_RECOM_ACCU_AMT,0) MONEY_RECOM_ACCU_AMT,
+	                               NVL(B.D_MONEY_USE_AMT,0) D_MONEY_USE_AMT,
+	                               NVL(B.D_MONEY_ACCU_AMT,0) D_MONEY_ACCU_AMT, 
+	                               NVL(B.D_MONEY_RECOM_ACCU_AMT,0) D_MONEY_RECOM_ACCU_AMT, 
+	                               B.CP_DC_AMT, 
+	                               B.MEMBER_GRADE_DC_GB_CD, 
+	                               B.MEMBER_GRADE_DC_VALUE, 
+	                               B.MEMBER_GRADE_DC_AMT, 
+	                               B.PRMT_DC_GB_CD, 
+	                               B.PRMT_DC_VALUE, 
+	                               B.PRMT_DC_AMT, 
+	                               B.DC_AMT,
+	                               B.LT_PVD_AMT, 
+	                               B.COURIER_NM, 
+	                               B.INVOICE_NO, 
+	                               case when B.CALCULATE_GB = '01' then '정산' 
+	                                    when B.CALCULATE_GB = '02' then '정산취소'
+	                                    else '' end CALCULATE_GB,
+	                               B.PURCHASE_AMT, 
+	                               B.SALE_CHANNEL, 
+	                               B.ORD_QTT, 
+	                               B.PAYMENT_WAY_CD, 
+	                               B.REGR_NO, 
+	                               B.REG_DTTM,
+	                               to_char(A.CALCULATE_DTTM, 'YYYY-MM-DD') CALCULATE_DTTM,
+	                               A.CALCULATE_STARTDT,
+	                               A.CALCULATE_ENDDT,
+	                               A.SELLER_NO,
+	                               S.SELLER_NM,
+	                               A.SITE_NO,
+	                               A.CALCULATE_STATUS_CD,  
+							   	   B.STORE_NO,
+		   	   					   B.STORE_NM,
+		   	   					   TO_CHAR(B.PAYMENT_CMPLT_DTTM ,'YYYY-MM-DD HH24:MI:SS') AS PAYMENT_CMPLT_DTTM,
+								   B.PAYMENT_WAY_NM,
+								   B.PAYMENT_PG_CD,
+								   B.PAYMENT_PG_NM,
+								   B.CP_APPLY_AMT,
+								   B.SALE_AMT,
+								   B.SUPPLY_AMT,
+								   B.COMM_INCOME_AMT
+	                      FROM ty_calculate_ledger_dtl B JOIN ty_calculate_ledger A ON A.CALCULATE_NO = B.CALCULATE_NO
+	                       								 LEFT JOIN TS_SELLER S ON A.SELLER_NO = S.SELLER_NO
+				        <include refid="selectCalcDtlWhere" />
+				        ORDER BY B.CALCULATE_NO DESC
+					) A
+				) AA
+			) T
+		)
+		<include refid="common.pageSql" />
+    </select>
+
+    <select id="selectLedgerDtlListPagingTotalCount" resultType="Integer">
+        /* seller.selectLedgerDtlListPagingTotalCount */
+        SELECT  count(*)
+          FROM ty_calculate_ledger_dtl B JOIN ty_calculate_ledger A ON A.CALCULATE_NO = B.CALCULATE_NO
+    </select>
+
+    <select id="selectLedgerDtlListPagingCount" resultType="Integer">
+        /* seller.selectLedgerDtlListPagingCount */
+        SELECT  count(*)
+          FROM ty_calculate_ledger_dtl B JOIN ty_calculate_ledger A ON A.CALCULATE_NO = B.CALCULATE_NO
+        <include refid="selectCalcDtlWhere" />
+    </select>
+
+    <select id="selectDeductList" resultType="CalcDeductVO">
+		    select calculate_no,
+				 deduct_no,
+				 deduct_gb_cd,
+				 deduct_amt,
+				 deduct_dscrt,
+				 tax_gb_cd
+		 from ty_calculate_deduct
+		where calculate_no = #{calculateNo}
+    </select>
+
+
+    <insert id="insertDeductList" parameterType="CalcDeductVO">
+        INSERT INTO ty_calculate_deduct (
+            calculate_no, deduct_no, deduct_gb_cd, deduct_amt, deduct_dscrt, tax_gb_cd, REGR_NO, REG_DTTM
+        ) VALUES
+            (#{calculateNo}, #{deductNo}, #{deductGbCd}, #{deductAmt}, #{deductDscrt}, #{taxGbCd}, #{regrNo}, sysdate)
+    </insert>
+
+    <update id="updateDeductList" parameterType="CalcDeductVO">
+
+        update ty_calculate_deduct
+           set deduct_gb_cd = #{deductGbCd},
+			   deduct_amt = #{deductAmt},
+			   deduct_dscrt = #{deductDscrt},
+			   tax_gb_cd = #{taxGbCd},
+			   updr_no = #{updrNo},
+			   upd_dttm = sysdate
+		where calculate_no = #{calculateNo}
+		  and deduct_no = #{deductNo}
+
+    </update>
+
+
+    <delete id="deleteCalculateDeduct" >
+        DELETE FROM    ty_calculate_deduct WHERE   CALCULATE_NO = #{calculateNo}
+    </delete>
+    <delete id="deleteCalculateDtl" >
+        DELETE FROM    ty_calculate_ledger_dtl WHERE   CALCULATE_NO = #{calculateNo}
+    </delete>
+    <delete id="deleteCalculateMst" >
+        DELETE FROM    ty_calculate_ledger WHERE   SITE_NO = #{siteNo} and    CALCULATE_NO = #{calculateNo}
+    </delete>
+
+    <update id="updateCalcChange" parameterType="CalcVO">
+
+        update ty_calculate_ledger
+           set calculate_status_cd = #{calculateStatusCd},
+			   updr_no = #{updrNo},
+			   upd_dttm = sysdate
+		where calculate_no = #{calculateNo}
+		  and site_no = #{siteNo}
+
+    </update>
+
+
+
+    <select id="selectLedgerDtlExcel" resultType="CalcDtlVO">
+    	SELECT *
+    	FROM
+    	(
+        	select ROWNUM AS PAGING_NUM, 
+                   (CASE WHEN T.SELLER_NO = 0 THEN NULL ELSE ROWNUM END) rwn,
+        		   T.*
+        	FROM
+        	(
+				select AA.*
+				from
+				(
+				    select A.*,  count(*) over() as tot_cnt, ROWNUM AS SORT_NUM
+				    from
+				    (
+				    	   SELECT TT.* FROM (	
+					    
+		                       SELECT  B.CALCULATE_NO, 
+		                               B.CALCULATE_DTL_NO, 
+		                               to_char(B.CALCULATE_STNDRD_DT, 'YYYY-MM-DD') CALCULATE_STNDRD_DT, 
+		                               B.ORDR_NO, 
+		                               B.ORDR_NM, 
+		                               B.ORD_DTTM, 
+		                               TO_CHAR(B.ORD_NO) ORD_NO, 
+		                               B.ORD_DTL_SEQ, 
+		                               B.ORD_GOODS_NO, 
+		                               B.GOODS_NM, 
+		                               B.DLVR_AMT, 
+		                               B.PAYMENT_AMT, 
+		                               B.SELLER_CMS_RATE, 
+		                               B.INTEGRATION_POINT_USE_AMT, 
+		                               NVL(B.D_MONEY_USE_AMT,0) MONEY_USE_AMT, 
+		                               NVL(B.D_MONEY_ACCU_AMT,0) MONEY_ACCU_AMT, 
+		                               NVL(B.D_MONEY_RECOM_ACCU_AMT,0) MONEY_RECOM_ACCU_AMT,
+		                                
+		                               NVL(B.D_MONEY_USE_AMT,0) D_MONEY_USE_AMT, 
+		                               NVL(B.D_MONEY_ACCU_AMT,0) D_MONEY_ACCU_AMT, 
+		                               NVL(B.D_MONEY_RECOM_ACCU_AMT,0) D_MONEY_RECOM_ACCU_AMT, 
+		                               B.CP_DC_AMT, 
+		                               B.MEMBER_GRADE_DC_GB_CD, 
+		                               B.MEMBER_GRADE_DC_VALUE, 
+		                               B.MEMBER_GRADE_DC_AMT, 
+		                               B.PRMT_DC_GB_CD, 
+		                               B.PRMT_DC_VALUE, 
+		                               B.PRMT_DC_AMT, 
+		                               B.DC_AMT,
+		                               B.LT_PVD_AMT, 
+		                               B.COURIER_NM, 
+		                               B.INVOICE_NO, 
+		                               case when B.CALCULATE_GB = '01' then '정산' 
+		                                    when B.CALCULATE_GB = '02' then '정산취소'
+		                                    else '' end CALCULATE_GB,
+		                               B.PURCHASE_AMT, 
+		                               B.SALE_CHANNEL, 
+		                               B.ORD_QTT, 
+		                               B.PAYMENT_WAY_CD, 
+		                               B.REGR_NO, 
+		                               B.REG_DTTM,
+		                               to_char(A.CALCULATE_DTTM, 'YYYY-MM-DD') CALCULATE_DTTM,
+		                               A.CALCULATE_STARTDT,
+		                               A.CALCULATE_ENDDT,
+		                               A.SELLER_NO,
+		                               S.SELLER_NM,
+		                               A.SITE_NO,
+		                               A.CALCULATE_STATUS_CD,
+								   	   B.STORE_NO,
+			   	   					   B.STORE_NM,
+			   	   					   TO_CHAR(B.PAYMENT_CMPLT_DTTM ,'YYYY-MM-DD HH24:MI:SS') AS PAYMENT_CMPLT_DTTM,
+									   B.PAYMENT_WAY_NM,
+									   B.PAYMENT_PG_CD,
+									   B.PAYMENT_PG_NM,
+									   B.CP_APPLY_AMT,
+									   B.SALE_AMT,
+									   B.SUPPLY_AMT,
+									   B.COMM_INCOME_AMT
+		                      FROM ty_calculate_ledger_dtl B JOIN ty_calculate_ledger A ON A.CALCULATE_NO = B.CALCULATE_NO
+		                       								 LEFT JOIN TS_SELLER S ON A.SELLER_NO = S.SELLER_NO
+					        <include refid="selectCalcDtlWhere" />
+					        
+					        UNION ALL
+					        
+		                       SELECT  NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               '합 계 ', 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               SUM(B.DLVR_AMT), 
+		                               SUM(B.PAYMENT_AMT), 
+		                               NULL, 
+		                               NULL, 
+		                               SUM(NVL(B.D_MONEY_USE_AMT,0)) MONEY_USE_AMT, 
+		                               SUM(NVL(B.D_MONEY_ACCU_AMT,0)) MONEY_ACCU_AMT, 
+		                               SUM(NVL(B.D_MONEY_RECOM_ACCU_AMT,0)) MONEY_RECOM_ACCU_AMT,
+		                                
+		                               SUM(NVL(B.D_MONEY_USE_AMT,0)) D_MONEY_USE_AMT, 
+		                               SUM(NVL(B.D_MONEY_ACCU_AMT,0)) D_MONEY_ACCU_AMT, 
+		                               SUM(NVL(B.D_MONEY_RECOM_ACCU_AMT,0)) D_MONEY_RECOM_ACCU_AMT, 
+		                               SUM(NVL(B.CP_DC_AMT,0)), 
+		                               NULL, 
+		                               NULL, 
+		                               SUM(NVL(B.MEMBER_GRADE_DC_AMT,0)), 
+		                               NULL, 
+		                               NULL, 
+		                               SUM(NVL(B.PRMT_DC_AMT,0)), 
+		                               SUM(NVL(B.DC_AMT,0)),
+		                               SUM(NVL(B.LT_PVD_AMT,0)), 
+		                               NULL, 
+		                               NULL, 
+		                               NULL,
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL, 
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               0,
+		                               NULL,
+		                               NULL,
+		                               NULL,  
+		                               NULL,
+		                               NULL,
+		                               NULL,  
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               NULL,
+		                               NULL
+		                      FROM ty_calculate_ledger_dtl B JOIN ty_calculate_ledger A ON A.CALCULATE_NO = B.CALCULATE_NO
+		                       								 LEFT JOIN TS_SELLER S ON A.SELLER_NO = S.SELLER_NO
+					        <include refid="selectCalcDtlWhere" />
+				        ) TT
+				        ORDER BY TT.SELLER_NO, TT.CALCULATE_STNDRD_DT
+					) A
+				) AA
+				order by SORT_NUM DESC
+			) T	
+		)
+		<include refid="common.pageSql" />
+    </select>
+
+
+</mapper>

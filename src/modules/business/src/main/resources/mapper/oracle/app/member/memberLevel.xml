@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+	회원 등급 관리 맵퍼
+-->
+<mapper namespace="member.level">
+	<select id="selectGradeGetList" resultType="memberLevelVO" parameterType="memberLevelSO">
+		/* biz.app.member.level.selectGradeGetList */
+		SELECT *
+		  FROM TC_MEMBER_GRADE
+		 WHERE SITE_NO = #{siteNo}
+		   AND DEL_YN = 'N'
+		 ORDER BY MEMBER_GRADE_LVL ASC
+	</select>
+
+	<select id="selectGradeGetListCount" resultType="Integer">
+        /* biz.app.member.level.selectGradeGetListCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_GRADE
+         WHERE SITE_NO = #{siteNo}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectGradeGetListTotalCount" resultType="Integer">
+        /* biz.app.member.level.selectGradeGetListTotalCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_GRADE
+         WHERE SITE_NO = #{siteNo}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="viewMemGradeList" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.viewMemGradeList */
+        SELECT A.SITE_NO,
+               A.MEMBER_GRADE_NO,
+		       MEMBER_GRADE_NM,
+		       NVL(TOT_BUY_AMT,0) TOT_BUY_AMT,
+		       NVL(TOT_POINT,0) TOT_POINT,
+		       NVL(TOT_BUY_CNT,0) TOT_BUY_CNT,
+		       MEMBER_GRADE_MANAGE_CD,
+		       TO_CHAR(A.UPD_DTTM, 'YYYY-MM-DD HH24:MI:SS') MAKE_DTTM,
+		       to_char(NVL(B.CNT,0), 'FM999,999,999,999') MEM_CNT,
+		       CONCAT(NVL(ROUND((B.CNT / C.TOT_CNT) * 100),0),'%') MEM_STATISTIC,
+               CASE GRADE_AUTO_REARRANGE_YN WHEN 'Y' THEN '자동'
+                                            WHEN 'N' THEN '수동'
+                                                      END AUTO_YN_NM,
+               GRADE_AUTO_REARRANGE_YN AUTO_YN,
+               nvl(SVMN_VALUE, 0) as SVMN_VALUE
+		  FROM TC_MEMBER_GRADE A
+		       LEFT JOIN(SELECT COUNT(MEMBER_GRADE_NO) CNT, MEMBER_GRADE_NO
+		                       FROM TC_MEMBER
+		                      WHERE SITE_NO = #{siteNo}
+		                        AND MEMBER_STATUS_CD = '01'
+		                        <![CDATA[
+		                        AND MEMBER_NO >= 1000
+		                        ]]>
+		                      GROUP BY MEMBER_GRADE_NO) B ON A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO ,
+		       (SELECT COUNT(*) TOT_CNT
+		          FROM TC_MEMBER
+		         WHERE SITE_NO = #{siteNo}
+		           AND MEMBER_STATUS_CD = '01'
+		           <![CDATA[
+                   AND MEMBER_NO >= 1000
+                   ]]> ) C
+         WHERE A.SITE_NO = #{siteNo}
+           AND A.DEL_YN = 'N'
+           and A.MEMBER_GRADE_NO = 1
+		 ORDER BY MEMBER_GRADE_LVL DESC
+    </select>
+
+    <select id="viewMemGradeListCount" resultType="Integer">
+        /* biz.app.member.level.viewMemGradeListCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_GRADE A
+               LEFT JOIN(SELECT COUNT(MEMBER_GRADE_NO) CNT, MEMBER_GRADE_NO
+                               FROM TC_MEMBER
+                              WHERE SITE_NO = #{siteNo}
+                              GROUP BY MEMBER_GRADE_NO)B ON A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO ,
+               (SELECT COUNT(*) TOT_CNT FROM TC_MEMBER WHERE SITE_NO = #{siteNo}) C
+         WHERE A.SITE_NO = #{siteNo}
+           AND A.DEL_YN = 'N'
+    </select>
+
+    <select id="viewMemGradeListTotalCount" resultType="Integer">
+        /* biz.app.member.level.viewMemGradeListTotalCount */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_GRADE A
+               LEFT JOIN(SELECT COUNT(MEMBER_GRADE_NO) CNT, MEMBER_GRADE_NO
+                               FROM TC_MEMBER
+                              WHERE SITE_NO = #{siteNo}
+                              GROUP BY MEMBER_GRADE_NO)B ON A.MEMBER_GRADE_NO = B.MEMBER_GRADE_NO ,
+               (SELECT COUNT(*) TOT_CNT FROM TC_MEMBER WHERE SITE_NO = #{siteNo}) C
+         WHERE A.SITE_NO = #{siteNo}
+           AND A.DEL_YN = 'N'
+    </select>
+
+    <update id="updateMemGradeAsbConfig" >
+        /* biz.app.member.level.updateMemGradeAsbConfig */
+        update TS_SITE
+        set FIRST_SIGNUP_POINT = #{firstSignupPoint},
+            <if test="pointPvdGoodsTypeCds != null and pointPvdGoodsTypeCds != ''">
+                POINT_PVD_GOODS_TYPE_CDS = #{pointPvdGoodsTypeCds},
+            </if>
+            FIRST_SIGNUP_COUPON_YN = #{firstSignupCouponYn},
+            UPDR_NO = #{updrNo},
+            UPD_DTTM = sysdate
+        where SITE_NO = #{siteNo}
+    </update>
+
+    <update id="updateMemGradeManageCfg" >
+        /* biz.app.member.level.updateMemGradeManageCfg */
+        UPDATE TC_MEMBER_GRADE
+           SET MEMBER_GRADE_MANAGE_CD = #{memberGradeManageCd},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+    </update>
+
+    <select id="selectMemGradeAsbConfig" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.selectMemGradeAsbConfig */
+        SELECT GRADE_STNDRD_CYCLE,
+               GRADE_STNDRD_DATE,
+               GRADE_CCLT_PERIOD
+          FROM TC_MEMBER_GRADE_AUTO_REARRANGE
+         WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <select id="viewMemGradeUpdate" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.viewMemGradeUpdate */
+        SELECT MEMBER_GRADE_NO,
+               MEMBER_GRADE_NM,
+               nvl(SVMN_VALUE, 0) as SVMN_VALUE,
+               (select POINT_PVD_GOODS_TYPE_CDS from TS_SITE where SITE_NO = #{siteNo}) as POINT_PVD_GOODS_TYPE_CDS
+          FROM TC_MEMBER_GRADE
+         WHERE SITE_NO = #{siteNo}
+           AND MEMBER_GRADE_NO = #{memberGradeNo}
+    </select>
+
+    <update id="updateMemGradeConfig" >
+        /* biz.app.member.level.updateMemGradeConfig */
+        UPDATE TC_MEMBER_GRADE
+           SET SVMN_VALUE = #{svmnValue},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE MEMBER_GRADE_NO = #{memberGradeNo}
+           AND SITE_NO = #{siteNo}
+    </update>
+
+    <insert id="insertMemGrade">
+        /* biz.app.member.level.insertMemGrade */
+        INSERT INTO TC_MEMBER_GRADE
+               (MEMBER_GRADE_NO,
+                SITE_NO,
+                MEMBER_GRADE_NM,
+                <if test="totBuyAmt != null and totBuyAmt != ''">
+                    TOT_BUY_AMT,
+                </if>
+                <if test="totPoint != null and totPoint != ''">
+                    TOT_POINT,
+                </if>
+                <if test="totBuyCnt != null and totBuyCnt != ''">
+                    TOT_BUY_CNT,
+                </if>
+                MEMBER_GRADE_MANAGE_CD,
+                DEL_YN,
+                MEMBER_GRADE_LVL,
+                GRADE_AUTO_REARRANGE_YN,
+                REGR_NO,
+                REG_DTTM
+                )
+        VALUES (#{memberGradeNo},
+                #{siteNo},
+                #{memberGradeNm},
+                <if test="totBuyAmt != null and totBuyAmt != ''">
+                    #{totBuyAmt},
+                </if>
+                <if test="totPoint != null and totPoint != ''">
+                    #{totPoint},
+                </if>
+                <if test="totBuyCnt != null and totBuyCnt != ''">
+                    #{totBuyCnt},
+                </if>
+                #{memberGradeManageCd},
+                #{delYn},
+                #{memberGradeLvl},
+                #{autoYn},
+                #{regrNo},
+                sysdate
+                )
+
+    </insert>
+
+    <update id="deleteMemGrade">
+        /* biz.app.member.level.deleteMemGrade */
+        UPDATE TC_MEMBER_GRADE
+           SET DEL_YN = #{delYn},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND MEMBER_GRADE_NO IN
+               <foreach collection="delMemGradeNo" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+    </update>
+
+
+    <update id="deleteMemGradeFromMem">
+        <selectKey keyProperty="memberGradeNo" order="BEFORE" resultType="String">
+        	SELECT MEMBER_GRADE_NO
+        	FROM
+        	(
+	            SELECT MEMBER_GRADE_NO
+	              FROM TC_MEMBER_GRADE
+	             WHERE SITE_NO = #{siteNo}
+	               AND DEL_YN = 'N'
+	             ORDER BY MEMBER_GRADE_LVL
+            )
+            WHERE ROWNUM = 1
+        </selectKey>
+        /* biz.app.member.level.deleteMemGradeFromMem */
+        UPDATE  TC_MEMBER
+           SET MEMBER_GRADE_NO = #{memberGradeNo},
+               UPDR_NO = #{regrNo},
+               UPD_DTTM = sysdate
+         WHERE SITE_NO = #{siteNo}
+           AND MEMBER_GRADE_NO IN
+               <foreach collection="delMemGradeNo" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+    </update>
+
+    <select id="selectMemGradeLevelCnt" resultType="Integer" parameterType="memberLevelSO">
+        /* biz.app.member.level.selectMemGradeLevelCnt */
+        SELECT COUNT(*)
+          FROM TC_MEMBER_GRADE
+         WHERE SITE_NO = #{siteNo}
+         <if test="memberGradeNo != null and memberGradeNo != ''">
+             AND MEMBER_GRADE_NO != #{memberGradeNo}
+         </if>
+           AND MEMBER_GRADE_LVL = #{memberGradeLvl}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="getMemGradeBenefitGrpList" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.getMemGradeBenefitGrpList */
+        SELECT DISTINCT MEMBER_GRADE_BNF_NO, USE_YN
+		FROM TC_MEMBER_GRADE_BNF
+		WHERE 1=1
+		AND SITE_NO = #{siteNo}
+		AND DEL_YN != 'Y'
+    </select>
+
+    <select id="viewMemGradeBenefitList" resultType="memberLevelVO" parameterType="memberLevelSO">
+        /* biz.app.member.level.viewMemGradeBenefitList */
+        SELECT (SELECT DISTINCT MEMBER_GRADE_BNF_NO FROM TC_MEMBER_GRADE_BNF WHERE 1=1  AND MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}) as MEMBER_GRADE_BNF_NO,
+               (SELECT DISTINCT USE_YN FROM TC_MEMBER_GRADE_BNF WHERE 1=1  AND MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}) as USE_YN,
+               grade.MEMBER_GRADE_NO,
+               grade.MEMBER_GRADE_NM,
+		       bnf.DC_UNIT_CD,
+		       bnf.DC_VALUE,
+		       bnf.SVMN_UNIT_CD,
+		       bnf.SVMN_VALUE,
+		       NVL(bnf.USE_YN, 'insert') AS CHK,
+		       bnf.DC_VALUE || case when bnf.DC_UNIT_CD = '1' then '%' when bnf.DC_UNIT_CD = '2' then '원' end || ' 할인' as  DC_VALUE_TEXT,
+		       bnf.SVMN_VALUE || case when  bnf.SVMN_UNIT_CD = '11' then '%' when bnf.SVMN_UNIT_CD = '12' then '원' end || ' 적립' as  SVMN_VALUE_TEXT
+		FROM TC_MEMBER_GRADE_BNF bnf right outer join TC_MEMBER_GRADE grade on (bnf.MEMBER_GRADE_NO = grade.MEMBER_GRADE_NO
+		                                                                    AND bnf.MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}
+		                                                                    AND bnf.SITE_NO = #{siteNo})
+		WHERE 1=1
+		AND grade.SITE_NO = #{siteNo}
+		AND grade.DEL_YN != 'Y'
+
+        ORDER BY grade.MEMBER_GRADE_LVL DESC
+
+    </select>
+
+    <insert id="insertMemGradeBenefit">
+        /* biz.app.member.level.insertMemGradeBenefit */
+        INSERT INTO TC_MEMBER_GRADE_BNF
+               (
+                SITE_NO,
+                MEMBER_GRADE_NO,
+                MEMBER_GRADE_BNF_NO,
+                DC_UNIT_CD,
+                DC_VALUE,
+                SVMN_UNIT_CD,
+                SVMN_VALUE,
+                USE_YN,
+                REGR_NO,
+                REG_DTTM
+                )
+        VALUES (
+                #{siteNo},
+                #{memberGradeNo},
+                #{memberGradeBnfNo},
+                #{dcUnitCd},
+                #{dcValue},
+                #{svmnUnitCd},
+                #{svmnValue},
+                #{useYn},
+                #{regrNo},
+                sysdate
+                )
+
+    </insert>
+
+    <update id="updateMemGradeBenefit">
+        /* biz.app.member.level.updateMemGradeBenefit */
+        UPDATE  TC_MEMBER_GRADE_BNF
+        SET     DC_UNIT_CD = #{dcUnitCd},
+                DC_VALUE = #{dcValue},
+                SVMN_UNIT_CD = #{svmnUnitCd},
+                SVMN_VALUE = #{svmnValue},
+                <!-- USE_YN = #{useYn}, -->
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+
+        WHERE   SITE_NO = #{siteNo}
+        AND     MEMBER_GRADE_NO     = #{memberGradeNo}
+        AND     MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}
+    </update>
+
+    <update id="deleteMemGradeBenefit">
+        /* biz.app.member.level.deleteMemGradeBenefit */
+        UPDATE  TC_MEMBER_GRADE_BNF
+        SET     DEL_YN = 'Y'
+
+        WHERE   SITE_NO = #{siteNo}
+        AND     MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}
+    </update>
+
+    <update id="updateUseYn">
+        /* biz.app.member.level.updateUseYn */
+        UPDATE  TC_MEMBER_GRADE_BNF
+        SET     USE_YN = #{useYn},
+                UPDR_NO = #{updrNo},
+                UPD_DTTM = sysdate
+        WHERE   SITE_NO = #{siteNo}
+        <if test="memberGradeBnfNo != null and memberGradeBnfNo != '' and memberGradeBnfNo != '0'">
+             AND     MEMBER_GRADE_BNF_NO = #{memberGradeBnfNo}
+        </if>
+
+    </update>
+    
+    <delete id="deleteMemGradeBnf">
+        /* biz.app.member.level.deleteMemGradeBnf */
+        DELETE FROM TC_MEMBER_GRADE_BNF
+        WHERE SITE_NO = #{siteNo}
+          AND MEMBER_GRADE_NO IN
+               <foreach collection="delMemGradeNo" item="item" index="index" open="(" separator="," close=")">
+                   #{item}
+               </foreach>
+    </delete>
+
+    <select id="selectSignupBnf" resultType="memberLevelVO" parameterType="memberLevelSO">
+        SELECT FIRST_SIGNUP_POINT ,
+               POINT_PVD_GOODS_TYPE_CDS,
+               FIRST_SIGNUP_COUPON_YN
+        FROM TS_SITE
+        WHERE SITE_NO = #{siteNo}
+    </select>
+
+    <update id="updateSignupBnf">
+        update TS_SITE
+        set POINT_PVD_GOODS_TYPE_CDS = #{pointPvdGoodsTypeCds},
+            UPDR_NO = #{regrNo},
+            UPD_DTTM = sysdate
+        where SITE_NO = #{siteNo}
+    </update>
+</mapper>

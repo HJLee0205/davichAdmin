@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="goods.keyword">
+    <select id="selectKeywordList" resultType="keywordManageVO" parameterType="keywordManageSO">
+        /* biz.app.goods.keyword.selectKeywordList */
+        SELECT T.*
+        FROM (SELECT KEYWORD_NO                     as ID,
+                     to_char(decode(UP_KEYWORD_NO, 0, '#', UP_KEYWORD_NO)) as PARENT,
+                     KEYWORD_NM                     as TEXT,
+                     TO_NUMBER(KEYWORD_LVL)            KEYWORD_LVL,
+                     SORT_SEQ
+              FROM TG_KEYWORD
+              WHERE SITE_NO = #{siteNo}
+                AND DEL_YN = 'N') T
+        ORDER BY T.KEYWORD_LVL, T.SORT_SEQ
+    </select>
+
+    <select id="selectKeywordList1depth" resultType="keywordManageVO" parameterType="keywordManageSO">
+        /* biz.app.goods.keyword.selectKeywordList1depth */
+        SELECT (#{udv1} || KEYWORD_NO) AS DTL_CD,
+               KEYWORD_NM              AS DTL_NM
+        FROM TG_KEYWORD
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_LVL = '1'
+          AND DEL_YN = 'N'
+        ORDER BY SORT_SEQ
+    </select>
+
+    <select id="selectKeywordGoodsList" resultType="goodsVO" parameterType="keywordManageSO">
+        /* biz.app.goods.keyword.selectKeywordGoodsList */
+        SELECT row_number() over(ORDER BY SORT_SEQ) AS SORT_NUM,
+               fn_getGoodsImgPath(tg.GOODS_NO, '02') AS GOODS_IMG_02,
+               tg.GOODS_NM ,
+               tg.GOODS_NO ,
+               tb.BRAND_NM ,
+               ts.SELLER_NM ,
+               ti.SALE_PRICE ,
+               ti.STOCK_QTT ,
+               fn_getCodeNm('GOODS_SALE_STATUS_CD', tg.GOODS_SALE_STATUS_CD) AS GOODS_SALE_STATUS_NM,
+               tepm.ERP_ITM_CODE
+        FROM TG_GOODS_KEYWORD tgk
+                 INNER JOIN TG_GOODS tg ON tgk.GOODS_NO = tg.GOODS_NO
+                 INNER JOIN TG_ITEM ti ON tg.ITEM_NO = ti.ITEM_NO
+                 LEFT OUTER JOIN TG_BRAND tb ON tg.BRAND_NO = tb.BRAND_NO
+                 INNER JOIN TS_SELLER ts ON tg.SELLER_NO = ts.SELLER_NO
+                 LEFT OUTER JOIN TI_ERP_PRD_MAPPING tepm ON ti.ITEM_NO = tepm.MALL_ITM_CODE
+        WHERE tg.DEL_YN = 'N'
+          AND tgk.DEL_YN = 'N'
+          AND tgk.KEYWORD_NO = #{keywordNo}
+    </select>
+
+    <select id="existsKeywordGoods" resultType="int">
+        SELECT COUNT(*) cnt FROM TG_GOODS_KEYWORD
+        WHERE KEYWORD_NO = #{keywordNo}
+    </select>
+
+    <select id="selectKeywordListDepth" resultType="keywordManageVO" parameterType="keywordManageSO">
+        /* biz.app.goods.keyword.selectKeywordListDepth */
+        SELECT KEYWORD_NO                     as ID,
+               to_char(NVL(UP_KEYWORD_NO, 0)) as PARENT,
+               KEYWORD_NM                     as TEXT,
+               TO_NUMBER(KEYWORD_LVL)            KEYWORD_LVL,
+               SORT_SEQ
+        FROM TG_KEYWORD
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_LVL >= #{keywordLvl}
+          AND DEL_YN = 'N'
+        ORDER BY SORT_SEQ
+    </select>
+
+    <update id="deleteKeyword">
+        /* biz.app.goods.keyword.deleteKeyword */
+        UPDATE TG_KEYWORD
+        SET DEL_YN = 'Y',
+        DELR_NO = #{regrNo},
+        DEL_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND KEYWORD_NO IN
+        <foreach collection="childKeywordNoList" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </update>
+
+    <select id="selectChildKeywordNo" resultType="Integer" parameterType="keywordManagePO">
+        /* biz.app.goods.keyword.selectChildKeywordNo */
+        SELECT KEYWORD_NO,
+               UP_KEYWORD_NO,
+               KEYWORD_NM,
+               0 KEYWORD_LVL
+        FROM TG_KEYWORD
+        WHERE KEYWORD_NO = #{keywordNo}
+        UNION ALL
+        SELECT DC.KEYWORD_NO AS KEYWORD_NO,
+               UP_KEYWORD_NO,
+               KEYWORD_NM,
+               DC2.LEV       AS KEYWORD_LVL
+        FROM (SELECT DISTINCT KEYWORD_NO, LEVEL AS LEV
+              FROM TG_KEYWORD START WITH KEYWORD_NO = #{keywordNo} AND SITE_NO = #{siteNo}
+              CONNECT BY PRIOR KEYWORD_NO = UP_KEYWORD_NO AND SITE_NO = #{siteNo}
+              ORDER SIBLINGS BY KEYWORD_NO ASC) DC2,
+             TG_KEYWORD DC
+        WHERE DC.KEYWORD_NO = DC2.KEYWORD_NO
+          AND SITE_NO = #{siteNo}
+    </select>
+
+    <select id="selectKeyword" resultType="keywordManageVO" parameterType="keywordManageSO">
+        /* biz.app.goods.keyword.selectKeyword */
+        SELECT KEYWORD_NO,
+               KEYWORD_NM,
+               KEYWORD_DSCRT,
+               KEYWORD_LVL,
+               GOODS_TYPE_CD,
+               USE_YN
+        FROM TG_KEYWORD
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_NO = #{keywordNo}
+    </select>
+
+    <update id="updateKeyword">
+        /* biz.app.goods.keyword.updateKeyword */
+        UPDATE TG_KEYWORD
+        SET
+        <if test='keywordNm != null and keywordNm != ""'>
+            KEYWORD_NM = #{keywordNm},
+        </if>
+        <if test='keywordDscrt != null and keywordDscrt != ""'>
+            KEYWORD_DSCRT = #{keywordDscrt},
+        </if>
+        <if test='useYn != null and useYn != ""'>
+            USE_YN = #{useYn},
+        </if>
+        <if test='goodsTypeCd != null and goodsTypeCd != ""'>
+            GOODS_TYPE_CD = #{goodsTypeCd},
+        </if>
+        UPDR_NO = #{regrNo},
+        UPD_DTTM = sysdate
+        WHERE SITE_NO = #{siteNo}
+        AND KEYWORD_NO = #{keywordNo}
+    </update>
+
+    <insert id="insertKeyword">
+        /* biz.app.goods.keyword.insertKeyword */
+        INSERT INTO TG_KEYWORD
+        (KEYWORD_NO,
+         SITE_NO,
+         UP_KEYWORD_NO,
+         KEYWORD_LVL,
+         KEYWORD_NM,
+         GOODS_TYPE_CD,
+         DEL_YN,
+         USE_YN,
+         REGR_NO,
+         REG_DTTM,
+         SORT_SEQ)
+        VALUES (#{keywordNo},
+                #{siteNo},
+                #{upKeywordNo},
+                #{keywordLvl},
+                #{keywordNm},
+                #{goodsTypeCd},
+                'N',
+                'Y',
+                #{regrNo},
+                sysdate,
+                (SELECT NVL(MAX(SORT_SEQ), 0) + 1 FROM TG_KEYWORD WHERE UP_KEYWORD_NO = NVL(#{upKeywordNo}, 0)))
+    </insert>
+
+    <delete id="deleteKeywordGoods">
+        /* biz.app.goods.keyword.deleteKeyword */
+        DELETE FROM TG_GOODS_KEYWORD
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_NO = #{keywordNo}
+    </delete>
+
+    <insert id="insertKeywordGoods">
+        /* biz.app.goods.keyword.insertKeywordGoods */
+        INSERT INTO TG_GOODS_KEYWORD
+            (KEYWORD_NO,
+             SITE_NO,
+             GOODS_NO,
+             SORT_SEQ,
+             DEL_YN,
+             REGR_NO,
+             REG_DTTM)
+        VALUES (#{keywordNo},
+            #{siteNo},
+            #{goodsNo},
+            (SELECT NVL(MAX(SORT_SEQ), 0) + 1 FROM TG_GOODS_KEYWORD WHERE KEYWORD_NO = NVL(#{keywordNo}, 0)),
+            'N',
+            #{regrNo},
+            sysdate)
+    </insert>
+
+    <select id="selectKeywordFileInfo" resultType="keywordManageVO" parameterType="keywordManagePO">
+        /* biz.app.goods.keyword."selectKeywordFileInfo" */
+        SELECT KEYWORD_NO,
+        KEYWORD_IMG_PATH,
+        KEYWORD_IMG_NM,
+        MOUSEOVER_IMG_PATH,
+        MOUSEOVER_IMG_NM
+        FROM TG_KEYWORD
+        WHERE SITE_NO = #{siteNo}
+        AND KEYWORD_NO IN
+        <foreach collection="childKeywordNoList" item="item" index="index" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <update id="keywordSortInit">
+        /* biz.app.goods.keyword.keywordSortInit */
+        UPDATE TG_KEYWORD T
+        SET T.SORT_SEQ = (SELECT RANK
+                          FROM (SELECT RANK() OVER (ORDER BY C.SORT_SEQ) RANK, C.KEYWORD_NO
+                                FROM TG_KEYWORD C
+                                WHERE C.SITE_NO = #{siteNo}
+                                  AND C.KEYWORD_LVL = #{keywordLvl}
+                                  AND C.UP_KEYWORD_NO = #{upKeywordNo}
+                      	  <![CDATA[
+                                  AND C.KEYWORD_NO <> #{keywordNo}
+                      	  ]]>
+               		)
+                          WHERE KEYWORD_NO = T.KEYWORD_NO)
+        WHERE T.SITE_NO = #{siteNo}
+          AND T.KEYWORD_LVL = #{keywordLvl}
+          AND T.UP_KEYWORD_NO = #{upKeywordNo}
+    </update>
+
+    <update id="updateKeywordSort">
+        /* biz.app.goods.keyword.updateKeywordSort */
+        UPDATE TG_KEYWORD
+        SET UP_KEYWORD_NO = #{upKeywordNo},
+            SORT_SEQ      = #{sortSeq},
+            KEYWORD_LVL   = #{keywordLvl}
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_NO = #{keywordNo}
+    </update>
+
+    <update id="keywordSortSetting">
+        /* biz.app.goods.keyword.keywordSortSetting */
+        UPDATE TG_KEYWORD
+        SET SORT_SEQ = SORT_SEQ + 1
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_LVL = #{keywordLvl}
+          AND UP_KEYWORD_NO = #{upKeywordNo}
+		   <![CDATA[
+          AND KEYWORD_NO <> #{keywordNo}
+           ]]>
+           <![CDATA[
+           AND SORT_SEQ >= ${sortSeq}
+        ]]>
+    </update>
+
+    <update id="keywordLvlSetting">
+        /* biz.app.goods.keyword.keywordLvlSetting */
+        UPDATE TG_KEYWORD
+        SET KEYWORD_LVL = KEYWORD_LVL + ${calcLvl}
+        WHERE SITE_NO = #{siteNo}
+          AND KEYWORD_NO IN (${downKeywordNo})
+    </update>
+</mapper>

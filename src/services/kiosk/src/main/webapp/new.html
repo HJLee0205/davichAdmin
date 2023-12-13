@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+      // Load the Google Onscreen Keyboard API
+      google.load("elements", "1", {
+          packages: "keyboard"
+      });
+
+      function onLoad() {
+        var kbd = new google.elements.keyboard.Keyboard(
+          [google.elements.keyboard.LayoutCode.KOREAN],
+          ['t1']);
+      }
+
+      google.setOnLoadCallback(onLoad);
+    </script>
+    <style type="text/css">
+    #kbd .goog-button{
+    	width: 72px;
+    	height: 72px;
+    	border-radius: 10px;
+    	font-size: 25px;
+    }
+    #K32{
+   	 	width: 810px !important;
+    }
+    #K273{
+   	 	width: 110px !important;
+    }
+    button[name='K16']{
+    	width: 146px !important;
+    }
+    button[name='K10']{
+    	width: 145px !important;
+    }
+    #K220{
+    	width: 106px !important;
+    }
+    </style>
+  </head>
+  <body>
+  Type in Russian<br/>
+  <textarea id="t1" style="width: 600px; height: 200px;"></textarea>
+  </body>
+</html>
